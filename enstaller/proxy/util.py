@@ -30,6 +30,9 @@ def get_proxystr(pinfo):
             proxystr = '%(user)s:%(pass)s@%(host)s:%(port)s' % pinfo
         else:
             proxystr = '%(host)s:%(port)s' % pinfo
+    else:
+        # FIXME: fix pinfo configuration so that it cannot be invalid once created
+        raise InvalidConfiguration("Invalid proxy info: {0}".format(pinfo))
 
     return proxystr
 

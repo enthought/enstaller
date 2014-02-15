@@ -60,10 +60,9 @@ class TestGetProxyStr(unittest.TestCase):
 
         self.assertEqual(get_proxystr(pinfo), "http://john:doe@acme.com:8080")
 
-    @unittest.expectedFailure
     def test_empty_pinfo(self):
-        pinfo = {}
-        self.assertEqual(get_proxystr(pinfo), "")
+        with self.assertRaises(InvalidConfiguration):
+            get_proxystr({})
 
     def test_simple_without_scheme(self):
         pinfo = {"host": "acme.com", "user": "john", "pass": "doe", "port": 8080}
