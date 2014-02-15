@@ -92,6 +92,10 @@ def get_proxy_info(proxystr=None):
     # Parse the passed proxy string
     else:
         parts = urlparse.urlparse(proxystr)
+        if parts.netloc == "":
+            proxystr = "http://{0}".format(proxystr)
+            parts = urlparse.urlparse(proxystr)
+
         _, hostport = urllib2.splituser(parts.netloc)
         host, _ = urllib2.splitport(hostport)
 

@@ -31,6 +31,10 @@ class TestGetProxyInfo(unittest.TestCase):
         self.assertEqual(get_proxy_info("http://john:doe@acme.com:8080"),
                          {"host": "http://acme.com", "port": 8080, "user": "john",
                           "pass": "doe"})
+        self.assertEqual(get_proxy_info("acme.com:8080"),
+                         {"host": "http://acme.com", "port": 8080, "user": None,
+                          "pass": None})
+
 
     def test_from_empty_string(self):
         with mock.patch("enstaller.proxy.util.os.environ", ControlledEnv(_IGNORED_KEYS)):
