@@ -9,8 +9,10 @@ else:
 import mock
 
 from egginst.testing_utils import ControlledEnv
+from enstaller.errors import InvalidConfiguration
 from enstaller.proxy.util import get_proxy_info, get_proxystr, \
     install_proxy_handlers, setup_proxy
+
 
 PROXY_HOST = "PROXY_HOST"
 PROXY_PORT = "PROXY_PORT"
@@ -38,9 +40,8 @@ class TestGetProxyInfo(unittest.TestCase):
 
     def test_from_empty_string(self):
         with mock.patch("enstaller.proxy.util.os.environ", ControlledEnv(_IGNORED_KEYS)):
-            self.assertEqual(get_proxy_info(""),
-                             {"host": None, "port": 80, "user": None,
-                              "pass": None})
+            with self.assertRaises(InvalidConfiguration):
+                get_proxy_info("")
 
         env = ControlledEnv()
         env[PROXY_USER] = "john"
@@ -126,9 +127,6 @@ class TestProxySetup(unittest.TestCase):
 
     @mock.patch("os.environ", ControlledEnv(_IGNORED_KEYS))
     def test_setup_proxy_empty_host(self):
-        with mock.patch("urllib2.install_opener") as mocked:
-            proxystr = ""
-            installed = setup_proxy(proxystr)
-
-            self.assertFalse(installed)
-            self.assertFalse(mocked.called)
+        with mock.patch("urllib2.install_opener"):
+            with self.assertRaises(InvalidConfiguration):
+                setup_proxy("")
