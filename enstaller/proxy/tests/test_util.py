@@ -40,8 +40,7 @@ class TestGetProxyInfo(unittest.TestCase):
 
     def test_from_empty_string(self):
         with mock.patch("enstaller.proxy.util.os.environ", ControlledEnv(_IGNORED_KEYS)):
-            with self.assertRaises(InvalidConfiguration):
-                get_proxy_info("")
+            self.assertIsNone(get_proxy_info(""))
 
         env = ControlledEnv()
         env[PROXY_USER] = "john"
@@ -127,5 +126,4 @@ class TestProxySetup(unittest.TestCase):
     @mock.patch("os.environ", ControlledEnv(_IGNORED_KEYS))
     def test_setup_proxy_empty_host(self):
         with mock.patch("urllib2.install_opener"):
-            with self.assertRaises(InvalidConfiguration):
-                setup_proxy("")
+            self.assertFalse(setup_proxy(""))

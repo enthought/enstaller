@@ -70,21 +70,20 @@ def _convert_port_value(s, default_port=80):
         except ValueError:
             raise ValueError("Invalid port value: {0}".format(s))
 
-def get_proxy_info(proxystr=None):
+def get_proxy_info(proxystr=""):
     """
     Get proxy config from string or environment variables.
 
     If a proxy string is passed in, it overrides whatever might be in the
     environment variables.
 
-    Returns dictionary of identified proxy information.
+    Returns dictionary of identified proxy information, or None if proxystr was
+    empty and no config was found fmor os.environ
 
     Raises InvalidConfiguration on any configuration error.
 
     """
-
-    # Only check for env variables if no explicit proxy string was provided.
-    if proxystr is None or len(proxystr) < 1:
+    if proxystr == "":
         # FIXME: We should be supporting http_proxy, HTTP_PROXY variables.
         proxy_info = {
             'host' : os.environ.get('PROXY_HOST', None),
@@ -92,8 +91,8 @@ def get_proxy_info(proxystr=None):
             'user' : os.environ.get('PROXY_USER', None),
             'pass' : os.environ.get('PROXY_PASS', None)
             }
-
-    # Parse the passed proxy string
+        if proxy_info.get("host") is None:
+            return None
     else:
         parts = urlparse.urlparse(proxystr)
         if parts.netloc == "":
@@ -121,10 +120,10 @@ def get_proxy_info(proxystr=None):
             proxy_info['pass'] = getpass.getpass()
 
     if proxy_info["host"] is None or len(proxy_info["host"]) < 1:
-        raise InvalidConfiguration("Invalid proxy configuration '{0}': "
-                                   "proxy string should be of the form "
-                                   "'http://host:port' or 'http://host'". \
-                                   format(proxystr))
+        error_msg = ("Invalid proxy configuration '{0}': "
+                     "proxy string should be of the form "
+                     "'http://host:port' or 'http://host'".format(proxystr))
+        raise InvalidConfiguration(error_msg)
 
     return proxy_info
 
@@ -141,13 +140,11 @@ def setup_proxy(proxystr=''):
     Raises ValueError in the event of any problems.
 
     """
-
-    installed = False
-
     info = get_proxy_info(proxystr)
-
-    if info.get('host') is not None:
+    if info is None:
+        return False
+    elif info.get('host') is not None:
         install_proxy_handlers(info)
-        installed = True
-
-    return installed
+        return True
+    else:
+        return False
