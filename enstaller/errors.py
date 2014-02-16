@@ -3,3 +3,6 @@ class EnpkgException(Exception):
 
 class InvalidConfiguration(EnpkgException):
     pass
+
+class AuthFailedError(EnpkgException):
+    pass

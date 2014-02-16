@@ -12,6 +12,7 @@ from getpass import getpass
 from os.path import isfile, join
 
 from enstaller import __version__
+from enstaller.errors import AuthFailedError
 from utils import PY_VER, abs_expanduser, fill_url
 
 def __import_new_keyring():
@@ -237,9 +238,6 @@ def get_auth():
     else:
         return None, None
 
-
-class AuthFailedError(Exception):
-    pass
 
 
 def web_auth(auth,
