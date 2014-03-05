@@ -28,8 +28,9 @@ from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.config import (HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC,
-    Configuration, authenticate, get_path, input_auth, print_config,
+from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
+    SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
+    configuration_read_search_order,  input_auth, print_config,
     subscription_message, write_default_config)
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
@@ -481,8 +482,13 @@ def get_config_filename(use_sys_config):
     if use_sys_config:                           # --sys-config
         config_filename = SYS_PREFIX_ENSTALLER4RC
     else:
-        config_filename = get_path()
-        if config_filename is None:
+        paths = [os.path.join(d, ENSTALLER4RC_FILENAME) for d in
+                 configuration_read_search_order()]
+        for path in paths:
+            if isfile(path):
+                config_filename = path
+                break
+        else:
             config_filename = HOME_ENSTALLER4RC
 
     return config_filename
