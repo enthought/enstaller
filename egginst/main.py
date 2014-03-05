@@ -8,6 +8,7 @@ are responsibilities of a package manager, e.g. enpkg.  You just give it
 eggs and it installs/uninstalls them.
 """
 import os
+import posixpath
 import sys
 import re
 import json
@@ -21,7 +22,7 @@ import eggmeta
 import scripts
 
 from utils import (on_win, bin_dir_name, rel_site_packages, human_bytes, ensure_dir,
-                   rm_empty_dir, rm_rf, get_executable, makedirs, is_zipinfo_symlink)
+                   rm_empty_dir, rm_rf, get_executable, makedirs, is_zipinfo_symlink, is_zipinfo_dir)
 
 NS_PKG_PAT = re.compile(
     r'\s*__import__\([\'"]pkg_resources[\'"]\)\.declare_namespace'
@@ -240,10 +241,11 @@ class EggInst(object):
         if use_legacy_egg_info_format:
             with progress:
                 for name in self.arcnames:
-                    n += self.z.getinfo(name).file_size
+                    zip_info = self.z.getinfo(name)
+                    n += zip_info.file_size
 
                     if is_in_legacy_egg_info(name, is_custom_egg):
-                        self._write_legacy_egg_info_metadata(name)
+                        self._write_legacy_egg_info_metadata(zip_info)
                     else:
                         self.write_arcname(name)
 
@@ -252,20 +254,24 @@ class EggInst(object):
         else:
             with progress:
                 for name in self.arcnames:
-                    n += self.z.getinfo(name).file_size
+                    zip_info = self.z.getinfo(name)
+                    n += zip_info.file_size
 
                     self.write_arcname(name)
                     if should_copy_in_egg_info(name, is_custom_egg):
-                        self._write_standard_egg_info_metadata(name)
+                        self._write_standard_egg_info_metadata(zip_info)
 
                     progress(step=n)
 
-    def _write_legacy_egg_info_metadata(self, name):
-        name = os.path.normpath(name)
+    def _write_legacy_egg_info_metadata(self, zip_info):
+        if is_zipinfo_dir(zip_info):
+            return
+
+        name = zip_info.filename
         m = R_LEGACY_EGG_INFO.search(name)
         if m:
             legacy_egg_info_dir = m.group(1)
-            from_egg_info = os.path.relpath(name, legacy_egg_info_dir)
+            from_egg_info = posixpath.relpath(name, legacy_egg_info_dir)
 
             dest = join(self.pyloc, setuptools_egg_info_dir(self.path),
                         from_egg_info)
@@ -275,28 +281,26 @@ class EggInst(object):
                     "BUG: Unexpected name for legacy egg info in {0}: {1}". \
                     format(self.fn, name))
 
-    def _write_standard_egg_info_metadata(self, name):
-        name = os.path.normpath(name)
-        from_egg_info = os.path.relpath(name, EGG_INFO)
-        dest = join(self.pyloc, setuptools_egg_info_dir(self.path),
-                    from_egg_info)
+    def _write_standard_egg_info_metadata(self, zip_info):
+        if is_zipinfo_dir(zip_info):
+            return
+
+        name = zip_info.filename
+        from_egg_info = posixpath.relpath(name, EGG_INFO)
+        dest = posixpath.join(self.pyloc, setuptools_egg_info_dir(self.path),
+                from_egg_info)
 
         self._write_egg_info_arcname(name, dest)
 
     def _write_egg_info_arcname(self, name, dest):
         ensure_dir(dest)
+        source = self.z.open(name)
         try:
-            source = self.z.open(name)
-        except KeyError as e:
-            # This path is taken for arcnames which are directories
-            pass
-        else:
-            try:
-                with file(dest, "wb") as target:
-                    shutil.copyfileobj(source, target)
-                    self.files.append(dest)
-            finally:
-                source.close()
+            with file(dest, "wb") as target:
+                shutil.copyfileobj(source, target)
+                self.files.append(dest)
+        finally:
+            source.close()
 
 
     def get_dst(self, arcname):
