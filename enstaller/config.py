@@ -591,8 +591,8 @@ def subscription_message(config, user):
     return message
 
 
-def prepend_url(url):
-    f = open(get_path(), 'r+')
+def prepend_url(filename, url):
+    f = open(filename, 'r+')
     data = f.read()
     pat = re.compile(r'^IndexedRepos\s*=\s*\[\s*$', re.M)
     if not pat.search(data):

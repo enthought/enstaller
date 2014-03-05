@@ -24,7 +24,7 @@ from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
-    input_auth, print_config, subscription_level, web_auth)
+    input_auth, prepend_url, print_config, subscription_level, web_auth)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -695,3 +695,47 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.EPD_auth = FAKE_USER
+
+class TestPrependUrl(unittest.TestCase):
+    def setUp(self):
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            pass
+
+        self.filename = fp.name
+
+    def tearDown(self):
+        os.unlink(self.filename)
+
+    def test_simple(self):
+        r_output = textwrap.dedent("""\
+            IndexedRepos = [
+              'url1',
+              'url2',
+              'url3',
+            ]
+        """)
+
+        content = textwrap.dedent("""\
+            IndexedRepos = [
+              'url2',
+              'url3',
+            ]
+        """)
+        with open(self.filename, "w") as fp:
+            fp.write(content)
+
+        prepend_url(self.filename, "url1")
+        with open(self.filename, "r") as fp:
+            self.assertMultiLineEqual(fp.read(), r_output)
+
+    def test_invalid(self):
+        content = textwrap.dedent("""\
+            #IndexedRepos = [
+            #  'url1',
+            #]
+        """)
+        with open(self.filename, "w") as fp:
+            fp.write(content)
+
+        with self.assertRaises(SystemExit):
+            prepend_url(self.filename, "url1")
