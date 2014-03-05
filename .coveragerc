@@ -1,6 +1,7 @@
 [report]
 omit = enstaller/argparse*
        enstaller/indexed_repo*
+       enstaller/vendor*
        enstaller/verlib*
        egginst/bootstrap.py
        egginst/macho/*
