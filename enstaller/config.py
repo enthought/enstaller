@@ -304,6 +304,11 @@ class Configuration(object):
 
     @property
     def filename(self):
+        """
+        The filename this configuration was created from.
+
+        May be None if the configuration was not created from a file.
+        """
         return self._filename
 
     @property
