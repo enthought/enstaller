@@ -548,29 +548,61 @@ class TestConfigurationParsing(unittest.TestCase):
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
 
-    OUTPUT_TEMPLATE = textwrap.dedent("""\
-        Python version: {pyver}
-        enstaller version: {version}
-        sys.prefix: {sys_prefix}
-        platform: {platform}
-        architecture: {arch}
-        use_webservice: True
-        config file: {{config_file}}
-        settings:
-            prefix = {{prefix}}
-            local = '{{prefix}}/LOCAL-REPO'
-            noapp = False
-            proxy = None
-            IndexedRepos: (not used)
-        No valid auth information in configuration, cannot authenticate.
-        You are not logged in.  To log in, type 'enpkg --userpass'.
-    """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                platform=platform.platform(), arch=platform.architecture()[0])
+    def test_simple_in_memory(self):
+        output_template = textwrap.dedent("""\
+            Python version: {pyver}
+            enstaller version: {version}
+            sys.prefix: {sys_prefix}
+            platform: {platform}
+            architecture: {arch}
+            use_webservice: True
+            settings:
+                prefix = {{prefix}}
+                local = '{{prefix}}/LOCAL-REPO'
+                noapp = False
+                proxy = None
+                IndexedRepos: (not used)
+            No valid auth information in configuration, cannot authenticate.
+            You are not logged in.  To log in, type 'enpkg --userpass'.
+        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                    platform=platform.platform(), arch=platform.architecture()[0])
+
+        config = Configuration()
+        r_output = output_template.format(prefix=config.prefix)
+
+        with mock_print() as m:
+            print_config(config, None, config.prefix)
+            self.assertMultiLineEqual(m.value, r_output)
+
 
     def test_simple(self):
-        config = Configuration()
-        r_output = self.OUTPUT_TEMPLATE.format(prefix=config.prefix,
-                                               config_file=get_path())
+        output_template = textwrap.dedent("""\
+            Python version: {pyver}
+            enstaller version: {version}
+            sys.prefix: {sys_prefix}
+            platform: {platform}
+            architecture: {arch}
+            use_webservice: True
+            config file: {{config_file}}
+            settings:
+                prefix = {{prefix}}
+                local = '{{prefix}}/LOCAL-REPO'
+                noapp = False
+                proxy = None
+                IndexedRepos: (not used)
+            No valid auth information in configuration, cannot authenticate.
+            You are not logged in.  To log in, type 'enpkg --userpass'.
+        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                    platform=platform.platform(), arch=platform.architecture()[0])
+
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fp.write("")
+            config = Configuration.from_file(fp.name)
+        finally:
+            os.unlink(fp.name)
+
+        r_output = output_template.format(prefix=config.prefix, config_file=fp.name)
 
         with mock_print() as m:
             print_config(config, None, config.prefix)
