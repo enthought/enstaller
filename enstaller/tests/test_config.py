@@ -558,7 +558,7 @@ class TestConfigurationPrint(unittest.TestCase):
             use_webservice: True
             settings:
                 prefix = {{prefix}}
-                local = '{{prefix}}/LOCAL-REPO'
+                local = {{local}}
                 noapp = False
                 proxy = None
                 IndexedRepos: (not used)
@@ -568,7 +568,9 @@ class TestConfigurationPrint(unittest.TestCase):
                     platform=platform.platform(), arch=platform.architecture()[0])
 
         config = Configuration()
-        r_output = output_template.format(prefix=config.prefix)
+        prefix = config.prefix
+        local = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix, local=local)
 
         with mock_print() as m:
             print_config(config, None, config.prefix)
@@ -586,7 +588,7 @@ class TestConfigurationPrint(unittest.TestCase):
             config file: {{config_file}}
             settings:
                 prefix = {{prefix}}
-                local = '{{prefix}}/LOCAL-REPO'
+                local = {{local}}
                 noapp = False
                 proxy = None
                 IndexedRepos: (not used)
@@ -602,7 +604,9 @@ class TestConfigurationPrint(unittest.TestCase):
         finally:
             os.unlink(fp.name)
 
-        r_output = output_template.format(prefix=config.prefix, config_file=fp.name)
+        prefix = config.prefix
+        local = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix, config_file=fp.name, local=local)
 
         with mock_print() as m:
             print_config(config, None, config.prefix)
