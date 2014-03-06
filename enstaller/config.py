@@ -191,6 +191,20 @@ def write_default_config(filename, use_keyring=None):
         config.write(filename)
 
 
+def _is_using_epd_username(filename_or_fp):
+    """
+    Returns True if the given configuration file uses EPD_username.
+    """
+    def _has_epd_auth(s):
+        parser = PythonConfigurationParser()
+        data = parser.parse(s)
+        return "EPD_username" in data and not "EPD_auth" in data
+
+    if isinstance(filename_or_fp, basestring):
+        return _has_epd_auth(filename_or_fp)
+    else:
+        return _has_epd_auth(filename_or_fp.read())
+
 class Configuration(object):
     @classmethod
     def _get_default_config(cls):

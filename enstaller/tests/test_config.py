@@ -25,7 +25,8 @@ from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
-    input_auth, prepend_url, print_config, subscription_level, web_auth)
+    input_auth, prepend_url, print_config, subscription_level, web_auth,
+    _is_using_epd_username)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -164,6 +165,21 @@ class TestWriteConfig(unittest.TestCase):
             password = config.get_auth()[1]
             self.assertEqual(password, FAKE_PASSWORD)
 
+
+class TestConfigKeyringConversion(unittest.TestCase):
+    def test_use_epd_username(self):
+        data = "EPD_auth = '{0}'".format(FAKE_CREDS)
+
+        self.assertFalse(_is_using_epd_username(StringIO(data)))
+
+        data = "#EPD_auth = '{0}'".format(FAKE_CREDS)
+        self.assertFalse(_is_using_epd_username(StringIO(data)))
+
+        data = textwrap.dedent("""\
+            #EPD_auth = '{0}'
+            EPD_username = '{1}'
+        """).format(FAKE_CREDS, FAKE_USER)
+        self.assertTrue(_is_using_epd_username(StringIO(data)))
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 
