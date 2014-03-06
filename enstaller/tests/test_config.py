@@ -33,6 +33,7 @@ from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
                      make_keyring_unavailable_context, mock_print,
+                     fake_keyring_context, fake_keyring
                      )
 
 def compute_creds(username, password):
@@ -369,6 +370,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             self.assertEqual(fp.read(), config_data)
 
 class TestAuthenticate(unittest.TestCase):
+    @fake_keyring
     def test_use_webservice_valid_user(self):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
@@ -377,6 +379,7 @@ class TestAuthenticate(unittest.TestCase):
             authenticate(config)
             self.assertTrue(mocked_auth.called)
 
+    @fake_keyring
     def test_use_webservice_invalid_user(self):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
@@ -387,6 +390,7 @@ class TestAuthenticate(unittest.TestCase):
             with self.assertRaises(AuthFailedError):
                 authenticate(config)
 
+    @fake_keyring
     def test_use_remote(self):
         config = Configuration()
         config.use_webservice = False
@@ -396,6 +400,7 @@ class TestAuthenticate(unittest.TestCase):
         user = authenticate(config, remote)
         self.assertEqual(user, {"is_authenticated": True})
 
+    @fake_keyring
     def test_use_remote_invalid(self):
         config = Configuration()
         config.use_webservice = False

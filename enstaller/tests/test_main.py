@@ -37,7 +37,7 @@ from enstaller.store.tests.common import MetadataOnlyStore
 
 from .common import MetaOnlyEggCollection, dummy_enpkg_entry_factory, \
     dummy_installed_egg_factory, mock_print, \
-    is_not_authenticated, is_authenticated, \
+    fake_keyring, is_not_authenticated, is_authenticated, \
     PY_VER
 
 class TestEnstallerUpdate(unittest.TestCase):
@@ -573,6 +573,7 @@ class FakeOptions(object):
         self.forceall = False
         self.no_deps = False
 
+@fake_keyring
 class TestInstallReq(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()

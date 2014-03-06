@@ -14,6 +14,7 @@ import enstaller.config
 
 from enstaller.config import Configuration, write_default_config
 from enstaller.errors import AuthFailedError, InvalidConfiguration
+from enstaller.tests.common import fake_keyring
 
 
 basic_user = dict(first_name="Jane", last_name="Doe", is_authenticated=True,
@@ -24,6 +25,7 @@ anon_user = dict(is_authenticated=False)
 old_auth_user = {}
 
 
+@fake_keyring
 class CheckedChangeAuthTestCase(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
