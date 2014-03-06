@@ -329,13 +329,22 @@ class Configuration(object):
     def get_auth(self):
         return (self._username, self._password)
 
+    def _ensure_keyring_is_set(self):
+        """
+        Store current password in keyring, but only if not set already.
+
+        It is an error to call this if username or password are not set.
+        """
+        assert self.is_auth_configured, "username/password must be set !"
+        if keyring.get_password(KEYRING_SERVICE_NAME, self._username) is None:
+            self.set_auth(self._username, self._password)
+
     def write(self, filename):
         username, password = self.get_auth()
         if username and password:
             if self.use_keyring:
                 authline = 'EPD_username = %r' % self.EPD_username
-                if keyring.get_password(KEYRING_SERVICE_NAME, username) is None:
-                    self.set_auth(username, password)
+                self._ensure_keyring_is_set()
             else:
                 authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
