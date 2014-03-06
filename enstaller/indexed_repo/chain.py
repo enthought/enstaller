@@ -7,6 +7,7 @@ from os.path import basename, isfile, isdir, join
 
 from egginst.utils import human_bytes
 
+from enstaller.config import HOME_ENSTALLER4RC, Configuration
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 
 from enstaller.utils import comparable_version, md5_file, uri_to_path
@@ -75,6 +76,7 @@ class Chain(object):
 
 
     def connect(self, repo):
+        config = Configuration.from_file(HOME_ENSTALLER4RC)
         if repo in self.repo_objs:
             return self.repo_objs[repo]
 
@@ -84,7 +86,7 @@ class Chain(object):
             r.connect()
 
         elif repo.startswith(('http://', 'https://')):
-            r = RemoteHTTPIndexedStore(repo)
+            r = RemoteHTTPIndexedStore(repo, config.local)
             if repo.startswith('https://'):
                 r.connect(userpass=('EPDUser', 'Epd789'))
             else:
