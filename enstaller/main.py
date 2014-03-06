@@ -28,8 +28,9 @@ from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.config import (HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC,
-    Configuration, authenticate, get_path, input_auth, print_config,
+from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
+    SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
+    configuration_read_search_order,  input_auth, prepend_url, print_config,
     subscription_message, write_default_config)
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
@@ -276,12 +277,12 @@ def epd_install_confirm():
     yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
     return yn.lower() in set(['y', 'yes'])
 
-def add_url(config, url, verbose):
+def add_url(filename, config, url, verbose):
     url = fill_url(url)
     if url in config.IndexedRepos:
         print("Already configured:", url)
         return
-    prepend_url(url)
+    prepend_url(filename, url)
 
 def pretty_print_packages(info_list):
     packages = {}
@@ -481,8 +482,13 @@ def get_config_filename(use_sys_config):
     if use_sys_config:                           # --sys-config
         config_filename = SYS_PREFIX_ENSTALLER4RC
     else:
-        config_filename = get_path()
-        if config_filename is None:
+        paths = [os.path.join(d, ENSTALLER4RC_FILENAME) for d in
+                 configuration_read_search_order()]
+        for path in paths:
+            if isfile(path):
+                config_filename = path
+                break
+        else:
             config_filename = HOME_ENSTALLER4RC
 
     return config_filename
@@ -683,6 +689,10 @@ def main(argv=None):
         print_config(config, enpkg.remote, prefixes[0])
         return
 
+    if args.add_url:                              # --add-url
+        add_url(config_filename, enpkg.config, args.add_url, args.verbose)
+        return
+
     if args.userpass:                             # --userpass
         n_trials = 3
         for i in range(n_trials):
@@ -733,10 +743,6 @@ def main(argv=None):
     if args.imports:                              # --imports
         assert not args.hook
         imports_option(enpkg, pat)
-        return
-
-    if args.add_url:                              # --add-url
-        add_url(enpkg.config, args.add_url, args.verbose)
         return
 
     if args.revert:                               # --revert

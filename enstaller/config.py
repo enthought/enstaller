@@ -265,7 +265,9 @@ class Configuration(object):
 
         if isinstance(filename, basestring):
             with open(filename, "r") as fp:
-                return _create(fp)
+                ret = _create(fp)
+                ret._filename = filename
+                return ret
         else:
             return _create(filename)
 
@@ -297,6 +299,17 @@ class Configuration(object):
         else:
             raise InvalidConfiguration("Invalid value for use_keyring: {0}".
                                        format(use_keyring))
+
+        self._filename = None
+
+    @property
+    def filename(self):
+        """
+        The filename this configuration was created from.
+
+        May be None if the configuration was not created from a file.
+        """
+        return self._filename
 
     @property
     def use_keyring(self):
@@ -583,8 +596,8 @@ def subscription_message(config, user):
     return message
 
 
-def prepend_url(url):
-    f = open(get_path(), 'r+')
+def prepend_url(filename, url):
+    f = open(filename, 'r+')
     data = f.read()
     pat = re.compile(r'^IndexedRepos\s*=\s*\[\s*$', re.M)
     if not pat.search(data):
@@ -647,7 +660,8 @@ def print_config(config, remote, prefix):
     print("platform:", platform.platform())
     print("architecture:", platform.architecture()[0])
     print("use_webservice:", config.use_webservice)
-    print("config file:", get_path())
+    if config.filename is not None:
+        print("config file:", config.filename)
     print("settings:")
     print("    prefix = %s" % prefix)
     print("    %s = %s" % ("local", config.local))

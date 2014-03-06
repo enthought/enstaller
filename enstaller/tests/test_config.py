@@ -24,7 +24,7 @@ from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
-    input_auth, print_config, subscription_level, web_auth)
+    input_auth, prepend_url, print_config, subscription_level, web_auth)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -548,32 +548,65 @@ class TestConfigurationParsing(unittest.TestCase):
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
 
-    OUTPUT_TEMPLATE = textwrap.dedent("""\
-        Python version: {pyver}
-        enstaller version: {version}
-        sys.prefix: {sys_prefix}
-        platform: {platform}
-        architecture: {arch}
-        use_webservice: True
-        config file: {{config_file}}
-        settings:
-            prefix = {{prefix}}
-            local = {{local}}
-            noapp = False
-            proxy = None
-            IndexedRepos: (not used)
-        No valid auth information in configuration, cannot authenticate.
-        You are not logged in.  To log in, type 'enpkg --userpass'.
-    """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                platform=platform.platform(), arch=platform.architecture()[0])
+    def test_simple_in_memory(self):
+        output_template = textwrap.dedent("""\
+            Python version: {pyver}
+            enstaller version: {version}
+            sys.prefix: {sys_prefix}
+            platform: {platform}
+            architecture: {arch}
+            use_webservice: True
+            settings:
+                prefix = {{prefix}}
+                local = {{local}}
+                noapp = False
+                proxy = None
+                IndexedRepos: (not used)
+            No valid auth information in configuration, cannot authenticate.
+            You are not logged in.  To log in, type 'enpkg --userpass'.
+        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                    platform=platform.platform(), arch=platform.architecture()[0])
 
-    def test_simple(self):
         config = Configuration()
         prefix = config.prefix
         local = os.path.join(prefix, "LOCAL-REPO")
-        r_output = self.OUTPUT_TEMPLATE.format(prefix=prefix,
-                                               config_file=get_path(),
-                                               local=local)
+        r_output = output_template.format(prefix=prefix, local=local)
+
+        with mock_print() as m:
+            print_config(config, None, config.prefix)
+            self.assertMultiLineEqual(m.value, r_output)
+
+
+    def test_simple(self):
+        output_template = textwrap.dedent("""\
+            Python version: {pyver}
+            enstaller version: {version}
+            sys.prefix: {sys_prefix}
+            platform: {platform}
+            architecture: {arch}
+            use_webservice: True
+            config file: {{config_file}}
+            settings:
+                prefix = {{prefix}}
+                local = {{local}}
+                noapp = False
+                proxy = None
+                IndexedRepos: (not used)
+            No valid auth information in configuration, cannot authenticate.
+            You are not logged in.  To log in, type 'enpkg --userpass'.
+        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                    platform=platform.platform(), arch=platform.architecture()[0])
+
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                fp.write("")
+            config = Configuration.from_file(fp.name)
+        finally:
+            os.unlink(fp.name)
+
+        prefix = config.prefix
+        local = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix, config_file=fp.name, local=local)
 
         with mock_print() as m:
             print_config(config, None, config.prefix)
@@ -666,3 +699,47 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.EPD_auth = FAKE_USER
+
+class TestPrependUrl(unittest.TestCase):
+    def setUp(self):
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            pass
+
+        self.filename = fp.name
+
+    def tearDown(self):
+        os.unlink(self.filename)
+
+    def test_simple(self):
+        r_output = textwrap.dedent("""\
+            IndexedRepos = [
+              'url1',
+              'url2',
+              'url3',
+            ]
+        """)
+
+        content = textwrap.dedent("""\
+            IndexedRepos = [
+              'url2',
+              'url3',
+            ]
+        """)
+        with open(self.filename, "w") as fp:
+            fp.write(content)
+
+        prepend_url(self.filename, "url1")
+        with open(self.filename, "r") as fp:
+            self.assertMultiLineEqual(fp.read(), r_output)
+
+    def test_invalid(self):
+        content = textwrap.dedent("""\
+            #IndexedRepos = [
+            #  'url1',
+            #]
+        """)
+        with open(self.filename, "w") as fp:
+            fp.write(content)
+
+        with self.assertRaises(SystemExit):
+            prepend_url(self.filename, "url1")
