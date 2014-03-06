@@ -3,6 +3,7 @@ import contextlib
 import json
 import os.path
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -141,6 +142,27 @@ class TestWriteConfig(unittest.TestCase):
                 self.assertTrue(mocked_keyring.set_password.call_with(r_args))
                 r_args = ("Enthought.com", FAKE_USER)
                 self.assertTrue(mocked_keyring.get_password.call_with(r_args))
+
+    def test_no_keyring_to_keyring(self):
+        """
+        Ensure we properly set up keyring when we convert from EPD_auth (no
+        keyring) to EPD_username (keyring).
+        """
+        r_output = re.compile("^EPD_username = '{0}'".format(FAKE_USER), flags=re.MULTILINE)
+
+        data = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
+        config = Configuration.from_file(data)
+
+        with fake_keyring_context():
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                config.write(fp.name)
+
+            with open(fp.name) as fp:
+                self.assertRegexpMatches(fp.read(), r_output)
+
+            config = Configuration.from_file(fp.name)
+            password = config.get_auth()[1]
+            self.assertEqual(password, FAKE_PASSWORD)
 
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'

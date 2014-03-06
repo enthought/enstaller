@@ -320,6 +320,8 @@ class Configuration(object):
         if username and password:
             if self.use_keyring:
                 authline = 'EPD_username = %r' % self.EPD_username
+                if keyring.get_password(KEYRING_SERVICE_NAME, username) is None:
+                    self.set_auth(username, password)
             else:
                 authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
