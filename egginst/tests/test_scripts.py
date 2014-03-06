@@ -92,8 +92,12 @@ if __name__ == '__main__':
         load_entry_point('enstaller==4.6.3.dev1', 'console_scripts', 'enpkg')()
     )
 """
+        if sys.platform == "win32":
+            executable = '"' + sys.executable + '"'
+        else:
+            executable = sys.executable
         r_egginst_script = """\
-#!{prefix}
+#!{executable}
 # EASY-INSTALL-ENTRY-SCRIPT: 'enstaller==4.6.3.dev1','console_scripts','enpkg'
 __requires__ = 'enstaller==4.6.3.dev1'
 import sys
@@ -103,7 +107,7 @@ if __name__ == '__main__':
     sys.exit(
         load_entry_point('enstaller==4.6.3.dev1', 'console_scripts', 'enpkg')()
     )
-""".format(prefix=sys.executable)
+""".format(executable=executable)
 
         with mkdtemp() as d:
             path = os.path.join(d, "script")
@@ -113,13 +117,20 @@ if __name__ == '__main__':
             fix_script(path)
 
             with open(path, "rt") as fp:
-                self.assertEqual(fp.read(), r_egginst_script)
+                self.assertMultiLineEqual(fp.read(), r_egginst_script)
+
+def escape_win32_path(p):
+    return p.replace("\\", "\\\\")
 
 class TestCreateScript(unittest.TestCase):
     @mock.patch("egginst.utils.on_win", False)
     def test_simple(self):
+        if sys.platform == "win32":
+            q = "\""
+        else:
+            q = ""
         r_cli_entry_point = """\
-#!{executable}
+#!{q}{executable}{q}
 # This script was created by egginst when installing:
 #
 #   dummy.egg
@@ -129,7 +140,7 @@ if __name__ == '__main__':
     from dummy import main_cli
 
     sys.exit(main_cli())
-""".format(executable=sys.executable)
+""".format(executable=sys.executable, q=q)
 
         entry_points = """\
 [console_scripts]
@@ -146,7 +157,10 @@ dummy-gui = dummy:main_gui
             egginst = EggInst("dummy.egg", d)
             create(egginst, config)
 
-            entry_point = os.path.join(egginst.bin_dir, "dummy")
+            if sys.platform == "win32":
+                entry_point = os.path.join(egginst.bin_dir, "dummy-script.py")
+            else:
+                entry_point = os.path.join(egginst.bin_dir, "dummy")
             self.assertTrue(os.path.exists(entry_point))
 
             with open(entry_point, "rt") as fp:
@@ -239,16 +253,17 @@ class TestProxy(unittest.TestCase):
 import sys
 import subprocess
 
-src = '{prefix}/EGG-INFO/dummy_with_proxy/usr/swig.exe'
+src = '{src}'
 
 sys.exit(subprocess.call([src] + sys.argv[1:]))
 """
 
         with mkdtemp() as prefix:
             with mock.patch("sys.executable", os.path.join(prefix, "python.exe")):
+                proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
                 r_python_proxy_data = r_python_proxy_data_template.format(
                         executable=os.path.join(prefix, "python.exe"),
-                        prefix=prefix)
+                        src=escape_win32_path(proxy_path))
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:

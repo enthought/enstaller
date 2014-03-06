@@ -668,18 +668,18 @@ class TestConfiguration(unittest.TestCase):
                 config.reset_auth()
 
     def test_set_prefix(self):
-        homedir = os.path.expanduser("~")
+        homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.prefix = "~/.env"
+        config.prefix = os.path.normpath("~/.env")
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
     def test_set_local(self):
-        homedir = os.path.expanduser("~")
+        homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.local = "~/.env/LOCAL-REPO"
+        config.local = os.path.normpath("~/.env/LOCAL-REPO")
 
         self.assertEqual(config.local, os.path.join(homedir, ".env", "LOCAL-REPO"))
 

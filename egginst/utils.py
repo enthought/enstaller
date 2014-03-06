@@ -2,6 +2,7 @@ import errno
 import sys
 import os
 import shutil
+import stat
 import tempfile
 import zipfile
 
@@ -117,6 +118,10 @@ def ensure_dir(path):
 def is_zipinfo_symlink(zip_info):
     """Return True if the given zip_info instance refers to a symbolic link."""
     return zip_info.external_attr == ZIP_SOFTLINK_ATTRIBUTE_MAGIC
+
+def is_zipinfo_dir(zip_info):
+    """Returns True if the given zip_info refers to a directory."""
+    return stat.S_ISDIR(zip_info.external_attr >> 16)
 
 def zip_write_symlink(fp, link_name, source):
     """Add to the zipfile the given link_name as a softlink to source

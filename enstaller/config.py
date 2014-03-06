@@ -664,7 +664,7 @@ def print_config(config, remote, prefix):
         print("config file:", config.filename)
     print("settings:")
     print("    prefix = %s" % prefix)
-    print("    %s = %r" % ("local", config.local))
+    print("    %s = %s" % ("local", config.local))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))
     print("    IndexedRepos:", '(not used)' if config.use_webservice else '')

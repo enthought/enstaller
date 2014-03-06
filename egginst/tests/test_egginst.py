@@ -135,15 +135,21 @@ class TestEggInstInstall(unittest.TestCase):
         """
         Test we install console entry points correctly.
         """
+        py_script = os.path.join(self.site_packages, "dummy.py")
+        if sys.platform == "win32":
+            wrapper_script = os.path.join(self.bindir, "dummy.exe")
+        else:
+            wrapper_script = os.path.join(self.bindir, "dummy")
+
         egginst = EggInst(DUMMY_EGG_WITH_ENTRY_POINTS, self.base_dir)
 
         egginst.install()
-        self.assertTrue(os.path.exists(os.path.join(self.site_packages, "dummy.py")))
-        self.assertTrue(os.path.exists(os.path.join(self.bindir, "dummy")))
+        self.assertTrue(os.path.exists(py_script))
+        self.assertTrue(os.path.exists(wrapper_script))
 
         egginst.remove()
-        self.assertFalse(os.path.exists(os.path.join(self.site_packages, "dummy.py")))
-        self.assertFalse(os.path.exists(os.path.join(self.bindir, "dummy")))
+        self.assertFalse(os.path.exists(py_script))
+        self.assertFalse(os.path.exists(wrapper_script))
 
     @slow
     def test_appinst(self):

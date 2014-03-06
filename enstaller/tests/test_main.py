@@ -116,7 +116,7 @@ class TestMisc(unittest.TestCase):
     @mock.patch("sys.platform", "linux2")
     def test_get_package_path_unix(self):
         prefix = "/foo"
-        r_site_packages = os.path.join(prefix, "lib", "python" + PY_VER, "site-packages")
+        r_site_packages = posixpath.join(prefix, "lib", "python" + PY_VER, "site-packages")
 
         self.assertEqual(get_package_path(prefix), r_site_packages)
 

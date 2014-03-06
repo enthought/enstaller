@@ -1,8 +1,8 @@
 coverage
 encore
--e git+https://github.com/enthought/machotools#egg=machotools
+machotools>=0.0.2
 -e git+https://github.com/enthought/appinst#egg=appinst
--e git+https://github.com/enthought/okonomiyaki#egg=okonomiyaki
+okonomiyaki>=0.0.3
 mock
 nose
 randomize

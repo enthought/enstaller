@@ -443,7 +443,7 @@ def get_package_path(prefix):
         return ntpath.join(prefix, 'Lib', 'site-packages').lower()
     else:
         postfix = 'lib/python{0}.{1}/site-packages'.format(*sys.version_info)
-        return join(prefix, postfix)
+        return posixpath.join(prefix, postfix)
 
 
 def check_prefixes(prefixes):

@@ -1,6 +1,11 @@
 import os
 import shutil
-import unittest
+import sys
+
+if sys.version_info[:2] < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 import os.path as op
 
@@ -84,6 +89,7 @@ class TestObjectCode(unittest.TestCase):
 
                 self.assertTrue(installed_pyext_dependency in deps)
 
+    @unittest.skipIf(sys.platform=="win32", "This feature is not used on windows.")
     def test_find_lib_with_targets(self):
         """
         Test we handle the targets.dat hack correctly in find_lib.
