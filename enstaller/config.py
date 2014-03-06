@@ -17,6 +17,7 @@ from getpass import getpass
 from os.path import isfile, join
 
 from enstaller.vendor import keyring
+from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
 from enstaller.errors import (
@@ -26,7 +27,6 @@ from .utils import PY_VER, abs_expanduser, fill_url
 
 
 def _setup_keyring():
-    from enstaller.vendor.keyring.backends.file import PlaintextKeyring
     backend = PlaintextKeyring()
 
     try:
@@ -43,6 +43,7 @@ def _setup_keyring():
         pass
 
     keyring.set_backend(backend)
+
 
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
