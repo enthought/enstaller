@@ -862,7 +862,8 @@ def main_noexc(argv=None):
         enstaller_debug = False
 
     try:
-        return main(argv)
+        main(argv)
+        sys.exit(0)
     except Exception as e:
         msg = """\
 %s: Error: %s crashed (uncaught exception %s: %s).
