@@ -45,6 +45,10 @@ def _setup_keyring():
     keyring.set_backend(backend)
 
 
+def _keyring_backend_name():
+    return str(type(keyring.get_keyring()))
+
+
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
 
@@ -693,6 +697,7 @@ def print_config(config, remote, prefix):
     print("use_webservice:", config.use_webservice)
     if config.filename is not None:
         print("config file:", config.filename)
+    print("keyring backend: %s" % (_keyring_backend_name(),))
     print("settings:")
     print("    prefix = %s" % prefix)
     print("    %s = %s" % ("local", config.local))

@@ -26,7 +26,7 @@ from enstaller import __version__
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
     input_auth, prepend_url, print_config, subscription_level, web_auth,
-    _is_using_epd_username, convert_auth_if_required)
+    _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -620,6 +620,7 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: True
+            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 local = {{local}}
@@ -629,7 +630,8 @@ class TestConfigurationPrint(unittest.TestCase):
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0])
+                    platform=platform.platform(), arch=platform.architecture()[0],
+                    keyring_backend=_keyring_backend_name())
 
         config = Configuration()
         prefix = config.prefix
@@ -650,6 +652,7 @@ class TestConfigurationPrint(unittest.TestCase):
             architecture: {arch}
             use_webservice: True
             config file: {{config_file}}
+            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 local = {{local}}
@@ -659,7 +662,8 @@ class TestConfigurationPrint(unittest.TestCase):
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0])
+                    platform=platform.platform(), arch=platform.architecture()[0],
+                    keyring_backend=_keyring_backend_name())
 
         try:
             with tempfile.NamedTemporaryFile(delete=False) as fp:
