@@ -26,7 +26,7 @@ from enstaller import __version__
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
     input_auth, prepend_url, print_config, subscription_level, web_auth,
-    _is_using_epd_username)
+    _is_using_epd_username, convert_auth_if_required)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -180,6 +180,27 @@ class TestConfigKeyringConversion(unittest.TestCase):
             EPD_username = '{1}'
         """).format(FAKE_CREDS, FAKE_USER)
         self.assertTrue(_is_using_epd_username(StringIO(data)))
+
+    @fake_keyring
+    def test_conversion(self):
+        r_content = re.compile("^EPD_username = '{0}'".format(FAKE_USER),
+                               flags=re.MULTILINE)
+        old_config = "EPD_auth = '{0}'".format(FAKE_CREDS)
+
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fp.write(old_config)
+            filename = fp.name
+
+        self.assertTrue(convert_auth_if_required(filename))
+        with open(filename) as fp:
+            config_content = fp.read()
+            self.assertRegexpMatches(config_content, r_content)
+
+        # Ensure keyring has been set up as well
+        config = Configuration.from_file(filename)
+        self.assertTrue(config.is_auth_configured)
+        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 

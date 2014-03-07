@@ -201,9 +201,32 @@ def _is_using_epd_username(filename_or_fp):
         return "EPD_username" in data and not "EPD_auth" in data
 
     if isinstance(filename_or_fp, basestring):
-        return _has_epd_auth(filename_or_fp)
+        with open(filename_or_fp) as fp:
+            return _has_epd_auth(fp.read())
     else:
         return _has_epd_auth(filename_or_fp.read())
+
+
+def convert_auth_if_required(filename):
+    """
+    This function will modify the given file authentication information if
+    required.
+
+    Authentication modifications are required if the original content is using
+    EPD_auth, and keyring is used.
+
+    Returns True if the file has been modified, False otherwise.
+    """
+    did_convert = False
+    if not _is_using_epd_username(filename):
+        config = Configuration.from_file(filename)
+        if config.use_keyring:
+            config._ensure_keyring_is_set()
+            config._change_auth(filename)
+            did_convert = True
+
+    return did_convert
+
 
 def _get_password(username):
     return keyring.get_password(KEYRING_SERVICE_NAME, username)
