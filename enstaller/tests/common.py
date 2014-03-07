@@ -88,6 +88,14 @@ def fail_authenticate(f):
     config = mock.patch("enstaller.config.authenticate", m)
     return main(config(f))
 
+def succeed_authenticate(f):
+    fake_user = {"first_name": "John", "last_name": "Doe",
+                 "has_subscription": True}
+    m = mock.Mock(return_value=fake_user)
+    main = mock.patch("enstaller.main.authenticate", m)
+    config = mock.patch("enstaller.config.authenticate", m)
+    return main(config(f))
+
 # Context managers to force certain configuration
 @contextlib.contextmanager
 def make_keyring_unavailable_context():

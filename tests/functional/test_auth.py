@@ -7,19 +7,26 @@ import tempfile
 import textwrap
 
 if sys.version_info[:2] < (2, 7):
-    import unittest2 as unittest
+    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
+    # context manager does not contain the actual exception object ?
+    def exception_code(ctx):
+        return ctx.exception
 else:
     import unittest
+    def exception_code(ctx):
+        return ctx.exception.code
 
 import mock
 
 from enstaller.main import main_noexc
-from enstaller.config import _encode_auth
+from enstaller.config import _encode_auth, Configuration
 
 from enstaller.tests.common import (
-    mock_print, fail_authenticate, mock_input_auth)
+    fake_keyring, mock_print, fail_authenticate, mock_input_auth,
+    succeed_authenticate)
 
-from .common import no_initial_configuration_context, without_any_configuration
+from .common import (
+    mock_enpkg_class, use_given_config_context, without_any_configuration)
 
 FAKE_USER = "nono"
 FAKE_PASSWORD = "le petit robot"
@@ -37,7 +44,7 @@ class TestAuth(unittest.TestCase):
         """
         Ensure we ask for authentication if no .enstaller4rc is found.
         """
-        with no_initial_configuration_context(self.config):
+        with use_given_config_context(self.config):
             with mock_print() as m:
                 with self.assertRaises(SystemExit):
                     main_noexc([])
@@ -51,7 +58,7 @@ class TestAuth(unittest.TestCase):
         Ensure we don't crash when empty information is input in --userpass
         prompt (no .enstaller4rc found).
         """
-        with no_initial_configuration_context(self.config):
+        with use_given_config_context(self.config):
             with mock.patch("__builtin__.raw_input", return_value="") as m:
                 with self.assertRaises(SystemExit):
                     main_noexc(["--userpass"])
@@ -66,7 +73,7 @@ class TestAuth(unittest.TestCase):
         r_output = ("Could not authenticate. Please check your credentials "
                     "and try again.\nNo modification was written.\n")
 
-        with no_initial_configuration_context(self.config):
+        with use_given_config_context(self.config):
             with mock_print() as m:
                 with mock_input_auth("nono", "robot"):
                     with self.assertRaises(SystemExit):
@@ -88,8 +95,30 @@ class TestAuth(unittest.TestCase):
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         with mock_print() as m:
-            with no_initial_configuration_context(self.config):
+            with use_given_config_context(self.config):
                 with self.assertRaises(SystemExit):
                     main_noexc(["nono"])
 
         self.assertMultiLineEqual(m.value, r_output)
+
+    @succeed_authenticate
+    @mock_enpkg_class
+    @fake_keyring
+    def test_no_keyring_to_keyring_conversion(self):
+        """
+        Ensure the config file is automatically converted to use keyring.
+        """
+        with open(self.config, "w") as fp:
+            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
+
+        with use_given_config_context(self.config):
+            with self.assertRaises(SystemExit) as e:
+                main_noexc(["dummy_requirement"])
+            self.assertEqual(exception_code(e), 0)
+
+        config = Configuration.from_file(self.config)
+        self.assertTrue(config.is_auth_configured)
+        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+
+        with open(self.config) as fp:
+            self.assertMultiLineEqual(fp.read(), "EPD_username = '{0}'".format(FAKE_USER))
