@@ -205,6 +205,12 @@ def _is_using_epd_username(filename_or_fp):
     else:
         return _has_epd_auth(filename_or_fp.read())
 
+def _get_password(username):
+    return keyring.get_password(KEYRING_SERVICE_NAME, username)
+
+def _set_password(username, password):
+    return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
+
 class Configuration(object):
     @classmethod
     def _get_default_config(cls):
@@ -246,8 +252,7 @@ class Configuration(object):
                     if keyring is None:
                         ret._password = None
                     else:
-                        ret._password = \
-                            keyring.get_password(KEYRING_SERVICE_NAME, v)
+                        ret._password = _get_password(v)
                 else:
                     warnings.warn("Unsupported configuration setting {0}, "
                                   "ignored".format(k))
@@ -315,13 +320,13 @@ class Configuration(object):
             self._password = password
 
             if self.use_keyring:
-                keyring.set_password(KEYRING_SERVICE_NAME, username, password)
+                _set_password(self._username, self._password)
 
     def reset_auth(self):
         if self.use_keyring:
             if self._username is None:
                 raise ValueError("Cannot reset auth if not set up.")
-            keyring.set_password(KEYRING_SERVICE_NAME, self.EPD_username, "")
+            _set_password(self.EPD_username, "")
 
         self._username = None
         self._password = None
@@ -331,13 +336,15 @@ class Configuration(object):
 
     def _ensure_keyring_is_set(self):
         """
-        Store current password in keyring, but only if not set already.
+        Store current password in keyring, but only if not set already, or if
+        the password has changed.
 
         It is an error to call this if username or password are not set.
         """
         assert self.is_auth_configured, "username/password must be set !"
-        if keyring.get_password(KEYRING_SERVICE_NAME, self._username) is None:
-            self.set_auth(self._username, self._password)
+        if _get_password(self._username) is None \
+           or _get_password(self._username) != self._password:
+            _set_password(self._username, self._password)
 
     def write(self, filename):
         username, password = self.get_auth()
