@@ -103,6 +103,7 @@ setup(
         'enstaller/vendor/keyring',
         'enstaller/vendor/keyring/backends',
         'enstaller/vendor/keyring/util',
+        'enstaller/vendor/win32ctypes',
     ],
     entry_points = {
         "console_scripts": [
