@@ -9,8 +9,8 @@ from ..errors import PasswordDeleteError, ExceptionRaisedContext
 from . import file
 
 try:
-    import pywintypes
-    import win32cred
+    from enstaller.vendor.win32ctypes import pywintypes
+    from enstaller.vendor.win32ctypes import win32cred
 except ImportError:
     pass
 
