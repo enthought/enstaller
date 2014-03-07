@@ -8,14 +8,8 @@ import textwrap
 
 if sys.version_info[:2] < (2, 7):
     import unittest2 as unittest
-    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
-    # context manager does not contain the actual exception object ?
-    def exception_code(ctx):
-        return ctx.exception
 else:
     import unittest
-    def exception_code(ctx):
-        return ctx.exception.code
 
 import mock
 
@@ -115,7 +109,7 @@ class TestAuth(unittest.TestCase):
         with use_given_config_context(self.config):
             with self.assertRaises(SystemExit) as e:
                 main_noexc(["dummy_requirement"])
-            self.assertEqual(exception_code(e), 0)
+                self.assertEqual(e.exception.code, 0)
 
         config = Configuration.from_file(self.config)
         self.assertTrue(config.is_auth_configured)
