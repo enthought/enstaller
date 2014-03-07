@@ -12,3 +12,4 @@ vendor:
 	rm -rf *.egg-info
 
 	rm -rf keyring/tests
+	rm -rf pywin32-ctypes/tests
