@@ -700,7 +700,7 @@ def main(argv=None):
             if username:
                 break
             else:
-                print("Please enter a non empty username ({0} trial(s) left)". \
+                print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
                       format(n_trials - i - 1))
         else:
             print("No valid username entered (no modification was written).")
@@ -863,6 +863,8 @@ def main_noexc(argv=None):
 
     try:
         return main(argv)
+    except KeyboardInterrupt:
+        sys.exit(2)
     except Exception as e:
         msg = """\
 %s: Error: %s crashed (uncaught exception %s: %s).
