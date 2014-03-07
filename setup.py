@@ -104,6 +104,7 @@ setup(
         'enstaller/vendor/keyring/backends',
         'enstaller/vendor/keyring/util',
         'enstaller/vendor/win32ctypes',
+        'enstaller/vendor/yaml',
     ],
     entry_points = {
         "console_scripts": [

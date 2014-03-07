@@ -13,3 +13,5 @@ vendor:
 
 	rm -rf keyring/tests
 	rm -rf win32ctypes/tests
+	rm -rf pyyaml/tests
+	rm -f _yaml*
