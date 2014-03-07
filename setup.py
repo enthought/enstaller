@@ -99,6 +99,10 @@ setup(
         'enstaller/store',
         'enstaller/indexed_repo',
         'enstaller/proxy',
+        'enstaller/vendor',
+        'enstaller/vendor/keyring',
+        'enstaller/vendor/keyring/backends',
+        'enstaller/vendor/keyring/util',
     ],
     entry_points = {
         "console_scripts": [
