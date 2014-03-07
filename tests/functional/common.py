@@ -16,14 +16,13 @@ def without_any_configuration(f):
     written in $HOME.
     """
     @functools.wraps(f)
-    def wrapper(ignored):
+    def wrapper(*a, **kw):
         with tempfile.NamedTemporaryFile(delete=False) as fp:
             pass
         try:
-            dec1 = mock.patch("enstaller.main.get_config_filename",
+            dec = mock.patch("enstaller.main.get_config_filename",
                               lambda ignored: fp.name)
-            ret = dec1(f)
-            return ret
+            return dec(f)(*a, **kw)
         finally:
             os.unlink(fp.name)
     return wrapper
