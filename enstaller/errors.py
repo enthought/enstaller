@@ -16,3 +16,5 @@ class AuthFailedError(EnstallerException):
 class EnpkgError(EnstallerException):
     # FIXME: why is this a class-level attribute ?
     req = None
+
+EXIT_ABORTED = 130
