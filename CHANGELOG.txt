@@ -11,6 +11,8 @@ Bug fixes:
   * #144: enpkg crashed when credentials were invalid, or when requesting
     packages requiring credentials while not authenticated.
   * #149: handle invalid proxy strings gracefully.
+  * Handle Ctrl+C gracefully, and don't print a traceback anymore. Returns an
+    exit code of 130, as usually returned by aborted programs on Unix.
 
 Internals:
 
