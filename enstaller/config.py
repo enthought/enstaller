@@ -37,6 +37,8 @@ def _setup_keyring():
         elif sys.platform == "darwin":
             from enstaller.vendor.keyring.backends.OS_X import Keyring
             tentative_backend = Keyring()
+        else:
+            tentative_backend = backend
         if tentative_backend.priority >= 0:
             backend = tentative_backend
     except ImportError:
