@@ -1,3 +1,4 @@
+import collections
 import contextlib
 import time
 
@@ -87,6 +88,14 @@ def fail_authenticate(f):
     config = mock.patch("enstaller.config.authenticate", m)
     return main(config(f))
 
+def succeed_authenticate(f):
+    fake_user = {"first_name": "John", "last_name": "Doe",
+                 "has_subscription": True}
+    m = mock.Mock(return_value=fake_user)
+    main = mock.patch("enstaller.main.authenticate", m)
+    config = mock.patch("enstaller.config.authenticate", m)
+    return main(config(f))
+
 # Context managers to force certain configuration
 @contextlib.contextmanager
 def make_keyring_unavailable_context():
@@ -111,3 +120,35 @@ def mock_input_auth(username, password):
     with mock.patch("enstaller.main.input_auth",
                     return_value=(username, password)) as context:
         yield context
+
+
+class _FakeKeyring(object):
+    def __init__(self):
+        self._state = collections.defaultdict(dict)
+
+    def get_password(self, service, username):
+        if service in self._state:
+            return self._state[service].get(username, None)
+        else:
+            return None
+
+    def set_password(self, service, username, password):
+        self._state[service][username] = password
+
+
+@contextlib.contextmanager
+def fake_keyring_context():
+    keyring = _FakeKeyring()
+    with mock.patch("enstaller.config.keyring.get_password",
+                    keyring.get_password):
+        with mock.patch("enstaller.config.keyring.set_password",
+                        keyring.set_password):
+            yield keyring
+
+def fake_keyring(f):
+    keyring = _FakeKeyring()
+    dec1 = mock.patch("enstaller.config.keyring.get_password",
+                      keyring.get_password)
+    dec2 = mock.patch("enstaller.config.keyring.set_password",
+                      keyring.set_password)
+    return dec1(dec2(f))

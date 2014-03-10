@@ -1,6 +1,6 @@
 # Copyright by Enthought, Inc.
 # Author: Ilan Schnell <ischnell@enthought.com>
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 import ast
 import base64
@@ -16,57 +16,40 @@ import warnings
 from getpass import getpass
 from os.path import isfile, join
 
+from enstaller.vendor import keyring
+from enstaller.vendor.keyring.backends.file import PlaintextKeyring
+
 from enstaller import __version__
 from enstaller.errors import (
     AuthFailedError, EnstallerException, InvalidConfiguration, InvalidFormat)
-from utils import PY_VER, abs_expanduser, fill_url
+from enstaller import plat
+from .utils import PY_VER, abs_expanduser, fill_url
 
 
-def __import_new_keyring():
-    """
-    Import keyring >= 1.1.
-    """
-    import keyring.backends.OS_X
-    import keyring.backends.Gnome
-    import keyring.backends.Windows
-    import keyring.backends.kwallet
+def _setup_keyring():
+    backend = PlaintextKeyring()
 
-    keyring.core.init_backend()
-    if keyring.get_keyring().priority < 0:
-        keyring = None
-    return keyring
-
-
-def __import_old_keyring():
-    import keyring
-    import keyring.backend
-    # don't use keyring backends that require console input or just do
-    # more or less the same thing we're already doing
-    keyring.backend._all_keyring = [keyring.backend.OSXKeychain(),
-                                    keyring.backend.GnomeKeyring(),
-                                    keyring.backend.KDEKWallet(),
-                                    keyring.backend.Win32CryptoKeyring(),
-                                    keyring.backend.Win32CryptoRegistry(),
-                                    keyring.backend.WinVaultKeyring()]
-    keyring.core.init_backend()
-    if keyring.get_keyring().supported() < 0:
-        keyring = None
-    return keyring
-
-
-try:
-    import keyring
-except ImportError, KeyError:
-    # The KeyError happens when USERPROFILE env var is not defined on windows
-    keyring = None
-else:
     try:
-        keyring = __import_new_keyring()
+        if sys.platform == "win32":
+            from enstaller.vendor.keyring.backends.Windows import \
+                WinVaultKeyring
+            tentative_backend = WinVaultKeyring()
+        elif sys.platform == "darwin":
+            from enstaller.vendor.keyring.backends.OS_X import Keyring
+            tentative_backend = Keyring()
+        else:
+            tentative_backend = backend
+        if tentative_backend.priority >= 0:
+            backend = tentative_backend
     except ImportError:
-        try:
-            keyring = __import_old_keyring()
-        except ImportError:
-            keyring = None
+        pass
+
+    keyring.set_backend(backend)
+
+
+def _keyring_backend_name():
+    return str(type(keyring.get_keyring()))
+
 
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
@@ -100,7 +83,6 @@ def configuration_read_search_order():
 
 
 def get_default_url():
-    import plat
     return 'https://api.enthought.com/eggs/%s/' % plat.custom_plat
 
 
@@ -215,6 +197,49 @@ def write_default_config(filename, use_keyring=None):
         config.write(filename)
 
 
+def _is_using_epd_username(filename_or_fp):
+    """
+    Returns True if the given configuration file uses EPD_username.
+    """
+    def _has_epd_auth(s):
+        parser = PythonConfigurationParser()
+        data = parser.parse(s)
+        return "EPD_username" in data and not "EPD_auth" in data
+
+    if isinstance(filename_or_fp, basestring):
+        with open(filename_or_fp) as fp:
+            return _has_epd_auth(fp.read())
+    else:
+        return _has_epd_auth(filename_or_fp.read())
+
+
+def convert_auth_if_required(filename):
+    """
+    This function will modify the given file authentication information if
+    required.
+
+    Authentication modifications are required if the original content is using
+    EPD_auth, and keyring is used.
+
+    Returns True if the file has been modified, False otherwise.
+    """
+    did_convert = False
+    if not _is_using_epd_username(filename):
+        config = Configuration.from_file(filename)
+        if config.use_keyring:
+            config._ensure_keyring_is_set()
+            config._change_auth(filename)
+            did_convert = True
+
+    return did_convert
+
+
+def _get_password(username):
+    return keyring.get_password(KEYRING_SERVICE_NAME, username)
+
+def _set_password(username, password):
+    return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
+
 class Configuration(object):
     @classmethod
     def _get_default_config(cls):
@@ -256,8 +281,7 @@ class Configuration(object):
                     if keyring is None:
                         ret._password = None
                     else:
-                        ret._password = \
-                            keyring.get_password(KEYRING_SERVICE_NAME, v)
+                        ret._password = _get_password(v)
                 else:
                     warnings.warn("Unsupported configuration setting {0}, "
                                   "ignored".format(k))
@@ -325,13 +349,13 @@ class Configuration(object):
             self._password = password
 
             if self.use_keyring:
-                keyring.set_password(KEYRING_SERVICE_NAME, username, password)
+                _set_password(self._username, self._password)
 
     def reset_auth(self):
         if self.use_keyring:
             if self._username is None:
                 raise ValueError("Cannot reset auth if not set up.")
-            keyring.set_password(KEYRING_SERVICE_NAME, self.EPD_username, "")
+            _set_password(self.EPD_username, "")
 
         self._username = None
         self._password = None
@@ -339,11 +363,24 @@ class Configuration(object):
     def get_auth(self):
         return (self._username, self._password)
 
+    def _ensure_keyring_is_set(self):
+        """
+        Store current password in keyring, but only if not set already, or if
+        the password has changed.
+
+        It is an error to call this if username or password are not set.
+        """
+        assert self.is_auth_configured, "username/password must be set !"
+        if _get_password(self._username) is None \
+           or _get_password(self._username) != self._password:
+            _set_password(self._username, self._password)
+
     def write(self, filename):
         username, password = self.get_auth()
         if username and password:
             if self.use_keyring:
                 authline = 'EPD_username = %r' % self.EPD_username
+                self._ensure_keyring_is_set()
             else:
                 authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
@@ -662,6 +699,7 @@ def print_config(config, remote, prefix):
     print("use_webservice:", config.use_webservice)
     if config.filename is not None:
         print("config file:", config.filename)
+    print("keyring backend: %s" % (_keyring_backend_name(),))
     print("settings:")
     print("    prefix = %s" % prefix)
     print("    %s = %s" % ("local", config.local))

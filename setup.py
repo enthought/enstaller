@@ -99,6 +99,11 @@ setup(
         'enstaller/store',
         'enstaller/indexed_repo',
         'enstaller/proxy',
+        'enstaller/vendor',
+        'enstaller/vendor/keyring',
+        'enstaller/vendor/keyring/backends',
+        'enstaller/vendor/keyring/util',
+        'enstaller/vendor/win32ctypes',
     ],
     entry_points = {
         "console_scripts": [

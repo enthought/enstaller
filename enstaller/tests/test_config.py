@@ -3,6 +3,7 @@ import contextlib
 import json
 import os.path
 import platform
+import re
 import shutil
 import sys
 import tempfile
@@ -24,7 +25,8 @@ from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
-    input_auth, prepend_url, print_config, subscription_level, web_auth)
+    input_auth, prepend_url, print_config, subscription_level, web_auth,
+    _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
@@ -33,6 +35,7 @@ from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
                      make_keyring_unavailable_context, mock_print,
+                     fake_keyring_context, fake_keyring
                      )
 
 def compute_creds(username, password):
@@ -140,6 +143,63 @@ class TestWriteConfig(unittest.TestCase):
                 self.assertTrue(mocked_keyring.set_password.call_with(r_args))
                 r_args = ("Enthought.com", FAKE_USER)
                 self.assertTrue(mocked_keyring.get_password.call_with(r_args))
+
+    def test_no_keyring_to_keyring(self):
+        """
+        Ensure we properly set up keyring when we convert from EPD_auth (no
+        keyring) to EPD_username (keyring).
+        """
+        r_output = re.compile("^EPD_username = '{0}'".format(FAKE_USER), flags=re.MULTILINE)
+
+        data = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
+        config = Configuration.from_file(data)
+
+        with fake_keyring_context():
+            with tempfile.NamedTemporaryFile(delete=False) as fp:
+                config.write(fp.name)
+
+            with open(fp.name) as fp:
+                self.assertRegexpMatches(fp.read(), r_output)
+
+            config = Configuration.from_file(fp.name)
+            password = config.get_auth()[1]
+            self.assertEqual(password, FAKE_PASSWORD)
+
+
+class TestConfigKeyringConversion(unittest.TestCase):
+    def test_use_epd_username(self):
+        data = "EPD_auth = '{0}'".format(FAKE_CREDS)
+
+        self.assertFalse(_is_using_epd_username(StringIO(data)))
+
+        data = "#EPD_auth = '{0}'".format(FAKE_CREDS)
+        self.assertFalse(_is_using_epd_username(StringIO(data)))
+
+        data = textwrap.dedent("""\
+            #EPD_auth = '{0}'
+            EPD_username = '{1}'
+        """).format(FAKE_CREDS, FAKE_USER)
+        self.assertTrue(_is_using_epd_username(StringIO(data)))
+
+    @fake_keyring
+    def test_conversion(self):
+        r_content = re.compile("^EPD_username = '{0}'".format(FAKE_USER),
+                               flags=re.MULTILINE)
+        old_config = "EPD_auth = '{0}'".format(FAKE_CREDS)
+
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fp.write(old_config)
+            filename = fp.name
+
+        self.assertTrue(convert_auth_if_required(filename))
+        with open(filename) as fp:
+            config_content = fp.read()
+            self.assertRegexpMatches(config_content, r_content)
+
+        # Ensure keyring has been set up as well
+        config = Configuration.from_file(filename)
+        self.assertTrue(config.is_auth_configured)
+        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
 
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
@@ -369,6 +429,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             self.assertEqual(fp.read(), config_data)
 
 class TestAuthenticate(unittest.TestCase):
+    @fake_keyring
     def test_use_webservice_valid_user(self):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
@@ -377,6 +438,7 @@ class TestAuthenticate(unittest.TestCase):
             authenticate(config)
             self.assertTrue(mocked_auth.called)
 
+    @fake_keyring
     def test_use_webservice_invalid_user(self):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
@@ -387,6 +449,7 @@ class TestAuthenticate(unittest.TestCase):
             with self.assertRaises(AuthFailedError):
                 authenticate(config)
 
+    @fake_keyring
     def test_use_remote(self):
         config = Configuration()
         config.use_webservice = False
@@ -396,6 +459,7 @@ class TestAuthenticate(unittest.TestCase):
         user = authenticate(config, remote)
         self.assertEqual(user, {"is_authenticated": True})
 
+    @fake_keyring
     def test_use_remote_invalid(self):
         config = Configuration()
         config.use_webservice = False
@@ -556,6 +620,7 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: True
+            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 local = {{local}}
@@ -565,7 +630,8 @@ class TestConfigurationPrint(unittest.TestCase):
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0])
+                    platform=platform.platform(), arch=platform.architecture()[0],
+                    keyring_backend=_keyring_backend_name())
 
         config = Configuration()
         prefix = config.prefix
@@ -586,6 +652,7 @@ class TestConfigurationPrint(unittest.TestCase):
             architecture: {arch}
             use_webservice: True
             config file: {{config_file}}
+            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 local = {{local}}
@@ -595,7 +662,8 @@ class TestConfigurationPrint(unittest.TestCase):
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0])
+                    platform=platform.platform(), arch=platform.architecture()[0],
+                    keyring_backend=_keyring_backend_name())
 
         try:
             with tempfile.NamedTemporaryFile(delete=False) as fp:

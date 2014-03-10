@@ -30,8 +30,8 @@ from enstaller import __version__
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
-    configuration_read_search_order,  input_auth, prepend_url, print_config,
-    subscription_message, write_default_config)
+    configuration_read_search_order,  convert_auth_if_required, input_auth,
+    prepend_url, print_config, subscription_message, write_default_config)
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
@@ -733,6 +733,8 @@ def main(argv=None):
             print("Could not authenticate with user '{0}'.".format(login))
             print("You can change your authentication details with 'enpkg --userpass'")
             sys.exit(-1)
+        else:
+            convert_auth_if_required(config_filename)
 
     if args.dry_run:
         def print_actions(actions):
@@ -862,7 +864,8 @@ def main_noexc(argv=None):
         enstaller_debug = False
 
     try:
-        return main(argv)
+        main(argv)
+        sys.exit(0)
     except Exception as e:
         msg = """\
 %s: Error: %s crashed (uncaught exception %s: %s).
