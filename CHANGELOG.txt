@@ -19,6 +19,7 @@ Internals:
   * enstaller internal configuration is not a singleton anymore. Enpkg class
     may be passed a configuration object.
   * configuration is properly parsed instead of being exec'd.
+  * remove undocumented and unused 'enpkg --revert file' feature.
 
 2013-12-16   4.6.3:
 -------------------
