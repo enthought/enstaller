@@ -134,20 +134,6 @@ def list_option(prefixes, hook=False, pat=None):
         print()
 
 
-def parse_list(fn):
-    pat = re.compile(r'([\w.]+)\s+([\w.]+-\d+)')
-    res = set()
-    for line in open(fn):
-        line = line.strip()
-        m = pat.match(line)
-        if m:
-            res.add(m.expand(r'\1-\2.egg'))
-            continue
-        if is_valid_eggname(line):
-            res.add(line)
-    return res
-
-
 def imports_option(enpkg, pat=None):
     print(FMT % ('Name', 'Version', 'Location'))
     print(60 * "=")
@@ -748,10 +734,7 @@ def main(argv=None):
         return
 
     if args.revert:                               # --revert
-        if isfile(args.revert):
-            arg = parse_list(args.revert)
-        else:
-            arg = args.revert
+        arg = args.revert
         try:
             actions = enpkg.revert_actions(arg)
             if not actions:
