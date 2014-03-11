@@ -44,7 +44,10 @@ def _setup_keyring():
     except ImportError:
         pass
 
-    keyring.set_backend(backend)
+    keyring.set_keyring(backend)
+
+
+_setup_keyring()
 
 
 def _keyring_backend_name():
