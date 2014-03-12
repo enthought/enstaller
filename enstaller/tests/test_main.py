@@ -303,6 +303,33 @@ class TestSearch(unittest.TestCase):
                 search(enpkg)
                 self.assertMultiLineEqual(m.value, r_output)
 
+    def test_community(self):
+        config = Configuration()
+        config.use_webservice = False
+
+        with mkdtemp() as d:
+            r_output = textwrap.dedent("""\
+                Name                   Versions           Product              Note
+                ================================================================================
+                dummy                  0.9.8-1            pypi                 PyPi/Community - unsupported, license not checked
+                                     * 1.0.1-1            pypi                 not subscribed to
+                """.format(""))
+            entries = [dummy_enpkg_entry_factory("dummy", "1.0.1", 1),
+                       dummy_enpkg_entry_factory("dummy", "0.9.8", 1)]
+       
+            # Make the first a pypi and not available package
+            entries[0].product = 'pypi'
+            entries[0].available = False
+            # Make the second a pypi package
+            entries[1].product = 'pypi'
+        
+            installed_entries = [dummy_installed_egg_factory("dummy", "1.0.1", 1)]
+            enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
+
+            with mock_print() as m:
+                search(enpkg)
+                self.assertMultiLineEqual(m.value, r_output)
+    
     def test_pattern(self):
         config = Configuration()
         config.use_webservice = False
@@ -581,17 +608,30 @@ class TestInstallReq(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    def test_simple_install(self):
+    def test_commercial_install(self):
+        remote_entries = [
+            dummy_enpkg_entry_factory("Whoosh", "2.5.6", 1)
+        ]
+        
+        with mock.patch("enstaller.main.Enpkg.execute") as m:
+            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                    remote_entries)
+            install_req(enpkg, "Whoosh", FakeOptions())
+            m.assert_called_with([('fetch_0', 'Whoosh-2.5.6-1.egg'),
+                                  ('install', 'Whoosh-2.5.6-1.egg')])
+
+    def test_community_install(self):
         remote_entries = [
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
-                    remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
-            m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
-                                  ('install', 'nose-1.3.0-1.egg')])
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                        remote_entries)
+                install_req(enpkg, "nose", FakeOptions())
+                m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
+                                      ('install', 'nose-1.3.0-1.egg')])
 
     def test_simple_non_existing_requirement(self):
         r_error_string = "No egg found for requirement 'nono_le_petit_robot'.\n"
@@ -614,11 +654,12 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix,
-                    installed_entries, remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
-            m.assert_called_with([])
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                enpkg = _create_prefix_with_eggs(Configuration(), self.prefix,
+                        installed_entries, remote_entries)
+                install_req(enpkg, "nose", FakeOptions())
+                m.assert_called_with([])
 
     @is_authenticated
     def test_install_not_available(self):
@@ -677,13 +718,14 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            error = OSError()
-            error.errno = errno.EACCES
-            m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            with self.assertRaises(SystemExit):
-                install_req(enpkg, "nose", FakeOptions())
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                error = OSError()
+                error.errno = errno.EACCES
+                m.side_effect = error
+                enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+                with self.assertRaises(SystemExit):
+                    install_req(enpkg, "nose", FakeOptions())
 
     @mock.patch("sys.platform", "linux2")
     def test_os_error(self):
@@ -693,10 +735,11 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            error = OSError()
-            error.errno = errno.EACCES
-            m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            with self.assertRaises(OSError):
-                install_req(enpkg, "nose", FakeOptions())
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                error = OSError()
+                error.errno = errno.EACCES
+                m.side_effect = error
+                enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+                with self.assertRaises(OSError):
+                    install_req(enpkg, "nose", FakeOptions())
