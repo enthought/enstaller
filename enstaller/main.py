@@ -306,7 +306,7 @@ def install_req(enpkg, req, opts):
         proceeds on user confirmation.
         """
         info_list = enpkg.info_list_name(req.name)
-        if any(i.get('product', 'pypi') for i in info_list):
+        if any(i.get('product') == 'pypi' for i in info_list):
             print('')
             print('\n'.join(textwrap.wrap(
                 "This package is in the \"Community\" (PyPi mirror) repo, "

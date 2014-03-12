@@ -608,7 +608,19 @@ class TestInstallReq(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    def test_simple_install(self):
+    def test_commercial_install(self):
+        remote_entries = [
+            dummy_enpkg_entry_factory("Whoosh", "2.5.6", 1)
+        ]
+        
+        with mock.patch("enstaller.main.Enpkg.execute") as m:
+            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                    remote_entries)
+            install_req(enpkg, "Whoosh", FakeOptions())
+            m.assert_called_with([('fetch_0', 'Whoosh-2.5.6-1.egg'),
+                                  ('install', 'Whoosh-2.5.6-1.egg')])
+
+    def test_community_install(self):
         remote_entries = [
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
