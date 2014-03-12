@@ -613,12 +613,13 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
-                    remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
-            m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
-                                  ('install', 'nose-1.3.0-1.egg')])
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                        remote_entries)
+                install_req(enpkg, "nose", FakeOptions())
+                m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
+                                      ('install', 'nose-1.3.0-1.egg')])
 
     def test_simple_non_existing_requirement(self):
         r_error_string = "No egg found for requirement 'nono_le_petit_robot'.\n"
@@ -641,11 +642,12 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix,
-                    installed_entries, remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
-            m.assert_called_with([])
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                enpkg = _create_prefix_with_eggs(Configuration(), self.prefix,
+                        installed_entries, remote_entries)
+                install_req(enpkg, "nose", FakeOptions())
+                m.assert_called_with([])
 
     @is_authenticated
     def test_install_not_available(self):
@@ -704,13 +706,14 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            error = OSError()
-            error.errno = errno.EACCES
-            m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            with self.assertRaises(SystemExit):
-                install_req(enpkg, "nose", FakeOptions())
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                error = OSError()
+                error.errno = errno.EACCES
+                m.side_effect = error
+                enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+                with self.assertRaises(SystemExit):
+                    install_req(enpkg, "nose", FakeOptions())
 
     @mock.patch("sys.platform", "linux2")
     def test_os_error(self):
@@ -720,10 +723,11 @@ class TestInstallReq(unittest.TestCase):
             dummy_enpkg_entry_factory("nose", "1.3.0", 1)
         ]
 
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            error = OSError()
-            error.errno = errno.EACCES
-            m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            with self.assertRaises(OSError):
-                install_req(enpkg, "nose", FakeOptions())
+        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+            with mock.patch("enstaller.main.Enpkg.execute") as m:
+                error = OSError()
+                error.errno = errno.EACCES
+                m.side_effect = error
+                enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+                with self.assertRaises(OSError):
+                    install_req(enpkg, "nose", FakeOptions())

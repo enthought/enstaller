@@ -333,12 +333,11 @@ def install_req(enpkg, req, opts):
                     req,
                     mode=mode,
                     force=opts.force, forceall=opts.forceall)
+            if _package_confirmation(req):
+                enpkg.execute(actions)
             if len(actions) == 0:
                 print("No update necessary, %r is up-to-date." % req.name)
                 print(install_time_string(enpkg, req.name))
-            else:
-                if _package_confirmation(req):
-                    enpkg.execute(actions)
         except EnpkgError, e:
             if mode == 'root' or e.req is None or e.req == req:
                 # trying to install just one requirement - try to give more info
