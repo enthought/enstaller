@@ -303,6 +303,33 @@ class TestSearch(unittest.TestCase):
                 search(enpkg)
                 self.assertMultiLineEqual(m.value, r_output)
 
+    def test_community(self):
+        config = Configuration()
+        config.use_webservice = False
+
+        with mkdtemp() as d:
+            r_output = textwrap.dedent("""\
+                Name                   Versions           Product              Note
+                ================================================================================
+                dummy                  0.9.8-1            pypi                 PyPi/Community - unsupported, license not checked
+                                     * 1.0.1-1            pypi                 not subscribed to
+                """.format(""))
+            entries = [dummy_enpkg_entry_factory("dummy", "1.0.1", 1),
+                       dummy_enpkg_entry_factory("dummy", "0.9.8", 1)]
+       
+            # Make the first a pypi and not available package
+            entries[0].product = 'pypi'
+            entries[0].available = False
+            # Make the second a pypi package
+            entries[1].product = 'pypi'
+        
+            installed_entries = [dummy_installed_egg_factory("dummy", "1.0.1", 1)]
+            enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
+
+            with mock_print() as m:
+                search(enpkg)
+                self.assertMultiLineEqual(m.value, r_output)
+    
     def test_pattern(self):
         config = Configuration()
         config.use_webservice = False
