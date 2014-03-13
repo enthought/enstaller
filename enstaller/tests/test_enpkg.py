@@ -81,6 +81,10 @@ class TestMisc(unittest.TestCase):
         with mock.patch("os.makedirs", mocked_makedirs):
             self.assertNotEqual(get_writable_local_dir(config), "/foo")
 
+    def test_hook_fails(self):
+         with self.assertRaises(EnpkgError):
+             enpkg = Enpkg(hook=True)
+
 class TestEnstallerUpdateHack(unittest.TestCase):
     def test_scenario1(self):
         """Test that we upgrade when remote is more recent than local."""
