@@ -127,3 +127,16 @@ class TestAuth(unittest.TestCase):
             main_noexc(["--imports"])
         except SystemExit as e:
             self.assertEqual(e.code, 0)
+
+    @without_any_configuration
+    def test_incomplete_auth_config(self):
+        r_output = ("No authentication configured, required to continue."
+                    "To login, type 'enpkg --userpass'.\n")
+        with open(self.config, "w") as fp:
+            fp.write("EPD_username = '{0}'".format(FAKE_USER))
+
+        with mock_print() as m:
+	    with self.assertRaises(SystemExit) as e:
+                main_noexc(["--imports"])
+            self.assertEqual(e.exception.code, -1)
+        self.assertMultiLineEqual(m.value, r_output)
