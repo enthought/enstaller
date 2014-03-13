@@ -5,6 +5,9 @@ Main highlights:
 
   * authentication handling has been streamlined. When credentials are missing
     and/or invalid, enpkg displays an error message instead of crashing (#144).
+  * keyring is now bundled, so that enpkg always uses the same authentication
+    method
+  * support for python 2.5 has ben dropped
 
 Bug fixes:
 
@@ -20,6 +23,7 @@ Internals:
     may be passed a configuration object.
   * configuration is properly parsed instead of being exec'd.
   * remove undocumented and unused 'enpkg --revert file' feature.
+  * remove undocumended hook feature
 
 2013-12-16   4.6.3:
 -------------------
