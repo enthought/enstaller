@@ -117,3 +117,13 @@ class TestAuth(unittest.TestCase):
 
         with open(self.config) as fp:
             self.assertMultiLineEqual(fp.read(), "EPD_username = '{0}'".format(FAKE_USER))
+
+    @succeed_authenticate
+    def test_imports(self):
+        with open(self.config, "w") as fp:
+            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
+
+        try:
+            main_noexc(["--imports"])
+        except SystemExit as e:
+            self.assertEqual(e.code, 0)
