@@ -180,7 +180,7 @@ class TestMisc(unittest.TestCase):
             Name                 Version              Location
             ============================================================
             """)
-        config = Configuration._get_default_config()
+        config = Configuration()
         enpkg = _create_prefix_with_eggs(config, config.prefix)
 
         with mock_print() as m:
@@ -194,7 +194,7 @@ class TestMisc(unittest.TestCase):
             dummy                1.0.1-1              sys
             """)
         from enstaller.main import imports_option
-        config = Configuration._get_default_config()
+        config = Configuration()
 
         installed_entries = [dummy_installed_egg_factory("dummy", "1.0.1", 1)]
         enpkg = _create_prefix_with_eggs(config, config.prefix,
