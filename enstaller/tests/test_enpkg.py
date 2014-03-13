@@ -83,7 +83,7 @@ class TestMisc(unittest.TestCase):
 
     def test_hook_fails(self):
          with self.assertRaises(EnpkgError):
-             enpkg = Enpkg(hook=True)
+             enpkg = Enpkg(hook=True, config=Configuration())
 
 class TestEnstallerUpdateHack(unittest.TestCase):
     def test_scenario1(self):
