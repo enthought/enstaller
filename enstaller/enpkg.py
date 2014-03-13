@@ -72,7 +72,7 @@ def get_writable_local_dir(config):
 def get_default_remote(config):
     url = config.webservice_entry_point
     local_dir = get_writable_local_dir(config)
-    return RemoteHTTPIndexedStore(url, local_dir)
+    return RemoteHTTPIndexedStore(url, local_dir, config.use_pypi)
 
 
 class Enpkg(object):

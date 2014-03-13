@@ -91,17 +91,23 @@ class LocalIndexedStore(IndexedStore):
 
 class RemoteHTTPIndexedStore(IndexedStore):
 
-    def __init__(self, url, cache_dir):
+    def __init__(self, url, cache_dir, use_pypi=True):
         super(RemoteHTTPIndexedStore, self).__init__()
 
         self.root = url
         self.cache_dir = cache_dir
+        self._use_pypi = use_pypi
 
     def info(self):
         return dict(root=self.root)
 
     def get_index(self):
-        fp = self.get_data('index.json?pypi=true')
+        if self._use_pypi is True:
+            url = 'index.json?pypi=true'
+        else:
+            url = 'index.json?pypi=false'
+
+        fp = self.get_data(url)
         return json.load(fp)
 
     def get_data(self, key):
