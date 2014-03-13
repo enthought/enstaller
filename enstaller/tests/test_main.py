@@ -184,7 +184,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     repo = MetadataOnlyStore(remote_entries)
     repo.connect()
 
-    enpkg = Enpkg(repo, prefixes=[prefix], hook=None,
+    enpkg = Enpkg(repo, prefixes=[prefix],
                   evt_mgr=None, verbose=False, config=config)
     enpkg.ec = JoinedEggCollection([
         MetaOnlyEggCollection(installed_entries)])

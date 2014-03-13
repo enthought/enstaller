@@ -117,20 +117,20 @@ def info_option(enpkg, name):
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
-def print_installed(prefix, hook=False, pat=None):
+def print_installed(prefix, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    ec = EggCollection(prefix, hook)
+    ec = EggCollection(prefix, hook=False)
     for egg, info in ec.query():
         if pat and not pat.search(info['name']):
             continue
         print(FMT % (name_egg(egg), VB_FMT % info, disp_store_info(info)))
 
 
-def list_option(prefixes, hook=False, pat=None):
+def list_option(prefixes, pat=None):
     for prefix in reversed(prefixes):
         print("prefix:", prefix)
-        print_installed(prefix, hook, pat)
+        print_installed(prefix, pat)
         print()
 
 
@@ -384,13 +384,12 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
             """Dummy so that we can instantiate this class."""
 
     prefixes = enpkg.prefixes
-    hook = enpkg.hook
     evt_mgr = enpkg.evt_mgr
     verbose = enpkg.verbose
 
     installed_repo = MockedStore()
     remote = JoinedStore([enpkg.remote, installed_repo])
-    return Enpkg(remote, prefixes=prefixes, hook=hook,
+    return Enpkg(remote, prefixes=prefixes,
                  evt_mgr=evt_mgr, verbose=verbose, config=enpkg.config)
 
 
@@ -503,8 +502,6 @@ def main(argv=None):
                    help="force install of all packages "
                         "(i.e. including dependencies)")
     p.add_argument("--freeze", help=argparse.SUPPRESS, action="store_true")
-    p.add_argument("--hook", action="store_true",
-                   help="don't install into site-packages (experimental)")
     p.add_argument("--imports", action="store_true",
                    help="show which packages can be imported")
     p.add_argument('-i', "--info", action="store_true",
@@ -627,8 +624,6 @@ def main(argv=None):
         return
 
     if args.log:                                  # --log
-        if args.hook:
-            raise NotImplementedError
         from history import History
         h = History(prefix)
         h.update()
@@ -649,7 +644,7 @@ def main(argv=None):
         return
 
     if args.list:                                 # --list
-        list_option(prefixes, args.hook, pat)
+        list_option(prefixes, pat)
         return
 
     if args.proxy:                                # --proxy
@@ -667,7 +662,7 @@ def main(argv=None):
         urls = [fill_url(u) for u in config.IndexedRepos]
         remote = create_joined_store(config, urls)
 
-    enpkg = Enpkg(remote, prefixes=prefixes, hook=args.hook,
+    enpkg = Enpkg(remote, prefixes=prefixes,
                   evt_mgr=evt_mgr, verbose=args.verbose, config=config)
 
 
@@ -729,7 +724,6 @@ def main(argv=None):
         enpkg.execute = print_actions
 
     if args.imports:                              # --imports
-        assert not args.hook
         imports_option(enpkg, pat)
         return
 
