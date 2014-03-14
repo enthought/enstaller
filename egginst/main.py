@@ -16,7 +16,7 @@ import shutil
 import warnings
 import zipfile
 from uuid import uuid4
-from os.path import abspath, basename, dirname, join, isdir, isfile, sep
+from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
 
 import eggmeta
 import scripts
@@ -538,8 +538,8 @@ def main(argv=None):
         print "enstaller version:", __version__
         return
 
-    prefix = abspath(opts.prefix)
-    if prefix != sys.prefix:
+    prefix = normpath(abspath(opts.prefix))
+    if prefix != normpath(sys.prefix):
         warnings.warn("Using the --prefix option is potentially dangerous. "
                       "You should use enpkg installed in {0} instead.". \
                       format(opts.prefix))
