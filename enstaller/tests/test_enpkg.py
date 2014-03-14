@@ -33,7 +33,7 @@ from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
 from enstaller.utils import PY_VER
 
-from .common import dummy_enpkg_entry_factory
+from .common import dummy_enpkg_entry_factory, mock_print
 
 class TestMisc(unittest.TestCase):
     def test_get_default_kvs(self):
@@ -234,6 +234,15 @@ class TestEnpkg(unittest.TestCase):
                              set(entry.s3index_key for entry in entries + [local_entry]))
 
 class TestEnpkgActions(unittest.TestCase):
+    def test_empty_actions(self):
+        r_output = "Enpkg.execute: 0\n"
+
+        enpkg = Enpkg(config=Configuration(), verbose=True)
+        with mock_print() as m:
+            enpkg.execute([])
+            sys.stdout.flush()
+            self.assertEqual(m.value, r_output)
+
     def test_install_simple(self):
         entries = [
             dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
