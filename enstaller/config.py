@@ -175,6 +175,9 @@ IndexedRepos = [
 # Uncomment the next line to turn off automatic prompts to update
 # enstaller.
 #autoupdate = False
+
+# Uncomment to disable pypi eggs
+#use_pypi = False
 """
 
 
@@ -266,7 +269,7 @@ class Configuration(object):
         accepted_keys_as_is = set([
             "proxy", "noapp", "use_webservice", "autoupdate",
             "prefix", "local", "IndexedRepos", "webservice_entry_point",
-            "repository_cache"
+            "repository_cache", "use_pypi",
         ])
         parser = PythonConfigurationParser()
 
@@ -303,6 +306,7 @@ class Configuration(object):
         self.noapp = False
         self.use_webservice = True
         self.autoupdate = True
+        self.use_pypi = True
 
         self._prefix = sys.prefix
         self._local = join(sys.prefix, 'LOCAL-REPO')

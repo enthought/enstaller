@@ -8,6 +8,8 @@ Main highlights:
   * keyring is now bundled, so that enpkg always uses the same authentication
     method
   * support for python 2.5 has ben dropped
+  * add use_pypi = True/False configuration entry to enable/disable pypi repo
+    access (True by default)
 
 Bug fixes:
 
