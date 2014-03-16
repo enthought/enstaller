@@ -33,7 +33,8 @@ from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
 from enstaller.utils import PY_VER
 
-from .common import dummy_enpkg_entry_factory, mock_print
+from .common import (dummy_enpkg_entry_factory, mock_print,
+    mock_history_get_state_context)
 
 class TestMisc(unittest.TestCase):
     def test_get_default_kvs(self):
@@ -475,3 +476,47 @@ class TestEnpkgRevert(unittest.TestCase):
         for state in [0, 1]:
             actions = enpkg.revert_actions(state)
             self.assertEqual(actions, r_actions[state])
+
+    def test_enstaller_not_removed(self):
+        enstaller_egg = {"enstaller-4.6.2-1.egg"}
+        installed_eggs = {"dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"}
+
+        with mock_history_get_state_context(installed_eggs | enstaller_egg):
+            enpkg = Enpkg(config=Configuration())
+            ret = enpkg.revert_actions(installed_eggs)
+
+            self.assertEqual(ret, [])
+
+    def test_same_state(self):
+        installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
+
+        with mock_history_get_state_context(installed_eggs):
+            enpkg = Enpkg(config=Configuration())
+            ret = enpkg.revert_actions(set(installed_eggs))
+
+            self.assertEqual(ret, [])
+
+    def test_superset(self):
+        """
+        Ensure installed eggs not in current state are removed.
+        """
+        installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
+
+        with mock_history_get_state_context(installed_eggs):
+            enpkg = Enpkg(config=Configuration())
+            ret = enpkg.revert_actions(set(installed_eggs[:1]))
+
+            self.assertEqual(ret, [("remove", "another_dummy-1.0.0-1.egg")])
+
+    def test_subset(self):
+        r_actions = [("fetch_0", "another_dummy-1.0.0-1.egg"),
+                     ("install", "another_dummy-1.0.0-1.egg")]
+
+        installed_eggs = ["dummy-1.0.0-1.egg"]
+        revert_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
+
+        with mock_history_get_state_context(installed_eggs):
+            enpkg = Enpkg(config=Configuration())
+            with mock.patch.object(enpkg, "remote"):
+                ret = enpkg.revert_actions(set(revert_eggs))
+                self.assertEqual(ret, r_actions)
