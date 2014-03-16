@@ -478,8 +478,8 @@ class TestEnpkgRevert(unittest.TestCase):
             self.assertEqual(actions, r_actions[state])
 
     def test_enstaller_not_removed(self):
-        enstaller_egg = {"enstaller-4.6.2-1.egg"}
-        installed_eggs = {"dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"}
+        enstaller_egg = set(["enstaller-4.6.2-1.egg"])
+        installed_eggs = set(["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"])
 
         with mock_history_get_state_context(installed_eggs | enstaller_egg):
             enpkg = Enpkg(config=Configuration())
