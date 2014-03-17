@@ -5,6 +5,12 @@ import tempfile
 
 import mock
 
+from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
+
+from enstaller.config import Configuration
+from enstaller.store.tests.common import MetadataOnlyStore
+from enstaller.tests.common import fake_keyring, succeed_authenticate
+
 def _dont_write_default_configuration(f):
     return mock.patch("enstaller.main.write_default_config",
                       lambda filename, use_keyring=None: None)(f)
@@ -47,3 +53,44 @@ def use_given_config_context(filename):
     with mock.patch("enstaller.main.get_config_filename",
                     lambda ignored: filename) as context:
         yield context
+
+def enstaller_version(version, is_released=True):
+    wrap1 = mock.patch("enstaller.__version__", version)
+    wrap2 = mock.patch("enstaller.main.__ENSTALLER_VERSION__", version)
+    wrap3 = mock.patch("enstaller.main.IS_RELEASED", is_released)
+    def dec(f):
+        return wrap1(wrap2(wrap3(f)))
+    return dec
+
+@fake_keyring
+def authenticated_config(f):
+    config = Configuration()
+    config.set_auth("dummy", "dummy")
+
+    m = mock.Mock()
+    m.return_value = config
+    m.from_file.return_value = config
+
+    wrapper = mock.patch("enstaller.main.Configuration", m)
+    mock_authenticated_config = mock.patch(
+        "enstaller.main.ensure_authenticated_config",
+         mock.Mock())
+    return mock_authenticated_config(wrapper(f))
+
+def remote_enstaller_available(versions):
+    enstaller_eggs = [
+        EnpkgS3IndexEntry(product="free", build=1,
+                          egg_basename="enstaller", version=version,
+                          available=True)
+        for version in versions
+    ]
+    store = MetadataOnlyStore(enstaller_eggs)
+
+    wrap = mock.patch("enstaller.enpkg.get_default_remote", lambda ignored: store)
+    def dec(f):
+        return wrap(f)
+    return dec
+
+def raw_input_always_yes(f):
+    wrap = mock.patch("__builtin__.raw_input", lambda ignored: "y")
+    return wrap(f)

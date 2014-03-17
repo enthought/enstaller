@@ -480,6 +480,23 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
+def ensure_authenticated_config(config, config_filename, enpkg):
+    try:
+        config.get_auth()
+    except InvalidConfiguration:
+        print(PLEASE_AUTH_MESSAGE)
+        sys.exit(-1)
+    else:
+        try:
+            authenticate(config, enpkg.remote)
+        except AuthFailedError as e:
+            login, _ = config.get_auth()
+            print("Could not authenticate with user '{0}'.".format(login))
+            print("You can change your authentication details with 'enpkg --userpass'")
+            sys.exit(-1)
+        else:
+            convert_auth_if_required(config_filename)
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -706,21 +723,7 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    try:
-        config.get_auth()
-    except InvalidConfiguration:
-        print(PLEASE_AUTH_MESSAGE)
-        sys.exit(-1)
-    else:
-        try:
-            authenticate(config, enpkg.remote)
-        except AuthFailedError as e:
-            login, _ = config.get_auth()
-            print("Could not authenticate with user '{0}'.".format(login))
-            print("You can change your authentication details with 'enpkg --userpass'")
-            sys.exit(-1)
-        else:
-            convert_auth_if_required(config_filename)
+    ensure_authenticated_config(config, config_filename, enpkg)
 
     if args.dry_run:
         def print_actions(actions):
