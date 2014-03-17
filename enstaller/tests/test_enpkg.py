@@ -459,6 +459,12 @@ class TestEnpkgRevert(unittest.TestCase):
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions(1)
 
+    def test_invalid_argument(self):
+        enpkg = Enpkg(prefixes=self.prefixes, hook=False,
+                      evt_mgr=None, verbose=False, config=Configuration())
+        with self.assertRaises(EnpkgError):
+            enpkg.revert_actions([])
+
     def test_simple_scenario(self):
         egg = DUMMY_EGG
         r_actions = {1: [], 0: [("remove", os.path.basename(egg))]}

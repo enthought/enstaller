@@ -361,7 +361,7 @@ class Enpkg(object):
         else:
             try:
                 rev = int(arg)
-            except ValueError:
+            except (TypeError, ValueError):
                 raise EnpkgError("Error: integer expected, got: %r" % arg)
             try:
                 state = h.get_state(rev)
