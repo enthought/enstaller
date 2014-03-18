@@ -180,14 +180,10 @@ def search(enpkg, pat=None):
                         version)
             available = info.get('available', True)
             product = info.get('product', '')
-            note = ''
-            if available:
-                if product in ['pypi']:
-                    note = 'PyPi/Community - unsupported, license not checked'
-            else:
+            if not(available):
                 SUBSCRIBED = False
             print(FMT4 % (disp_name, disp_ver, product,
-                   note if available else 'not subscribed to'))
+                   '' if available else 'not subscribed to'))
             disp_name = ''
 
     # if the user's search returns any packages that are not available
@@ -300,29 +296,6 @@ def install_req(enpkg, req, opts):
         for line in subscription_message(enpkg.config, user).splitlines():
             print(" " * 4 + line)
 
-    def _package_confirmation(req):
-        """
-        This checks if it is a community package, prints the disclaimer and
-        proceeds on user confirmation.
-        """
-        info_list = enpkg.info_list_name(req.name)
-        if any(i.get('product') == 'pypi' for i in info_list):
-            print('')
-            print('\n'.join(textwrap.wrap(
-                "This package is in the \"Community\" (PyPi mirror) repo, "
-                "which contains >10,000 untested (\"as is\") packages. Some "
-                "packages are licensed under GPL or other licenses which are "
-                "prohibited for some users. Dependencies may not be "
-                "provided. If you need an updated version or if the "
-                "installation fails due to unmet dependencies, the Knowledge "
-                "Base article Installing external packages into Canopy "
-                "Python (https://support.enthought.com/entries/23389761) may "
-                "help you with installing it.")))
-            print('')
-            yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
-            return yn.lower() in set(['y', 'yes'])
-        return True
-
     def _perform_install():
         """
         Try to perform the install.
@@ -333,8 +306,7 @@ def install_req(enpkg, req, opts):
                     req,
                     mode=mode,
                     force=opts.force, forceall=opts.forceall)
-            if _package_confirmation(req):
-                enpkg.execute(actions)
+            enpkg.execute(actions)
             if len(actions) == 0:
                 print("No update necessary, %r is up-to-date." % req.name)
                 print(install_time_string(enpkg, req.name))
