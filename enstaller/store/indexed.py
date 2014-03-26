@@ -3,9 +3,14 @@ import urlparse
 import urllib2
 from collections import defaultdict
 
+from enstaller.errors import InvalidConfiguration
+
 from base import AbstractStore
 from cached import CachedHandler
 from compressed import CompressedHandler
+
+
+_INDEX_NAME = "index.json"
 
 
 class IndexedStore(AbstractStore):
@@ -36,7 +41,7 @@ class IndexedStore(AbstractStore):
         return self._connected
 
     def get_index(self):
-        fp = self.get_data('index.json')
+        fp = self.get_data(_INDEX_NAME)
         return json.load(fp)
 
     def _location(self, key):
@@ -86,7 +91,13 @@ class LocalIndexedStore(IndexedStore):
         try:
             return open(self._location(key), 'rb')
         except IOError as e:
-            raise KeyError(str(e))
+            # FIXME: this is moronic, but hard to fix nicely until we get rid
+            # of the terrible store API.
+            if key == _INDEX_NAME:
+                msg = "Could not access the index file for local repository {!r}"
+                raise InvalidConfiguration(msg.format(self._location(key)))
+            else:
+                raise KeyError(str(e))
 
 
 class RemoteHTTPIndexedStore(IndexedStore):
@@ -103,9 +114,9 @@ class RemoteHTTPIndexedStore(IndexedStore):
 
     def get_index(self):
         if self._use_pypi is True:
-            url = 'index.json?pypi=true'
+            url = '{0}?pypi=true'.format(_INDEX_NAME)
         else:
-            url = 'index.json?pypi=false'
+            url = '{0}?pypi=false'.format(_INDEX_NAME)
 
         fp = self.get_data(url)
         return json.load(fp)

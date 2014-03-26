@@ -31,6 +31,7 @@ from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
 from enstaller.errors import InvalidConfiguration, InvalidFormat
+from enstaller.store.indexed import LocalIndexedStore
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
@@ -460,19 +461,17 @@ class TestAuthenticate(unittest.TestCase):
         self.assertEqual(user, {"is_authenticated": True})
 
     @fake_keyring
-    def test_use_remote_invalid(self):
-        config = Configuration()
-        config.use_webservice = False
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+    def test_local_repo(self):
+        with mkdtemp() as d:
+            config = Configuration()
+            config.IndexedRepos = [d]
+            config.use_webservice = False
+            config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        remote = mock.Mock()
+            repo = LocalIndexedStore(config.IndexedRepos[0])
 
-        for klass in KeyError, Exception:
-            attrs = {"connect.side_effect": klass()}
-            remote.configure_mock(**attrs)
-
-            with self.assertRaises(AuthFailedError):
-                authenticate(config, remote)
+            with self.assertRaises(InvalidConfiguration):
+                authenticate(config, repo)
 
 class TestSubscriptionLevel(unittest.TestCase):
     def test_unsubscribed_user(self):

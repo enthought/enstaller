@@ -17,6 +17,7 @@ from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
 from egginst.testing_utils import network
 from egginst.tests.common import DUMMY_EGG, DUMMY_WITH_PROXY_EGG
 
+from enstaller.errors import InvalidConfiguration
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
 
@@ -186,6 +187,11 @@ class TestLocalIndexedStore(unittest.TestCase):
         store.connect()
 
         self.assertRaises(KeyError, lambda: store.get_data("dummy_key"))
+
+    def test_invalid_non_existing_root(self):
+        store = LocalIndexedStore(self.d)
+        with self.assertRaises(InvalidConfiguration):
+            store.connect()
 
 def _local_store_factory(entries, basedir):
     d = os.path.join(basedir, str(uuid.uuid4())[:8])
