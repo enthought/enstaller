@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 import urlparse
@@ -8,7 +9,10 @@ import uuid
 
 from cStringIO import StringIO
 
-import os.path as op
+if sys.version_info[:2] < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 import mock
 
