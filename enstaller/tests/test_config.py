@@ -477,17 +477,17 @@ class TestAuthenticate(unittest.TestCase):
 class TestSubscriptionLevel(unittest.TestCase):
     def test_unsubscribed_user(self):
         user_info = {"is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "EPD")
+        self.assertEqual(subscription_level(user_info), "Canopy / EPD")
 
         user_info = {"is_authenticated": False}
         self.assertIsNone(subscription_level(user_info))
 
     def test_subscribed_user(self):
         user_info = {"has_subscription": True, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "EPD Basic or above")
+        self.assertEqual(subscription_level(user_info), "Canopy / EPD Basic or above")
 
         user_info = {"has_subscription": False, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "EPD Free")
+        self.assertEqual(subscription_level(user_info), "Canopy / EPD Free")
 
         user_info = {"has_subscription": False, "is_authenticated": False}
         self.assertIsNone(subscription_level(user_info))
