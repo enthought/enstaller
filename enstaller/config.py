@@ -391,9 +391,9 @@ class Configuration(object):
             else:
                 authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
-            # EPD subscriber authentication is required to access the EPD
-            # repository.  To change your credentials, use the 'enpkg --userpass'
-            # command, which will ask you for your email address (or username) and
+            # A Canopy / EPD subscriber authentication is required to access the
+            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
+            # --userpass' command, which will ask you for your email address
             # password.
             %s
             """ % authline)
@@ -550,10 +550,9 @@ def input_auth():
     Prompt user for username and password.  Return (username, password)
     tuple or (None, None) if left blank.
     """
-    print("""\
-Please enter the email address (or username) and password for your
-EPD or EPD Free subscription.
-""")
+    print(textwrap.dedent("""\
+        Please enter the email address and password for your Canopy / EPD
+        subscription.  """))
     username = raw_input('Email (or username): ').strip()
     if not username:
         return None, None
@@ -598,19 +597,19 @@ def web_auth(auth,
 
 def subscription_level(user):
     """
-    Extract the level of EPD subscription from the dictionary (`user`)
-    returned by the web API.
+    Extract the subscription level from the dictionary (`user`) returned by the
+    web API.
     """
     if 'has_subscription' in user:
         if user.get('is_authenticated', False) and user.get('has_subscription', False):
-            return 'EPD Basic or above'
+            return 'Canopy / EPD Basic or above'
         elif user.get('is_authenticated', False) and not(user.get('has_subscription', False)):
-            return 'EPD Free'
+            return 'Canopy / EPD Free'
         else:
             return None
     else:  # don't know the subscription level
         if user.get('is_authenticated', False):
-            return 'EPD'
+            return 'Canopy / EPD'
         else:
             return None
 

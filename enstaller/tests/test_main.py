@@ -651,7 +651,7 @@ class TestInstallReq(unittest.TestCase):
             1.7.1 (no subscription)
         No package found to fulfill your requirement at your subscription level:
             You are logged in as None.
-            Subscription level: EPD
+            Subscription level: Canopy / EPD
         """)
 
         self.maxDiff = None
