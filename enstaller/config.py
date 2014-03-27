@@ -550,9 +550,9 @@ def input_auth():
     Prompt user for username and password.  Return (username, password)
     tuple or (None, None) if left blank.
     """
-    print("""\
-Please enter the email address and password for your Canopy / EPD subscription.
-""")
+    print(textwrap.dedent("""\
+        Please enter the email address and password for your Canopy / EPD
+        subscription.  """))
     username = raw_input('Email (or username): ').strip()
     if not username:
         return None, None
@@ -598,7 +598,7 @@ def web_auth(auth,
 def subscription_level(user):
     """
     Extract the subscription level from the dictionary (`user`) returned by the
-web API.
+    web API.
     """
     if 'has_subscription' in user:
         if user.get('is_authenticated', False) and user.get('has_subscription', False):
