@@ -94,7 +94,7 @@ class LocalIndexedStore(IndexedStore):
             # FIXME: this is moronic, but hard to fix nicely until we get rid
             # of the terrible store API.
             if key == _INDEX_NAME:
-                msg = "Could not access the index file for local repository {0!r:}"
+                msg = "Could not access the index file for local repository {0!r}"
                 raise InvalidConfiguration(msg.format(self._location(key)))
             else:
                 raise KeyError(str(e))
