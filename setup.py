@@ -12,9 +12,9 @@ MAJOR = 4
 MINOR = 6
 MICRO = 4
 
-IS_RELEASED = False
+IS_RELEASED = True
 
-VERSION = '%d.%d.%d.dev1' % (MAJOR, MINOR, MICRO)
+VERSION = '%d.%d.%d.rc1' % (MAJOR, MINOR, MICRO)
 
 # Return the git revision as a string
 def git_version():
