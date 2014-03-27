@@ -139,14 +139,16 @@ class TestRemoteHTTPStore(unittest.TestCase):
             import urllib2
 
             def http_error_open(request):
-                raise urllib2.HTTPError(1, 2, 3, 4, StringIO())
+                raise urllib2.HTTPError(1, 404, 3, 4, StringIO())
             build_opener.open = http_error_open
-            self.assertRaises(KeyError, lambda: store.get_data(""))
+            with self.assertRaises(KeyError):
+                store.get_data("")
 
             def url_error_open(request):
                 raise urllib2.URLError("yeah")
             build_opener.open = url_error_open
-            self.assertRaises(Exception, lambda: store.get_data(""))
+            with self.assertRaises(Exception):
+                store.get_data("")
 
 class TestLocalIndexedStore(unittest.TestCase):
     def setUp(self):

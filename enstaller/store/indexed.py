@@ -3,7 +3,7 @@ import urlparse
 import urllib2
 from collections import defaultdict
 
-from enstaller.errors import InvalidConfiguration
+from enstaller.errors import EnstallerException, InvalidConfiguration
 
 from base import AbstractStore
 from cached import CachedHandler
@@ -18,6 +18,9 @@ class IndexedStore(AbstractStore):
     def __init__(self):
         super(IndexedStore, self).__init__()
         self._connected = False
+
+    def _is_key_index(self, key):
+        return key.startswith(_INDEX_NAME)
 
     def connect(self, userpass=None):
         self.userpass = userpass  # tuple(username, password)
@@ -93,7 +96,7 @@ class LocalIndexedStore(IndexedStore):
         except IOError as e:
             # FIXME: this is moronic, but hard to fix nicely until we get rid
             # of the terrible store API.
-            if key == _INDEX_NAME:
+            if self._is_key_index(key):
                 msg = "Could not access the index file for local repository {0!r}"
                 raise InvalidConfiguration(msg.format(self._location(key)))
             else:
@@ -142,7 +145,19 @@ class RemoteHTTPIndexedStore(IndexedStore):
         try:
             return self.opener.open(request)
         except urllib2.HTTPError as e:
-            raise KeyError("%s: %s" % (e, url))
+            # FIXME: this is moronic, but hard to fix nicely until we get rid
+            # of the terrible store API.
+            if self._is_key_index(key):
+                if e.code == 404:
+                    msg = "Could not access the index file for repository {0!r}"
+                    raise EnstallerException(msg.format(self._location(key)))
+                else:
+                    raise
+            else:
+                if e.code == 404:
+                    raise KeyError("%s: %s" % (e, url))
+                else:
+                    raise
         except urllib2.URLError as e:
             raise Exception("Could not connect to %s (reason: %s / %s)" % (host, e.reason, e.args))
 

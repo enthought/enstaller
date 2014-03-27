@@ -20,6 +20,7 @@ else:
 import mock
 
 from egginst.tests.common import mkdtemp
+from egginst.testing_utils import network
 
 from enstaller import __version__
 
@@ -30,8 +31,9 @@ from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, PythonConfigurationParser)
-from enstaller.errors import InvalidConfiguration, InvalidFormat
-from enstaller.store.indexed import LocalIndexedStore
+from enstaller.errors import (EnstallerException, InvalidConfiguration,
+    InvalidFormat)
+from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
@@ -459,6 +461,17 @@ class TestAuthenticate(unittest.TestCase):
         remote = mock.Mock()
         user = authenticate(config, remote)
         self.assertEqual(user, {"is_authenticated": True})
+
+    @network
+    @fake_keyring
+    def test_non_existing_remote(self):
+        config = Configuration()
+        config.use_webservice = False
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        remote = RemoteHTTPIndexedStore("http://api.enthought.com/dummy/repo", "/fake/directory")
+        with self.assertRaises(EnstallerException):
+            authenticate(config, remote)
 
     @fake_keyring
     def test_local_repo(self):
