@@ -18,9 +18,6 @@ def main(argv=None):
     if not os.path.exists(prefix):
         p.error("Prefix {0} does not exist".format(prefix))
 
-    if not sys.platform == "win32":
-        p.error("This script should only be used on windows.")
-
     repair(prefix, ns.dry_run)
 
 
