@@ -15,17 +15,20 @@ def package_egg_info_dir(egginst):
 def needs_repair(egg_info_dir):
     if not os.path.exists(egg_info_dir):
         return False
-    if not os.path.isdir(egg_info_dir):
-        return False
-    egg_info_dir_content = os.listdir(egg_info_dir)
-    if "PKG-INFO" in egg_info_dir_content or "egginst.json" in egg_info_dir_content:
-        return False
-    return True
+    if os.path.isdir(egg_info_dir):
+        egg_info_dir_content = os.listdir(egg_info_dir)
+        if "PKG-INFO" in egg_info_dir_content or "egginst.json" in egg_info_dir_content:
+            return False
+        return True
+    elif os.path.isfile(egg_info_dir):
+        return True
 
 
 def convert_path_to_posix(p):
     if os.path.sep != "/":
         return p.replace(os.path.sep, "/")
+    else:
+        return p
 
 
 def _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run):
@@ -60,11 +63,31 @@ def _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run):
 
 
 def repair_package(egginst, dry_run=False):
-    dest_egg_info_dir = package_egg_info_dir(egginst)
     source_egg_info_dir = egginst.meta_dir
+    dest_egg_info_dir = package_egg_info_dir(egginst)
+
+    _repair_package_dir(source_egg_info_dir, dest_egg_info_dir, dry_run)
+
+
+def _fix_pkg_info_file(dest_egg_info_dir, dry_run):
+    if not os.path.exists(dest_egg_info_dir):
+        return
+    if not os.path.isfile(dest_egg_info_dir):
+        return
+
+    source_pkg_info = dest_egg_info_dir
+    target_pkg_info = os.path.join(dest_egg_info_dir, "PKG-INFO")
 
     if dry_run:
+        print "Would copy {0} to {1}".format(source_pkg_info, target_pkg_info)
+    else:
+        shutil.copy(source_pkg_info, target_pkg_info)
+
+
+def _repair_package_dir(source_egg_info_dir, dest_egg_info_dir, dry_run):
+    if dry_run:
         _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run)
+        _fix_pkg_info_file(dest_egg_info_dir, dry_run)
         return
 
     working_dir = dest_egg_info_dir + ".wdir"
@@ -75,7 +98,10 @@ def repair_package(egginst, dry_run=False):
     makedirs(working_dir)
     try:
         _in_place_repair(source_egg_info_dir, working_dir, dry_run)
+        _fix_pkg_info_file(working_dir, dry_run)
+        # Backup original egg-info file/dir
         os.rename(dest_egg_info_dir, temp_dir)
+        # Move repaired egg-info file/dir to final destination
         os.rename(working_dir, dest_egg_info_dir)
     except BaseException:
         rm_rf(working_dir)
