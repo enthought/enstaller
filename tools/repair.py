@@ -9,8 +9,8 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    p = argparse.ArgumentParser(description="Script to repair egg info directories.")
-    p.add_argument("-n", "--dry-run", help="Do not modity anything", action="store_true")
+    p = argparse.ArgumentParser(description="Script to repair .egg-info directories.")
+    p.add_argument("-n", "--dry-run", help="Do not modify anything", action="store_true")
     p.add_argument("--prefix", help="The prefix to fix", default=sys.prefix)
     ns = p.parse_args(argv)
 
