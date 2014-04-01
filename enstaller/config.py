@@ -221,7 +221,8 @@ def _is_using_epd_username(filename_or_fp):
 
 def convert_auth_if_required(filename):
     """
-    This function will convert configuration using EPD_username + keyring to using EPD_auth.
+    This function will convert configuration using EPD_username + keyring to
+    using EPD_auth.
 
     Returns True if the file has been modified, False otherwise.
     """
