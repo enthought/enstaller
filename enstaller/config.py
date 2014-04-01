@@ -194,12 +194,12 @@ def _encode_auth(username, password):
     return base64.encodestring(s).rstrip()
 
 
-def write_default_config(filename, use_keyring=None):
+def write_default_config(filename):
     if os.path.isfile(filename):
         msg = "File '{0}' already exists, not overwriting."
         raise EnstallerException(msg.format(filename))
     else:
-        config = Configuration(use_keyring=use_keyring)
+        config = Configuration()
         config.write(filename)
 
 
@@ -221,19 +221,19 @@ def _is_using_epd_username(filename_or_fp):
 
 def convert_auth_if_required(filename):
     """
-    This function will modify the given file authentication information if
-    required.
-
-    Authentication modifications are required if the original content is using
-    EPD_auth, and keyring is used.
+    This function will convert configuration using EPD_username + keyring to using EPD_auth.
 
     Returns True if the file has been modified, False otherwise.
     """
     did_convert = False
-    if not _is_using_epd_username(filename):
+    if _is_using_epd_username(filename):
         config = Configuration.from_file(filename)
-        if config.use_keyring:
-            config._ensure_keyring_is_set()
+        username = config.EPD_username
+        password = _get_password(username)
+        if password is None:
+            raise EnpkgError("Cannot convert password: no password found in keyring")
+        else:
+            config.set_auth(username, password)
             config._change_auth(filename)
             did_convert = True
 
@@ -256,7 +256,7 @@ class Configuration(object):
             return cls.from_file(config_filename)
 
     @classmethod
-    def from_file(cls, filename, use_keyring=None):
+    def from_file(cls, filename):
         """
         Create a new Configuration instance from the given file.
 
@@ -274,7 +274,7 @@ class Configuration(object):
         parser = PythonConfigurationParser()
 
         def _create(fp):
-            ret = cls(use_keyring)
+            ret = cls()
             for k, v in parser.parse(fp.read()).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
@@ -301,7 +301,7 @@ class Configuration(object):
         else:
             return _create(filename)
 
-    def __init__(self, use_keyring=None):
+    def __init__(self):
         self.proxy = None
         self.noapp = False
         self.use_webservice = True
@@ -318,19 +318,7 @@ class Configuration(object):
         self._username = None
         self._password = None
 
-        if use_keyring is None:
-            self._use_keyring = keyring is not None
-        elif use_keyring is True:
-            if keyring is None:
-                raise InvalidConfiguration("Requested using keyring, but "
-                                           "no keyring available.")
-            self._use_keyring = use_keyring
-        elif use_keyring is False:
-            self._use_keyring = use_keyring
-        else:
-            raise InvalidConfiguration("Invalid value for use_keyring: {0}".
-                                       format(use_keyring))
-
+        self._use_keyring = False
         self._filename = None
 
     @property
@@ -385,11 +373,7 @@ class Configuration(object):
     def write(self, filename):
         username, password = self.get_auth()
         if username and password:
-            if self.use_keyring:
-                authline = 'EPD_username = %r' % self.EPD_username
-                self._ensure_keyring_is_set()
-            else:
-                authline = 'EPD_auth = %r' % self.EPD_auth
+            authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
@@ -423,10 +407,7 @@ class Configuration(object):
                 fo.write(data)
             return
 
-        if self.use_keyring:
-            authline = 'EPD_username = %r' % self.EPD_username
-        else:
-            authline = 'EPD_auth = %r' % self.EPD_auth
+        authline = 'EPD_auth = %r' % self.EPD_auth
 
         if pat.search(data):
             data = pat.sub(authline, data)
