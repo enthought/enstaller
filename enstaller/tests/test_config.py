@@ -160,6 +160,28 @@ class TestConfigKeyringConversion(unittest.TestCase):
 
         self.assertFalse(convert_auth_if_required(filename))
 
+    @fake_keyring
+    def test_username_to_auth_conversion(self):
+        """
+        Ensure we don't convert EPD_auth to using keyring.
+        """
+        # Given
+        old_config = "EPD_username = '{0}'".format(FAKE_USER)
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fp.write(old_config)
+            filename = fp.name
+        with fake_keyring_context() as mocked_keyring:
+            mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER,
+                                        FAKE_PASSWORD)
+
+            # When
+            converted = convert_auth_if_required(filename)
+
+            # Then
+            self.assertTrue(converted)
+            with open(filename) as fp:
+                self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 
 R_JSON_AUTH_RESP = {'first_name': u'David',
