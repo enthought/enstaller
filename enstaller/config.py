@@ -684,15 +684,9 @@ def authenticate(configuration, remote=None):
         except Exception as e:
             raise AuthFailedError('Authentication failed: %s.' % e)
     else:
-        # check credentials using remote.connect
-        try:
-            remote.connect(auth)
-            user = dict(is_authenticated=True)
-        except KeyError:
-            raise AuthFailedError('Authentication failed:'
-                                  ' Invalid user login.')
-        except Exception as e:
-            raise AuthFailedError('Authentication failed: %s.' % e)
+        remote.connect(auth)
+        user = dict(is_authenticated=True)
+
     return user
 
 
