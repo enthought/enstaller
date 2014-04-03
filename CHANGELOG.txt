@@ -10,6 +10,7 @@ Main highlights:
   * support for python 2.5 has ben dropped
   * add use_pypi = True/False configuration entry to enable/disable pypi repo
     access (True by default)
+  * add enpkg-repair script to fix .egg-info directories
 
 Bug fixes:
 
