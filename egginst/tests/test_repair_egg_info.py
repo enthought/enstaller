@@ -8,7 +8,7 @@ else:
     import unittest
 
 from egginst.main import EggInst, setuptools_egg_info_dir
-from egginst._repair_broken_egg_info import EggInfoDirFixer, repair
+from egginst.repair_broken_egg_info import EggInfoDirFixer, repair
 from egginst.testing_utils import slow
 from egginst.tests.common import (DUMMY_EGG, DUMMY_EGG_WITH_ENTRY_POINTS,
     DUMMY_EGG_WITH_APPINST)
