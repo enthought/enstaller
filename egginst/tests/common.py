@@ -1,6 +1,7 @@
 import contextlib
 import os
 import shutil
+import subprocess
 import sys
 import tempfile
 
@@ -63,3 +64,9 @@ def mkdtemp():
     yield d
     shutil.rmtree(d)
 
+def create_venv(prefix):
+    if os.environ.get("ENSTALLER_TEST_USE_VENV", None):
+        cmd = ["venv", "-s", prefix]
+    else:
+        cmd = ["virtualenv", "-p", sys.executable, prefix]
+    subprocess.check_call(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
