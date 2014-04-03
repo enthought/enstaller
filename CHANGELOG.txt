@@ -1,3 +1,10 @@
+2014-04-03   4.6.4:
+-------------------
+
+Main highlights:
+
+  * backport enpkg-repair script to fix .egg-info directories
+
 2013-12-16   4.6.3:
 -------------------
 
