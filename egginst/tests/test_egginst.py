@@ -1,7 +1,6 @@
 import os
 import os.path
 import shutil
-import subprocess
 import sys
 import tempfile
 
@@ -22,7 +21,8 @@ from .common import DUMMY_EGG, DUMMY_EGG_WITH_APPINST, \
         DUMMY_EGG_WITH_ENTRY_POINTS, DUMMY_EGG_METADATA_FILES, \
         LEGACY_EGG_INFO_EGG, LEGACY_EGG_INFO_EGG_METADATA_FILES, \
         NOSE_1_3_0, PYTHON_VERSION, STANDARD_EGG, \
-        STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK, mkdtemp
+        STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK, mkdtemp, \
+        create_venv
 
 def _create_egg_with_symlink(filename, name):
     with ZipFile(filename, "w") as fp:
@@ -100,11 +100,7 @@ class TestEggInstMain(unittest.TestCase):
 class TestEggInstInstall(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()
-        if os.environ.get("ENSTALLER_TEST_USE_VENV", None):
-            cmd = ["venv", "-s", self.base_dir]
-        else:
-            cmd = ["virtualenv", "-p", sys.executable, self.base_dir]
-        subprocess.check_call(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        create_venv(self.base_dir)
 
         if sys.platform == "win32":
             self.bindir = os.path.join(self.base_dir, "Scripts")
