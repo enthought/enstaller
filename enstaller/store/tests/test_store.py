@@ -1,6 +1,7 @@
 import json
 import os
 import shutil
+import sys
 import tempfile
 import unittest
 import urlparse
@@ -8,7 +9,10 @@ import uuid
 
 from cStringIO import StringIO
 
-import os.path as op
+if sys.version_info[:2] < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 import mock
 
@@ -17,6 +21,7 @@ from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
 from egginst.testing_utils import network
 from egginst.tests.common import DUMMY_EGG, DUMMY_WITH_PROXY_EGG
 
+from enstaller.errors import InvalidConfiguration
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
 
@@ -134,14 +139,16 @@ class TestRemoteHTTPStore(unittest.TestCase):
             import urllib2
 
             def http_error_open(request):
-                raise urllib2.HTTPError(1, 2, 3, 4, StringIO())
+                raise urllib2.HTTPError(1, 404, 3, 4, StringIO())
             build_opener.open = http_error_open
-            self.assertRaises(KeyError, lambda: store.get_data(""))
+            with self.assertRaises(KeyError):
+                store.get_data("")
 
             def url_error_open(request):
                 raise urllib2.URLError("yeah")
             build_opener.open = url_error_open
-            self.assertRaises(Exception, lambda: store.get_data(""))
+            with self.assertRaises(Exception):
+                store.get_data("")
 
 class TestLocalIndexedStore(unittest.TestCase):
     def setUp(self):
@@ -186,6 +193,11 @@ class TestLocalIndexedStore(unittest.TestCase):
         store.connect()
 
         self.assertRaises(KeyError, lambda: store.get_data("dummy_key"))
+
+    def test_invalid_non_existing_root(self):
+        store = LocalIndexedStore(self.d)
+        with self.assertRaises(InvalidConfiguration):
+            store.connect()
 
 def _local_store_factory(entries, basedir):
     d = os.path.join(basedir, str(uuid.uuid4())[:8])

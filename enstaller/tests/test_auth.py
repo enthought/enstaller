@@ -85,7 +85,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             config.set_auth(None, None)
 
     def test_empty_strings(self):
-        config = Configuration(use_keyring=False)
+        config = Configuration()
         config.set_auth("", "")
 
         with self.assertRaises(InvalidConfiguration):

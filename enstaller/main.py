@@ -27,7 +27,8 @@ from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
-from enstaller.errors import InvalidPythonPathConfiguration, EXIT_ABORTED
+from enstaller.errors import (EnstallerException,
+    InvalidPythonPathConfiguration, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,

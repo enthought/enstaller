@@ -14,7 +14,7 @@ else:
 import mock
 
 from enstaller.main import main_noexc
-from enstaller.config import _encode_auth, Configuration
+from enstaller.config import _encode_auth, _set_keyring_password, Configuration
 
 from enstaller.tests.common import (
     fake_keyring, mock_print, fail_authenticate, mock_input_auth,
@@ -34,6 +34,12 @@ class TestAuth(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.d)
+
+    def _run_main_with_dummy_req(self):
+        with use_given_config_context(self.config):
+            with self.assertRaises(SystemExit) as e:
+                main_noexc(["dummy_requirement"])
+                self.assertEqual(e.exception.code, 0)
 
     def test_auth_requested_without_config(self):
         """
@@ -99,45 +105,37 @@ class TestAuth(unittest.TestCase):
     @succeed_authenticate
     @mock_enpkg_class
     @fake_keyring
-    def test_no_keyring_to_keyring_conversion(self):
+    def test_no_keyring_to_no_keyring_conversion(self):
+        """
+        Ensure the config file is not converted when configured not to use
+        keyring.
+        """
+        # Given
+        with open(self.config, "w") as fp:
+            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
+
+        # When
+        self._run_main_with_dummy_req()
+
+        # Then
+        with open(self.config) as fp:
+            self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+
+    @succeed_authenticate
+    @mock_enpkg_class
+    @fake_keyring
+    def test_keyring_to_no_keyring_conversion(self):
         """
         Ensure the config file is automatically converted to use keyring.
         """
-        with open(self.config, "w") as fp:
-            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
-
-        with use_given_config_context(self.config):
-            with self.assertRaises(SystemExit) as e:
-                main_noexc(["dummy_requirement"])
-                self.assertEqual(e.exception.code, 0)
-
-        config = Configuration.from_file(self.config)
-        self.assertTrue(config.is_auth_configured)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
-
-        with open(self.config) as fp:
-            self.assertMultiLineEqual(fp.read(), "EPD_username = '{0}'".format(FAKE_USER))
-
-    @without_any_configuration
-    @succeed_authenticate
-    def test_imports(self):
-        with open(self.config, "w") as fp:
-            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
-
-        with use_given_config_context(self.config):
-            with self.assertRaises(SystemExit) as e:
-                main_noexc(["--imports"])
-            self.assertEqual(e.exception.code, 0)
-
-    @without_any_configuration
-    def test_incomplete_auth_config(self):
-        r_output = ("No authentication configured, required to continue."
-                    "To login, type 'enpkg --userpass'.\n")
+        # Given
+        _set_keyring_password(FAKE_USER, FAKE_PASSWORD)
         with open(self.config, "w") as fp:
             fp.write("EPD_username = '{0}'".format(FAKE_USER))
 
-        with mock_print() as m:
-	    with self.assertRaises(SystemExit) as e:
-                main_noexc(["--imports"])
-            self.assertEqual(e.exception.code, -1)
-        self.assertMultiLineEqual(m.value, r_output)
+        # When
+        self._run_main_with_dummy_req()
+
+        # Then
+        with open(self.config) as fp:
+            self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
