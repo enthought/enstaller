@@ -6,10 +6,16 @@ import sys
 import tempfile
 import textwrap
 
-if sys.version_info[:2] < (2, 7):
+if sys.version_info < (2, 7):
     import unittest2 as unittest
+    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
+    # context manager does not contain the actual exception object ?
+    def exception_code(ctx):
+        return ctx.exception
 else:
     import unittest
+    def exception_code(ctx):
+        return ctx.exception.code
 
 import mock
 
@@ -102,7 +108,7 @@ class TestEnstallerInstallActions(unittest.TestCase):
             with mock.patch("enstaller.main.install_req"):
                 with self.assertRaises(SystemExit) as e:
                     main(["--remove", "epd"])
-                self.assertNotEqual(e.exception.code, 0)
+                    self.assertNotEqual(exception_code(e), 0)
 
     @fake_configuration_and_auth
     def test_install_epd_and_other(self):
@@ -110,7 +116,7 @@ class TestEnstallerInstallActions(unittest.TestCase):
             with mock.patch("enstaller.main.install_req"):
                 with self.assertRaises(SystemExit) as e:
                     main(["epd", "numpy"])
-                self.assertNotEqual(e.exception.code, 0)
+                self.assertNotEqual(exception_code(e), 0)
 
     @fake_configuration_and_auth
     def test_remove(self):
