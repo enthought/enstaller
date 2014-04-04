@@ -32,6 +32,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
     prepend_url, print_config, subscription_message, write_default_config)
+from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
@@ -498,6 +499,14 @@ def ensure_authenticated_config(config, config_filename, enpkg):
         else:
             convert_auth_if_required(config_filename)
 
+
+def install_from_requirements(enpkg, args):
+    with open(args.requirements, "r") as fp:
+        for req in fp:
+            args.no_deps = True
+            install_req(enpkg, req, args)
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
@@ -653,16 +662,7 @@ def main(argv=None):
         return
 
     if args.freeze:
-        from .eggcollect import EggCollection, JoinedEggCollection
-        collection = JoinedEggCollection(
-            [EggCollection(prefix, False, None) for prefix in prefixes]
-        )
-        full_names = [
-            "{0} {1}-{2}".format(req["name"], req["version"], req["build"])
-            for name, req in collection.query(type="egg")
-        ]
-        for full_name in sorted(full_names):
-            print(full_name)
+        print(get_freeze_list(prefixes))
         return
 
     if args.list:                                 # --list
@@ -773,10 +773,7 @@ def main(argv=None):
         return
 
     if args.requirements:
-        with open(args.requirements, "r") as fp:
-            for req in fp:
-                args.no_deps = True
-                install_req(enpkg, req, args)
+        install_from_requirements(enpkg, args)
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
