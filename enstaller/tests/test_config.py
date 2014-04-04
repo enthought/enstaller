@@ -577,7 +577,7 @@ class TestConfigurationParsing(unittest.TestCase):
 
     def test_epd_auth(self):
         """
-        Ensure config is properly setup in keyring mode when using EPD_auth
+        Ensure config auth information is properly set-up when using EPD_auth
         """
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
         config = Configuration.from_file(s)
