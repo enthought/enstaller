@@ -71,7 +71,7 @@ def info_from_metadir(meta_dir):
 
 class EggCollection(AbstractEggCollection):
 
-    def __init__(self, prefix, hook, evt_mgr=None):
+    def __init__(self, prefix, hook=False, evt_mgr=None):
         self.prefix = prefix
         self.hook = hook
         self.evt_mgr = evt_mgr
