@@ -3,10 +3,16 @@ from __future__ import absolute_import
 import sys
 import textwrap
 
-if sys.version_info[:2] < (2, 7):
+if sys.version_info < (2, 7):
     import unittest2 as unittest
+    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
+    # context manager does not contain the actual exception object ?
+    def exception_code(ctx):
+        return ctx.exception
 else:
     import unittest
+    def exception_code(ctx):
+        return ctx.exception.code
 
 import mock
 
@@ -43,7 +49,7 @@ class TestEnstallerMainActions(unittest.TestCase):
         with mock.patch("enstaller.main.main", side_effect=KeyboardInterrupt):
             with self.assertRaises(SystemExit) as e:
                 main_noexc()
-            self.assertEqual(e.exception.code, EXIT_ABORTED)
+                self.assertEqual(exception_code(e), EXIT_ABORTED)
 
     @without_any_configuration
     def test_crash_handling_default(self):
@@ -57,7 +63,7 @@ class TestEnstallerMainActions(unittest.TestCase):
             with mock_print() as mocked_print:
                 with self.assertRaises(SystemExit) as e:
                     main_noexc()
-                self.assertEqual(e.exception.code, 1)
+                self.assertEqual(exception_code(e), 1)
             self.assertMultiLineEqual(mocked_print.value, r_output)
 
     @without_any_configuration
