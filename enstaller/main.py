@@ -40,8 +40,8 @@ from enstaller.eggcollect import EggCollection
 from enstaller.enpkg import (Enpkg, EnpkgError, create_joined_store,
     req_from_anything)
 from enstaller.resolve import Req, comparable_info
-from enstaller.egg_meta import is_valid_eggname, split_eggname
-from enstaller.errors import AuthFailedError, InvalidConfiguration
+from enstaller.egg_meta import split_eggname
+from enstaller.errors import AuthFailedError
 from enstaller.history import History
 
 from enstaller.store.joined import JoinedStore
@@ -407,18 +407,15 @@ def update_enstaller(enpkg, opts):
         return updated
     if not IS_RELEASED:
         return updated
-    try:
-        # Ugly: we create a new enpkg class to merge a
-        # fake local repo to take into account our locally
-        # installed enstaller
-        new_enpkg = _create_enstaller_update_enpkg(enpkg)
-        if len(new_enpkg._install_actions_enstaller()) > 0:
-            yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
-            if yn in set(['y', 'Y', '', None]):
-                install_req(enpkg, 'enstaller', opts)
-                updated = True
-    except EnpkgError as e:
-        print("Can't update enstaller:", e)
+    # Ugly: we create a new enpkg class to merge a
+    # fake local repo to take into account our locally
+    # installed enstaller
+    new_enpkg = _create_enstaller_update_enpkg(enpkg)
+    if len(new_enpkg._install_actions_enstaller()) > 0:
+        yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
+        if yn in set(['y', 'Y', '', None]):
+            install_req(enpkg, 'enstaller', opts)
+            updated = True
     return updated
 
 def get_package_path(prefix):
@@ -483,20 +480,14 @@ def get_config_filename(use_sys_config):
 
 def ensure_authenticated_config(config, config_filename, enpkg):
     try:
-        config.get_auth()
-    except InvalidConfiguration:
-        print(PLEASE_AUTH_MESSAGE)
+        authenticate(config, enpkg.remote)
+    except AuthFailedError:
+        login, _ = config.get_auth()
+        print("Could not authenticate with user '{0}'.".format(login))
+        print("You can change your authentication details with 'enpkg --userpass'")
         sys.exit(-1)
     else:
-        try:
-            authenticate(config, enpkg.remote)
-        except AuthFailedError as e:
-            login, _ = config.get_auth()
-            print("Could not authenticate with user '{0}'.".format(login))
-            print("You can change your authentication details with 'enpkg --userpass'")
-            sys.exit(-1)
-        else:
-            convert_auth_if_required(config_filename)
+        convert_auth_if_required(config_filename)
 
 
 def install_from_requirements(enpkg, args):
@@ -707,7 +698,7 @@ def main(argv=None):
         config.set_auth(username, password)
         try:
             config._checked_change_auth(config_filename)
-        except AuthFailedError as e:
+        except AuthFailedError:
             msg = ("Could not authenticate. Please check your credentials "
                    "and try again.\nNo modification was written.")
             print(msg)
@@ -731,15 +722,11 @@ def main(argv=None):
         return
 
     if args.revert:                               # --revert
-        arg = args.revert
-        try:
-            actions = enpkg.revert_actions(arg)
-            if not actions:
-                print("Nothing to do")
-                return
+        actions = enpkg.revert_actions(args.revert)
+        if actions:
             enpkg.execute(actions)
-        except EnpkgError as e:
-            print(e.message)
+        else:
+            print("Nothing to do")
         return
 
     # Try to auto-update enstaller
