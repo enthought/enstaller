@@ -61,6 +61,18 @@ def use_given_config_context(filename):
                     lambda ignored: filename) as context:
         yield context
 
+
+def fake_configuration_and_auth(f):
+    config = Configuration()
+    config.set_auth("john", "doe")
+    @functools.wraps(f)
+    def wrapper(*a, **kw):
+        with mock.patch("enstaller.main.Configuration.from_file", return_value=config):
+            with mock.patch("enstaller.main.ensure_authenticated_config", return_value=True):
+                return without_any_configuration(f)(*a, **kw)
+    return wrapper
+
+
 def enstaller_version(version, is_released=True):
     wrap1 = mock.patch("enstaller.__version__", version)
     wrap2 = mock.patch("enstaller.main.__ENSTALLER_VERSION__", version)
