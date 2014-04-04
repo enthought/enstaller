@@ -107,7 +107,8 @@ class TestAuth(unittest.TestCase):
     @fake_keyring
     def test_no_keyring_to_no_keyring_conversion(self):
         """
-        Ensure the config file is automatically converted to use keyring.
+        Ensure the config file is not converted when configured not to use
+        keyring.
         """
         # Given
         with open(self.config, "w") as fp:
