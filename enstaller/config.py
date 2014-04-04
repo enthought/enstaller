@@ -230,7 +230,7 @@ def convert_auth_if_required(filename):
     if _is_using_epd_username(filename):
         config = Configuration.from_file(filename)
         username = config.EPD_username
-        password = _get_password(username)
+        password = _get_keyring_password(username)
         if password is None:
             raise EnpkgError("Cannot convert password: no password found in keyring")
         else:
@@ -241,10 +241,10 @@ def convert_auth_if_required(filename):
     return did_convert
 
 
-def _get_password(username):
+def _get_keyring_password(username):
     return keyring.get_password(KEYRING_SERVICE_NAME, username)
 
-def _set_password(username, password):
+def _set_keyring_password(username, password):
     return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
 
 class Configuration(object):
@@ -288,7 +288,7 @@ class Configuration(object):
                     if keyring is None:
                         ret._password = None
                     else:
-                        ret._password = _get_password(v)
+                        ret._password = _get_keyring_password(v)
                 else:
                     warnings.warn("Unsupported configuration setting {0}, "
                                   "ignored".format(k))
@@ -345,13 +345,13 @@ class Configuration(object):
             self._password = password
 
             if self.use_keyring:
-                _set_password(self._username, self._password)
+                _set_keyring_password(self._username, self._password)
 
     def reset_auth(self):
         if self.use_keyring:
             if self._username is None:
                 raise ValueError("Cannot reset auth if not set up.")
-            _set_password(self.EPD_username, "")
+            _set_keyring_password(self.EPD_username, "")
 
         self._username = None
         self._password = None
@@ -367,9 +367,9 @@ class Configuration(object):
         It is an error to call this if username or password are not set.
         """
         assert self.is_auth_configured, "username/password must be set !"
-        if _get_password(self._username) is None \
-           or _get_password(self._username) != self._password:
-            _set_password(self._username, self._password)
+        if _get_keyring_password(self._username) is None \
+           or _get_keyring_password(self._username) != self._password:
+            _set_keyring_password(self._username, self._password)
 
     def write(self, filename):
         username, password = self.get_auth()

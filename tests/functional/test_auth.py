@@ -14,7 +14,7 @@ else:
 import mock
 
 from enstaller.main import main_noexc
-from enstaller.config import _encode_auth, _set_password, Configuration
+from enstaller.config import _encode_auth, _set_keyring_password, Configuration
 
 from enstaller.tests.common import (
     fake_keyring, mock_print, fail_authenticate, mock_input_auth,
@@ -128,7 +128,7 @@ class TestAuth(unittest.TestCase):
         Ensure the config file is automatically converted to use keyring.
         """
         # Given
-        _set_password(FAKE_USER, FAKE_PASSWORD)
+        _set_keyring_password(FAKE_USER, FAKE_PASSWORD)
         with open(self.config, "w") as fp:
             fp.write("EPD_username = '{0}'".format(FAKE_USER))
 
