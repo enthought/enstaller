@@ -319,7 +319,6 @@ class Configuration(object):
         self._username = None
         self._password = None
 
-        self._use_keyring = False
         self._filename = None
 
     @property
@@ -331,10 +330,6 @@ class Configuration(object):
         """
         return self._filename
 
-    @property
-    def use_keyring(self):
-        return self._use_keyring
-
     def set_auth(self, username, password):
         if username is None or password is None:
             raise InvalidConfiguration(
@@ -344,15 +339,7 @@ class Configuration(object):
             self._username = username
             self._password = password
 
-            if self.use_keyring:
-                _set_keyring_password(self._username, self._password)
-
     def reset_auth(self):
-        if self.use_keyring:
-            if self._username is None:
-                raise ValueError("Cannot reset auth if not set up.")
-            _set_keyring_password(self.EPD_username, "")
-
         self._username = None
         self._password = None
 

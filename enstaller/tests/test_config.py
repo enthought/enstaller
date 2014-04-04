@@ -572,7 +572,6 @@ class TestConfigurationParsing(unittest.TestCase):
             s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
             config = Configuration.from_file(s)
 
-            self.assertFalse(config.use_keyring)
             self.assertEqual(config.EPD_username, FAKE_USER)
             self.assertEqual(config.EPD_auth, FAKE_CREDS)
 
@@ -583,7 +582,6 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
         config = Configuration.from_file(s)
 
-        self.assertFalse(config.use_keyring)
         self.assertEqual(config.EPD_username, FAKE_USER)
         self.assertEqual(config.EPD_auth, FAKE_CREDS)
 
@@ -673,7 +671,6 @@ class TestConfiguration(unittest.TestCase):
 
             self.assertIsNone(config._username)
             self.assertIsNone(config._password)
-            self.assertFalse(config.use_keyring)
             self.assertFalse(config.is_auth_configured)
 
     def test_set_prefix(self):
