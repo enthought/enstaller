@@ -826,10 +826,7 @@ def main(argv=None):
 
     for req in reqs:
         if args.remove:                               # --remove
-            try:
-                enpkg.execute(enpkg.remove_actions(req))
-            except EnpkgError as e:
-                print(e.message)
+            enpkg.execute(enpkg.remove_actions(req))
         else:
             install_req(enpkg, req, args)             # install (default)
 
