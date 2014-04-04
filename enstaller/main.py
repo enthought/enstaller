@@ -41,6 +41,7 @@ from enstaller.enpkg import (Enpkg, EnpkgError, create_joined_store,
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.errors import AuthFailedError, InvalidConfiguration
+from enstaller.history import History
 
 from enstaller.store.joined import JoinedStore
 from enstaller.store.indexed import IndexedStore
@@ -646,7 +647,6 @@ def main(argv=None):
     if args.log:                                  # --log
         if args.hook:
             raise NotImplementedError
-        from history import History
         h = History(prefix)
         h.update()
         h.print_log()
