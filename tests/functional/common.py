@@ -45,6 +45,13 @@ def mock_enpkg_class(f):
 
 
 @contextlib.contextmanager
+def set_env_vars(**kw):
+    old_env = os.environ.copy()
+    yield os.environ.update(**kw)
+    os.environ = old_env
+
+
+@contextlib.contextmanager
 def use_given_config_context(filename):
     """
     When this decorator is applied, enstaller.main will use the given filename
