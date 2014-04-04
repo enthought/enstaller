@@ -827,7 +827,6 @@ def main(argv=None):
             p.error("Can't remove 'epd'")
         elif len(reqs) > 1:
             p.error("Can't combine 'enpkg epd' with other packages.")
-            return
         elif not epd_install_confirm():
             return
 

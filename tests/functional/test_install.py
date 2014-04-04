@@ -13,15 +13,12 @@ else:
 
 import mock
 
-from enstaller.config import Configuration
 from enstaller.main import main
-from enstaller.tests.common import (
-    fake_keyring, mock_print, fail_authenticate, mock_input_auth,
-    succeed_authenticate)
+from enstaller.tests.common import mock_print
 
-from .common import (use_given_config_context, without_any_configuration,
-    enstaller_version, authenticated_config, raw_input_always_yes,
-    remote_enstaller_available)
+from .common import (fake_configuration_and_auth, enstaller_version,
+                     authenticated_config, raw_input_always_yes,
+                     remote_enstaller_available)
 
 class TestEnstallerMainActions(unittest.TestCase):
     def setUp(self):
@@ -90,3 +87,34 @@ class TestEnstallerMainActions(unittest.TestCase):
             with mock.patch("enstaller.main.install_req"):
                 main(["enstaller"])
         self.assertMultiLineEqual(m.value, r_output)
+
+class TestEnstallerInstallActions(unittest.TestCase):
+    @fake_configuration_and_auth
+    def test_install_epd(self):
+        with mock.patch("enstaller.main.epd_install_confirm") as m:
+            with mock.patch("enstaller.main.install_req"):
+                main(["epd"])
+            self.assertTrue(m.called)
+
+    @fake_configuration_and_auth
+    def test_remove_epd_fails(self):
+        with mock.patch("enstaller.main.epd_install_confirm"):
+            with mock.patch("enstaller.main.install_req"):
+                with self.assertRaises(SystemExit) as e:
+                    main(["--remove", "epd"])
+                self.assertNotEqual(e.exception.code, 0)
+
+    @fake_configuration_and_auth
+    def test_install_epd_and_other(self):
+        with mock.patch("enstaller.main.epd_install_confirm"):
+            with mock.patch("enstaller.main.install_req"):
+                with self.assertRaises(SystemExit) as e:
+                    main(["epd", "numpy"])
+                self.assertNotEqual(e.exception.code, 0)
+
+    @fake_configuration_and_auth
+    def test_remove(self):
+        with mock.patch("enstaller.main.Enpkg") as m:
+            main(["--remove", "numpy"])
+            self.assertTrue(m.return_value.execute.called)
+            self.assertTrue(m.return_value.remove_actions.called)
