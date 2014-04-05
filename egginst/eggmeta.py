@@ -37,7 +37,8 @@ def create_info(egg, extra_info=None):
     info = dict(key=egg.fn)
     info.update(info_from_z(egg.z))
     info['ctime'] = time.ctime()
-    info['hook'] = egg.hook
+    # FIXME: hook kept for compat for now.
+    info['hook'] = False
     if extra_info:
         info.update(extra_info)
 

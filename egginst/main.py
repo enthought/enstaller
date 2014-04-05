@@ -7,22 +7,31 @@ package needs to be uninstalled prior to the install, and so on.  Those tasks
 are responsibilities of a package manager, e.g. enpkg.  You just give it
 eggs and it installs/uninstalls them.
 """
+from __future__ import absolute_import
+
+import ConfigParser
+import cStringIO
+import json
 import os
 import posixpath
-import sys
 import re
-import json
 import shutil
+import sys
 import warnings
 import zipfile
-from uuid import uuid4
+
+from optparse import OptionParser
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
+from uuid import uuid4
 
-import eggmeta
-import scripts
+from enstaller import __version__
 
-from utils import (on_win, bin_dir_name, rel_site_packages, human_bytes, ensure_dir,
-                   rm_empty_dir, rm_rf, get_executable, makedirs, is_zipinfo_symlink, is_zipinfo_dir)
+from . import eggmeta
+from . import scripts
+
+from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
+                    ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
+                    is_zipinfo_symlink, is_zipinfo_dir)
 
 NS_PKG_PAT = re.compile(
     r'\s*__import__\([\'"]pkg_resources[\'"]\)\.declare_namespace'
@@ -110,7 +119,6 @@ class EggInst(object):
         name, version = name_version_fn(self.fn)
         self.cname = name.lower()
         self.prefix = abspath(prefix)
-        self.hook = bool(hook)
         self.evt_mgr = evt_mgr
         self.noapp = noapp
 
@@ -119,13 +127,10 @@ class EggInst(object):
         if self.prefix != abspath(sys.prefix):
             scripts.executable = get_executable(self.prefix)
 
-        if self.hook:
-            warnings.warn("Hook feature not supported anymore", DeprecationWarning)
-        else:
-            self.site_packages = join(self.prefix, rel_site_packages)
-            self.pyloc = self.site_packages
-            self.egginfo_dir = join(self.prefix, 'EGG-INFO')
-            self.meta_dir = join(self.egginfo_dir, self.cname)
+        self.site_packages = join(self.prefix, rel_site_packages)
+        self.pyloc = self.site_packages
+        self.egginfo_dir = join(self.prefix, 'EGG-INFO')
+        self.meta_dir = join(self.egginfo_dir, self.cname)
 
         self.meta_json = join(self.meta_dir, 'egginst.json')
         self.files = []
@@ -145,8 +150,8 @@ class EggInst(object):
         if on_win:
             scripts.create_proxies(self)
         else:
-            import links
-            import object_code
+            from . import links
+            from . import object_code
             if self.verbose:
                 links.verbose = object_code.verbose = True
             links.create(self)
@@ -155,7 +160,6 @@ class EggInst(object):
         self.entry_points()
         if ('EGG-INFO/spec/depend' in self.arcnames  or
             'EGG-INFO/info.json' in self.arcnames):
-            import eggmeta
             eggmeta.create_info(self, extra_info)
         self.z.close()
 
@@ -171,7 +175,6 @@ class EggInst(object):
                                              ignore_empty=False))
         if lines == []:
             return
-        import ConfigParser, cStringIO
         conf = ConfigParser.ConfigParser()
         conf.readfp(cStringIO.StringIO('\n'.join(lines) + '\n'))
         if ('console_scripts' in conf.sections() or
@@ -219,7 +222,7 @@ class EggInst(object):
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
-            from console import ProgressManager
+            from .console import ProgressManager
 
         is_custom_egg = eggmeta.is_custom_egg(self.path)
         n = 0
@@ -429,7 +432,7 @@ class EggInst(object):
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
-            from console import ProgressManager
+            from .console import ProgressManager
 
         self.read_meta()
         n = 0
@@ -496,8 +499,6 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]
 
-    from optparse import OptionParser
-
     p = OptionParser(usage="usage: %prog [options] [EGGS ...]",
                      description=__doc__)
 
@@ -515,11 +516,6 @@ def main(argv=None):
                  help="install prefix, defaults to %default",
                  metavar='PATH')
 
-    p.add_option("--hook",
-                 action="store_true",
-                 help="Do nothing, kept for backward compatibility.",
-                 metavar='PATH')
-
     p.add_option("--pkgs-dir",
                  action="store",
                  help="Do nothing, kept for backward compatibility.",
@@ -534,7 +530,6 @@ def main(argv=None):
 
     opts, args = p.parse_args(argv)
     if opts.version:
-        from enstaller import __version__
         print "enstaller version:", __version__
         return
 
@@ -545,15 +540,13 @@ def main(argv=None):
                       format(opts.prefix))
 
     if opts.list:
-        if args:
-            p.error("the --list option takes no arguments")
         print_installed(prefix)
         return
 
     evt_mgr = None
 
     for path in args:
-        ei = EggInst(path, prefix, opts.hook, opts.pkgs_dir, evt_mgr,
+        ei = EggInst(path, prefix, False, opts.pkgs_dir, evt_mgr,
                      verbose=opts.verbose, noapp=opts.noapp)
         if opts.remove:
             ei.remove()
@@ -561,5 +554,5 @@ def main(argv=None):
             ei.install()
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     main()
