@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import argparse
 import errno
 import os.path
@@ -69,7 +71,7 @@ def _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run):
                 target = os.path.join(dest_egg_info_dir,
                         os.path.relpath(source, source_egg_info_dir))
                 if dry_run:
-                    print "Would copy {0} to {1}".format(source, target)
+                    print("Would copy {0} to {1}".format(source, target))
                 else:
                     shutil.copy(source, target)
 
@@ -84,7 +86,7 @@ def _fix_pkg_info_file(egg_info_file, dest_egg_info_dir, dry_run):
     target_pkg_info = os.path.join(dest_egg_info_dir, "PKG-INFO")
 
     if dry_run:
-        print "Would copy {0} to {1}".format(source_pkg_info, target_pkg_info)
+        print("Would copy {0} to {1}".format(source_pkg_info, target_pkg_info))
     else:
         shutil.copy(source_pkg_info, target_pkg_info)
 

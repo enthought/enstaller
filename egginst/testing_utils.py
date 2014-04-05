@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import contextlib
 import copy
 import functools
@@ -124,7 +126,7 @@ def network(t, raise_on_error=_RAISE_NETWORK_ERROR_DEFAULT,
                     raise
                 except Exception as e:
                     if runs < num_runs - 1:
-                        print("Failed: %r" % e)
+                        print(("Failed: %r" % e))
                     else:
                         raise
 

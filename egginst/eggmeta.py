@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import json
 import time
 from os.path import join

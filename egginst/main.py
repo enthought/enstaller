@@ -7,7 +7,7 @@ package needs to be uninstalled prior to the install, and so on.  Those tasks
 are responsibilities of a package manager, e.g. enpkg.  You just give it
 eggs and it installs/uninstalls them.
 """
-from __future__ import absolute_import
+from __future__ import absolute_import, print_function
 
 import ConfigParser
 import cStringIO
@@ -180,7 +180,7 @@ class EggInst(object):
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
             if self.verbose:
-                print 'creating scripts'
+                print('creating scripts')
                 scripts.verbose = True
             scripts.create(self, conf)
 
@@ -399,8 +399,8 @@ class EggInst(object):
         try:
             _install_app()
         except Exception, e:
-            print("Warning (%sinstalling application item):\n%r" %
-                  ('un' if remove else '', e))
+            print(("Warning (%sinstalling application item):\n%r" %
+                  ('un' if remove else '', e)))
 
 
     def run(self, fn):
@@ -426,7 +426,7 @@ class EggInst(object):
 
     def remove(self):
         if not isdir(self.meta_dir):
-            print "Error: Can't find meta data for:", self.cname
+            print("Error: Can't find meta data for:", self.cname)
             return
 
         if self.evt_mgr:
@@ -489,10 +489,10 @@ def get_installed(prefix=sys.prefix):
 
 def print_installed(prefix=sys.prefix):
     fmt = '%-20s %s'
-    print fmt % ('Project name', 'Version')
-    print 40 * '='
+    print(fmt % ('Project name', 'Version'))
+    print(40 * '=')
     for fn in get_installed(prefix):
-        print fmt % name_version_fn(fn)
+        print(fmt % name_version_fn(fn))
 
 
 def main(argv=None):
@@ -530,7 +530,7 @@ def main(argv=None):
 
     opts, args = p.parse_args(argv)
     if opts.version:
-        print "enstaller version:", __version__
+        print("enstaller version:", __version__)
         return
 
     prefix = normpath(abspath(opts.prefix))
