@@ -113,7 +113,7 @@ class TestEnstallerUpdateHack(unittest.TestCase):
         repo = MetadataOnlyStore(entries)
         repo.connect()
 
-        enpkg = Enpkg(repo, prefixes=prefixes, hook=False,
+        enpkg = Enpkg(repo, prefixes=prefixes,
                       evt_mgr=None, verbose=False, config=Configuration())
         new_enpkg = _create_enstaller_update_enpkg(enpkg, local_version)
         return new_enpkg._install_actions_enstaller(local_version)
@@ -164,7 +164,7 @@ class TestEnpkg(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             queried_entries = enpkg.info_list_name("numpy")
 
@@ -182,7 +182,7 @@ class TestEnpkg(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             queried_entries = enpkg.info_list_name("numpy")
 
@@ -200,7 +200,7 @@ class TestEnpkg(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             r = dict(enpkg.query(name="numpy"))
             self.assertEqual(set(r.keys()),
@@ -223,9 +223,9 @@ class TestEnpkg(unittest.TestCase):
         local_entry = EnpkgS3IndexEntry.from_egg(DUMMY_EGG)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             enpkg.ec.install(os.path.basename(local_egg),
                              os.path.dirname(local_egg))
@@ -260,7 +260,7 @@ class TestEnpkgActions(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             actions = enpkg.install_actions("numpy")
 
@@ -276,7 +276,7 @@ class TestEnpkgActions(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             with self.assertRaises(EnpkgError):
                 enpkg.install_actions("scipy")
@@ -292,8 +292,8 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            local_repo = JoinedEggCollection([EggCollection(d, False, None)])
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            local_repo = JoinedEggCollection([EggCollection(d, None)])
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             enpkg.ec = local_repo
 
@@ -311,7 +311,7 @@ class TestEnpkgActions(unittest.TestCase):
         repo.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d], hook=False,
+            enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
             with self.assertRaises(EnpkgError):
                 enpkg.remove_actions("numpy")
@@ -347,9 +347,9 @@ class TestEnpkgActions(unittest.TestCase):
             # Install older version in l1
             EggInst(l1_egg, l1).install()
 
-            local_repo = JoinedEggCollection([EggCollection(l1, False, None),
-                                              EggCollection(l0, False, None)])
-            enpkg = Enpkg(repo, prefixes=[l1, l0], hook=False,
+            local_repo = JoinedEggCollection([EggCollection(l1, None),
+                                              EggCollection(l0, None)])
+            enpkg = Enpkg(repo, prefixes=[l1, l0],
                           evt_mgr=None, verbose=False, config=Configuration())
             enpkg.ec = local_repo
 
@@ -402,7 +402,7 @@ class TestEnpkgExecute(unittest.TestCase):
         repo.connect()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            enpkg = Enpkg(repo, prefixes=self.prefixes, hook=False,
+            enpkg = Enpkg(repo, prefixes=self.prefixes,
                           evt_mgr=None, verbose=False, config=Configuration())
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
@@ -425,10 +425,10 @@ class TestEnpkgExecute(unittest.TestCase):
         repo.connect()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            enpkg = Enpkg(repo, prefixes=self.prefixes, hook=False,
+            enpkg = Enpkg(repo, prefixes=self.prefixes,
                           evt_mgr=None, verbose=False, config=Configuration())
             local_repo = JoinedEggCollection([
-                EggCollection(prefix, False, None) for prefix in
+                EggCollection(prefix, None) for prefix in
                 self.prefixes])
             local_repo.install = mock.MagicMock()
             enpkg.ec = local_repo
@@ -452,7 +452,7 @@ class TestEnpkgRevert(unittest.TestCase):
         repo = EggsStore([])
         repo.connect()
 
-        enpkg = Enpkg(repo, prefixes=self.prefixes, hook=False,
+        enpkg = Enpkg(repo, prefixes=self.prefixes,
                       evt_mgr=None, verbose=False, config=Configuration())
         enpkg.revert_actions(0)
 
@@ -460,7 +460,7 @@ class TestEnpkgRevert(unittest.TestCase):
             enpkg.revert_actions(1)
 
     def test_invalid_argument(self):
-        enpkg = Enpkg(prefixes=self.prefixes, hook=False,
+        enpkg = Enpkg(prefixes=self.prefixes,
                       evt_mgr=None, verbose=False, config=Configuration())
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
@@ -472,7 +472,7 @@ class TestEnpkgRevert(unittest.TestCase):
         repo = EggsStore([egg])
         repo.connect()
 
-        enpkg = Enpkg(repo, prefixes=self.prefixes, hook=False,
+        enpkg = Enpkg(repo, prefixes=self.prefixes,
                       evt_mgr=None, verbose=False, config=Configuration())
         actions = enpkg.install_actions("dummy")
         enpkg.execute(actions)

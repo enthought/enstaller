@@ -120,7 +120,7 @@ def info_option(enpkg, name):
 def print_installed(prefix, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    ec = EggCollection(prefix, hook=False)
+    ec = EggCollection(prefix)
     for egg, info in ec.query():
         if pat and not pat.search(info['name']):
             continue

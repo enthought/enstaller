@@ -126,10 +126,10 @@ class Enpkg(object):
         self.evt_mgr = evt_mgr
         self.verbose = verbose
 
-	if hook is not False:
+        if hook is not False:
             raise EnpkgError("hook feature has been removed")
         self.ec = JoinedEggCollection([
-                EggCollection(prefix, hook, self.evt_mgr)
+                EggCollection(prefix, self.evt_mgr)
                 for prefix in self.prefixes])
         self._execution_aborted = threading.Event()
 

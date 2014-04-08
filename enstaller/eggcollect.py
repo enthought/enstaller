@@ -71,9 +71,8 @@ def info_from_metadir(meta_dir):
 
 class EggCollection(AbstractEggCollection):
 
-    def __init__(self, prefix, hook, evt_mgr=None):
+    def __init__(self, prefix, evt_mgr=None):
         self.prefix = prefix
-        self.hook = hook
         self.evt_mgr = evt_mgr
         self.verbose = False
 
@@ -84,11 +83,7 @@ class EggCollection(AbstractEggCollection):
             n, v, b = split_eggname(egg)
         except AssertionError:
             return None
-        if self.hook:
-            path = join(self.pkgs_dir,
-                        '%s-%s-%d' % (n.lower(), v, b), 'EGG-INFO')
-        else:
-            path = join(self.prefix, 'EGG-INFO', n.lower())
+        path = join(self.prefix, 'EGG-INFO', n.lower())
         info = info_from_metadir(path)
         if info and info['key'] == egg:
             return info
@@ -97,31 +92,20 @@ class EggCollection(AbstractEggCollection):
 
     def query(self, **kwargs):
         name = kwargs.get('name')
-        if self.hook:
-            if not isdir(self.pkgs_dir):
-                return
-            for fn in sorted(os.listdir(self.pkgs_dir), key=string.lower):
-                if name and not fn.startswith(name + '-'):
-                    continue
-                info = info_from_metadir(join(self.pkgs_dir, fn, 'EGG-INFO'))
-                if info and all(info.get(k) == v
-                                for k, v in kwargs.iteritems()):
-                    yield info['key'], info
-        else:
-            egginfo_dir = join(self.prefix, 'EGG-INFO')
-            if not isdir(egginfo_dir):
-                return
-            for fn in sorted(os.listdir(egginfo_dir), key=string.lower):
-                if name and fn != name:
-                    continue
-                info = info_from_metadir(join(egginfo_dir, fn))
-                if info and all(info.get(k) == v
-                                for k, v in kwargs.iteritems()):
-                    yield info['key'], info
+        egginfo_dir = join(self.prefix, 'EGG-INFO')
+        if not isdir(egginfo_dir):
+            return
+        for fn in sorted(os.listdir(egginfo_dir), key=string.lower):
+            if name and fn != name:
+                continue
+            info = info_from_metadir(join(egginfo_dir, fn))
+            if info and all(info.get(k) == v
+                            for k, v in kwargs.iteritems()):
+                yield info['key'], info
 
     def install(self, egg, dir_path, extra_info=None):
         ei = egginst.EggInst(join(dir_path, egg),
-                             prefix=self.prefix, hook=self.hook,
+                             prefix=self.prefix,
                              evt_mgr=self.evt_mgr,
                              pkgs_dir=self.pkgs_dir, verbose=self.verbose)
         ei.super_id = getattr(self, 'super_id', None)
@@ -129,7 +113,7 @@ class EggCollection(AbstractEggCollection):
 
     def remove(self, egg):
         ei = egginst.EggInst(egg,
-                             prefix=self.prefix, hook=self.hook,
+                             prefix=self.prefix,
                              evt_mgr=self.evt_mgr,
                              pkgs_dir=self.pkgs_dir, verbose=self.verbose)
         ei.super_id = getattr(self, 'super_id', None)
