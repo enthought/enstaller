@@ -225,7 +225,6 @@ class EggInst(object):
             from .console import ProgressManager
 
         is_custom_egg = eggmeta.is_custom_egg(self.path)
-        n = 0
         size = sum(self.z.getinfo(name).file_size for name in self.arcnames)
         self.installed_size = size
         progress = ProgressManager(
@@ -241,30 +240,33 @@ class EggInst(object):
         use_legacy_egg_info_format = has_legacy_egg_info_format(self.arcnames,
                 is_custom_egg)
 
-        if use_legacy_egg_info_format:
-            with progress:
-                for name in self.arcnames:
-                    zip_info = self.z.getinfo(name)
-                    n += zip_info.file_size
+        n = 0
+        with progress:
+            for name in self.arcnames:
+                if use_legacy_egg_info_format:
+                    n += self._extract_egg_with_legacy_egg_info(name, progress)
+                else:
+                    n += self._extract(name, progress)
+                progress(step=n)
 
-                    if is_in_legacy_egg_info(name, is_custom_egg):
-                        self._write_legacy_egg_info_metadata(zip_info)
-                    else:
-                        self.write_arcname(name)
+    def _extract_egg_with_legacy_egg_info(self, name, is_custom_egg):
+        zip_info = self.z.getinfo(name)
 
-                    progress(step=n)
-
+        if is_in_legacy_egg_info(name, is_custom_egg):
+            self._write_legacy_egg_info_metadata(zip_info)
         else:
-            with progress:
-                for name in self.arcnames:
-                    zip_info = self.z.getinfo(name)
-                    n += zip_info.file_size
+            self.write_arcname(name)
 
-                    self.write_arcname(name)
-                    if should_copy_in_egg_info(name, is_custom_egg):
-                        self._write_standard_egg_info_metadata(zip_info)
+        return zip_info.file_size
 
-                    progress(step=n)
+    def _extract(self, name, is_custom_egg):
+        zip_info = self.z.getinfo(name)
+
+        self.write_arcname(name)
+        if should_copy_in_egg_info(name, is_custom_egg):
+            self._write_standard_egg_info_metadata(zip_info)
+
+        return zip_info.file_size
 
     def _write_legacy_egg_info_metadata(self, zip_info):
         if is_zipinfo_dir(zip_info):
