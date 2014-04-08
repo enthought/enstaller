@@ -382,7 +382,7 @@ class TestEnpkgActions(unittest.TestCase):
                 t.start()
 
                 enpkg.abort_execution()
-                t.join()
+                t.join(timeout=5)
 
         self.assertEqual(sentinel, [])
 
