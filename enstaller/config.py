@@ -2,7 +2,6 @@
 # Author: Ilan Schnell <ischnell@enthought.com>
 from __future__ import absolute_import, print_function
 
-import ast
 import base64
 import json
 import re
@@ -15,6 +14,8 @@ import warnings
 
 from getpass import getpass
 from os.path import isfile, join
+
+from egginst.utils import parse_assignments
 
 from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
@@ -87,34 +88,6 @@ def configuration_read_search_order():
 
 def get_default_url():
     return 'https://api.enthought.com/eggs/%s/' % plat.custom_plat
-
-
-class PythonConfigurationParser(ast.NodeVisitor):
-    def __init__(self):
-        self._data = {}
-
-    def parse(self, s):
-        self._data.clear()
-
-        root = ast.parse(s)
-        self.visit(root)
-        return self._data
-
-    def generic_visit(self, node):
-        if type(node) != ast.Module:
-            raise InvalidFormat("Unexpected expression @ line {0}".
-                                format(node.lineno))
-        super(PythonConfigurationParser, self).generic_visit(node)
-
-    def visit_Assign(self, node):
-        try:
-            value = ast.literal_eval(node.value)
-        except ValueError:
-            msg = "Invalid configuration syntax at line {0}".format(node.lineno)
-            raise InvalidFormat(msg)
-        else:
-            for target in node.targets:
-                self._data[target.id] = value
 
 
 RC_TMPL = """\
@@ -207,16 +180,8 @@ def _is_using_epd_username(filename_or_fp):
     """
     Returns True if the given configuration file uses EPD_username.
     """
-    def _has_epd_auth(s):
-        parser = PythonConfigurationParser()
-        data = parser.parse(s)
-        return "EPD_username" in data and not "EPD_auth" in data
-
-    if isinstance(filename_or_fp, basestring):
-        with open(filename_or_fp) as fp:
-            return _has_epd_auth(fp.read())
-    else:
-        return _has_epd_auth(filename_or_fp.read())
+    data = parse_assignments(filename_or_fp)
+    return "EPD_username" in data and not "EPD_auth" in data
 
 
 def convert_auth_if_required(filename):
@@ -272,11 +237,10 @@ class Configuration(object):
             "prefix", "local", "IndexedRepos", "webservice_entry_point",
             "repository_cache", "use_pypi",
         ])
-        parser = PythonConfigurationParser()
 
         def _create(fp):
             ret = cls()
-            for k, v in parser.parse(fp.read()).iteritems():
+            for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
                 elif k == "EPD_auth":

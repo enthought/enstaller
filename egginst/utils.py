@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import ast
 import errno
 import sys
 import os
@@ -9,6 +10,9 @@ import tempfile
 import zipfile
 
 from os.path import basename, isdir, isfile, islink, join
+
+from enstaller.errors import InvalidFormat
+
 
 if sys.version_info[:2] < (2, 7):
     class ZipFile(zipfile.ZipFile):
@@ -141,3 +145,48 @@ def zip_write_symlink(fp, link_name, source):
     zip_info.create_system = 3
     zip_info.external_attr = ZIP_SOFTLINK_ATTRIBUTE_MAGIC
     fp.writestr(zip_info, source)
+
+
+class _AssignmentParser(ast.NodeVisitor):
+    def __init__(self):
+        self._data = {}
+
+    def parse(self, s):
+        self._data.clear()
+
+        root = ast.parse(s)
+        self.visit(root)
+        return self._data
+
+    def generic_visit(self, node):
+        if type(node) != ast.Module:
+            raise InvalidFormat("Unexpected expression @ line {0}".
+                                format(node.lineno))
+        super(_AssignmentParser, self).generic_visit(node)
+
+    def visit_Assign(self, node):
+        try:
+            value = ast.literal_eval(node.value)
+        except ValueError:
+            msg = "Invalid configuration syntax at line {0}".format(node.lineno)
+            raise InvalidFormat(msg)
+        else:
+            for target in node.targets:
+                self._data[target.id] = value
+
+
+def parse_assignments(file_or_filename):
+    """
+    Parse files which contain only python assignements, and returns the
+    corresponding dictionary name: value
+
+    Parameters
+    ----------
+    file_or_filename: str, file object
+        If a string, interpreted as a filename. File object otherwise.
+    """
+    if isinstance(file_or_filename, basestring):
+        with open(file_or_filename) as fp:
+            return _AssignmentParser().parse(fp.read())
+    else:
+        return _AssignmentParser().parse(file_or_filename.read())
