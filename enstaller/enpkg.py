@@ -362,7 +362,8 @@ class Enpkg(object):
             try:
                 rev = int(arg)
             except (TypeError, ValueError):
-                raise EnpkgError("Error: integer expected, got: %r" % arg)
+                raise EnpkgError("Invalid argument: integer expected, "
+                                 "got: {!r}".format(arg))
             try:
                 state = h.get_state(rev)
             except IndexError:
