@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import ast
 import errno
+import hashlib
 import sys
 import os
 import shutil
@@ -13,6 +14,7 @@ from os.path import basename, isdir, isfile, islink, join
 
 from enstaller.errors import InvalidFormat
 
+string_types = (str, unicode)
 
 if sys.version_info[:2] < (2, 7):
     class ZipFile(zipfile.ZipFile):
@@ -185,8 +187,38 @@ def parse_assignments(file_or_filename):
     file_or_filename: str, file object
         If a string, interpreted as a filename. File object otherwise.
     """
-    if isinstance(file_or_filename, basestring):
+    if isinstance(file_or_filename, string_types):
         with open(file_or_filename) as fp:
             return _AssignmentParser().parse(fp.read())
     else:
         return _AssignmentParser().parse(file_or_filename.read())
+
+
+def compute_md5(path, block_size=256 * 1024):
+    """Compute the md5 checksum of the given path.
+
+    Avoids reading the whole file in RAM, and computes the md5 in chunks.
+
+    Parameters
+    ----------
+    path: str or file object
+        If a string, assumed to be the path to the file to be checksumed. If a
+        file object, checksum will start at the current file position.
+    block_size: int
+        Block size to use when reading data.
+    """
+    m = hashlib.md5()
+
+    def _compute_checksum(fp):
+        while True:
+            data = fp.read(block_size)
+            m.update(data)
+            if len(data) < block_size:
+                break
+        return m.hexdigest()
+
+    if isinstance(path, string_types):
+        with open(path, "rb") as fp:
+            return _compute_checksum(fp)
+    else:
+        return _compute_checksum(path)

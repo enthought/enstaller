@@ -5,9 +5,8 @@ import hashlib
 from uuid import uuid4
 from os.path import basename, isdir, isfile, join
 
-from egginst.utils import human_bytes, rm_rf
+from egginst.utils import compute_md5, human_bytes, rm_rf
 from enstaller.compat import close_file_or_response
-from utils import md5_file
 
 
 class FetchAPI(object):
@@ -98,7 +97,7 @@ class FetchAPI(object):
         # merely see if the file exists
         if isfile(path):
             if force:
-                if md5_file(path) == info.get('md5'):
+                if compute_md5(path) == info.get('md5'):
                     if self.verbose:
                         print "Not refetching, %r MD5 match" % path
                     return

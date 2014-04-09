@@ -11,7 +11,7 @@ from os.path import basename, isfile, join, getmtime, getsize
 from dist_naming import is_valid_eggname
 from requirement import Req
 
-from enstaller.utils import md5_file
+from enstaller.utils import compute_md5
 
 
 def parse_index(data):
@@ -166,7 +166,7 @@ def index_section(zip_path):
     """
     return ('==> %s <==\n' % basename(zip_path) +
             'size = %i\n'  % getsize(zip_path) +
-            'md5 = %r\n' % md5_file(zip_path) +
+            'md5 = %r\n' % compute_md5(zip_path) +
             'mtime = %r\n' % getmtime(zip_path) +
             commit_from_dist(zip_path) +
             '\n' +

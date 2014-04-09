@@ -10,7 +10,7 @@ from egginst.utils import human_bytes
 from enstaller.config import HOME_ENSTALLER4RC, Configuration
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 
-from enstaller.utils import comparable_version, md5_file, uri_to_path
+from enstaller.utils import comparable_version, compute_md5, uri_to_path
 import metadata
 import dist_naming
 from requirement import Req, add_Reqs_to_spec
@@ -367,7 +367,7 @@ class Chain(object):
         path = join(fetch_dir, fn)
         # if force is used, make sure the md5 is the expected, otherwise
         # only see if the file exists
-        if isfile(path) and (not force or md5_file(path) == info.get('md5')):
+        if isfile(path) and (not force or compute_md5(path) == info.get('md5')):
             if self.verbose:
                 print "Not forcing refetch, %r already matches MD5" % path
             return

@@ -15,8 +15,7 @@ from egginst import exe_data
 
 from egginst.main import EggInst
 from egginst.scripts import create, create_proxies, fix_script, get_executable
-from egginst.utils import ZipFile
-from enstaller.utils import md5_file
+from egginst.utils import ZipFile, compute_md5
 
 from .common import mkdtemp
 
@@ -233,9 +232,9 @@ dummy-gui = dummy:main_gui
                     gui_entry_point = fp.read()
                     self.assertMultiLineEqual(gui_entry_point, r_gui_entry_point)
 
-                self.assertEqual(md5_file(os.path.join(egginst.bin_dir, "dummy.exe")),
+                self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy.exe")),
                                  hashlib.md5(exe_data.cli).hexdigest())
-                self.assertEqual(md5_file(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
+                self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
                                  hashlib.md5(exe_data.gui).hexdigest())
 
 class TestProxy(unittest.TestCase):
@@ -277,7 +276,7 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                     self.assertTrue(os.path.exists(python_proxy))
                     self.assertTrue(os.path.exists(coff_proxy))
 
-                    self.assertTrue(md5_file(coff_proxy),
+                    self.assertTrue(compute_md5(coff_proxy),
                                     hashlib.md5(exe_data.cli).hexdigest())
 
                     with open(python_proxy) as fp:

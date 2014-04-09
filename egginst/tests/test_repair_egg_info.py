@@ -13,8 +13,7 @@ from egginst.testing_utils import slow
 from egginst.tests.common import (DUMMY_EGG, DUMMY_EGG_WITH_ENTRY_POINTS,
     DUMMY_EGG_WITH_APPINST)
 from egginst.tests.common import create_venv, tempfile
-
-from enstaller.utils import md5_file
+from egginst.utils import compute_md5
 
 
 class TestEggInfoDirFixer(unittest.TestCase):
@@ -121,13 +120,13 @@ class TestEggInfoDirFixer(unittest.TestCase):
 
         # When
         fixer = EggInfoDirFixer(egg_path, prefix=self.prefix)
-        old_egg_info_file_md5 = md5_file(fixer.egg_info_dir)
+        old_egg_info_file_md5 = compute_md5(fixer.egg_info_dir)
         fixer.repair()
 
         # Then
         self.assertItemsEqual(os.listdir(fixer.egg_info_dir),
                               ["PKG-INFO", "egginst.json", "_info.json"])
-        self.assertEqual(md5_file(os.path.join(fixer.egg_info_dir, "PKG-INFO")),
+        self.assertEqual(compute_md5(os.path.join(fixer.egg_info_dir, "PKG-INFO")),
                          old_egg_info_file_md5)
 
     @slow
