@@ -390,7 +390,7 @@ class EggInst(object):
                     appinst.uninstall_from_dat(path, self.prefix)
                 else:
                     appinst.install_from_dat(path, self.prefix)
-            except TypeError, e:
+            except TypeError as e:
                 # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
                 # arg)
                 if remove:
@@ -400,7 +400,7 @@ class EggInst(object):
 
         try:
             _install_app()
-        except Exception, e:
+        except Exception as e:
             print(("Warning (%sinstalling application item):\n%r" %
                   ('un' if remove else '', e)))
 
