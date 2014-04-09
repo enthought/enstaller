@@ -368,7 +368,7 @@ class EggInst(object):
                 fn.endswith(('.dylib', '.pyd', '.so')) or
                 (arcname.startswith('EGG-INFO/usr/lib/') and
                  self.so_pat.match(fn))):
-            os.chmod(path, 0755)
+            os.chmod(path, 0o755)
 
 
     def install_app(self, remove=False):
