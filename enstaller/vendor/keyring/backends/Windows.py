@@ -11,8 +11,9 @@ from . import file
 try:
     from enstaller.vendor.win32ctypes import pywintypes
     from enstaller.vendor.win32ctypes import win32cred
-except (ImportError, ValueError):
+except (ImportError, ValueError, KeyError):
     # ValueError may be raised on non windows machines because of ctypes
+    # KeyError may be raised on non windows machines because of ctypes with pypy
     pass
 
 try:
