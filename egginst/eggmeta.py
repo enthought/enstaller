@@ -2,17 +2,18 @@ from __future__ import print_function
 
 import json
 import time
+
+from cStringIO import StringIO
 from os.path import join
 
-from egginst.utils import ZipFile
+from egginst.utils import ZipFile, parse_assignments
 
 # Path relative to EGG-INFO in egg, or $RPPT/EGG-INFO/$package_name when
 # installed
 APPINST_PATH = join("inst", "appinst.dat")
 
 def parse_rawspec(data):
-    spec = {}
-    exec data.replace('\r', '') in spec
+    spec = parse_assignments(StringIO(data))
     res = {}
     for k in ('name', 'version', 'build',
               'arch', 'platform', 'osdist', 'python', 'packages'):
