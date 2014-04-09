@@ -152,3 +152,11 @@ def fake_keyring(f):
     dec2 = mock.patch("enstaller.config.keyring.set_password",
                       keyring.set_password)
     return dec1(dec2(f))
+
+@contextlib.contextmanager
+def mock_history_get_state_context(state=None):
+    if state is None:
+        state = set()
+    with mock.patch("enstaller.enpkg.History") as context:
+        context.return_value.get_state.return_value = set(state)
+        yield context

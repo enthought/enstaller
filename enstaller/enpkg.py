@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import ntpath
 import sys
 import warnings
@@ -61,11 +63,11 @@ def get_writable_local_dir(config):
         return local_dir
 
     import tempfile
-    print ('Warning: Python prefix directory is not writeable '
+    print(('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
            'Using a temporary cache for index and eggs.\n' %
-           config.prefix)
+           config.prefix))
     return tempfile.mkdtemp()
 
 
@@ -97,12 +99,6 @@ class Enpkg(object):
         in which things get installed.
         Eggs are installed or removed from the first prefix in the list.
 
-    hook: boolean -- default: False
-        Usually eggs are installed into the site-packages directory of the
-        corresponding prefix (e.g. /usr/local/lib/python2.7/site-packages).
-        When hook is set to True, eggs are installed into "versioned" egg
-        directories, for special usage with import hooks (hence the name).
-
     evt_mgr: encore event manager instance -- default: None
         Various progress events (e.g. for download, install, ...) are being
         emitted to the event manager.  By default, a simple progress bar
@@ -127,12 +123,13 @@ class Enpkg(object):
             self.userpass = userpass
 
         self.prefixes = prefixes
-        self.hook = hook
         self.evt_mgr = evt_mgr
         self.verbose = verbose
 
+        if hook is not False:
+            raise EnpkgError("hook feature has been removed")
         self.ec = JoinedEggCollection([
-                EggCollection(prefix, self.hook, self.evt_mgr)
+                EggCollection(prefix, self.evt_mgr)
                 for prefix in self.prefixes])
         self._execution_aborted = threading.Event()
 
@@ -183,8 +180,6 @@ class Enpkg(object):
 
         ctime: creation (install) time (string representing local time)
 
-        hook: boolean -- whether installed into "versioned" egg directory
-
         installed: True (always)
 
         meta_dir: the path to the egg metadata directory on the local system
@@ -207,9 +202,9 @@ class Enpkg(object):
         *_actions methods below.
         """
         if self.verbose:
-            print "Enpkg.execute:", len(actions)
+            print("Enpkg.execute:", len(actions))
             for item in actions:
-                print '\t' + str(item)
+                print('\t' + str(item))
 
         if len(actions) == 0:
             return
@@ -232,7 +227,7 @@ class Enpkg(object):
                 progress_type="super", filename=actions[-1][1],
                 disp_amount=len(actions), super_id=None)
 
-        with History(None if self.hook else self.prefixes[0]):
+        with History(self.prefixes[0]):
             with progress:
                 for n, (opcode, egg) in enumerate(actions):
                     if self._execution_aborted.is_set():
@@ -309,15 +304,14 @@ class Enpkg(object):
         for egg in eggs:
             res.append(('fetch_%d' % bool(forceall or force), egg))
 
-        if not self.hook:
-            # remove packages with the same name (from first egg collection
-            # only, in reverse install order)
-            for egg in reversed(eggs):
-                name = split_eggname(egg)[0].lower()
-                index = dict(self.ec.collections[0].query(name=name))
-                assert len(index) < 2
-                if len(index) == 1:
-                    res.append(('remove', index.keys()[0]))
+        # remove packages with the same name (from first egg collection
+        # only, in reverse install order)
+        for egg in reversed(eggs):
+            name = split_eggname(egg)[0].lower()
+            index = dict(self.ec.collections[0].query(name=name))
+            assert len(index) < 2
+            if len(index) == 1:
+                res.append(('remove', index.keys()[0]))
         for egg in eggs:
             res.append(('install', egg))
         return res
@@ -351,12 +345,6 @@ class Enpkg(object):
         if len(index) == 0:
             raise EnpkgError("package %s not installed in: %r" %
                              (req, self.prefixes[0]))
-        if len(index) > 1:
-            assert self.hook
-            versions = ['%(version)s-%(build)d' % d
-                        for d in index.itervalues()]
-            raise EnpkgError("package %s installed more than once: %s" %
-                             (req.name, ', '.join(versions)))
         return [('remove', index.keys()[0])]
 
     def revert_actions(self, arg):
@@ -366,8 +354,6 @@ class Enpkg(object):
           * complete set of eggs, i.e. a set of egg file names
           * revision number (negative numbers allowed)
         """
-        if self.hook:
-            raise NotImplementedError
         h = History(self.prefixes[0])
         h.update()
         if isinstance(arg, set):
@@ -375,8 +361,9 @@ class Enpkg(object):
         else:
             try:
                 rev = int(arg)
-            except ValueError:
-                raise EnpkgError("Error: integer expected, got: %r" % arg)
+            except (TypeError, ValueError):
+                raise EnpkgError("Invalid argument: integer expected, "
+                                 "got: {0!r}".format(arg))
             try:
                 state = h.get_state(rev)
             except IndexError:
@@ -412,8 +399,6 @@ class Enpkg(object):
         h.parse() -> list of tuples(datetime strings, set of eggs/diffs)
         h.construct_states() -> list of tuples(datetime strings, set of eggs)
         """
-        if self.hook:
-            raise NotImplementedError
         return History(self.prefixes[0])
 
     # == methods which relate to both (remote store and local installation) ==
