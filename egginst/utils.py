@@ -33,7 +33,7 @@ else:
     bin_dir_name = 'bin'
     rel_site_packages = 'lib/python%i.%i/site-packages' % sys.version_info[:2]
 
-ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000L
+ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000
 
 def rm_empty_dir(path):
     """

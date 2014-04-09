@@ -54,7 +54,7 @@ def write_exe(dst, script_type='console_scripts'):
         # When bootstrapping, the file egginst.exe is in use and can therefore
         # not be rewritten, which is OK since its content is always the same.
         pass
-    os.chmod(dst, 0755)
+    os.chmod(dst, 0o755)
 
 
 def create_proxy(src, bin_dir):
@@ -148,7 +148,7 @@ if __name__ == '__main__':
                                  with_quotes=on_win),
            egg_name=egg_name, module=module, func=func))
     fo.close()
-    os.chmod(path, 0755)
+    os.chmod(path, 0o755)
 
 
 def create(egg, conf):
@@ -202,7 +202,7 @@ def fix_script(path):
     fo = open(path, 'w')
     fo.write(new_data)
     fo.close()
-    os.chmod(path, 0755)
+    os.chmod(path, 0o755)
 
 
 def fix_scripts(egg):
