@@ -39,6 +39,7 @@ from . import scripts
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
                     is_zipinfo_symlink, is_zipinfo_dir, zip_has_arcname)
+from .utils import ZipFile
 
 EGG_INFO = "EGG-INFO"
 
@@ -283,6 +284,18 @@ class EggInst(object):
         self.verbose = verbose
 
         self._egginst_remover = _EggInstRemove(path, prefix, evt_mgr, verbose, noapp)
+        self._installed_size = None
+
+    @property
+    def installed_size(self):
+        """
+        Return the size (bytes) of the extracted egg.
+        """
+        if self._installed_size is None:
+            with ZipFile(self.path) as zp:
+                self._installed_size = sum(zp.getinfo(name).file_size for name
+                                           in zp.namelist())
+        return self._installed_size
 
     def _should_create_info(self):
         for arcname in ('EGG-INFO/spec/depend', 'EGG-INFO/info.json'):
@@ -362,37 +375,56 @@ class EggInst(object):
                     continue
                 yield line
 
+    def archive_extractor(self):
+        """
+        Create an iterator that will extract over each archive to be extracted.
+
+        Example::
+
+            from egginst.console import ProgressManager
+
+            progress = ProgressManager(...)
+            egginst = EggInst(...)
+
+            with progress:
+                for n in self.archive_extractor():
+                    prorgress(step=n)
+        """
+        arcnames = self.z.namelist()
+        is_custom_egg = eggmeta.is_custom_egg(self.path)
+
+        use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
+                                                                is_custom_egg)
+
+        n = 0
+        for arcname in arcnames:
+            if use_legacy_egg_info_format:
+                n += self._extract_egg_with_legacy_egg_info(arcname,
+                                                               is_custom_egg)
+            else:
+                n += self._extract(arcname, is_custom_egg)
+            yield n
+
+
     def extract(self):
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
             from .console import ProgressManager
 
-        is_custom_egg = eggmeta.is_custom_egg(self.path)
-        arcnames = self.z.namelist()
-        size = sum(self.z.getinfo(name).file_size for name in arcnames)
-        self.installed_size = size
         progress = ProgressManager(
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
                 message="installing egg",
-                steps=size,
+                steps=self.installed_size,
                 # ---
                 progress_type="installing", filename=self.fn,
                 disp_amount=human_bytes(self.installed_size),
                 super_id=getattr(self, 'super_id', None))
 
-        use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
-                is_custom_egg)
-
-        n = 0
         with progress:
-            for name in arcnames:
-                if use_legacy_egg_info_format:
-                    n += self._extract_egg_with_legacy_egg_info(name, progress)
-                else:
-                    n += self._extract(name, progress)
-                progress(step=n)
+            for currently_extracted_size in self.archive_extractor():
+                progress(step=currently_extracted_size)
 
     def _extract_egg_with_legacy_egg_info(self, name, is_custom_egg):
         zip_info = self.z.getinfo(name)
