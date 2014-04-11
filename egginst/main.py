@@ -29,7 +29,7 @@ from uuid import uuid4
 try:
     import appinst
 except ImportError:
-    appinst = None
+    appinst = None  # pragma: no cover
 
 from enstaller import __version__
 
@@ -47,6 +47,10 @@ R_EGG_INFO_BLACK_LIST = re.compile(
         "^{0}/(usr|spec|PKG-INFO.bak|prefix|.gitignore|"
         "inst|post_egginst.py|pre_egguninst.py)".format(EGG_INFO))
 R_LEGACY_EGG_INFO = re.compile("(^.+.egg-info)")
+
+PY_PAT = re.compile(r'^(.+)\.py(c|o)?$')
+SO_PAT = re.compile(r'^lib.+\.so')
+PY_OBJ = '.pyd' if on_win else '.so'
 
 def name_version_fn(fn):
     """
@@ -101,6 +105,25 @@ def has_legacy_egg_info_format(arcnames, is_custom_egg):
             if R_LEGACY_EGG_INFO.search(name):
                 return True
         return False
+    else:
+        return False
+
+
+def should_mark_executable(arcname, fn):
+    if (arcname.startswith(('EGG-INFO/usr/bin/', 'EGG-INFO/scripts/')) or
+            fn.endswith(('.dylib', '.pyd', '.so')) or
+            (arcname.startswith('EGG-INFO/usr/lib/') and
+             SO_PAT.match(fn))):
+        return True
+    else:
+        return False
+
+
+def should_skip(zp, arcname):
+    m = PY_PAT.match(arcname)
+    if m and zip_has_arcname(zp, m.group(1) + PY_OBJ):
+        # .py, .pyc, .pyo next to .so are not written
+        return True
     else:
         return False
 
@@ -452,35 +475,29 @@ class EggInst(object):
         os.symlink(source, link_name)
         return link_name
 
-    py_pat = re.compile(r'^(.+)\.py(c|o)?$')
-    so_pat = re.compile(r'^lib.+\.so')
-    py_obj = '.pyd' if on_win else '.so'
     def write_arcname(self, arcname):
         if arcname.endswith('/') or arcname.startswith('.unused'):
             return
+
         zip_info = self.z.getinfo(arcname)
+
         if is_zipinfo_symlink(zip_info):
             link_name = self.extract_symlink(arcname)
             self.files.append(link_name)
             return
 
-        m = self.py_pat.match(arcname)
-        if m and zip_has_arcname(self.z, m.group(1) + self.py_obj):
-            # .py, .pyc, .pyo next to .so are not written
+        if should_skip(self.z, arcname):
             return
+
         path = self.get_dst(arcname)
-        dn, fn = os.path.split(path)
-        data = self.z.read(arcname)
+        ensure_dir(path)
+
         self.files.append(path)
-        if not isdir(dn):
-            os.makedirs(dn)
-        rm_rf(path)
-        with open(path, 'wb') as fo:
-            fo.write(data)
-        if (arcname.startswith(('EGG-INFO/usr/bin/', 'EGG-INFO/scripts/')) or
-                fn.endswith(('.dylib', '.pyd', '.so')) or
-                (arcname.startswith('EGG-INFO/usr/lib/') and
-                 self.so_pat.match(fn))):
+
+        with open(path, "wb") as fo:
+            shutil.copyfileobj(self.z.open(arcname), fo)
+
+        if should_mark_executable(arcname, path):
             os.chmod(path, 0o755)
 
     def remove(self):
