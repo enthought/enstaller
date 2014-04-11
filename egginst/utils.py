@@ -2,14 +2,17 @@ from __future__ import print_function
 
 from ._compat import string_types
 
+import argparse
 import ast
 import errno
 import hashlib
+import re
 import sys
 import os
 import shutil
 import stat
 import tempfile
+import textwrap
 import zipfile
 
 from os.path import basename, isdir, isfile, islink, join

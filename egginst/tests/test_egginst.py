@@ -194,6 +194,36 @@ class TestEggInstInstall(unittest.TestCase):
             egginst.remove()
             m.assert_called_with(appinst_path)
 
+    def test_without_appinst(self):
+        """
+        Test egginst does not crash when appinst is not available and we try
+        installing eggs using appinst
+        """
+        egg_path = DUMMY_EGG_WITH_APPINST
+
+        egginst = EggInst(egg_path, self.base_dir)
+
+        with mock.patch("egginst.main.appinst", None):
+            egginst.install()
+            egginst.remove()
+
+    @slow
+    def test_appinst_failed(self):
+        """
+        Test egginst does not crash when appinst is not available and we try
+        installing eggs using appinst
+        """
+        egg_path = DUMMY_EGG_WITH_APPINST
+
+        egginst = EggInst(egg_path, self.base_dir)
+
+        with mock.patch("egginst.main.appinst.install_from_dat", side_effect=ValueError):
+            egginst.install()
+
+        with mock.patch("egginst.main.appinst.uninstall_from_dat", side_effect=ValueError):
+            egginst.remove()
+
+
 class TestEggInfoInstall(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()

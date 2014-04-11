@@ -1,14 +1,16 @@
 # Author: Ilan Schnell <ischnell@enthought.com>
 """\
-egginst is a simple tool for installing and uninstalling eggs.  The tool
-is brain dead in the sense that it does not care if the eggs it installs
-are for the correct platform, it's dependencies got installed, another
-package needs to be uninstalled prior to the install, and so on.  Those tasks
-are responsibilities of a package manager, e.g. enpkg.  You just give it
-eggs and it installs/uninstalls them.
+egginst is a simple tool for installing and uninstalling eggs. Example:
+
+    egginst nose-1.3.0-1.egg
+
+This tool is simple and does not care if the eggs it installs are for the
+correct platform, its dependencies installed, etc... You should generally use
+enpkg or Canopy's package manager instead to deal with dependencies correctly.
 """
 from __future__ import absolute_import, print_function
 
+import argparse
 import ConfigParser
 import cStringIO
 import json
@@ -20,9 +22,13 @@ import sys
 import warnings
 import zipfile
 
-from optparse import OptionParser
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
 from uuid import uuid4
+
+try:
+    import appinst
+except ImportError:
+    appinst = None
 
 from enstaller import __version__
 
@@ -167,7 +173,8 @@ class EggInst(object):
         self.z.close()
 
         scripts.fix_scripts(self)
-        self.install_app()
+        if not self.noapp:
+            self.install_app()
         self.write_meta()
 
         self.run('post_egginst.py')
@@ -378,39 +385,40 @@ class EggInst(object):
             os.chmod(path, 0o755)
 
 
-    def install_app(self, remove=False):
-        if self.noapp:
+    def install_app(self):
+        return self._install_app_impl(remove=False)
+
+    def remove_app(self):
+        return self._install_app_impl(remove=True)
+
+    def _install_app_impl(self, remove=False):
+        if appinst is None:
             return
 
         path = join(self.meta_dir, eggmeta.APPINST_PATH)
         if not isfile(path):
             return
 
-        try:
-            import appinst
-        except ImportError:
-            return
-
-        def _install_app():
+        if remove:
             try:
-                if remove:
+                try:
                     appinst.uninstall_from_dat(path, self.prefix)
-                else:
-                    appinst.install_from_dat(path, self.prefix)
-            except TypeError as e:
-                # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
-                # arg)
-                if remove:
+                except TypeError:
+                    # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
+                    # arg)
                     appinst.uninstall_from_dat(path)
-                else:
+            except Exception as e:
+                print("Warning (uninstalling application item):\n%r" % (e,))
+        else:
+            try:
+                try:
+                    appinst.install_from_dat(path, self.prefix)
+                except TypeError:
+                    # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
+                    # arg)
                     appinst.install_from_dat(path)
-
-        try:
-            _install_app()
-        except Exception as e:
-            print(("Warning (%sinstalling application item):\n%r" %
-                  ('un' if remove else '', e)))
-
+            except Exception as e:
+                print("Warning (installing application item):\n%r" % (e,))
 
     def run(self, fn):
         path = join(self.meta_dir, fn)
@@ -454,7 +462,8 @@ class EggInst(object):
                 progress_type="removing", filename=self.fn,
                 disp_amount=human_bytes(self.installed_size),
                 super_id=getattr(self, 'super_id', None))
-        self.install_app(remove=True)
+        if not self.noapp:
+            self.remove_app()
         self.run('pre_egguninst.py')
 
         with progress:
@@ -508,56 +517,60 @@ def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]  # pragma: no cover
 
-    p = OptionParser(usage="usage: %prog [options] [EGGS ...]",
-                     description=__doc__)
+    p = argparse.ArgumentParser(usage="usage: %(prog)s [options] [EGGS ...]",
+                                description=__doc__,
+                                formatter_class=argparse.RawTextHelpFormatter)
 
-    p.add_option('-l', "--list",
+    p.add_argument("requirements", help="Requirements to install", nargs='*')
+
+    p.add_argument('-l', "--list",
                  action="store_true",
                  help="list all installed packages")
 
-    p.add_option("--noapp",
+    p.add_argument("--noapp",
                  action="store_true",
                  help="don't install/remove application menu items")
 
-    p.add_option("--prefix",
+    p.add_argument("--prefix",
                  action="store",
                  default=sys.prefix,
-                 help="install prefix, defaults to %default",
+                 help="install prefix",
                  metavar='PATH')
 
-    p.add_option("--pkgs-dir",
+    p.add_argument("--pkgs-dir",
                  action="store",
                  help="Do nothing, kept for backward compatibility.",
                  metavar='PATH')
 
-    p.add_option('-r', "--remove",
+    p.add_argument('-r', "--remove",
                  action="store_true",
                  help="remove package(s), requires the egg or project name(s)")
 
-    p.add_option('-v', "--verbose", action="store_true")
-    p.add_option('--version', action="store_true")
+    p.add_argument('-v', "--verbose", action="store_true")
+    p.add_argument('--version', action="store_true")
 
-    opts, args = p.parse_args(argv)
-    if opts.version:
+    ns = p.parse_args(argv)
+    if ns.version:
         print("enstaller version:", __version__)
         return
 
-    prefix = normpath(abspath(opts.prefix))
+    prefix = normpath(abspath(ns.prefix))
     if prefix != normpath(sys.prefix):
         warnings.warn("Using the --prefix option is potentially dangerous. "
                       "You should use enpkg installed in {0} instead.". \
-                      format(opts.prefix))
+                      format(ns.prefix))
 
-    if opts.list:
+    if ns.list:
         print_installed(prefix)
         return
 
     evt_mgr = None
 
-    for path in args:
-        ei = EggInst(path, prefix, False, opts.pkgs_dir, evt_mgr,
-                     verbose=opts.verbose, noapp=opts.noapp)
-        if opts.remove:
+    for path in ns.requirements:
+        print(path)
+        ei = EggInst(path, prefix, False, ns.pkgs_dir, evt_mgr,
+                     verbose=ns.verbose, noapp=ns.noapp)
+        if ns.remove:
             ei.remove()
         else: # default is always install
             ei.install()
