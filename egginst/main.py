@@ -28,8 +28,8 @@ from uuid import uuid4
 
 try:
     import appinst
-except ImportError:
-    appinst = None  # pragma: no cover
+except ImportError:  # pragma: no cover
+    appinst = None
 
 from enstaller import __version__
 
