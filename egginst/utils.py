@@ -149,6 +149,24 @@ def zip_write_symlink(fp, link_name, source):
     fp.writestr(zip_info, source)
 
 
+def zip_has_arcname(zp, arcname):
+    """
+    Returns True if the given zipfile instance contains the given archive
+
+    Parameters
+    ----------
+    zp: ZipFile
+        The zip archive to consider
+    arcname: str
+        The archive to look for
+    """
+    try:
+        zp.getinfo(arcname)
+        return True
+    except KeyError:
+        return False
+
+
 class _AssignmentParser(ast.NodeVisitor):
     def __init__(self):
         self._data = {}
