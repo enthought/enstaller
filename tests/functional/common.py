@@ -47,8 +47,10 @@ def mock_enpkg_class(f):
 @contextlib.contextmanager
 def set_env_vars(**kw):
     old_env = os.environ.copy()
-    yield os.environ.update(**kw)
-    os.environ = old_env
+    try:
+        yield os.environ.update(**kw)
+    finally:
+        os.environ = old_env
 
 
 @contextlib.contextmanager
