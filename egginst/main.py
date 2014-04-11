@@ -143,7 +143,7 @@ class EggInst(object):
             os.makedirs(self.meta_dir)
 
         self.z = zipfile.ZipFile(self.path)
-        self.arcnames = self.z.namelist()
+        arcnames = self.z.namelist()
 
         self.extract()
 
@@ -158,8 +158,8 @@ class EggInst(object):
             object_code.fix_files(self)
 
         self.entry_points()
-        if ('EGG-INFO/spec/depend' in self.arcnames  or
-            'EGG-INFO/info.json' in self.arcnames):
+        if ('EGG-INFO/spec/depend' in arcnames  or
+            'EGG-INFO/info.json' in arcnames):
             eggmeta.create_info(self, extra_info)
         self.z.close()
 
@@ -207,15 +207,18 @@ class EggInst(object):
 
 
     def lines_from_arcname(self, arcname, ignore_empty=True):
-        if not arcname in self.arcnames:
+        try:
+            zip_info = self.z.getinfo(arcname)
+        except KeyError:
             return
-        for line in self.z.read(arcname).splitlines():
-            line = line.strip()
-            if ignore_empty and line == '':
-                continue
-            if line.startswith('#'):
-                continue
-            yield line
+        else:
+            for line in self.z.read(zip_info).splitlines():
+                line = line.strip()
+                if ignore_empty and line == '':
+                    continue
+                if line.startswith('#'):
+                    continue
+                yield line
 
 
     def extract(self):
@@ -225,7 +228,8 @@ class EggInst(object):
             from .console import ProgressManager
 
         is_custom_egg = eggmeta.is_custom_egg(self.path)
-        size = sum(self.z.getinfo(name).file_size for name in self.arcnames)
+        arcnames = self.z.namelist()
+        size = sum(self.z.getinfo(name).file_size for name in arcnames)
         self.installed_size = size
         progress = ProgressManager(
                 self.evt_mgr, source=self,
@@ -237,32 +241,32 @@ class EggInst(object):
                 disp_amount=human_bytes(self.installed_size),
                 super_id=getattr(self, 'super_id', None))
 
-        use_legacy_egg_info_format = has_legacy_egg_info_format(self.arcnames,
+        use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
                 is_custom_egg)
 
         n = 0
         with progress:
-            for name in self.arcnames:
+            for name in arcnames:
                 if use_legacy_egg_info_format:
-                    n += self._extract_egg_with_legacy_egg_info(name, progress)
+                    n += self._extract_egg_with_legacy_egg_info(name, arcnames, progress)
                 else:
-                    n += self._extract(name, progress)
+                    n += self._extract(name, arcnames, progress)
                 progress(step=n)
 
-    def _extract_egg_with_legacy_egg_info(self, name, is_custom_egg):
+    def _extract_egg_with_legacy_egg_info(self, name, arcnames, is_custom_egg):
         zip_info = self.z.getinfo(name)
 
         if is_in_legacy_egg_info(name, is_custom_egg):
             self._write_legacy_egg_info_metadata(zip_info)
         else:
-            self.write_arcname(name)
+            self.write_arcname(name, arcnames)
 
         return zip_info.file_size
 
-    def _extract(self, name, is_custom_egg):
+    def _extract(self, name, arcnames, is_custom_egg):
         zip_info = self.z.getinfo(name)
 
-        self.write_arcname(name)
+        self.write_arcname(name, arcnames)
         if should_copy_in_egg_info(name, is_custom_egg):
             self._write_standard_egg_info_metadata(zip_info)
 
@@ -334,7 +338,7 @@ class EggInst(object):
     py_pat = re.compile(r'^(.+)\.py(c|o)?$')
     so_pat = re.compile(r'^lib.+\.so')
     py_obj = '.pyd' if on_win else '.so'
-    def write_arcname(self, arcname):
+    def write_arcname(self, arcname, arcnames):
         if arcname.endswith('/') or arcname.startswith('.unused'):
             return
         zip_info = self.z.getinfo(arcname)
@@ -344,7 +348,7 @@ class EggInst(object):
             return
 
         m = self.py_pat.match(arcname)
-        if m and (m.group(1) + self.py_obj) in self.arcnames:
+        if m and (m.group(1) + self.py_obj) in arcnames:
             # .py, .pyc, .pyo next to .so are not written
             return
         path = self.get_dst(arcname)
@@ -352,7 +356,7 @@ class EggInst(object):
         data = self.z.read(arcname)
         if fn in ['__init__.py', '__init__.pyc']:
             tmp = arcname.rstrip('c')
-            if tmp in self.arcnames and NS_PKG_PAT.match(self.z.read(tmp)):
+            if tmp in arcnames and NS_PKG_PAT.match(self.z.read(tmp)):
                 if fn == '__init__.py':
                     data = ''
                 if fn == '__init__.pyc':
