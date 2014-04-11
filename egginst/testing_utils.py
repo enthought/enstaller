@@ -3,7 +3,6 @@ from __future__ import print_function
 from ._compat import http_client
 
 import contextlib
-import copy
 import functools
 import os
 
@@ -185,8 +184,9 @@ class ControlledEnv(object):
         self._ignored_keys = ignored_keys
 
         if environ is None:
-            environ = os.environ
-        self._data = copy.copy(environ)
+            self._data = os.environ.copy()
+        else:
+            self._data = environ.copy()
 
     def __getitem__(self, name):
         if name in self._ignored_keys:
