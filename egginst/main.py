@@ -200,10 +200,13 @@ class _EggInstRemove(object):
 
         self.verbose = verbose
 
+    def _read_uninstall_metadata(self):
         d = read_meta(self.meta_dir)
 
-        self.files = [join(self.prefix, f) for f in d['files']]
-        self.installed_size = d['installed_size']
+        files = [join(self.prefix, f) for f in d['files']]
+        installed_size = d['installed_size']
+
+        return installed_size, files
 
     def _rm_dirs(self, files):
         dir_paths = set()
