@@ -250,21 +250,15 @@ class EggInst(object):
         self.installed_size = d['installed_size']
         self.files = [join(self.prefix, f) for f in d['files']]
 
-
     def lines_from_arcname(self, arcname, ignore_empty=True):
-        try:
-            zip_info = self.z.getinfo(arcname)
-        except KeyError:
-            return
-        else:
-            for line in self.z.read(zip_info).splitlines():
+        if zip_has_arcname(self.z, arcname):
+            for line in self.z.read(arcname).splitlines():
                 line = line.strip()
                 if ignore_empty and line == '':
                     continue
                 if line.startswith('#'):
                     continue
                 yield line
-
 
     def extract(self):
         if self.evt_mgr:
