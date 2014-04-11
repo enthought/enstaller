@@ -410,7 +410,7 @@ class EggInst(object):
 
             with progress:
                 for n in self.archive_extractor():
-                    prorgress(step=n)
+                    progress(step=n)
         """
         arcnames = self.z.namelist()
         is_custom_egg = eggmeta.is_custom_egg(self.path)
