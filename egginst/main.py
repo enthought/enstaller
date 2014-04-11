@@ -296,23 +296,24 @@ class EggInst(object):
             os.makedirs(self.meta_dir)
 
         self.z = zipfile.ZipFile(self.path)
+        try:
+            self.extract()
 
-        self.extract()
+            if on_win:
+                scripts.create_proxies(self)
+            else:
+                from . import links
+                from . import object_code
+                if self.verbose:
+                    links.verbose = object_code.verbose = True
+                links.create(self)
+                object_code.fix_files(self)
 
-        if on_win:
-            scripts.create_proxies(self)
-        else:
-            from . import links
-            from . import object_code
-            if self.verbose:
-                links.verbose = object_code.verbose = True
-            links.create(self)
-            object_code.fix_files(self)
-
-        self.entry_points()
-        if self._should_create_info():
-            eggmeta.create_info(self, extra_info)
-        self.z.close()
+            self.entry_points()
+            if self._should_create_info():
+                eggmeta.create_info(self, extra_info)
+        finally:
+            self.z.close()
 
         scripts.fix_scripts(self)
         if not self.noapp:
