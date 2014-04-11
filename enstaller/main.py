@@ -33,6 +33,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
     prepend_url, print_config, subscription_message, write_default_config)
+from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
@@ -40,8 +41,9 @@ from enstaller.eggcollect import EggCollection
 from enstaller.enpkg import (Enpkg, EnpkgError, create_joined_store,
     req_from_anything)
 from enstaller.resolve import Req, comparable_info
-from enstaller.egg_meta import is_valid_eggname, split_eggname
-from enstaller.errors import AuthFailedError, InvalidConfiguration
+from enstaller.egg_meta import split_eggname
+from enstaller.errors import AuthFailedError
+from enstaller.history import History
 
 from enstaller.store.joined import JoinedStore
 from enstaller.store.indexed import IndexedStore
@@ -311,7 +313,7 @@ def install_req(enpkg, req, opts):
             if len(actions) == 0:
                 print("No update necessary, %r is up-to-date." % req.name)
                 print(install_time_string(enpkg, req.name))
-        except EnpkgError, e:
+        except EnpkgError as e:
             if mode == 'root' or e.req is None or e.req == req:
                 # trying to install just one requirement - try to give more info
                 info_list = enpkg.info_list_name(req.name)
@@ -390,8 +392,8 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
 
     installed_repo = MockedStore()
     remote = JoinedStore([enpkg.remote, installed_repo])
-    return Enpkg(remote, prefixes=prefixes,
-                 evt_mgr=evt_mgr, verbose=verbose, config=enpkg.config)
+    return Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, verbose=verbose,
+                 config=enpkg.config)
 
 
 def update_enstaller(enpkg, opts):
@@ -406,18 +408,15 @@ def update_enstaller(enpkg, opts):
         return updated
     if not IS_RELEASED:
         return updated
-    try:
-        # Ugly: we create a new enpkg class to merge a
-        # fake local repo to take into account our locally
-        # installed enstaller
-        new_enpkg = _create_enstaller_update_enpkg(enpkg)
-        if len(new_enpkg._install_actions_enstaller()) > 0:
-            yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
-            if yn in set(['y', 'Y', '', None]):
-                install_req(enpkg, 'enstaller', opts)
-                updated = True
-    except EnpkgError as e:
-        print("Can't update enstaller:", e)
+    # Ugly: we create a new enpkg class to merge a
+    # fake local repo to take into account our locally
+    # installed enstaller
+    new_enpkg = _create_enstaller_update_enpkg(enpkg)
+    if len(new_enpkg._install_actions_enstaller()) > 0:
+        yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
+        if yn in set(['y', 'Y', '', None]):
+            install_req(enpkg, 'enstaller', opts)
+            updated = True
     return updated
 
 def get_package_path(prefix):
@@ -478,6 +477,25 @@ def get_config_filename(use_sys_config):
             config_filename = HOME_ENSTALLER4RC
 
     return config_filename
+
+
+def ensure_authenticated_config(config, config_filename, enpkg):
+    try:
+        authenticate(config, enpkg.remote)
+    except AuthFailedError:
+        login, _ = config.get_auth()
+        print("Could not authenticate with user '{0}'.".format(login))
+        print("You can change your authentication details with 'enpkg --userpass'")
+        sys.exit(-1)
+    else:
+        convert_auth_if_required(config_filename)
+
+
+def install_from_requirements(enpkg, args):
+    with open(args.requirements, "r") as fp:
+        for req in fp:
+            args.no_deps = True
+            install_req(enpkg, req, args)
 
 
 def main(argv=None):
@@ -625,23 +643,14 @@ def main(argv=None):
         return
 
     if args.log:                                  # --log
-        from history import History
         h = History(prefix)
         h.update()
         h.print_log()
         return
 
     if args.freeze:
-        from .eggcollect import EggCollection, JoinedEggCollection
-        collection = JoinedEggCollection(
-            [EggCollection(prefix, False, None) for prefix in prefixes]
-        )
-        full_names = [
-            "{0} {1}-{2}".format(req["name"], req["version"], req["build"])
-            for name, req in collection.query(type="egg")
-        ]
-        for full_name in sorted(full_names):
-            print(full_name)
+        for package in get_freeze_list(prefixes):
+            print(package)
         return
 
     if args.list:                                 # --list
@@ -663,8 +672,8 @@ def main(argv=None):
         urls = [fill_url(u) for u in config.IndexedRepos]
         remote = create_joined_store(config, urls)
 
-    enpkg = Enpkg(remote, prefixes=prefixes,
-                  evt_mgr=evt_mgr, verbose=args.verbose, config=config)
+    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
+                  verbose=args.verbose, config=config)
 
 
     if args.config:                               # --config
@@ -691,7 +700,7 @@ def main(argv=None):
         config.set_auth(username, password)
         try:
             config._checked_change_auth(config_filename)
-        except AuthFailedError as e:
+        except AuthFailedError:
             msg = ("Could not authenticate. Please check your credentials "
                    "and try again.\nNo modification was written.")
             print(msg)
@@ -702,24 +711,7 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    try:
-        config.get_auth()
-    except InvalidConfiguration:
-        print(PLEASE_AUTH_MESSAGE)
-        sys.exit(-1)
-    else:
-        try:
-            authenticate(config, enpkg.remote)
-        except AuthFailedError as e:
-            login, _ = config.get_auth()
-            print("Could not authenticate with user '{0}'.".format(login))
-            print("You can change your authentication details with 'enpkg --userpass'")
-            sys.exit(-1)
-        except EnstallerException as e:
-            print("Could not connect (error: {0!r}).".format(e))
-            sys.exit(-1)
-        else:
-            convert_auth_if_required(config_filename)
+    ensure_authenticated_config(config, config_filename, enpkg)
 
     if args.dry_run:
         def print_actions(actions):
@@ -732,15 +724,11 @@ def main(argv=None):
         return
 
     if args.revert:                               # --revert
-        arg = args.revert
-        try:
-            actions = enpkg.revert_actions(arg)
-            if not actions:
-                print("Nothing to do")
-                return
+        actions = enpkg.revert_actions(args.revert)
+        if actions:
             enpkg.execute(actions)
-        except EnpkgError as e:
-            print(e.message)
+        else:
+            print("Nothing to do")
         return
 
     # Try to auto-update enstaller
@@ -768,10 +756,7 @@ def main(argv=None):
         return
 
     if args.requirements:
-        with open(args.requirements, "r") as fp:
-            for req in fp:
-                args.no_deps = True
-                install_req(enpkg, req, args)
+        install_from_requirements(enpkg, args)
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
@@ -825,16 +810,12 @@ def main(argv=None):
             p.error("Can't remove 'epd'")
         elif len(reqs) > 1:
             p.error("Can't combine 'enpkg epd' with other packages.")
-            return
         elif not epd_install_confirm():
             return
 
     for req in reqs:
         if args.remove:                               # --remove
-            try:
-                enpkg.execute(enpkg.remove_actions(req))
-            except EnpkgError as e:
-                print(e.message)
+            enpkg.execute(enpkg.remove_actions(req))
         else:
             install_req(enpkg, req, args)             # install (default)
 
@@ -861,5 +842,5 @@ Please report this on enstaller issue tracker:
             print(msg % ("enstaller", "enstaller", e.__class__, repr(e)))
             sys.exit(1)
 
-if __name__ == '__main__':
+if __name__ == '__main__': # pragma: no cover
     main_noexc()
