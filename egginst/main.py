@@ -422,7 +422,7 @@ class EggInst(object):
         ensure_dir(dest)
         source = self.z.open(name)
         try:
-            with file(dest, "wb") as target:
+            with open(dest, "wb") as target:
                 shutil.copyfileobj(source, target)
                 self.files.append(dest)
         finally:
@@ -475,9 +475,8 @@ class EggInst(object):
         if not isdir(dn):
             os.makedirs(dn)
         rm_rf(path)
-        fo = open(path, 'wb')
-        fo.write(data)
-        fo.close()
+        with open(path, 'wb') as fo:
+            fo.write(data)
         if (arcname.startswith(('EGG-INFO/usr/bin/', 'EGG-INFO/scripts/')) or
                 fn.endswith(('.dylib', '.pyd', '.so')) or
                 (arcname.startswith('EGG-INFO/usr/lib/') and
