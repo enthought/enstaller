@@ -203,14 +203,12 @@ class ControlledEnv(object):
     def keys(self):
         return [k for k in self._data if not k in self._ignored_keys]
 
+    def __contains__(self, key):
+        return key in self._data
+
     def __setitem__(self, name, value):
         self._data[name] = value
 
-    def __delitem__(self, name):
-        del self._data[name]
-
-    def __iter__(self):
-        return iter((k, v) for k, v in self._data.iteritems() if not k in self._ignored_keys)
 
 @contextlib.contextmanager
 def assert_same_fs(test_case, prefix):
