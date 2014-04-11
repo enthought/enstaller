@@ -18,6 +18,7 @@ import os
 import posixpath
 import re
 import shutil
+import subprocess
 import sys
 import warnings
 import zipfile
@@ -150,11 +151,92 @@ def _install_app_impl(meta_dir, prefix, remove=False):
             print("Warning (installing application item):\n%r" % (e,))
 
 
+def _run_script(meta_dir, fn, prefix):
+    path = join(meta_dir, fn)
+    if not isfile(path):
+        return
+    subprocess.call([scripts.executable, '-E', path, '--prefix', prefix],
+                    cwd=dirname(path))
+
+
+class _EggInstRemove(object):
+
+    def __init__(self, path, prefix=sys.prefix, evt_mgr=None, verbose=False,
+                 noapp=False):
+        self.path = path
+        self.fn = basename(path)
+        name, version = name_version_fn(self.fn)
+        self.cname = name.lower()
+        self.prefix = abspath(prefix)
+        self.evt_mgr = evt_mgr
+        self.noapp = noapp
+
+        self.egginfo_dir = join(self.prefix, 'EGG-INFO')
+        self.meta_dir = join(self.egginfo_dir, self.cname)
+
+        self.files = []
+        self.verbose = verbose
+
+    def _read_uninstall_metadata(self):
+        d = read_meta(self.meta_dir)
+        files = [join(self.prefix, f) for f in d['files']]
+        installed_size = d['installed_size']
+        return installed_size, files
+
+    def _rm_dirs(self, files):
+        dir_paths = set()
+        len_prefix = len(self.prefix)
+        for path in set(dirname(p) for p in files):
+            while len(path) > len_prefix:
+                dir_paths.add(path)
+                path = dirname(path)
+
+        for path in sorted(dir_paths, key=len, reverse=True):
+            if not path.rstrip(sep).endswith('site-packages'):
+                rm_empty_dir(path)
+
+    def remove(self):
+        if not isdir(self.meta_dir):
+            print("Error: Can't find meta data for:", self.cname)
+            return
+
+        if self.evt_mgr:
+            from encore.events.api import ProgressManager
+        else:
+            from .console import ProgressManager
+
+        installed_size, files = self._read_uninstall_metadata()
+        n = 0
+        progress = ProgressManager(
+                self.evt_mgr, source=self,
+                operation_id=uuid4(),
+                message="removing egg",
+                steps=len(files),
+                # ---
+                progress_type="removing", filename=self.fn,
+                disp_amount=human_bytes(installed_size),
+                super_id=getattr(self, 'super_id', None))
+        if not self.noapp:
+            remove_app(self.meta_dir, self.prefix)
+        _run_script(self.meta_dir, 'pre_egguninst.py', self.prefix)
+
+        with progress:
+            for p in files:
+                n += 1
+                progress(step=n)
+
+                rm_rf(p)
+                if p.endswith('.py'):
+                    rm_rf(p + 'c')
+            self._rm_dirs(files)
+            rm_rf(self.meta_dir)
+            rm_empty_dir(self.egginfo_dir)
+
+
 class EggInst(object):
 
-    def __init__(self, path, prefix=sys.prefix,
-                 hook=False, pkgs_dir=None, evt_mgr=None,
-                 verbose=False, noapp=False):
+    def __init__(self, path, prefix=sys.prefix, hook=False, pkgs_dir=None,
+                 evt_mgr=None, verbose=False, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
@@ -176,6 +258,8 @@ class EggInst(object):
         self.meta_json = join(self.meta_dir, 'egginst.json')
         self.files = []
         self.verbose = verbose
+
+        self._egginst_remover = _EggInstRemove(path, prefix, evt_mgr, verbose, noapp)
 
     def _should_create_info(self):
         for arcname in ('EGG-INFO/spec/depend', 'EGG-INFO/info.json'):
@@ -212,8 +296,7 @@ class EggInst(object):
             install_app(self.meta_dir, self.prefix)
         self.write_meta()
 
-        self.run('post_egginst.py')
-
+        _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
 
     def entry_points(self):
         lines = list(self.lines_from_arcname('EGG-INFO/entry_points.txt',
@@ -244,11 +327,6 @@ class EggInst(object):
         )
         with open(self.meta_json, 'w') as f:
             json.dump(d, f, indent=2, sort_keys=True)
-
-    def read_meta(self):
-        d = read_meta(self.meta_dir)
-        self.installed_size = d['installed_size']
-        self.files = [join(self.prefix, f) for f in d['files']]
 
     def lines_from_arcname(self, arcname, ignore_empty=True):
         if zip_has_arcname(self.z, arcname):
@@ -406,64 +484,8 @@ class EggInst(object):
                  self.so_pat.match(fn))):
             os.chmod(path, 0o755)
 
-
-    def run(self, fn):
-        path = join(self.meta_dir, fn)
-        if not isfile(path):
-            return
-        from subprocess import call
-        call([scripts.executable, '-E', path, '--prefix', self.prefix],
-             cwd=dirname(path))
-
-
-    def rm_dirs(self):
-        dir_paths = set()
-        len_prefix = len(self.prefix)
-        for path in set(dirname(p) for p in self.files):
-            while len(path) > len_prefix:
-                dir_paths.add(path)
-                path = dirname(path)
-
-        for path in sorted(dir_paths, key=len, reverse=True):
-            if not path.rstrip(sep).endswith('site-packages'):
-                rm_empty_dir(path)
-
     def remove(self):
-        if not isdir(self.meta_dir):
-            print("Error: Can't find meta data for:", self.cname)
-            return
-
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from .console import ProgressManager
-
-        self.read_meta()
-        n = 0
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="removing egg",
-                steps=len(self.files),
-                # ---
-                progress_type="removing", filename=self.fn,
-                disp_amount=human_bytes(self.installed_size),
-                super_id=getattr(self, 'super_id', None))
-        if not self.noapp:
-            remove_app(self.meta_dir, self.prefix)
-        self.run('pre_egguninst.py')
-
-        with progress:
-            for p in self.files:
-                n += 1
-                progress(step=n)
-
-                rm_rf(p)
-                if p.endswith('.py'):
-                    rm_rf(p + 'c')
-            self.rm_dirs()
-            rm_rf(self.meta_dir)
-            rm_empty_dir(self.egginfo_dir)
+        self._egginst_remover.remove()
 
 
 def read_meta(meta_dir):
