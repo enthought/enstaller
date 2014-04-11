@@ -39,10 +39,6 @@ from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
                     is_zipinfo_symlink, is_zipinfo_dir, zip_has_arcname)
 
-NS_PKG_PAT = re.compile(
-    r'\s*__import__\([\'"]pkg_resources[\'"]\)\.declare_namespace'
-    r'\(__name__\)\s*$')
-
 EGG_INFO = "EGG-INFO"
 
 R_EGG_INFO = re.compile("^{0}".format(EGG_INFO))
@@ -364,13 +360,6 @@ class EggInst(object):
         path = self.get_dst(arcname)
         dn, fn = os.path.split(path)
         data = self.z.read(arcname)
-        if fn in ['__init__.py', '__init__.pyc']:
-            tmp = arcname.rstrip('c')
-            if zip_has_arcname(self.z, tmp) and NS_PKG_PAT.match(self.z.read(tmp)):
-                if fn == '__init__.py':
-                    data = ''
-                if fn == '__init__.pyc':
-                    return
         self.files.append(path)
         if not isdir(dn):
             os.makedirs(dn)
