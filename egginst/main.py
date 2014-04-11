@@ -198,14 +198,12 @@ class _EggInstRemove(object):
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
         self.meta_dir = join(self.egginfo_dir, self.cname)
 
-        self.files = []
         self.verbose = verbose
 
-    def _read_uninstall_metadata(self):
         d = read_meta(self.meta_dir)
-        files = [join(self.prefix, f) for f in d['files']]
-        installed_size = d['installed_size']
-        return installed_size, files
+
+        self.files = [join(self.prefix, f) for f in d['files']]
+        self.installed_size = d['installed_size']
 
     def _rm_dirs(self, files):
         dir_paths = set()
@@ -219,18 +217,53 @@ class _EggInstRemove(object):
             if not path.rstrip(sep).endswith('site-packages'):
                 rm_empty_dir(path)
 
-    def remove(self):
+    def remove_iterator(self):
+        """
+        Create an iterator that will remove every installed file.
+
+        Example::
+
+            from egginst.console import ProgressManager
+
+            progress = ProgressManager(...)
+            egginst = EggInst(...)
+
+            with progress:
+                for i, filename in self.remove_iterator():
+                    print("removing file {0}".format(filename))
+                    progress(step=i)
+        """
         if not isdir(self.meta_dir):
             print("Error: Can't find meta data for:", self.cname)
             return
 
+        if not self.noapp:
+            remove_app(self.meta_dir, self.prefix)
+        _run_script(self.meta_dir, 'pre_egguninst.py', self.prefix)
+
+        installed_size, files = self._read_uninstall_metadata()
+
+        for n, p in enumerate(files):
+            n += 1
+
+            rm_rf(p)
+            if p.endswith('.py'):
+                rm_rf(p + 'c')
+
+            yield p
+
+        self._rm_dirs(files)
+        rm_rf(self.meta_dir)
+        rm_empty_dir(self.egginfo_dir)
+
+    def remove(self):
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
             from .console import ProgressManager
 
         installed_size, files = self._read_uninstall_metadata()
-        n = 0
+
         progress = ProgressManager(
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
@@ -240,21 +273,10 @@ class _EggInstRemove(object):
                 progress_type="removing", filename=self.fn,
                 disp_amount=human_bytes(installed_size),
                 super_id=getattr(self, 'super_id', None))
-        if not self.noapp:
-            remove_app(self.meta_dir, self.prefix)
-        _run_script(self.meta_dir, 'pre_egguninst.py', self.prefix)
 
         with progress:
-            for p in files:
-                n += 1
+            for n, filename in enumerate(self.remove_iterator()):
                 progress(step=n)
-
-                rm_rf(p)
-                if p.endswith('.py'):
-                    rm_rf(p + 'c')
-            self._rm_dirs(files)
-            rm_rf(self.meta_dir)
-            rm_empty_dir(self.egginfo_dir)
 
 
 class EggInst(object):
