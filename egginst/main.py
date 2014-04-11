@@ -111,6 +111,45 @@ def setuptools_egg_info_dir(path):
     name, version = name_version_fn(filename)
     return "{0}-{1}.egg-info".format(name, version)
 
+
+def install_app(meta_dir, prefix):
+    return _install_app_impl(meta_dir, prefix, remove=False)
+
+
+def remove_app(meta_dir, prefix):
+    return _install_app_impl(meta_dir, prefix, remove=True)
+
+
+def _install_app_impl(meta_dir, prefix, remove=False):
+    if appinst is None:
+        return
+
+    path = join(meta_dir, eggmeta.APPINST_PATH)
+    if not isfile(path):
+        return
+
+    if remove:
+        try:
+            try:
+                appinst.uninstall_from_dat(path, prefix)
+            except TypeError:
+                # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
+                # arg)
+                appinst.uninstall_from_dat(path)
+        except Exception as e:
+            print("Warning (uninstalling application item):\n%r" % (e,))
+    else:
+        try:
+            try:
+                appinst.install_from_dat(path, prefix)
+            except TypeError:
+                # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
+                # arg)
+                appinst.install_from_dat(path)
+        except Exception as e:
+            print("Warning (installing application item):\n%r" % (e,))
+
+
 class EggInst(object):
 
     def __init__(self, path, prefix=sys.prefix,
@@ -170,7 +209,7 @@ class EggInst(object):
 
         scripts.fix_scripts(self)
         if not self.noapp:
-            self.install_app()
+            install_app(self.meta_dir, self.prefix)
         self.write_meta()
 
         self.run('post_egginst.py')
@@ -374,41 +413,6 @@ class EggInst(object):
             os.chmod(path, 0o755)
 
 
-    def install_app(self):
-        return self._install_app_impl(remove=False)
-
-    def remove_app(self):
-        return self._install_app_impl(remove=True)
-
-    def _install_app_impl(self, remove=False):
-        if appinst is None:
-            return
-
-        path = join(self.meta_dir, eggmeta.APPINST_PATH)
-        if not isfile(path):
-            return
-
-        if remove:
-            try:
-                try:
-                    appinst.uninstall_from_dat(path, self.prefix)
-                except TypeError:
-                    # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
-                    # arg)
-                    appinst.uninstall_from_dat(path)
-            except Exception as e:
-                print("Warning (uninstalling application item):\n%r" % (e,))
-        else:
-            try:
-                try:
-                    appinst.install_from_dat(path, self.prefix)
-                except TypeError:
-                    # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
-                    # arg)
-                    appinst.install_from_dat(path)
-            except Exception as e:
-                print("Warning (installing application item):\n%r" % (e,))
-
     def run(self, fn):
         path = join(self.meta_dir, fn)
         if not isfile(path):
@@ -452,7 +456,7 @@ class EggInst(object):
                 disp_amount=human_bytes(self.installed_size),
                 super_id=getattr(self, 'super_id', None))
         if not self.noapp:
-            self.remove_app()
+            remove_app(self.meta_dir, self.prefix)
         self.run('pre_egguninst.py')
 
         with progress:
