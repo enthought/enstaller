@@ -13,7 +13,7 @@ def get_freeze_list(prefixes):
         List of installed eggs, as full names (e.g. 'numpy-1.8.0-1')
     """
     collection = JoinedEggCollection(
-        [EggCollection(prefix, False, None) for prefix in prefixes]
+        [EggCollection(prefix) for prefix in prefixes]
     )
     full_names = [
         "{0} {1}-{2}".format(req["name"], req["version"], req["build"])
