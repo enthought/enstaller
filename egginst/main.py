@@ -506,7 +506,7 @@ def print_installed(prefix=sys.prefix):
 
 def main(argv=None):
     if argv is None:
-        argv = sys.argv[1:]
+        argv = sys.argv[1:]  # pragma: no cover
 
     p = OptionParser(usage="usage: %prog [options] [EGGS ...]",
                      description=__doc__)
