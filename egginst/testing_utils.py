@@ -1,9 +1,10 @@
 from __future__ import print_function
 
+from ._compat import http_client
+
 import contextlib
 import copy
 import functools
-import httplib
 import os
 
 _RAISE_NETWORK_ERROR_DEFAULT = False
@@ -33,7 +34,7 @@ def optional_args(decorator):
 
     return wrapper
 
-_network_error_classes = IOError, httplib.HTTPException
+_network_error_classes = IOError, http_client.HTTPException
 
 @optional_args
 def network(t, raise_on_error=_RAISE_NETWORK_ERROR_DEFAULT,
