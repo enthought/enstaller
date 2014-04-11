@@ -347,7 +347,7 @@ class EggInst(object):
                 links.create(self)
                 object_code.fix_files(self)
 
-            self.entry_points()
+            self._entry_points()
             if self._should_create_info():
                 eggmeta.create_info(self, extra_info)
         finally:
@@ -356,11 +356,11 @@ class EggInst(object):
         scripts.fix_scripts(self)
         if not self.noapp:
             install_app(self.meta_dir, self.prefix)
-        self.write_meta()
+        self._write_meta()
 
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
 
-    def entry_points(self):
+    def _entry_points(self):
         lines = list(self.lines_from_arcname('EGG-INFO/entry_points.txt',
                                              ignore_empty=False))
         if lines == []:
@@ -375,15 +375,15 @@ class EggInst(object):
             scripts.create(self, conf)
 
 
-    def rel_prefix(self, path):
+    def _rel_prefix(self, path):
         return abspath(path).replace(self.prefix, '.').replace('\\', '/')
 
-    def write_meta(self):
+    def _write_meta(self):
         d = dict(
             egg_name = self.fn,
             prefix = self.prefix,
             installed_size = self.installed_size,
-            files = [self.rel_prefix(p)
+            files = [self._rel_prefix(p)
                            if abspath(p).startswith(self.prefix) else p
                      for p in self.files + [self.meta_json]]
         )
@@ -457,14 +457,14 @@ class EggInst(object):
         if is_in_legacy_egg_info(name, is_custom_egg):
             self._write_legacy_egg_info_metadata(zip_info)
         else:
-            self.write_arcname(name)
+            self._write_arcname(name)
 
         return zip_info.file_size
 
     def _extract(self, name, is_custom_egg):
         zip_info = self.z.getinfo(name)
 
-        self.write_arcname(name)
+        self._write_arcname(name)
         if should_copy_in_egg_info(name, is_custom_egg):
             self._write_standard_egg_info_metadata(zip_info)
 
@@ -510,7 +510,7 @@ class EggInst(object):
             source.close()
 
 
-    def get_dst(self, arcname):
+    def _get_dst(self, arcname):
         for start, cond, dst_dir in [
             ('EGG-INFO/prefix/',  True,       self.prefix),
             ('EGG-INFO/usr/',     not on_win, self.prefix),
@@ -523,8 +523,8 @@ class EggInst(object):
         raise Exception("Didn't expect to get here")
 
 
-    def extract_symlink(self, arcname):
-        link_name = self.get_dst(arcname)
+    def _extract_symlink(self, arcname):
+        link_name = self._get_dst(arcname)
         source = self.z.read(arcname)
         dirn, filename = os.path.split(link_name)
         makedirs(dirn)
@@ -533,21 +533,21 @@ class EggInst(object):
         os.symlink(source, link_name)
         return link_name
 
-    def write_arcname(self, arcname):
+    def _write_arcname(self, arcname):
         if arcname.endswith('/') or arcname.startswith('.unused'):
             return
 
         zip_info = self.z.getinfo(arcname)
 
         if is_zipinfo_symlink(zip_info):
-            link_name = self.extract_symlink(arcname)
+            link_name = self._extract_symlink(arcname)
             self.files.append(link_name)
             return
 
         if should_skip(self.z, arcname):
             return
 
-        path = self.get_dst(arcname)
+        path = self._get_dst(arcname)
         ensure_dir(path)
 
         self.files.append(path)
