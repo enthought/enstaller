@@ -29,3 +29,14 @@ class TestMisc(unittest.TestCase):
             self.assertEqual(e.exception.code, 0)
             self.assertTrue(mocked_history.return_value.print_log.called)
             self.assertMultiLineEqual(m.value, "")
+
+    def test_freeze(self):
+        installed_requirements = ["dummy 1.0.0-1", "another_dummy 1.0.1-1"]
+        with mock.patch("enstaller.main.get_freeze_list",
+                        return_value=installed_requirements):
+            with self.assertRaises(SystemExit) as e:
+                with mock_print() as m:
+                    main_noexc(["--freeze"])
+            self.assertEqual(e.exception.code, 0)
+            self.assertMultiLineEqual(m.value,
+                                      "dummy 1.0.0-1\nanother_dummy 1.0.1-1\n")

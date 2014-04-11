@@ -649,7 +649,8 @@ def main(argv=None):
         return
 
     if args.freeze:
-        print(get_freeze_list(prefixes))
+        for package in get_freeze_list(prefixes):
+            print(package)
         return
 
     if args.list:                                 # --list
