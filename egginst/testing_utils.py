@@ -177,10 +177,9 @@ class ControlledEnv(object):
     >>> "USERNAME" in env:
     False
     """
-
     def __init__(self, ignored_keys=None, environ=None):
         if ignored_keys is None:
-            ignored_keys = {}
+            ignored_keys = set()
         self._ignored_keys = ignored_keys
 
         if environ is None:
