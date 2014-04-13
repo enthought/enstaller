@@ -518,17 +518,27 @@ class EggInst(object):
 
 
     def _get_dst(self, arcname):
-        for start, cond, dst_dir in [
-            ('EGG-INFO/prefix/',  True,       self.prefix),
-            ('EGG-INFO/usr/',     not on_win, self.prefix),
-            ('EGG-INFO/scripts/', True,       self.bin_dir),
-            ('EGG-INFO/',         True,       self.meta_dir),
-            ('',                  True,       self.pyloc),
-            ]:
-            if arcname.startswith(start) and cond:
-                return abspath(join(dst_dir, arcname[len(start):]))
-        raise Exception("Didn't expect to get here")
+        def _transform_path(arcname, egg_prefix, dest_prefix):
+            return abspath(join(dest_prefix, arcname[len(egg_prefix):]))
 
+        if on_win:
+            scheme = [
+                ("EGG-INFO/prefix/", self.prefix),
+                ("EGG-INFO/scripts/", self.bin_dir),
+                ("EGG-INFO/", self.meta_dir),
+            ]
+        else:
+            scheme = [
+                ("EGG-INFO/prefix/", self.prefix),
+                ("EGG-INFO/usr/", self.prefix),
+                ("EGG-INFO/scripts/", self.bin_dir),
+                ("EGG-INFO/", self.meta_dir),
+            ]
+
+        for prefix, dest in scheme:
+            if arcname.startswith(prefix):
+                return _transform_path(arcname, prefix, dest)
+        return _transform_path(arcname, "", self.pyloc)
 
     def _extract_symlink(self, arcname):
         link_name = self._get_dst(arcname)
