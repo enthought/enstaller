@@ -74,8 +74,9 @@ def create_proxy(src, bin_dir):
 
     dst_script = dst[:-4] + '-script.py'
     rm_rf(dst_script)
-    fo = open(dst_script, 'w')
-    fo.write('''\
+
+    with open(dst_script, 'w') as fo:
+        fo.write('''\
 #!"%(python)s"
 # This proxy was created by egginst from an egg with special instructions
 #
@@ -86,7 +87,6 @@ src = %(src)r
 
 sys.exit(subprocess.call([src] + sys.argv[1:]))
 ''' % dict(python=get_executable(), src=src))
-    fo.close()
     return dst, dst_script
 
 
@@ -115,9 +115,8 @@ def create_proxies(egg):
             if verbose:
                 print("     dst: %r" % dst)
             rm_rf(dst)
-            fo = open(dst, 'wb')
-            fo.write(data)
-            fo.close()
+            with open(dst, 'wb') as fo:
+                fo.write(data)
             egg.files.append(dst)
 
 
@@ -132,8 +131,8 @@ def write_script(path, entry_pt, egg_name):
     module, func = entry_pt.strip().split(':')
 
     rm_rf(path)
-    fo = open(path, 'w')
-    fo.write('''\
+    with open(path, 'w') as fo:
+        fo.write('''\
 #!%(python)s
 # This script was created by egginst when installing:
 #
@@ -147,7 +146,6 @@ if __name__ == '__main__':
 ''' % dict(python=get_executable(pythonw=path.endswith('.pyw'),
                                  with_quotes=on_win),
            egg_name=egg_name, module=module, func=func))
-    fo.close()
     os.chmod(path, 0o755)
 
 
@@ -179,9 +177,8 @@ def fix_script(path):
     if islink(path) or not isfile(path):
         return
 
-    fi = open(path)
-    data = fi.read()
-    fi.close()
+    with open(path) as fi:
+        data = fi.read()
 
     if ' egginst ' in data:
         # This string is in the comment when write_script() creates
@@ -199,9 +196,10 @@ def fix_script(path):
         return
     if verbose:
         print("Updating: %r" % path)
-    fo = open(path, 'w')
-    fo.write(new_data)
-    fo.close()
+
+    with open(path, 'w') as fo:
+        fo.write(new_data)
+
     os.chmod(path, 0o755)
 
 
@@ -209,8 +207,3 @@ def fix_scripts(egg):
     for path in egg.files:
         if path.startswith(egg.bin_dir):
             fix_script(path)
-
-
-if __name__ == '__main__':
-    write_exe('cli.exe')
-    write_exe('gui.exe', 'gui_scripts')

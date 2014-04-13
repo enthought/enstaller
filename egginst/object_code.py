@@ -38,9 +38,8 @@ def get_object_type(path):
     """
     if path.endswith(NO_OBJ) or islink(path) or not isfile(path):
         return None
-    fi = open(path, 'rb')
-    head = fi.read(4)
-    fi.close()
+    with open(path, 'rb') as fi:
+        head = fi.read(4)
     return MAGIC.get(head)
 
 
@@ -118,47 +117,45 @@ def fix_object_code(path):
     if tp is None:
         return
     
-    f = open(path, 'r+b')
-    data = f.read()
-    matches = list(placehold_pat.finditer(data))
-    if not matches:
-        f.close()
-        return
-
-    if verbose:
-        print("Fixing placeholders in:", path)
-    for m in matches:
-        rest = m.group(1)
-        original_r = rest
-        while rest.startswith('/PLACEHOLD'):
-            rest = rest[10:]
-
-        if tp.startswith('MachO-') and rest.startswith('/'):
-            # If the /PLACEHOLD is found in a LC_LOAD_DYLIB command
-            r = find_lib(rest[1:])
-        else:
-            # If the /PLACEHOLD is found in a LC_RPATH command (Mach-O) or in
-            # R(UN)PATH on ELF
-            assert rest == '' or rest.startswith(':')
-            rpaths = list(_targets)
-            # extend the list with rpath which were already in the binary,
-            # if any
-            rpaths.extend(p for p in rest.split(':') if p)
-            r = ':'.join(rpaths)
+    with open(path, 'r+b') as f:
+        data = f.read()
+        matches = list(placehold_pat.finditer(data))
+        if not matches:
+            return
 
         if verbose:
-            print("replacing rpath {} with {}".format(original_r, r))
-        if alt_replace_func is not None:
-            r = alt_replace_func(r)
+            print("Fixing placeholders in:", path)
+        for m in matches:
+            rest = m.group(1)
+            original_r = rest
+            while rest.startswith('/PLACEHOLD'):
+                rest = rest[10:]
 
-        padding = len(m.group(0)) - len(r)
-        if padding < 1: # we need at least one null-character
-            raise Exception("placeholder %r too short" % m.group(0))
-        r += padding * '\0'
-        assert m.start() + len(r) == m.end()
-        f.seek(m.start())
-        f.write(r)
-    f.close()
+            if tp.startswith('MachO-') and rest.startswith('/'):
+                # If the /PLACEHOLD is found in a LC_LOAD_DYLIB command
+                r = find_lib(rest[1:])
+            else:
+                # If the /PLACEHOLD is found in a LC_RPATH command (Mach-O) or in
+                # R(UN)PATH on ELF
+                assert rest == '' or rest.startswith(':')
+                rpaths = list(_targets)
+                # extend the list with rpath which were already in the binary,
+                # if any
+                rpaths.extend(p for p in rest.split(':') if p)
+                r = ':'.join(rpaths)
+
+            if verbose:
+                print("replacing rpath {} with {}".format(original_r, r))
+            if alt_replace_func is not None:
+                r = alt_replace_func(r)
+
+            padding = len(m.group(0)) - len(r)
+            if padding < 1: # we need at least one null-character
+                raise Exception("placeholder %r too short" % m.group(0))
+            r += padding * '\0'
+            assert m.start() + len(r) == m.end()
+            f.seek(m.start())
+            f.write(r)
 
 
 def fix_files(egg):
