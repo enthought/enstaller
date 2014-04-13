@@ -10,7 +10,6 @@ import os.path as op
 
 import mock
 
-from egginst.links import create
 from egginst.main import EggInst
 
 from .common import mkdtemp, SUPPORT_SYMLINK

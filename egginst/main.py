@@ -36,6 +36,7 @@ from enstaller import __version__
 from . import eggmeta
 from . import scripts
 
+from .links import create_link
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
                     is_zipinfo_symlink, is_zipinfo_dir, zip_has_arcname)
@@ -347,12 +348,12 @@ class EggInst(object):
             if on_win:
                 scripts.create_proxies(self)
             else:
-                from . import links
                 from . import object_code
                 if self.verbose:
-                    links.verbose = object_code.verbose = True
-                links.create(self)
+                    object_code.verbose = True
                 object_code.fix_files(self)
+
+                self._create_links()
 
             self._entry_points()
             if self._should_create_info():
@@ -366,6 +367,17 @@ class EggInst(object):
         self._write_meta()
 
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
+
+    def _create_links(self):
+        """
+        Given the content of the EGG-INFO/inst/files_to_install.txt file,
+        create/remove the links listed therein.
+        """
+        for line in self.iter_files_to_install():
+            arcname, link = line.split()
+            if link == 'False':
+                continue
+            self.files.append(create_link(arcname, link, self.prefix, self.verbose))
 
     def _entry_points(self):
         lines = list(self._lines_from_arcname('EGG-INFO/entry_points.txt',
