@@ -171,7 +171,7 @@ def fix_files(egg):
 
     _targets = []
     for prefix in prefixes:
-        for line in egg.lines_from_arcname('EGG-INFO/inst/targets.dat'):
+        for line in egg.iter_targets():
             _targets.append(join(prefix, line))
         _targets.append(join(prefix, 'lib'))
 

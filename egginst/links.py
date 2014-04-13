@@ -31,7 +31,7 @@ def create(egg):
     Given the content of the EGG-INFO/inst/files_to_install.txt file,
     create/remove the links listed therein.
     """
-    for line in egg.lines_from_arcname('EGG-INFO/inst/files_to_install.txt'):
+    for line in egg.iter_files_to_install():
         arcname, link = line.split()
         if link == 'False':
             continue

@@ -95,7 +95,7 @@ def create_proxies(egg):
     if not isdir(egg.bin_dir):
         os.makedirs(egg.bin_dir)
 
-    for line in egg.lines_from_arcname('EGG-INFO/inst/files_to_install.txt'):
+    for line in egg.iter_files_to_install():
         arcname, action = line.split()
         if verbose:
             print("arcname=%r    action=%r" % (arcname, action))

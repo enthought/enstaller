@@ -310,6 +310,7 @@ class EggInst(object):
 
         self._egginst_remover = _EggInstRemove(path, prefix, evt_mgr, verbose, noapp)
         self._installed_size = None
+        self._files_to_install = None
 
     @property
     def installed_size(self):
@@ -321,6 +322,12 @@ class EggInst(object):
                 self._installed_size = sum(zp.getinfo(name).file_size for name
                                            in zp.namelist())
         return self._installed_size
+
+    def iter_files_to_install(self):
+        return self._lines_from_arcname('EGG-INFO/inst/files_to_install.txt')
+
+    def iter_targets(self):
+        return self._lines_from_arcname('EGG-INFO/inst/targets.dat')
 
     def _should_create_info(self):
         for arcname in ('EGG-INFO/spec/depend', 'EGG-INFO/info.json'):
@@ -361,7 +368,7 @@ class EggInst(object):
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
 
     def _entry_points(self):
-        lines = list(self.lines_from_arcname('EGG-INFO/entry_points.txt',
+        lines = list(self._lines_from_arcname('EGG-INFO/entry_points.txt',
                                              ignore_empty=False))
         if lines == []:
             return
@@ -390,7 +397,7 @@ class EggInst(object):
         with open(self.meta_json, 'w') as f:
             json.dump(d, f, indent=2, sort_keys=True)
 
-    def lines_from_arcname(self, arcname, ignore_empty=True):
+    def _lines_from_arcname(self, arcname, ignore_empty=True):
         if zip_has_arcname(self.z, arcname):
             for line in self.z.read(arcname).splitlines():
                 line = line.strip()
