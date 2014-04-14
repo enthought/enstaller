@@ -63,7 +63,7 @@ class ZipFile(zipfile.ZipFile):
             # filter illegal characters on Windows
             illegal = ':<>|"?*'
             if isinstance(arcname, unicode):
-                table = {ord(c): ord('_') for c in illegal}
+                table = dict((ord(c), ord('_')) for c in illegal)
             else:
                 table = string.maketrans(illegal, '_' * len(illegal))
             arcname = arcname.translate(table)
@@ -87,9 +87,12 @@ class ZipFile(zipfile.ZipFile):
         if is_zipinfo_symlink(member):
             return self._extract_symlink(member, targetpath, pwd)
         else:
-            with self.open(member, pwd=pwd) as source, \
-                 file(targetpath, "wb") as target:
-                shutil.copyfileobj(source, target)
+            source = self.open(member, pwd=pwd)
+            try:
+                with open(targetpath, "wb") as target:
+                    shutil.copyfileobj(source, target)
+            finally:
+                source.close()
 
             return targetpath
 

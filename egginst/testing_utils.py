@@ -223,4 +223,4 @@ def assert_same_fs(test_case, prefix):
         for f in files:
             path = os.path.join(root, f)
             if path not in old_state:
-                test_case.fail("Unexpected file: {}".format(path))
+                test_case.fail("Unexpected file: {0!r}".format(path))
