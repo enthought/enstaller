@@ -674,7 +674,6 @@ def main(argv=None):
     evt_mgr = None
 
     for path in ns.requirements:
-        print(path)
         ei = EggInst(path, prefix, False, ns.pkgs_dir, evt_mgr,
                      verbose=ns.verbose, noapp=ns.noapp)
         if ns.remove:
