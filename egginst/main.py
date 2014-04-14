@@ -24,7 +24,6 @@ import warnings
 import zipfile
 
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
-from uuid import uuid4
 
 try:
     import appinst
@@ -36,6 +35,7 @@ from enstaller import __version__
 from . import eggmeta
 from . import scripts
 
+from .console import ProgressManager
 from .links import create_link
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
@@ -272,24 +272,8 @@ class _EggInstRemove(object):
         rm_empty_dir(self.egginfo_dir)
 
     def remove(self):
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from .console import ProgressManager
-
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="removing egg",
-                steps=len(self.files),
-                # ---
-                progress_type="removing", filename=self.fn,
-                disp_amount=human_bytes(self.installed_size),
-                super_id=getattr(self, 'super_id', None))
-
-        with progress:
-            for n, filename in enumerate(self.remove_iterator()):
-                progress(step=n)
+        for filename in self.remove_iterator():
+            pass
 
 
 class EggInst(object):
@@ -377,24 +361,8 @@ class EggInst(object):
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
 
     def install(self, extra_info=None):
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from .console import ProgressManager
-
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="installing egg",
-                steps=self.installed_size,
-                # ---
-                progress_type="installing", filename=self.fn,
-                disp_amount=human_bytes(self.installed_size),
-                super_id=getattr(self, 'super_id', None))
-
-        with progress:
-            for currently_extracted_size in self.install_iterator():
-                progress(step=currently_extracted_size)
+        for currently_extracted_size in self.install_iterator():
+            pass
 
     def _create_links(self):
         """
@@ -583,7 +551,10 @@ class EggInst(object):
             os.chmod(path, 0o755)
 
     def remove(self):
-        self._egginst_remover.remove()
+        return self._egginst_remover.remove()
+
+    def remove_iterator(self):
+        return self._egginst_remover.remove_iterator()
 
 
 def read_meta(meta_dir):
@@ -677,9 +648,36 @@ def main(argv=None):
         ei = EggInst(path, prefix, False, ns.pkgs_dir, evt_mgr,
                      verbose=ns.verbose, noapp=ns.noapp)
         if ns.remove:
-            ei.remove()
-        else: # default is always install
-            ei.install()
+            # FIXME the egginst ProgressManager API contains many unused args,
+            # remove them
+            progress = ProgressManager(
+                    None, source=None,
+                    operation_id=None,
+                    message="removing egg",
+                    steps=len(ei.files),
+                    # ---
+                    progress_type="removing", filename=ei.fn,
+                    disp_amount=human_bytes(ei.installed_size),
+                    super_id=None)
+            with progress:
+                for n, filename in enumerate(ei.remove_iterator()):
+                    progress(step=n)
+        else:
+            # FIXME the egginst ProgressManager API contains many unused args,
+            # remove them
+            progress = ProgressManager(
+                    None, source=None,
+                    operation_id=None,
+                    message="installing egg",
+                    steps=ei.installed_size,
+                    # ---
+                    progress_type="installing", filename=ei.fn,
+                    disp_amount=human_bytes(ei.installed_size),
+                    super_id=None)
+
+            with progress:
+                for currently_extracted_size in ei.install_iterator():
+                    progress(step=currently_extracted_size)
 
 
 if __name__ == '__main__': # pragma: no cover
