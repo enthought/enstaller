@@ -277,7 +277,7 @@ class _EggInstRemove(object):
 class EggInst(object):
 
     def __init__(self, path, prefix=sys.prefix, hook=False, pkgs_dir=None,
-                 verbose=False, noapp=False):
+                 evt_mgr=None, verbose=False, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
