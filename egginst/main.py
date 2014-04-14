@@ -169,7 +169,7 @@ def _install_app_impl(meta_dir, prefix, remove=False):
             # arg)
             handler(path)
     except Exception as e:
-        print("Warning ({}):\n{!r}".format(warning, e))
+        print("Warning ({0}):\n{1!r}".format(warning, e))
 
 
 def _run_script(meta_dir, fn, prefix):
