@@ -186,14 +186,12 @@ def _run_script(meta_dir, fn, prefix):
 
 class _EggInstRemove(object):
 
-    def __init__(self, path, prefix=sys.prefix, evt_mgr=None, verbose=False,
-                 noapp=False):
+    def __init__(self, path, prefix=sys.prefix, verbose=False, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
         self.cname = name.lower()
         self.prefix = abspath(prefix)
-        self.evt_mgr = evt_mgr
         self.noapp = noapp
 
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
@@ -279,13 +277,12 @@ class _EggInstRemove(object):
 class EggInst(object):
 
     def __init__(self, path, prefix=sys.prefix, hook=False, pkgs_dir=None,
-                 evt_mgr=None, verbose=False, noapp=False):
+                 verbose=False, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
         self.cname = name.lower()
         self.prefix = abspath(prefix)
-        self.evt_mgr = evt_mgr
         self.noapp = noapp
 
         self.bin_dir = join(self.prefix, bin_dir_name)
@@ -302,7 +299,7 @@ class EggInst(object):
         self.files = []
         self.verbose = verbose
 
-        self._egginst_remover = _EggInstRemove(path, prefix, evt_mgr, verbose, noapp)
+        self._egginst_remover = _EggInstRemove(path, prefix, verbose, noapp)
         self._installed_size = None
         self._files_to_install = None
 
@@ -642,11 +639,9 @@ def main(argv=None):
         print_installed(prefix)
         return
 
-    evt_mgr = None
-
     for path in ns.requirements:
-        ei = EggInst(path, prefix, False, ns.pkgs_dir, evt_mgr,
-                     verbose=ns.verbose, noapp=ns.noapp)
+        ei = EggInst(path, prefix, False, ns.pkgs_dir, verbose=ns.verbose,
+                     noapp=ns.noapp)
         if ns.remove:
             # FIXME the egginst ProgressManager API contains many unused args,
             # remove them
