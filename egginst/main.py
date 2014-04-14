@@ -201,13 +201,26 @@ class _EggInstRemove(object):
 
         self.verbose = verbose
 
+        self._files = None
+        self._installed_size = None
+
+    @property
+    def files(self):
+        if self._files is None:
+            self._read_uninstall_metadata()
+        return self._files
+
+    @property
+    def installed_size(self):
+        if self._installed_size is None:
+            self._read_uninstall_metadata()
+        return self._installed_size
+
     def _read_uninstall_metadata(self):
         d = read_meta(self.meta_dir)
 
-        files = [join(self.prefix, f) for f in d['files']]
-        installed_size = d['installed_size']
-
-        return installed_size, files
+        self._files = [join(self.prefix, f) for f in d['files']]
+        self._installed_size = d['installed_size']
 
     def _rm_dirs(self, files):
         dir_paths = set()
@@ -245,9 +258,7 @@ class _EggInstRemove(object):
             remove_app(self.meta_dir, self.prefix)
         _run_script(self.meta_dir, 'pre_egguninst.py', self.prefix)
 
-        installed_size, files = self._read_uninstall_metadata()
-
-        for n, p in enumerate(files):
+        for n, p in enumerate(self.files):
             n += 1
 
             rm_rf(p)
@@ -256,7 +267,7 @@ class _EggInstRemove(object):
 
             yield p
 
-        self._rm_dirs(files)
+        self._rm_dirs(self.files)
         rm_rf(self.meta_dir)
         rm_empty_dir(self.egginfo_dir)
 
@@ -266,16 +277,14 @@ class _EggInstRemove(object):
         else:
             from .console import ProgressManager
 
-        installed_size, files = self._read_uninstall_metadata()
-
         progress = ProgressManager(
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
                 message="removing egg",
-                steps=len(files),
+                steps=len(self.files),
                 # ---
                 progress_type="removing", filename=self.fn,
-                disp_amount=human_bytes(installed_size),
+                disp_amount=human_bytes(self.installed_size),
                 super_id=getattr(self, 'super_id', None))
 
         with progress:
