@@ -336,14 +336,13 @@ class EggInst(object):
                 return True
         return False
 
-    def install(self, extra_info=None):
-
+    def pre_extract(self):
         if not isdir(self.meta_dir):
             os.makedirs(self.meta_dir)
 
-        self.z = ZipFile(self.path)
-        try:
-            self.extract()
+    def post_extract(self, extra_info=None):
+        with ZipFile(self.path) as zp:
+            self.z = zp
 
             if on_win:
                 scripts.create_proxies(self)
@@ -358,15 +357,20 @@ class EggInst(object):
             self._entry_points()
             if self._should_create_info():
                 eggmeta.create_info(self, extra_info)
-        finally:
-            self.z.close()
 
         scripts.fix_scripts(self)
+
         if not self.noapp:
             install_app(self.meta_dir, self.prefix)
+
         self._write_meta()
 
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
+
+    def install(self, extra_info=None):
+        self.pre_extract()
+        self.extract()
+        self.post_extract(extra_info)
 
     def _create_links(self):
         """
@@ -434,20 +438,23 @@ class EggInst(object):
                 for n in self.archive_extractor():
                     progress(step=n)
         """
-        arcnames = self.z.namelist()
-        is_custom_egg = eggmeta.is_custom_egg(self.path)
+        with ZipFile(self.path) as zp:
+            self.z = zp
 
-        use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
-                                                                is_custom_egg)
+            arcnames = self.z.namelist()
+            is_custom_egg = eggmeta.is_custom_egg(self.path)
 
-        n = 0
-        for arcname in arcnames:
-            if use_legacy_egg_info_format:
-                n += self._extract_egg_with_legacy_egg_info(arcname,
-                                                               is_custom_egg)
-            else:
-                n += self._extract(arcname, is_custom_egg)
-            yield n
+            use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
+                                                                    is_custom_egg)
+
+            n = 0
+            for arcname in arcnames:
+                if use_legacy_egg_info_format:
+                    n += self._extract_egg_with_legacy_egg_info(arcname,
+                                                                   is_custom_egg)
+                else:
+                    n += self._extract(arcname, is_custom_egg)
+                yield n
 
 
     def extract(self):
