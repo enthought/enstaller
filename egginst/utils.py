@@ -1,4 +1,4 @@
-from __future__ import print_function
+from __future__ import absolute_import, print_function
 
 from ._compat import string_types
 
@@ -19,15 +19,8 @@ from os.path import basename, isdir, isfile, islink, join
 
 from enstaller.errors import InvalidFormat
 
-if sys.version_info[:2] < (2, 7):
-    class ZipFile(zipfile.ZipFile):
-        def __enter__(self):
-            return self
-
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.close()
-else:
-    ZipFile = zipfile.ZipFile
+from ._zipfile import (ZIP_SOFTLINK_ATTRIBUTE_MAGIC, ZipFile,
+    is_zipinfo_symlink)
 
 on_win = bool(sys.platform == 'win32')
 
@@ -37,8 +30,6 @@ if on_win:
 else:
     bin_dir_name = 'bin'
     rel_site_packages = 'lib/python%i.%i/site-packages' % sys.version_info[:2]
-
-ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000
 
 def rm_empty_dir(path):
     """
@@ -125,10 +116,6 @@ def ensure_dir(path):
     Create the parent directory of the give path, recursively is necessary.
     """
     makedirs(os.path.dirname(path))
-
-def is_zipinfo_symlink(zip_info):
-    """Return True if the given zip_info instance refers to a symbolic link."""
-    return zip_info.external_attr == ZIP_SOFTLINK_ATTRIBUTE_MAGIC
 
 def is_zipinfo_dir(zip_info):
     """Returns True if the given zip_info refers to a directory."""

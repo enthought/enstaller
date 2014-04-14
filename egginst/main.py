@@ -341,7 +341,7 @@ class EggInst(object):
         if not isdir(self.meta_dir):
             os.makedirs(self.meta_dir)
 
-        self.z = zipfile.ZipFile(self.path)
+        self.z = ZipFile(self.path)
         try:
             self.extract()
 
@@ -552,37 +552,18 @@ class EggInst(object):
                 return _transform_path(arcname, prefix, dest)
         return _transform_path(arcname, "", self.pyloc)
 
-    def _extract_symlink(self, arcname):
-        link_name = self._get_dst(arcname)
-        source = self.z.read(arcname)
-        dirn, filename = os.path.split(link_name)
-        makedirs(dirn)
-        if os.path.exists(link_name):
-            os.unlink(link_name)
-        os.symlink(source, link_name)
-        return link_name
-
     def _write_arcname(self, arcname):
         if arcname.endswith('/') or arcname.startswith('.unused'):
-            return
-
-        zip_info = self.z.getinfo(arcname)
-
-        if is_zipinfo_symlink(zip_info):
-            link_name = self._extract_symlink(arcname)
-            self.files.append(link_name)
             return
 
         if should_skip(self.z, arcname):
             return
 
         path = self._get_dst(arcname)
-        ensure_dir(path)
+        destination = os.path.relpath(path, self.prefix)
 
+        self.z.extract_to(arcname, destination, self.prefix)
         self.files.append(path)
-
-        with open(path, "wb") as fo:
-            shutil.copyfileobj(self.z.open(arcname), fo)
 
         if should_mark_executable(arcname, path):
             os.chmod(path, 0o755)
