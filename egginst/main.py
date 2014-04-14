@@ -155,25 +155,21 @@ def _install_app_impl(meta_dir, prefix, remove=False):
         return
 
     if remove:
-        try:
-            try:
-                appinst.uninstall_from_dat(path, prefix)
-            except TypeError:
-                # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
-                # arg)
-                appinst.uninstall_from_dat(path)
-        except Exception as e:
-            print("Warning (uninstalling application item):\n%r" % (e,))
+        handler = appinst.uninstall_from_dat
+        warning = 'uninstalling application item'
     else:
+        handler = appinst.install_from_dat
+        warning = 'installing application item'
+
+    try:
         try:
-            try:
-                appinst.install_from_dat(path, prefix)
-            except TypeError:
-                # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
-                # arg)
-                appinst.install_from_dat(path)
-        except Exception as e:
-            print("Warning (installing application item):\n%r" % (e,))
+            handler(path, prefix)
+        except TypeError:
+            # Old appinst (<= 2.1.1) did not handle the prefix argument (2d
+            # arg)
+            handler(path)
+    except Exception as e:
+        print("Warning ({}):\n{!r}".format(warning, e))
 
 
 def _run_script(meta_dir, fn, prefix):
