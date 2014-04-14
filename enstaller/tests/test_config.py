@@ -30,7 +30,7 @@ from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
-    Configuration, PythonConfigurationParser)
+    Configuration)
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
     InvalidFormat)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
@@ -520,27 +520,6 @@ class TestAuthenticationConfiguration(unittest.TestCase):
             self.assertTrue(config.is_auth_configured)
 
 class TestConfigurationParsing(unittest.TestCase):
-    def test_parse_simple(self):
-        r_data = {"IndexedRepos": ["http://acme.com/{SUBDIR}"],
-                  "webservice_entry_point": "http://acme.com/eggs/{PLATFORM}/"}
-
-        s = textwrap.dedent("""\
-        IndexedRepos = [
-            "http://acme.com/{SUBDIR}",
-        ]
-        webservice_entry_point = "http://acme.com/eggs/{PLATFORM}/"
-        """)
-
-        data = PythonConfigurationParser().parse(s)
-        self.assertEqual(data, r_data)
-
-    def test_parse_simple_invalid_file(self):
-        with self.assertRaises(InvalidFormat):
-            PythonConfigurationParser().parse("EPD_auth = 1 + 2")
-
-        with self.assertRaises(InvalidFormat):
-            PythonConfigurationParser().parse("1 + 2")
-
     def test_parse_simple_unsupported_entry(self):
         # XXX: ideally, we would like something like with self.assertWarns to
         # check for the warning, but backporting the python 3.3 code to

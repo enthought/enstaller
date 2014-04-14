@@ -39,18 +39,20 @@ class TestGetProxyInfo(unittest.TestCase):
 
 
     def test_from_empty_string(self):
-        with mock.patch("enstaller.proxy.util.os.environ", ControlledEnv(_IGNORED_KEYS)):
+        with mock.patch("enstaller.proxy.util.os.environ",
+                        ControlledEnv(_IGNORED_KEYS)):
             self.assertIsNone(get_proxy_info(""))
 
-        env = ControlledEnv()
-        env[PROXY_USER] = "john"
-        env[PROXY_PASS] = "doe"
-        env[PROXY_HOST] = "http://acme.com"
-        env[PROXY_PORT] = "3128"
+        with mock.patch("enstaller.proxy.util.os.environ",
+                        ControlledEnv()) as env:
+            env[PROXY_USER] = "john"
+            env[PROXY_PASS] = "doe"
+            env[PROXY_HOST] = "http://acme.com"
+            env[PROXY_PORT] = "3128"
 
-        self.assertEqual(get_proxy_info(),
-                         {"host": "http://acme.com", "port": 3128,
-                          "user": "john", "pass": "doe"})
+            self.assertEqual(get_proxy_info(),
+                             {"host": "http://acme.com", "port": 3128,
+                              "user": "john", "pass": "doe"})
 
 class TestGetProxyStr(unittest.TestCase):
     @unittest.expectedFailure

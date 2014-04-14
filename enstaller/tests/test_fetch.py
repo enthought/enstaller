@@ -16,7 +16,7 @@ from encore.events.event_manager import EventManager
 from egginst.tests.common import mkdtemp
 from enstaller.fetch import FetchAPI
 from enstaller.store.indexed import LocalIndexedStore
-from enstaller.utils import md5_file
+from enstaller.utils import compute_md5
 
 class MockedFailingFile(object):
     """
@@ -101,7 +101,7 @@ class TestFetchAPI(unittest.TestCase):
 
             target = os.path.join(d, filename)
             self.assertTrue(os.path.exists(target))
-            self.assertEqual(md5_file(target), fp.md5)
+            self.assertEqual(compute_md5(target), fp.md5)
 
     def test_fetch_invalid_md5(self):
         with mkdtemp() as d:
@@ -187,14 +187,14 @@ class TestFetchAPI(unittest.TestCase):
 
             target = os.path.join(d, egg)
 
-            self.assertEqual(md5_file(target), fp.md5)
+            self.assertEqual(compute_md5(target), fp.md5)
             _corrupt_file(target)
-            self.assertNotEqual(md5_file(target), fp.md5)
+            self.assertNotEqual(compute_md5(target), fp.md5)
 
             fp, fetch_api = _fetch_api_factory()
             fetch_api.fetch_egg(egg, force=True)
 
-            self.assertEqual(md5_file(target), fp.md5)
+            self.assertEqual(compute_md5(target), fp.md5)
 
     def test_encore_event_manager(self):
         with mkdtemp() as d:

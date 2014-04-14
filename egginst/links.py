@@ -1,13 +1,12 @@
+from __future__ import print_function
+
 import os
 from os.path import dirname, isdir, join
 
 from egginst.utils import rm_rf
 
 
-verbose = False
-
-
-def create_link(arcname, link, prefix):
+def create_link(arcname, link, prefix, verbose):
     usr = 'EGG-INFO/usr/'
     assert arcname.startswith(usr), arcname
     dst = join(prefix, arcname[len(usr):])
@@ -19,18 +18,6 @@ def create_link(arcname, link, prefix):
 
     rm_rf(dst, verbose)
     if verbose:
-        print "Creating: %s (link to %s)" % (dst, link)
+        print("Creating: %s (link to %s)" % (dst, link))
     os.symlink(link, dst)
     return dst
-
-
-def create(egg):
-    """
-    Given the content of the EGG-INFO/inst/files_to_install.txt file,
-    create/remove the links listed therein.
-    """
-    for line in egg.lines_from_arcname('EGG-INFO/inst/files_to_install.txt'):
-        arcname, link = line.split()
-        if link == 'False':
-            continue
-        egg.files.append(create_link(arcname, link, egg.prefix))

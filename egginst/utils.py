@@ -1,22 +1,26 @@
+from __future__ import absolute_import, print_function
+
+from ._compat import string_types
+
+import argparse
+import ast
 import errno
+import hashlib
+import re
 import sys
 import os
 import shutil
 import stat
 import tempfile
+import textwrap
 import zipfile
 
 from os.path import basename, isdir, isfile, islink, join
 
-if sys.version_info[:2] < (2, 7):
-    class ZipFile(zipfile.ZipFile):
-        def __enter__(self):
-            return self
+from enstaller.errors import InvalidFormat
 
-        def __exit__(self, exc_type, exc_value, traceback):
-            self.close()
-else:
-    ZipFile = zipfile.ZipFile
+from ._zipfile import (ZIP_SOFTLINK_ATTRIBUTE_MAGIC, ZipFile,
+    is_zipinfo_symlink)
 
 on_win = bool(sys.platform == 'win32')
 
@@ -26,8 +30,6 @@ if on_win:
 else:
     bin_dir_name = 'bin'
     rel_site_packages = 'lib/python%i.%i/site-packages' % sys.version_info[:2]
-
-ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000L
 
 def rm_empty_dir(path):
     """
@@ -46,12 +48,12 @@ def rm_rf(path, verbose=False):
         # exists('/path/to/dead-link') will return False, although
         # islink('/path/to/dead-link') is True.
         if verbose:
-            print "Removing: %r (link)" % path
+            print("Removing: %r (link)" % path)
         os.unlink(path)
 
     elif isfile(path):
         if verbose:
-            print "Removing: %r (file)" % path
+            print("Removing: %r (file)" % path)
         if on_win:
             try:
                 os.unlink(path)
@@ -62,7 +64,7 @@ def rm_rf(path, verbose=False):
 
     elif isdir(path):
         if verbose:
-            print "Removing: %r (directory)" % path
+            print("Removing: %r (directory)" % path)
         if on_win:
             try:
                 shutil.rmtree(path)
@@ -83,7 +85,7 @@ def get_executable(prefix):
         path = join(prefix, bin_dir_name, 'python')
         if isfile(path):
             from subprocess import Popen, PIPE
-            cmd = [path, '-c', 'import sys;print sys.executable']
+            cmd = [path, '-c', 'import sys;print(sys.executable)']
             p = Popen(cmd, stdout=PIPE)
             return p.communicate()[0].strip()
     return sys.executable
@@ -115,10 +117,6 @@ def ensure_dir(path):
     """
     makedirs(os.path.dirname(path))
 
-def is_zipinfo_symlink(zip_info):
-    """Return True if the given zip_info instance refers to a symbolic link."""
-    return zip_info.external_attr == ZIP_SOFTLINK_ATTRIBUTE_MAGIC
-
 def is_zipinfo_dir(zip_info):
     """Returns True if the given zip_info refers to a directory."""
     return stat.S_ISDIR(zip_info.external_attr >> 16)
@@ -139,3 +137,96 @@ def zip_write_symlink(fp, link_name, source):
     zip_info.create_system = 3
     zip_info.external_attr = ZIP_SOFTLINK_ATTRIBUTE_MAGIC
     fp.writestr(zip_info, source)
+
+
+def zip_has_arcname(zp, arcname):
+    """
+    Returns True if the given zipfile instance contains the given archive
+
+    Parameters
+    ----------
+    zp: ZipFile
+        The zip archive to consider
+    arcname: str
+        The archive to look for
+    """
+    try:
+        zp.getinfo(arcname)
+        return True
+    except KeyError:
+        return False
+
+
+class _AssignmentParser(ast.NodeVisitor):
+    def __init__(self):
+        self._data = {}
+
+    def parse(self, s):
+        self._data.clear()
+
+        root = ast.parse(s)
+        self.visit(root)
+        return self._data
+
+    def generic_visit(self, node):
+        if type(node) != ast.Module:
+            raise InvalidFormat("Unexpected expression @ line {0}".
+                                format(node.lineno))
+        super(_AssignmentParser, self).generic_visit(node)
+
+    def visit_Assign(self, node):
+        try:
+            value = ast.literal_eval(node.value)
+        except ValueError:
+            msg = "Invalid configuration syntax at line {0}".format(node.lineno)
+            raise InvalidFormat(msg)
+        else:
+            for target in node.targets:
+                self._data[target.id] = value
+
+
+def parse_assignments(file_or_filename):
+    """
+    Parse files which contain only python assignements, and returns the
+    corresponding dictionary name: value
+
+    Parameters
+    ----------
+    file_or_filename: str, file object
+        If a string, interpreted as a filename. File object otherwise.
+    """
+    if isinstance(file_or_filename, string_types):
+        with open(file_or_filename) as fp:
+            return _AssignmentParser().parse(fp.read())
+    else:
+        return _AssignmentParser().parse(file_or_filename.read())
+
+
+def compute_md5(path, block_size=256 * 1024):
+    """Compute the md5 checksum of the given path.
+
+    Avoids reading the whole file in RAM, and computes the md5 in chunks.
+
+    Parameters
+    ----------
+    path: str or file object
+        If a string, assumed to be the path to the file to be checksumed. If a
+        file object, checksum will start at the current file position.
+    block_size: int
+        Block size to use when reading data.
+    """
+    m = hashlib.md5()
+
+    def _compute_checksum(fp):
+        while True:
+            data = fp.read(block_size)
+            m.update(data)
+            if len(data) < block_size:
+                break
+        return m.hexdigest()
+
+    if isinstance(path, string_types):
+        with open(path, "rb") as fp:
+            return _compute_checksum(fp)
+    else:
+        return _compute_checksum(path)

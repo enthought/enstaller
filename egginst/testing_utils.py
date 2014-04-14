@@ -1,7 +1,9 @@
+from __future__ import print_function
+
+from ._compat import http_client
+
 import contextlib
-import copy
 import functools
-import httplib
 import os
 
 _RAISE_NETWORK_ERROR_DEFAULT = False
@@ -31,7 +33,7 @@ def optional_args(decorator):
 
     return wrapper
 
-_network_error_classes = IOError, httplib.HTTPException
+_network_error_classes = IOError, http_client.HTTPException
 
 @optional_args
 def network(t, raise_on_error=_RAISE_NETWORK_ERROR_DEFAULT,
@@ -175,15 +177,15 @@ class ControlledEnv(object):
     >>> "USERNAME" in env:
     False
     """
-
     def __init__(self, ignored_keys=None, environ=None):
         if ignored_keys is None:
-            ignored_keys = {}
+            ignored_keys = set()
         self._ignored_keys = ignored_keys
 
         if environ is None:
-            environ = os.environ
-        self._data = copy.copy(environ)
+            self._data = os.environ.copy()
+        else:
+            self._data = environ.copy()
 
     def __getitem__(self, name):
         if name in self._ignored_keys:
@@ -200,14 +202,12 @@ class ControlledEnv(object):
     def keys(self):
         return [k for k in self._data if not k in self._ignored_keys]
 
+    def __contains__(self, key):
+        return key in self._data
+
     def __setitem__(self, name, value):
         self._data[name] = value
 
-    def __delitem__(self, name):
-        del self._data[name]
-
-    def __iter__(self):
-        return iter((k, v) for k, v in self._data.iteritems() if not k in self._ignored_keys)
 
 @contextlib.contextmanager
 def assert_same_fs(test_case, prefix):
@@ -223,4 +223,4 @@ def assert_same_fs(test_case, prefix):
         for f in files:
             path = os.path.join(root, f)
             if path not in old_state:
-                test_case.fail("Unexpected file: {}".format(path))
+                test_case.fail("Unexpected file: {0!r}".format(path))

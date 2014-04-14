@@ -5,6 +5,8 @@ from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 import urllib
 import urlparse
 
+from egginst.utils import compute_md5
+
 from verlib import NormalizedVersion, IrrationalVersionError
 
 
@@ -77,26 +79,10 @@ def comparable_version(version):
         return version
 
 
-def md5_file(path):
-    """
-    Returns the md5sum of the file (located at `path`) as a hexadecimal
-    string of length 32.
-    """
-    fi = open(path, 'rb')
-    h = hashlib.new('md5')
-    while True:
-        chunk = fi.read(65536)
-        if not chunk:
-            break
-        h.update(chunk)
-    fi.close()
-    return h.hexdigest()
-
-
 def info_file(path):
     return dict(size=getsize(path),
                 mtime=getmtime(path),
-                md5=md5_file(path))
+                md5=compute_md5(path))
 
 
 def cleanup_url(url):
@@ -157,8 +143,8 @@ def exit_if_sudo_on_venv(prefix):
     if os.getuid() != 0:
         return
 
-    print 'You are running enpkg as a root user inside a virtual environment. ' \
-          'Please run it as a normal user'
+    print('You are running enpkg as a root user inside a virtual environment. ' \
+          'Please run it as a normal user')
 
     sys.exit(1)
 

@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import sys
 import re
@@ -52,7 +54,7 @@ def write_exe(dst, script_type='console_scripts'):
         # When bootstrapping, the file egginst.exe is in use and can therefore
         # not be rewritten, which is OK since its content is always the same.
         pass
-    os.chmod(dst, 0755)
+    os.chmod(dst, 0o755)
 
 
 def create_proxy(src, bin_dir):
@@ -60,7 +62,7 @@ def create_proxy(src, bin_dir):
     create a proxy of src in bin_dir (Windows only)
     """
     if verbose:
-        print "Creating proxy executable to: %r" % src
+        print("Creating proxy executable to: %r" % src)
     assert src.endswith('.exe')
 
     dst_name = basename(src)
@@ -72,8 +74,9 @@ def create_proxy(src, bin_dir):
 
     dst_script = dst[:-4] + '-script.py'
     rm_rf(dst_script)
-    fo = open(dst_script, 'w')
-    fo.write('''\
+
+    with open(dst_script, 'w') as fo:
+        fo.write('''\
 #!"%(python)s"
 # This proxy was created by egginst from an egg with special instructions
 #
@@ -84,7 +87,6 @@ src = %(src)r
 
 sys.exit(subprocess.call([src] + sys.argv[1:]))
 ''' % dict(python=get_executable(), src=src))
-    fo.close()
     return dst, dst_script
 
 
@@ -93,10 +95,10 @@ def create_proxies(egg):
     if not isdir(egg.bin_dir):
         os.makedirs(egg.bin_dir)
 
-    for line in egg.lines_from_arcname('EGG-INFO/inst/files_to_install.txt'):
+    for line in egg.iter_files_to_install():
         arcname, action = line.split()
         if verbose:
-            print "arcname=%r    action=%r" % (arcname, action)
+            print("arcname=%r    action=%r" % (arcname, action))
 
         if action == 'PROXY':
             ei = 'EGG-INFO/'
@@ -105,17 +107,16 @@ def create_proxies(egg):
             else:
                 src = abspath(join(egg.prefix, arcname))
             if verbose:
-                print "     src: %r" % src
+                print("     src: %r" % src)
             egg.files.extend(create_proxy(src, egg.bin_dir))
         else:
             data = egg.z.read(arcname)
             dst = abspath(join(egg.prefix, action, basename(arcname)))
             if verbose:
-                print "     dst: %r" % dst
+                print("     dst: %r" % dst)
             rm_rf(dst)
-            fo = open(dst, 'wb')
-            fo.write(data)
-            fo.close()
+            with open(dst, 'wb') as fo:
+                fo.write(data)
             egg.files.append(dst)
 
 
@@ -124,14 +125,14 @@ def write_script(path, entry_pt, egg_name):
     Write an entry point script to path.
     """
     if verbose:
-        print 'Creating script: %s' % path
+        print('Creating script: %s' % path)
 
     assert entry_pt.count(':') == 1
     module, func = entry_pt.strip().split(':')
 
     rm_rf(path)
-    fo = open(path, 'w')
-    fo.write('''\
+    with open(path, 'w') as fo:
+        fo.write('''\
 #!%(python)s
 # This script was created by egginst when installing:
 #
@@ -145,8 +146,7 @@ if __name__ == '__main__':
 ''' % dict(python=get_executable(pythonw=path.endswith('.pyw'),
                                  with_quotes=on_win),
            egg_name=egg_name, module=module, func=func))
-    fo.close()
-    os.chmod(path, 0755)
+    os.chmod(path, 0o755)
 
 
 def create(egg, conf):
@@ -177,9 +177,8 @@ def fix_script(path):
     if islink(path) or not isfile(path):
         return
 
-    fi = open(path)
-    data = fi.read()
-    fi.close()
+    with open(path) as fi:
+        data = fi.read()
 
     if ' egginst ' in data:
         # This string is in the comment when write_script() creates
@@ -196,19 +195,15 @@ def fix_script(path):
     if new_data == data:
         return
     if verbose:
-        print "Updating: %r" % path
-    fo = open(path, 'w')
-    fo.write(new_data)
-    fo.close()
-    os.chmod(path, 0755)
+        print("Updating: %r" % path)
+
+    with open(path, 'w') as fo:
+        fo.write(new_data)
+
+    os.chmod(path, 0o755)
 
 
 def fix_scripts(egg):
     for path in egg.files:
         if path.startswith(egg.bin_dir):
             fix_script(path)
-
-
-if __name__ == '__main__':
-    write_exe('cli.exe')
-    write_exe('gui.exe', 'gui_scripts')

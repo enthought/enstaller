@@ -11,7 +11,9 @@ else:
 
 import mock
 
-from egginst.main import EggInst, get_installed, main
+from egginst.main import (
+    EggInst, get_installed, is_in_legacy_egg_info, main,
+    should_copy_in_egg_info)
 from egginst.testing_utils import slow, assert_same_fs
 from egginst.utils import makedirs, zip_write_symlink, ZipFile
 
@@ -192,6 +194,36 @@ class TestEggInstInstall(unittest.TestCase):
             egginst.remove()
             m.assert_called_with(appinst_path)
 
+    def test_without_appinst(self):
+        """
+        Test egginst does not crash when appinst is not available and we try
+        installing eggs using appinst
+        """
+        egg_path = DUMMY_EGG_WITH_APPINST
+
+        egginst = EggInst(egg_path, self.base_dir)
+
+        with mock.patch("egginst.main.appinst", None):
+            egginst.install()
+            egginst.remove()
+
+    @slow
+    def test_appinst_failed(self):
+        """
+        Test egginst does not crash when appinst is not available and we try
+        installing eggs using appinst
+        """
+        egg_path = DUMMY_EGG_WITH_APPINST
+
+        egginst = EggInst(egg_path, self.base_dir)
+
+        with mock.patch("egginst.main.appinst.install_from_dat", side_effect=ValueError):
+            egginst.install()
+
+        with mock.patch("egginst.main.appinst.uninstall_from_dat", side_effect=ValueError):
+            egginst.remove()
+
+
 class TestEggInfoInstall(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()
@@ -369,3 +401,55 @@ class TestEggInfoInstall(unittest.TestCase):
             egginst = EggInst(egg, self.base_dir)
             egginst.install()
             egginst.remove()
+
+
+class TestMisc(unittest.TestCase):
+    def test_should_copy_custom_egg(self):
+        # Given
+        is_custom_egg = True
+
+        # Then
+        self.assertFalse(should_copy_in_egg_info("EGG-INFO/spec/depend",
+                                                 is_custom_egg))
+        self.assertTrue(should_copy_in_egg_info("EGG-INFO/SOURCES.txt",
+                                                is_custom_egg))
+
+    def test_should_copy_standard_egg(self):
+        # Given
+        is_custom_egg = False
+
+        # Then
+        self.assertTrue(should_copy_in_egg_info("EGG-INFO/spec/depend",
+                                                is_custom_egg))
+        self.assertTrue(should_copy_in_egg_info("EGG-INFO/SOURCES.txt",
+                                                is_custom_egg))
+
+    def test_is_in_legacy_info_custom_eggs(self):
+        # Given
+        is_custom_egg = True
+
+        # Then
+        self.assertFalse(is_in_legacy_egg_info("EGG-INFO/spec/depend",
+                                               is_custom_egg))
+        self.assertFalse(is_in_legacy_egg_info("dummy/__init__.py",
+                                               is_custom_egg))
+        self.assertTrue(is_in_legacy_egg_info("dummy.egg-info/__init__.py",
+                                              is_custom_egg))
+        self.assertTrue(is_in_legacy_egg_info("dummy.egg-info", is_custom_egg))
+        self.assertTrue(is_in_legacy_egg_info("dummy-1.0.0.egg-info",
+                                              is_custom_egg))
+
+    def test_is_in_legacy_info_standard_eggs(self):
+        # Given
+        is_custom_egg = False
+
+        # Then
+        self.assertFalse(is_in_legacy_egg_info("EGG-INFO/spec/depend",
+                                               is_custom_egg))
+        self.assertFalse(is_in_legacy_egg_info("dummy/__init__.py",
+                                               is_custom_egg))
+        self.assertFalse(is_in_legacy_egg_info("dummy.egg-info/__init__.py",
+                                              is_custom_egg))
+        self.assertFalse(is_in_legacy_egg_info("dummy.egg-info", is_custom_egg))
+        self.assertFalse(is_in_legacy_egg_info("dummy-1.0.0.egg-info",
+                                              is_custom_egg))
