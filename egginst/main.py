@@ -377,9 +377,24 @@ class EggInst(object):
         _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
 
     def install(self, extra_info=None):
-        self.pre_extract()
-        self.extract()
-        self.post_extract(extra_info)
+        if self.evt_mgr:
+            from encore.events.api import ProgressManager
+        else:
+            from .console import ProgressManager
+
+        progress = ProgressManager(
+                self.evt_mgr, source=self,
+                operation_id=uuid4(),
+                message="installing egg",
+                steps=self.installed_size,
+                # ---
+                progress_type="installing", filename=self.fn,
+                disp_amount=human_bytes(self.installed_size),
+                super_id=getattr(self, 'super_id', None))
+
+        with progress:
+            for currently_extracted_size in self.install_iterator():
+                progress(step=currently_extracted_size)
 
     def _create_links(self):
         """
@@ -432,9 +447,9 @@ class EggInst(object):
                     continue
                 yield line
 
-    def archive_extractor(self):
+    def install_iterator(self):
         """
-        Create an iterator that will extract over each archive to be extracted.
+        Create an iterator that will iterate over each archive to be extracted.
 
         Example::
 
@@ -444,9 +459,11 @@ class EggInst(object):
             egginst = EggInst(...)
 
             with progress:
-                for n in self.archive_extractor():
+                for n in self.install_iterator():
                     progress(step=n)
         """
+        self.pre_extract()
+
         with ZipFile(self.path) as zp:
             self.z = zp
 
@@ -465,26 +482,7 @@ class EggInst(object):
                     n += self._extract(arcname, is_custom_egg)
                 yield n
 
-
-    def extract(self):
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from .console import ProgressManager
-
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="installing egg",
-                steps=self.installed_size,
-                # ---
-                progress_type="installing", filename=self.fn,
-                disp_amount=human_bytes(self.installed_size),
-                super_id=getattr(self, 'super_id', None))
-
-        with progress:
-            for currently_extracted_size in self.archive_extractor():
-                progress(step=currently_extracted_size)
+        self.post_extract()
 
     def _extract_egg_with_legacy_egg_info(self, name, is_custom_egg):
         zip_info = self.z.getinfo(name)
