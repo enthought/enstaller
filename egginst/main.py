@@ -258,6 +258,7 @@ class _EggInstRemove(object):
             rm_rf(p)
             if p.endswith('.py'):
                 rm_rf(p + 'c')
+                rm_rf(p + 'o')
 
             yield p
 
