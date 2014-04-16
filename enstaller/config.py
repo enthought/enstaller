@@ -22,7 +22,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
 from enstaller.errors import (
-    AuthFailedError, EnpkgError, EnstallerException, InvalidConfiguration, InvalidFormat)
+    AuthFailedError, EnpkgError, EnstallerException, InvalidConfiguration)
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
@@ -235,7 +235,7 @@ class Configuration(object):
         accepted_keys_as_is = set([
             "proxy", "noapp", "use_webservice", "autoupdate",
             "prefix", "local", "IndexedRepos", "webservice_entry_point",
-            "repository_cache", "use_pypi",
+            "repository_cache", "use_pypi", "api_url",
         ])
 
         def _create(fp):
@@ -284,6 +284,8 @@ class Configuration(object):
         self._password = None
 
         self._filename = None
+
+        self.api_url = "https://api.enthought.com/accounts/user/info/"
 
     @property
     def filename(self):
@@ -492,8 +494,7 @@ def input_auth():
     return username, getpass('Password: ')
 
 
-def web_auth(auth,
-             api_url='https://api.enthought.com/accounts/user/info/'):
+def _web_auth(auth, api_url):
     """
     Authenticate a user's credentials (an `auth` tuple of username,
     password) using the web API.  Return a dictionary containing user
@@ -612,7 +613,7 @@ def authenticate(configuration, remote=None):
     if configuration.use_webservice:
         # check credentials using web API
         try:
-            user = web_auth(auth)
+            user = _web_auth(auth, configuration.api_url)
             assert user['is_authenticated']
         except Exception as e:
             raise AuthFailedError('Authentication failed: %s.' % e)

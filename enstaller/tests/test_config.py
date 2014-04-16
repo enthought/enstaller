@@ -26,7 +26,7 @@ from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     configuration_read_search_order, get_auth, get_default_url, get_path,
-    input_auth, prepend_url, print_config, subscription_level, web_auth,
+    input_auth, prepend_url, print_config, subscription_level, _web_auth,
     _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
@@ -199,15 +199,18 @@ R_JSON_NOAUTH_RESP = {'is_authenticated': False,
         'subscription_level': u'basic'}
 
 class TestWebAuth(unittest.TestCase):
+    def setUp(self):
+        self.config = Configuration()
+
     def test_invalid_auth_args(self):
         with self.assertRaises(AuthFailedError):
-            web_auth((None, None))
+            _web_auth((None, None), self.config.api_url)
 
     def test_simple(self):
         with mock.patch("enstaller.config.urllib2") as murllib2:
             attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
             murllib2.configure_mock(**attrs)
-            self.assertEqual(web_auth((FAKE_USER, FAKE_PASSWORD)),
+            self.assertEqual(_web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url),
                              R_JSON_AUTH_RESP)
 
     def test_auth_encoding(self):
@@ -216,7 +219,7 @@ class TestWebAuth(unittest.TestCase):
             attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
             murllib2.configure_mock(**attrs)
 
-            web_auth((FAKE_USER, FAKE_PASSWORD))
+            _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
             murllib2.Request.assert_called_with(AUTH_API_URL, headers=r_headers)
 
     def test_urllib_failures(self):
@@ -229,7 +232,7 @@ class TestWebAuth(unittest.TestCase):
             murllib2.configure_mock(**attrs)
 
             with self.assertRaises(AuthFailedError):
-                web_auth((FAKE_USER, FAKE_PASSWORD))
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
 
         with mock.patch("enstaller.config.urllib2") as murllib2:
             murllib2.HTTPError = urllib2.URLError
@@ -240,7 +243,7 @@ class TestWebAuth(unittest.TestCase):
             murllib2.configure_mock(**attrs)
 
             with self.assertRaises(AuthFailedError):
-                web_auth((FAKE_USER, FAKE_PASSWORD))
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
 
     def test_unauthenticated_user(self):
         with mock.patch("enstaller.config.urllib2") as murllib2:
@@ -248,7 +251,7 @@ class TestWebAuth(unittest.TestCase):
             murllib2.configure_mock(**attrs)
 
             with self.assertRaises(AuthFailedError):
-                web_auth((FAKE_USER, FAKE_PASSWORD))
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
@@ -416,7 +419,7 @@ class TestAuthenticate(unittest.TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        with mock.patch("enstaller.config.web_auth") as mocked_auth:
+        with mock.patch("enstaller.config._web_auth") as mocked_auth:
             authenticate(config)
             self.assertTrue(mocked_auth.called)
 
@@ -425,7 +428,7 @@ class TestAuthenticate(unittest.TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        with mock.patch("enstaller.config.web_auth") as mocked_auth:
+        with mock.patch("enstaller.config._web_auth") as mocked_auth:
             mocked_auth.return_value = {"is_authenticated": False}
 
             with self.assertRaises(AuthFailedError):
