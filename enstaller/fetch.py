@@ -9,6 +9,26 @@ from egginst.utils import compute_md5, human_bytes, rm_rf
 from enstaller.compat import close_file_or_response
 
 
+class StoreResponse(object):
+    def __init__(self, fp, buffsize=256):
+        self._fp = fp
+        self.buffsize = buffsize
+
+    def close(self):
+        close_file_or_response(self._fp)
+
+    def iter_content(self):
+        try:
+            while True:
+                chunk = self._fp.read(self.buffsize)
+                if not chunk:
+                    break
+                else:
+                    yield chunk
+        finally:
+            self.close()
+
+
 class FetchAPI(object):
 
     def __init__(self, remote, local_dir, evt_mgr=None):
@@ -20,6 +40,19 @@ class FetchAPI(object):
     def path(self, fn):
         return join(self.local_dir, fn)
 
+    def size(self, key):
+        """ Returns the size of value with the given key."""
+        info = self.remote.get_metadata(key)
+        return info["size"]
+
+    def md5(self, key):
+        """ Returns the md5 of value with the given key.
+
+        May be None.
+        """
+        info = self.remote.get_metadata(key)
+        return info.get("md5", None)
+
     def fetch(self, key, execution_aborted=None):
         """ Fetch the given key.
 
@@ -27,10 +60,14 @@ class FetchAPI(object):
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         path = self.path(key)
-        fi, info = self.remote.get(key)
 
-        size = info['size']
-        md5 = info.get('md5')
+        size = self.size(key)
+        md5 = self.md5(key)
+
+        if size < 256:
+            buffsize = 1
+        else:
+            buffsize = 2 ** int(math.log(size / 256.0) / math.log(2.0) + 1)
 
         if self.evt_mgr:
             from encore.events.api import ProgressManager
@@ -47,32 +84,26 @@ class FetchAPI(object):
                 disp_amount=human_bytes(size),
                 super_id=getattr(self, 'super_id', None))
 
+        response = StoreResponse(self.remote.get_data(key), buffsize)
+
         n = 0
         h = hashlib.new('md5')
-        if size < 256:
-            buffsize = 1
-        else:
-            buffsize = 2 ** int(math.log(size / 256.0) / math.log(2.0) + 1)
 
         pp = path + '.part'
         if sys.platform == 'win32':
             rm_rf(pp)
+
         with progress:
             with open(pp, 'wb') as fo:
-                while True:
+                for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
-                        close_file_or_response(fi)
+                        response.close()
                         return
-                    chunk = fi.read(buffsize)
-                    if not chunk:
-                        break
                     fo.write(chunk)
                     if md5:
                         h.update(chunk)
                     n += len(chunk)
                     progress(step=n)
-
-        close_file_or_response(fi)
 
         if md5 and h.hexdigest() != md5:
             raise ValueError("received data MD5 sums mismatch")
