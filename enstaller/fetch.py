@@ -1,3 +1,4 @@
+import contextlib
 import math
 import os
 import sys
@@ -10,9 +11,14 @@ from enstaller.compat import close_file_or_response
 
 
 class StoreResponse(object):
-    def __init__(self, fp, buffsize=256):
+    def __init__(self, fp, expected_size):
         self._fp = fp
-        self.buffsize = buffsize
+
+        # FIXME: not sure this makes a lof of sense
+        if expected_size < 256:
+            self.buffsize = 1
+        else:
+            self.buffsize = 2 ** int(math.log(expected_size / 256.0) / math.log(2.0) + 1)
 
     def close(self):
         close_file_or_response(self._fp)
@@ -27,6 +33,52 @@ class StoreResponse(object):
                     yield chunk
         finally:
             self.close()
+
+
+class _FileStore(object):
+    def __init__(self, filename, md5=None):
+        self.filename = filename
+        self.md5 = md5
+
+        self._h = hashlib.md5()
+
+        self._pp = self.filename + ".part"
+        self._fo = None
+
+    def _init(self):
+        if sys.platform == 'win32':
+            rm_rf(self._pp)
+        self._fo = open(self._pp, "wb")
+
+    def _close(self):
+        self._fo.close()
+
+    def write_chunk(self, chunk):
+        self._fo.write(chunk)
+        if self.md5:
+            self._h.update(chunk)
+
+    def finalize(self):
+        """
+        Write the data in the configured output, after having checked for the
+        md5 (if given in the init function).
+        """
+        if self.md5 and self._h.hexdigest() != self.md5:
+            raise ValueError("received data MD5 sums mismatch")
+
+        if sys.platform == 'win32':
+            rm_rf(self.filename)
+        os.rename(self._pp, self.filename)
+
+
+@contextlib.contextmanager
+def filestore_manager(filename, md5=None):
+    f = _FileStore(filename, md5)
+    f._init()
+    try:
+        yield f
+    finally:
+        f._close()
 
 
 class FetchAPI(object):
@@ -60,20 +112,12 @@ class FetchAPI(object):
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         path = self.path(key)
-
         size = self.size(key)
-        md5 = self.md5(key)
-
-        if size < 256:
-            buffsize = 1
-        else:
-            buffsize = 2 ** int(math.log(size / 256.0) / math.log(2.0) + 1)
 
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
             from egginst.console import ProgressManager
-
         progress = ProgressManager(
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
@@ -84,33 +128,23 @@ class FetchAPI(object):
                 disp_amount=human_bytes(size),
                 super_id=getattr(self, 'super_id', None))
 
-        response = StoreResponse(self.remote.get_data(key), buffsize)
+        response = StoreResponse(self.remote.get_data(key), expected_size=size)
+        try:
+            n = 0
+            with progress:
+                md5 = self.md5(key)
+                with filestore_manager(path, md5) as target:
+                    for chunk in response.iter_content():
+                        if execution_aborted is not None and execution_aborted.is_set():
+                            response.close()
+                            return
+                        target.write_chunk(chunk)
+                        n += len(chunk)
+                        progress(step=n)
+        finally:
+            response.close()
 
-        n = 0
-        h = hashlib.new('md5')
-
-        pp = path + '.part'
-        if sys.platform == 'win32':
-            rm_rf(pp)
-
-        with progress:
-            with open(pp, 'wb') as fo:
-                for chunk in response.iter_content():
-                    if execution_aborted is not None and execution_aborted.is_set():
-                        response.close()
-                        return
-                    fo.write(chunk)
-                    if md5:
-                        h.update(chunk)
-                    n += len(chunk)
-                    progress(step=n)
-
-        if md5 and h.hexdigest() != md5:
-            raise ValueError("received data MD5 sums mismatch")
-
-        if sys.platform == 'win32':
-            rm_rf(path)
-        os.rename(pp, path)
+        target.finalize()
 
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
