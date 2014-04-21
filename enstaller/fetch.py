@@ -135,20 +135,17 @@ class FetchAPI(object):
                 super_id=getattr(self, 'super_id', None))
 
         response = StoreResponse(self.remote.get_data(key), expected_size=size)
-        try:
-            n = 0
-            with progress:
-                md5 = self.md5(key)
-                with filestore_manager(path, md5) as target:
-                    for chunk in response.iter_content():
-                        if execution_aborted is not None and execution_aborted.is_set():
-                            response.close()
-                            return
-                        target.write_chunk(chunk)
-                        n += len(chunk)
-                        progress(step=n)
-        finally:
-            response.close()
+        n = 0
+        with progress:
+            md5 = self.md5(key)
+            with filestore_manager(path, md5) as target:
+                for chunk in response.iter_content():
+                    if execution_aborted is not None and execution_aborted.is_set():
+                        response.close()
+                        return
+                    target.write_chunk(chunk)
+                    n += len(chunk)
+                    progress(step=n)
 
         target.finalize()
 
