@@ -23,6 +23,12 @@ class StoreResponse(object):
     def close(self):
         close_file_or_response(self._fp)
 
+    def read(self):
+        """
+        The full content of the file object in memory
+        """
+        return self._fp.read()
+
     def iter_content(self):
         try:
             while True:

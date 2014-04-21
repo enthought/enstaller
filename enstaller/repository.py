@@ -40,9 +40,6 @@ class PackageMetadata(object):
         return "PackageMetadata('{0}-{1}-{2}', key='{3}')".format(
             self.name, self.version, self.build, self.key)
 
-    def __hash__(self):
-        return hash(repr(self))
-
     @property
     def comparable_version(self):
         return comparable_version(self.version), self.build

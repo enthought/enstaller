@@ -7,7 +7,10 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-from egginst.tests.common import _EGGINST_COMMON_DATA
+import mock
+
+from egginst.utils import compute_md5
+from egginst.tests.common import _EGGINST_COMMON_DATA, mkdtemp
 
 from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
@@ -104,6 +107,16 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata[0].build, 1)
         self.assertEqual(metadata[1].build, 1)
 
+    def test_find_packages_with_version(self):
+        # Given/When
+        metadata = list(self.repository.find_packages("nose", "1.3.0-1"))
+
+        # Then
+        self.assertEqual(len(metadata), 1)
+
+        self.assertEqual(metadata[0].version, "1.3.0")
+        self.assertEqual(metadata[0].build, 1)
+
     def test_has_package(self):
         # Given
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, 1, None)
@@ -125,3 +138,50 @@ class TestRepository(unittest.TestCase):
         # Then
         self.assertEqual(len(metadata), 1)
         self.assertEqual(metadata[0].version, "1.3.0")
+
+    def test_iter_packages(self):
+        # Given
+        eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
+        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
+        repository = Repository(store)
+
+        # When
+        metadata = list(repository.iter_packages())
+
+        # Then
+        self.assertEqual(len(metadata), 2)
+        self.assertEqual(set(m.version for m in metadata),
+                         set(["1.2.1", "1.3.0"]))
+
+    def test_connect(self):
+        # Given
+        store = mock.Mock()
+        store.connect = mock.Mock()
+        store.is_connected = False
+
+        # When
+        repository = Repository(store)
+        repository.connect((None, None))
+
+        # Then
+        self.assertTrue(store.connect.called)
+
+    def test_fetch(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+        metadata = PackageMetadata.from_egg(path)
+
+        # When
+        resp = self.repository.fetch_from_package(metadata)
+        try:
+            with mkdtemp() as d:
+                target_path = os.path.join(d, "foo.egg")
+                with open(target_path, "wb") as target:
+                    target.write(resp.read())
+                resp.close()
+                md5 = compute_md5(target_path)
+        finally:
+            resp.close()
+
+        # Then
+        self.assertEqual(md5, metadata.md5)
