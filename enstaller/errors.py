@@ -17,4 +17,7 @@ class EnpkgError(EnstallerException):
     # FIXME: why is this a class-level attribute ?
     req = None
 
+class MissingPackage(EnstallerException):
+    pass
+
 EXIT_ABORTED = 130

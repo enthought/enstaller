@@ -29,7 +29,7 @@ class DumbFilesystemStore(AbstractStore):
     def info(self):
         return {"root": self.root}
 
-    def _query_keys(self, **kwargs):
+    def query_keys(self, **kwargs):
         name = kwargs.get('name')
         if name is None:
             for key, info in self._index.items():
@@ -43,7 +43,7 @@ class DumbFilesystemStore(AbstractStore):
                     yield key
 
     def query(self, **kwargs):
-        for key in self._query_keys(**kwargs):
+        for key in self.query_keys(**kwargs):
             yield key, self._index[key].s3index_data
 
     def exists(self, key):
