@@ -70,6 +70,11 @@ class RepositoryPackageMetadata(object):
 
         self.type = "egg"
 
+    def to_dict(self):
+        keys = ("available", "build", "md5", "name", "packages", "product",
+                "python", "size", "type", "version")
+        return dict((k, getattr(self, k)) for k in keys)
+
     def __repr__(self):
         template = textwrap.dedent("""\
             RepositoryPackageMetadata('{0}-{1}-{2}', key={3!r}',
@@ -170,9 +175,20 @@ class Repository(object):
         data["store_location"] =  self._store.info().get('root')
         return RepositoryPackageMetadata.from_json_dict(key, data)
 
+    @property
+    def is_connected(self):
+        return self._store.is_connected
+
     def connect(self, auth):
         if not self._store.is_connected:
             self._store.connect(auth)
+
+    # FIXME: this should be removed at some point, as this is too low-level
+    def _has_package_key(self, key):
+        """
+        Returns True if the given package is available in this repository
+        """
+        return self._store.exists(key)
 
     def has_package(self, package_metadata):
         """
