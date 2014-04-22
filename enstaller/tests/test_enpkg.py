@@ -202,7 +202,7 @@ class TestEnpkg(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
-            r = dict(enpkg.query(name="numpy"))
+            r = dict(enpkg.find_packages("numpy"))
             self.assertEqual(set(r.keys()),
                              set(entry.s3index_key for entry in entries))
 
@@ -230,7 +230,7 @@ class TestEnpkg(unittest.TestCase):
             enpkg.ec.install(os.path.basename(local_egg),
                              os.path.dirname(local_egg))
 
-            r = dict(enpkg.query(name="dummy"))
+            r = dict(enpkg.find_packages("dummy"))
             self.assertEqual(set(r.keys()),
                              set(entry.s3index_key for entry in entries + [local_entry]))
 

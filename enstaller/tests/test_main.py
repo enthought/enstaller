@@ -240,7 +240,7 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {1}
             Store location:{0}
-            Last modified: 0.0
+            Last modified:{0}
             Type: egg
             MD5:{0}
             Size: 1024
@@ -250,7 +250,7 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {1}
             Store location:{0}
-            Last modified: 0.0
+            Last modified:{0}
             Type: egg
             MD5:{0}
             Size: 1024

@@ -141,7 +141,7 @@ def imports_option(enpkg, pat=None):
     print(FMT % ('Name', 'Version', 'Location'))
     print(60 * "=")
 
-    names = set(info['name'] for _, info in enpkg.query_installed())
+    names = set(info['name'] for _, info in enpkg.iter_installed_packages())
     for name in sorted(names, key=string.lower):
         if pat and not pat.search(name):
             continue
@@ -165,11 +165,11 @@ def search(enpkg, pat=None):
     print(80 * '=')
 
     names = {}
-    for key, info in enpkg.query_remote():
-        names[info['name']] = name_egg(key)
+    for metadata in enpkg.iter_remote_packages():
+        names[metadata.name] = metadata.name
 
     installed = {}
-    for key, info in enpkg.query_installed():
+    for key, info in enpkg.iter_installed_packages():
         installed[info['name']] = VB_FMT % info
 
     for name in sorted(names, key=string.lower):
@@ -204,7 +204,7 @@ def search(enpkg, pat=None):
 def updates_check(enpkg):
     updates = []
     EPD_update = []
-    for key, info in enpkg.query_installed():
+    for key, info in enpkg.iter_installed_packages():
         av_infos = enpkg.info_list_name(info['name'])
         if len(av_infos) == 0:
             continue

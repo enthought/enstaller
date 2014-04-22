@@ -153,13 +153,15 @@ class Enpkg(object):
             self.remote.connect(self.userpass)
         self._repository.connect(self.userpass)
 
-    def query_remote(self, **kwargs):
-        """
-        Query the (usually remote) KVS for egg packages.
-        """
-        self._connect()
-        kwargs['type'] = 'egg'
-        return self.remote.query(**kwargs)
+    def find_remote_packages(self, name):
+        # FIXME: we should connect in one place consistently
+        self._repository.connect(self.userpass)
+        return self._repository.find_packages(name)
+
+    def iter_remote_packages(self):
+        # FIXME: we should connect in one place consistently
+        self._repository.connect(self.userpass)
+        return self._repository.iter_packages()
 
     def info_list_name(self, name):
         """
@@ -168,17 +170,20 @@ class Enpkg(object):
         """
         req = Req(name)
         info_list = []
-        for key, info in self.query_remote(name=name):
+        for package_metadata in self._repository.find_packages(name):
+            info = package_metadata.to_dict()
             if req.matches(info):
-                info_list.append(dict(info))
+                info_list.append(info)
         try:
             return sorted(info_list, key=comparable_info)
         except TypeError:
             return info_list
 
     # ============= methods which relate to local installation ===========
+    def iter_installed_packages(self):
+        return self.ec.query()
 
-    def query_installed(self, **kwargs):
+    def find_installed_packages(self, name):
         """
         Query installed packages.  In addition to the remote metadata the
         following attributes are added:
@@ -189,7 +194,7 @@ class Enpkg(object):
 
         meta_dir: the path to the egg metadata directory on the local system
         """
-        return self.ec.query(**kwargs)
+        return self.ec.query(name=name)
 
     def find(self, egg):
         """
@@ -408,9 +413,10 @@ class Enpkg(object):
 
     # == methods which relate to both (remote store and local installation) ==
 
-    def query(self, **kwargs):
-        index = dict(self.query_remote(**kwargs))
-        for key, info in self.query_installed(**kwargs):
+    def find_packages(self, name):
+        index = dict((package.key, package.to_dict()) for package in
+                     self.find_remote_packages(name))
+        for key, info in self.find_installed_packages(name):
             if key in index:
                 index[key].update(info)
             else:
