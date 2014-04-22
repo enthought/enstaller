@@ -57,7 +57,7 @@ class RepositoryPackageMetadata(object):
         return cls(key, json_dict["name"], json_dict["version"],
                    json_dict["build"], json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
-                   json_dict["product"], json_dict["available"],
+                   json_dict.get("product", None), json_dict.get("available", True),
                    json_dict["store_location"])
 
     def __init__(self, key, name, version, build, packages, python, size, md5,
@@ -169,10 +169,12 @@ def egg_name_to_name_version(egg_name):
 class Repository(object):
     def __init__(self, store):
         self._store = store
+        store_info = self._store.info()
+        self._store_info = store_info.get("root") if store_info else ""
 
     def _package_metadata_from_key(self, key):
         data = self._store.get_metadata(key)
-        data["store_location"] =  self._store.info().get('root')
+        data["store_location"] =  self._store_info
         return RepositoryPackageMetadata.from_json_dict(key, data)
 
     @property
