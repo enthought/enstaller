@@ -121,12 +121,12 @@ class TestReq(unittest.TestCase):
 
 
 class TestChain0(unittest.TestCase):
-
-    r = JoinedStore([
-           DummyStore(join(INDEX_REPO_DIR, fn))
-           for fn in ['index-add.txt', 'index-5.1.txt', 'index-5.0.txt', 'index-cycle.txt']])
-    r.connect()
-    c = Resolve(r)
+    def setUp(self):
+        s = JoinedStore([
+               DummyStore(join(INDEX_REPO_DIR, fn))
+               for fn in ['index-add.txt', 'index-5.1.txt', 'index-5.0.txt', 'index-cycle.txt']])
+        s.connect()
+        self.c = Resolve(s)
 
     def test_25(self):
         resolve.PY_VER = '2.5'
@@ -154,13 +154,13 @@ class TestChain0(unittest.TestCase):
 
 class TestChain1(unittest.TestCase):
     def setUp(self):
-        r = JoinedStore([
+        s = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
                 for name in ('epd', 'gpl')])
-        r.connect()
-        c = Resolve(r)
+        s.connect()
+        c = Resolve(s)
 
-        self.r = r
+        self.s = s
         self.c = c
 
         resolve.PY_VER = '2.7'
@@ -174,7 +174,7 @@ class TestChain1(unittest.TestCase):
             egg = self.c.get_egg(Req(req_string))
             if egg is not None:
                 self.assertEqual(
-                    self.r.get_metadata(egg).get('repo_dispname'),
+                    self.s.get_metadata(egg).get('repo_dispname'),
                     repo_name)
 
     def test_get_dist(self):
@@ -190,7 +190,7 @@ class TestChain1(unittest.TestCase):
             self.assertEqual(self.c.get_egg(Req(req_string)), egg)
             if egg is not None:
                 self.assertEqual(
-                    self.r.get_metadata(egg).get('repo_dispname'),
+                    self.s.get_metadata(egg).get('repo_dispname'),
                     repo_name)
 
     def test_reqs_dist(self):
@@ -220,12 +220,12 @@ class TestChain1(unittest.TestCase):
 
 
 class TestChain2(unittest.TestCase):
-
-    r = JoinedStore([
-            DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
-            for name in ('open', 'runner', 'epd')])
-    r.connect()
-    c = Resolve(r)
+    def setUp(self):
+        self.s = JoinedStore([
+                DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
+                for name in ('open', 'runner', 'epd')])
+        self.s.connect()
+        self.c = Resolve(self.s)
 
     def test_flat_recur1(self):
         d1 = self.c.install_sequence(Req('openepd'), mode='flat')
@@ -244,17 +244,17 @@ class TestChain2(unittest.TestCase):
         lst = self.c.install_sequence(Req('ets'))
         self.assert_('numpy-1.5.1-2.egg' in lst)
         self.assertEqual(
-            self.r.get_metadata('numpy-1.5.1-2.egg').get('repo_dispname'),
+            self.s.get_metadata('numpy-1.5.1-2.egg').get('repo_dispname'),
             'epd')
 
 class TestCycle(unittest.TestCase):
     """Avoid an infinite recursion when the dependencies contain a cycle."""
 
     def setUp(self):
-        self.r = JoinedStore([
+        s = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, 'index-cycle.txt'))])
-        self.r.connect()
-        self.c = Resolve(self.r)
+        s.connect()
+        self.c = Resolve(s)
 
     def test_cycle(self):
         resolve.PY_VER = '2.5'
