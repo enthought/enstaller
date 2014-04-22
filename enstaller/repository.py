@@ -1,6 +1,7 @@
 import collections
 import os
 import os.path
+import textwrap
 
 from egginst.eggmeta import info_from_z
 from egginst.utils import ZipFile, compute_md5
@@ -19,19 +20,24 @@ class PackageMetadata(object):
         st = os.stat(path)
         metadata["size"] = st.st_size
         metadata["md5"] = compute_md5(path)
+        metadata["packages"] = metadata.get("packages", [])
         return cls.from_json_dict(os.path.basename(path), metadata)
 
     @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],
-                   json_dict["build"], json_dict["size"], json_dict["md5"])
+                   json_dict["build"], json_dict["packages"],
+                   json_dict["python"], json_dict["size"], json_dict["md5"])
 
-    def __init__(self, key, name, version, build, size, md5):
+    def __init__(self, key, name, version, build, packages, python, size, md5):
         self.key = key
 
         self.name = name
         self.version = version
         self.build = build
+
+        self.packages = packages
+        self.python = python
 
         self.size = size
         self.md5 = md5
@@ -43,6 +49,73 @@ class PackageMetadata(object):
     @property
     def comparable_version(self):
         return comparable_version(self.version), self.build
+
+
+class RepositoryPackageMetadata(object):
+    @classmethod
+    def from_json_dict(cls, key, json_dict):
+        return cls(key, json_dict["name"], json_dict["version"],
+                   json_dict["build"], json_dict["packages"],
+                   json_dict["python"], json_dict["size"], json_dict["md5"],
+                   json_dict["product"], json_dict["available"],
+                   json_dict["store_location"])
+
+    def __init__(self, key, name, version, build, packages, python, size, md5,
+                 product, available, store_location):
+        self._package = PackageMetadata(key, name, version, build, packages, python, size, md5)
+
+        self.product = product
+        self.available = available
+        self.store_location = store_location
+
+        self.type = "egg"
+
+    def __repr__(self):
+        template = textwrap.dedent("""\
+            RepositoryPackageMetadata('{0}-{1}-{2}', key={3!r}',
+                                      available={4!r}, product={!5r},
+                                      product={!6r})
+        """)
+        return template.format(self.name, self.version, self.build, self.key,
+                               self.available, self.product,
+                               self.store_location)
+
+    @property
+    def comparable_version(self):
+        return self._package.comparable_version
+
+    # FIXME: would be nice to have some basic delegate functionalities instead
+    @property
+    def key(self):
+        return self._package.key
+
+    @property
+    def name(self):
+        return self._package.name
+
+    @property
+    def version(self):
+        return self._package.version
+
+    @property
+    def build(self):
+        return self._package.build
+
+    @property
+    def packages(self):
+        return self._package.packages
+
+    @property
+    def python(self):
+        return self._package.python
+
+    @property
+    def md5(self):
+        return self._package.md5
+
+    @property
+    def size(self):
+        return self._package.size
 
 
 def parse_version(version):
@@ -71,7 +144,8 @@ class Repository(object):
 
     def _package_metadata_from_key(self, key):
         data = self._store.get_metadata(key)
-        return PackageMetadata.from_json_dict(key, data)
+        data["store_location"] =  self._store.info().get('root')
+        return RepositoryPackageMetadata.from_json_dict(key, data)
 
     def connect(self, auth):
         if not self._store.is_connected:
@@ -89,7 +163,7 @@ class Repository(object):
 
         Returns
         -------
-        package: PackageMetadata
+        package: RepositoryPackageMetadata
             The corresponding metadata
         """
         upstream_version, build = parse_version(version)
@@ -113,7 +187,7 @@ class Repository(object):
 
         Returns
         -------
-        packages: seq of PackageMetadata
+        packages: seq of RepositoryPackageMetadata
             The corresponding metadata (order is unspecified)
         """
         kw = {"name": name, "type": "egg"}
@@ -131,7 +205,7 @@ class Repository(object):
 
         Returns
         -------
-        packages: iterable of PackageMetadata
+        packages: iterable of RepositoryPackageMetadata
             The corresponding metadata
         """
         for key in self._store.query_keys(type="egg"):
@@ -144,7 +218,7 @@ class Repository(object):
 
         Returns
         -------
-        packages: iterable of PackageMetadata
+        packages: iterable of RepositoryPackageMetadata
             The corresponding metadata
         """
         package_name_to_keys = collections.defaultdict(list)

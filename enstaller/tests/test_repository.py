@@ -42,8 +42,8 @@ class TestParseVersion(unittest.TestCase):
 class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
-        metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, 1,
-                                   None)
+        metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, [],
+                                   "2.7", 1, None)
 
         # When
         r = repr(metadata)
@@ -81,12 +81,24 @@ class TestRepository(unittest.TestCase):
 
     def test_find_package(self):
         # Given/When
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
         metadata = self.repository.find_package("nose", "1.3.0-1")
 
         # Then
+        self.assertEqual(metadata.key, "nose-1.3.0-1.egg")
+
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, "1.3.0")
         self.assertEqual(metadata.build, 1)
+
+        self.assertEqual(metadata.packages, [])
+        self.assertEqual(metadata.python, "2.7")
+
+        self.assertEqual(metadata.available, True)
+        self.assertEqual(metadata.store_location, _EGGINST_COMMON_DATA)
+
+        self.assertEqual(metadata.size, os.path.getsize(path))
+        self.assertEqual(metadata.md5, compute_md5(path))
 
     def test_find_unavailable_package(self):
         # Given/When/Then
@@ -119,8 +131,10 @@ class TestRepository(unittest.TestCase):
 
     def test_has_package(self):
         # Given
-        available_package = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, 1, None)
-        unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose", "1.4.0", 1, 1, None)
+        available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
+                                            "1.3.0", [], "2.7", 1, 1, None)
+        unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
+                                              "1.4.0", [], "2.7", 1, 1, None)
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))
