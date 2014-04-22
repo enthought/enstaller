@@ -1,6 +1,7 @@
 import re
 from collections import defaultdict
 
+from enstaller.repository import egg_name_to_name_version
 from utils import PY_VER, comparable_version
 
 
@@ -103,10 +104,18 @@ class Resolve(object):
     below.  In most cases, the user will only create an instance of this
     class (which is inexpensive), to call the install_sequence method, e.g.:
 
-    eggs = Resolve(store).install_sequence(req)
+    eggs = Resolve(repository).install_sequence(req)
     """
-    def __init__(self, repo, verbose=False):
-        self.repo = repo
+    def __init__(self, repository, verbose=False):
+        """
+        Create a new Resolve instance
+
+        Parameters
+        ----------
+        repository: repository
+            The repository instance to use to query package metadata
+        """
+        self.repository = repository
         self.verbose = verbose
 
     def get_egg(self, req):
@@ -114,28 +123,31 @@ class Resolve(object):
         return the egg with the largest version and build number
         """
         assert req.strictness >= 1
-        d = dict(self.repo.query(type='egg', name=req.name))
-        if not d:
+        d = dict((package.key, package) for package in self.repository.find_packages(req.name))
+        if len(d) < 1:
             return None
         matches = []
-        for key, info in d.iteritems():
-            if req.matches(info) and info.get('available', True):
+        for key, package in d.items():
+            info = package.to_dict()
+            if req.matches(info) and package.available:
                 matches.append(key)
         if not matches:
             return None
-        return max(matches, key=lambda k: comparable_info(d[k]))
+        return max(matches, key=lambda k: comparable_info(d[k].to_dict()))
 
     def reqs_egg(self, egg):
         """
         return the set of requirement objects listed by the given egg
         """
-        return set(Req(s) for s in self.repo.get_metadata(egg)['packages'])
+        name, version = egg_name_to_name_version(egg)
+        return set(Req(s) for s in self.repository.find_package(name, version).packages)
 
     def name_egg(self, egg):
         """
         return the project name for a given egg (from it's meta data)
         """
-        return self.repo.get_metadata(egg)['name']
+        name, version = egg_name_to_name_version(egg)
+        return self.repository.find_package(name, version).name
 
     def are_complete(self, eggs):
         """

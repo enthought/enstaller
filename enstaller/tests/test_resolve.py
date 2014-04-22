@@ -9,6 +9,7 @@ if sys.version_info[:2] < (2, 7):
 else:
     import unittest
 
+from enstaller.repository import Repository
 from enstaller.store.indexed import IndexedStore
 from enstaller.store.joined import JoinedStore
 
@@ -125,8 +126,9 @@ class TestChain0(unittest.TestCase):
         s = JoinedStore([
                DummyStore(join(INDEX_REPO_DIR, fn))
                for fn in ['index-add.txt', 'index-5.1.txt', 'index-5.0.txt', 'index-cycle.txt']])
-        s.connect()
-        self.c = Resolve(s)
+        repo = Repository(s)
+        repo.connect((None, None))
+        self.c = Resolve(repo)
 
     def test_25(self):
         resolve.PY_VER = '2.5'
@@ -157,8 +159,9 @@ class TestChain1(unittest.TestCase):
         s = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
                 for name in ('epd', 'gpl')])
-        s.connect()
-        c = Resolve(s)
+        repo = Repository(s)
+        repo.connect((None, None))
+        c = Resolve(repo)
 
         self.s = s
         self.c = c
@@ -224,8 +227,9 @@ class TestChain2(unittest.TestCase):
         self.s = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
                 for name in ('open', 'runner', 'epd')])
-        self.s.connect()
-        self.c = Resolve(self.s)
+        self.repo = Repository(self.s)
+        self.repo.connect((None, None))
+        self.c = Resolve(self.repo)
 
     def test_flat_recur1(self):
         d1 = self.c.install_sequence(Req('openepd'), mode='flat')
@@ -253,8 +257,9 @@ class TestCycle(unittest.TestCase):
     def setUp(self):
         s = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, 'index-cycle.txt'))])
-        s.connect()
-        self.c = Resolve(s)
+        repo = Repository(s)
+        repo.connect((None, None))
+        self.c = Resolve(repo)
 
     def test_cycle(self):
         resolve.PY_VER = '2.5'

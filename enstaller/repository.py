@@ -76,11 +76,9 @@ class RepositoryPackageMetadata(object):
         return dict((k, getattr(self, k)) for k in keys)
 
     def __repr__(self):
-        template = textwrap.dedent("""\
-            RepositoryPackageMetadata('{0}-{1}-{2}', key={3!r}',
-                                      available={4!r}, product={!5r},
-                                      product={!6r})
-        """)
+        template = "RepositoryPackageMetadata(" \
+            "'{0}-{1}-{2}', key={3!r}, available={4!r}, product={5!r}, " \
+            "product={6!r})"
         return template.format(self.name, self.version, self.build, self.key,
                                self.available, self.product,
                                self.store_location)

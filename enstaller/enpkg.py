@@ -11,6 +11,7 @@ import threading
 import enstaller
 
 from enstaller.errors import EnpkgError
+from enstaller.repository import Repository
 from store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from store.joined import JoinedStore
 
@@ -117,6 +118,9 @@ class Enpkg(object):
             self.remote = get_default_remote(self.config)
         else:
             self.remote = remote
+
+        self._repository = Repository(self.remote)
+
         if userpass == '<config>':
             self.userpass = self.config.get_auth()
         else:
@@ -147,6 +151,7 @@ class Enpkg(object):
     def _connect(self, force=False):
         if not self.remote.is_connected or force:
             self.remote.connect(self.userpass)
+        self._repository.connect(self.userpass)
 
     def query_remote(self, **kwargs):
         """
@@ -262,7 +267,7 @@ class Enpkg(object):
         mode = 'recur'
         self._connect()
         req = req_from_anything("enstaller")
-        eggs = Resolve(self.remote, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
         elif not len(eggs) == 1:
@@ -287,7 +292,7 @@ class Enpkg(object):
         req = req_from_anything(arg)
         # resolve the list of eggs that need to be installed
         self._connect()
-        eggs = Resolve(self.remote, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
         return self._install_actions(eggs, mode, force, forceall)
