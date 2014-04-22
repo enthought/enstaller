@@ -523,6 +523,6 @@ class TestEnpkgRevert(unittest.TestCase):
 
         with mock_history_get_state_context(installed_eggs):
             enpkg = Enpkg(config=Configuration())
-            with mock.patch.object(enpkg, "remote"):
+            with mock.patch.object(enpkg, "_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)

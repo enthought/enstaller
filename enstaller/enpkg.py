@@ -11,7 +11,7 @@ import threading
 import enstaller
 
 from enstaller.errors import EnpkgError
-from enstaller.repository import Repository
+from enstaller.repository import Repository, egg_name_to_name_version
 from store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from store.joined import JoinedStore
 
@@ -115,11 +115,12 @@ class Enpkg(object):
 
         self.local_dir = get_writable_local_dir(self.config)
         if remote is None:
-            self.remote = get_default_remote(self.config)
-        else:
-            self.remote = remote
+            remote = get_default_remote(self.config)
+        self._repository = Repository(remote)
 
-        self._repository = Repository(self.remote)
+        # XXX: remote attribute kept for backward compatibility, remove before
+        # 4.7.0
+        self.remote = remote
 
         if userpass == '<config>':
             self.userpass = self.config.get_auth()
@@ -149,8 +150,6 @@ class Enpkg(object):
         self._connect(force=True)
 
     def _connect(self, force=False):
-        if not self.remote.is_connected or force:
-            self.remote.connect(self.userpass)
         self._repository.connect(self.userpass)
 
     def find_remote_packages(self, name):
@@ -248,8 +247,10 @@ class Enpkg(object):
                     elif opcode == 'remove':
                         self.ec.remove(egg)
                     elif opcode == 'install':
-                        if self.remote.is_connected:
-                            extra_info = self.remote.get_metadata(egg)
+                        name, version = egg_name_to_name_version(egg)
+                        if self._repository.is_connected:
+                            package = self._repository.find_package(name, version)
+                            extra_info = package.to_dict()
                         else:
                             extra_info = None
                         self.ec.install(egg, self.local_dir, extra_info)
@@ -393,8 +394,8 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self.local_dir, egg)):
-                self._connect()
-                if self.remote.exists(egg):
+                self._repository.connect(self.userpass)
+                if self._repository._has_package_key(egg):
                     res.append(('fetch_0', egg))
                 else:
                     raise EnpkgError("cannot revert -- missing %r" % egg)
