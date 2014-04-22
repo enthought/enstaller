@@ -1,7 +1,9 @@
 import hashlib
 import os
 import os.path
+import shutil
 import sys
+import tempfile
 import threading
 
 if sys.version_info[:2] < (2, 7):
@@ -13,14 +15,16 @@ import mock
 
 from encore.events.event_manager import EventManager
 
-from egginst.tests.common import mkdtemp
+from egginst.tests.common import _EGGINST_COMMON_DATA
 from enstaller.fetch import FetchAPI
-from enstaller.store.indexed import LocalIndexedStore
+from enstaller.repository import Repository
+from enstaller.store.filesystem_store import DumbFilesystemStore
 from enstaller.utils import compute_md5
 
-class MockedFailingFile(object):
+class MockedStoreResponse(object):
     """
-    A file object-like which read may abort when some Thread.Event is set.
+    A StoreResponse-like object which read may abort when some Thread.Event is
+    set.
 
     Parameters
     ----------
@@ -40,12 +44,16 @@ class MockedFailingFile(object):
         self._failing_count = int(self.size * abort_threshold)
 
     @property
-    def md5(self):
-        return hashlib.md5("a" * self.size).hexdigest()
-
-    @property
     def _should_abort(self):
         return self.event is not None and self._read_pos >= self._failing_count
+
+    def iter_content(self):
+        while True:
+            chunk = self.read(1024)
+            if chunk is None:
+                break
+            else:
+                yield chunk
 
     def read(self, n):
         if self._should_abort:
@@ -61,171 +69,162 @@ class MockedFailingFile(object):
     def close(self):
         pass
 
-class Entry(object):
-    def __init__(self, name, fp):
-        self.fp = fp
-        self.name = name
-
-    @property
-    def metadata_dict(self):
-        return {"md5": self.fp.md5, "size": self.fp.size, "name": self.name}
-
-class DummyRepository(LocalIndexedStore):
-    def __init__(self, root_dir, entries):
-        self.root = root_dir
-
-        self._entries = {}
-        self._data = {}
-
-        for entry in entries:
-            self._entries[entry.name] = entry.metadata_dict
-            self._data[entry.name] = entry.fp
-
-    def get_index(self):
-        return self._entries
-
-    def get_data(self, key):
-        return self._data[key]
 
 class TestFetchAPI(unittest.TestCase):
+    def setUp(self):
+        self.d = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.d)
+
+    def _create_repository(self, eggs):
+        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
+        repository = Repository(store)
+        repository.connect((None, None))
+
+        return repository
+
     def test_fetch_simple(self):
-        with mkdtemp() as d:
-            filename = "dummy"
-            fp = MockedFailingFile(100000)
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        repository = self._create_repository([filename])
 
-            remote = DummyRepository(d, [Entry(filename, fp)])
-            remote.connect()
+        # When
+        fetch_api = FetchAPI(repository, self.d)
+        fetch_api.fetch(filename)
 
-            fetch_api = FetchAPI(remote, d)
-            fetch_api.fetch(filename)
-
-            target = os.path.join(d, filename)
-            self.assertTrue(os.path.exists(target))
-            self.assertEqual(compute_md5(target), fp.md5)
+        # Then
+        target = os.path.join(self.d, filename)
+        self.assertTrue(os.path.exists(target))
+        self.assertEqual(compute_md5(target),
+                         repository.find_package("nose", "1.3.0-1").md5)
 
     def test_fetch_invalid_md5(self):
-        with mkdtemp() as d:
-            filename = "dummy"
-            with mock.patch.object(MockedFailingFile, "md5") as mocked_md5:
-                mocked_md5.__get__ = lambda *a: hashlib.md5("dummy content").hexdigest()
+        # Given
+        filename = "nose-1.3.0-1.egg"
 
-                fp = MockedFailingFile(100000)
+        repository = self._create_repository([filename])
 
-                entry = Entry(filename, fp)
-                remote = DummyRepository(d, [entry])
-                remote.connect()
+        mocked_metadata = mock.Mock()
+        mocked_metadata.md5 = "a" * 32
+        mocked_metadata.size = 1024
+        mocked_metadata.key = filename
 
-                fetch_api = FetchAPI(remote, d)
-                with self.assertRaises(ValueError):
-                    fetch_api.fetch(filename)
+        with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
+            fetch_api = FetchAPI(repository, self.d)
+
+            # When/Then
+            with self.assertRaises(ValueError):
+                fetch_api.fetch(filename)
 
     def test_fetch_abort(self):
+        # Given
         event = threading.Event()
 
-        with mkdtemp() as d:
-            filename = "dummy"
-            fp = MockedFailingFile(100000, event, 0.5)
+        filename = "nose-1.3.0-1.egg"
 
-            remote = DummyRepository(d, [Entry(filename, fp)])
-            remote.connect()
+        repository = self._create_repository([filename])
 
-            fetch_api = FetchAPI(remote, d)
+        response = MockedStoreResponse(100000, event, 0.5)
+        with mock.patch.object(repository, "fetch_from_package", return_value=response):
+            # When
+            fetch_api = FetchAPI(repository, self.d)
             fetch_api.fetch(filename, event)
 
-            target = os.path.join(d, filename)
+            # Then
+            target = os.path.join(self.d, filename)
             self.assertTrue(event.is_set())
             self.assertFalse(os.path.exists(target))
 
     def test_fetch_egg_simple(self):
-        with mkdtemp() as d:
-            egg = "dummy-1.0.0-1.egg"
-            fp = MockedFailingFile(100000)
+        #Given
+        egg = "nose-1.3.0-1.egg"
 
-            remote = DummyRepository(d, [Entry(egg, fp)])
-            remote.connect()
+        repository = self._create_repository([egg])
 
-            fetch_api = FetchAPI(remote, d)
-            fetch_api.fetch_egg(egg)
+        # When
+        fetch_api = FetchAPI(repository, self.d)
+        fetch_api.fetch_egg(egg)
 
-            target = os.path.join(d, egg)
-            self.assertTrue(os.path.exists(target))
+        # Then
+        target = os.path.join(self.d, egg)
+        self.assertTrue(os.path.exists(target))
+        self.assertEqual(compute_md5(target),
+                         compute_md5(os.path.join(_EGGINST_COMMON_DATA, egg)))
 
     def test_fetch_egg_refetch(self):
-        with mkdtemp() as d:
-            egg = "dummy-1.0.0-1.egg"
-            fp = MockedFailingFile(100000)
+        # Given
+        egg = "nose-1.3.0-1.egg"
 
-            remote = DummyRepository(d, [Entry(egg, fp)])
-            remote.connect()
+        repository = self._create_repository([egg])
 
-            fetch_api = FetchAPI(remote, d)
-            fetch_api.fetch_egg(egg)
+        # When
+        fetch_api = FetchAPI(repository, self.d)
+        fetch_api.fetch_egg(egg)
 
-            target = os.path.join(d, egg)
-            self.assertTrue(os.path.exists(target))
-
-            fetch_api.fetch_egg(egg)
+        # Then
+        target = os.path.join(self.d, egg)
+        self.assertTrue(os.path.exists(target))
 
     def test_fetch_egg_refetch_invalid_md5(self):
-        with mkdtemp() as d:
-            egg = "dummy-1.0.0-1.egg"
+        # Given
+        egg = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
-            def _fetch_api_factory():
-                fp = MockedFailingFile(100000)
+        repository = self._create_repository([egg])
 
-                remote = DummyRepository(d, [Entry(egg, fp)])
-                remote.connect()
+        def _corrupt_file(target):
+            with open(target, "wb") as fo:
+                fo.write("")
 
-                return fp, FetchAPI(remote, d)
+        # When
+        fetch_api = FetchAPI(repository, self.d)
+        fetch_api.fetch_egg(egg)
 
-            def _corrupt_file(target):
-                with open(target, "wb") as fo:
-                    fo.write("")
+        # Then
+        target = os.path.join(self.d, egg)
+        self.assertEqual(compute_md5(target), compute_md5(path))
 
-            fp, fetch_api = _fetch_api_factory()
-            fetch_api.fetch_egg(egg)
+        # When
+        _corrupt_file(target)
 
-            target = os.path.join(d, egg)
+        # Then
+        self.assertNotEqual(compute_md5(target), compute_md5(path))
 
-            self.assertEqual(compute_md5(target), fp.md5)
-            _corrupt_file(target)
-            self.assertNotEqual(compute_md5(target), fp.md5)
+        # When
+        fetch_api.fetch_egg(egg, force=True)
 
-            fp, fetch_api = _fetch_api_factory()
-            fetch_api.fetch_egg(egg, force=True)
-
-            self.assertEqual(compute_md5(target), fp.md5)
+        # Then
+        self.assertEqual(compute_md5(target), compute_md5(path))
 
     def test_encore_event_manager(self):
-        with mkdtemp() as d:
-            with mock.patch.object(EventManager, "emit"):
-                event_manager = EventManager()
+        # Given
+        egg = "nose-1.3.0-1.egg"
+        repository = self._create_repository([egg])
 
-                egg = "yoyo-1.0.0-1.egg"
-                fp = MockedFailingFile(1024 * 32)
+        with mock.patch.object(EventManager, "emit"):
+            event_manager = EventManager()
 
-                remote = DummyRepository(d, [Entry(egg, fp)])
-                remote.connect()
+            # When
+            fetch_api = FetchAPI(repository, self.d, event_manager)
+            fetch_api.fetch_egg(egg)
 
-                fetch_api = FetchAPI(remote, d, event_manager)
-                fetch_api.fetch_egg(egg)
-
-                self.assertTrue(event_manager.emit.called)
+            # Then
+            self.assertTrue(event_manager.emit.called)
 
     def test_progress_manager(self):
         """
         Ensure that the progress manager __call__ is called inside the fetch
         loop.
         """
-        with mkdtemp() as d:
-            with mock.patch("egginst.console.ProgressManager") as m:
-                egg = "yoyo-1.0.0-1.egg"
-                fp = MockedFailingFile(1024 * 32)
+        # Given
+        egg = "nose-1.3.0-1.egg"
+        repository = self._create_repository([egg])
 
-                remote = DummyRepository(d, [Entry(egg, fp)])
-                remote.connect()
+        with mock.patch("egginst.console.ProgressManager") as m:
+            # When
+            fetch_api = FetchAPI(repository, self.d)
+            fetch_api.fetch_egg(egg)
 
-                fetch_api = FetchAPI(remote, d)
-                fetch_api.fetch_egg(egg)
-
-                self.assertTrue(m.called)
+            # Then
+            self.assertTrue(m.called)

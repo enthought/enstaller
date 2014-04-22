@@ -419,7 +419,7 @@ class Enpkg(object):
 
     def fetch(self, egg, force=False):
         self._connect()
-        f = FetchAPI(self.remote, self.local_dir, self.evt_mgr)
+        f = FetchAPI(self._repository, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.verbose = self.verbose
         f.fetch_egg(egg, force, self._execution_aborted)

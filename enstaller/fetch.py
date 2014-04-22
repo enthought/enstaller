@@ -59,8 +59,8 @@ def filestore_manager(filename, md5=None):
 
 class FetchAPI(object):
 
-    def __init__(self, remote, local_dir, evt_mgr=None):
-        self.remote = remote
+    def __init__(self, repository, local_dir, evt_mgr=None):
+        self.repository = repository
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
         self.verbose = False
@@ -68,18 +68,19 @@ class FetchAPI(object):
     def path(self, fn):
         return join(self.local_dir, fn)
 
-    def size(self, key):
-        """ Returns the size of value with the given key."""
-        info = self.remote.get_metadata(key)
-        return info["size"]
+    def size(self, name, version):
+        """ Returns the size of value for the package with the given name,
+        version."""
+        info = self.repository.find_package(name, version)
+        return info.size
 
-    def md5(self, key):
+    def md5(self, name, version):
         """ Returns the md5 of value with the given key.
 
         May be None.
         """
-        info = self.remote.get_metadata(key)
-        return info.get("md5", None)
+        info = self.repository.find_package(name, version)
+        return info.md5
 
     def fetch(self, key, execution_aborted=None):
         """ Fetch the given key.
@@ -87,8 +88,12 @@ class FetchAPI(object):
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
+        name, version = egg_name_to_name_version(key)
+
+        package = self.repository.find_package(name, version)
+
         path = self.path(key)
-        size = self.size(key)
+        size = package.size
 
         if self.evt_mgr:
             from encore.events.api import ProgressManager
@@ -104,10 +109,10 @@ class FetchAPI(object):
                 disp_amount=human_bytes(size),
                 super_id=getattr(self, 'super_id', None))
 
-        response = StoreResponse(self.remote.get_data(key), expected_size=size)
+        response = self.repository.fetch_from_package(package)
         n = 0
         with progress:
-            md5 = self.md5(key)
+            md5 = package.md5
             with filestore_manager(path, md5) as target:
                 for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
@@ -128,14 +133,16 @@ class FetchAPI(object):
         """
         if not isdir(self.local_dir):
             os.makedirs(self.local_dir)
-        info = self.remote.get_metadata(egg)
+        name, version = egg_name_to_name_version(egg)
+        package_metadata = self.repository.find_package(name, version)
+
         path = self.path(egg)
 
         # if force is used, make sure the md5 is the expected, otherwise
         # merely see if the file exists
         if isfile(path):
             if force:
-                if compute_md5(path) == info.get('md5'):
+                if compute_md5(path) == package_metadata.md5:
                     if self.verbose:
                         print "Not refetching, %r MD5 match" % path
                     return
@@ -144,4 +151,4 @@ class FetchAPI(object):
                     print "Not forcing refetch, %r exists" % path
                 return
 
-        self.fetch(egg, execution_aborted)
+        self.fetch(package_metadata.key, execution_aborted)
