@@ -15,7 +15,8 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, mkdtemp
 from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
 
-from enstaller.repository import PackageMetadata, Repository, parse_version
+from enstaller.repository import (PackageMetadata, Repository,
+                                  egg_name_to_name_version, parse_version)
 
 
 class TestParseVersion(unittest.TestCase):
@@ -37,6 +38,38 @@ class TestParseVersion(unittest.TestCase):
         # When
         with self.assertRaises(ValueError):
             parse_version(version)
+
+
+class TestEggNameToNameVersion(unittest.TestCase):
+    def test_simple(self):
+        # given
+        egg_name = "numpy-1.8.0-1.egg"
+
+        # When
+        name, version = egg_name_to_name_version(egg_name)
+
+        # Then
+        self.assertEqual(name, "numpy")
+        self.assertEqual(version, "1.8.0-1")
+
+    def test_simple_uppercase(self):
+        # given
+        egg_name = "MKL-10.3-1.egg"
+
+        # When
+        name, version = egg_name_to_name_version(egg_name)
+
+        # Then
+        self.assertEqual(name, "mkl")
+        self.assertEqual(version, "10.3-1")
+
+    def test_invalid(self):
+        # given
+        egg_name = "nono"
+
+        # When
+        with self.assertRaises(ValueError):
+            egg_name_to_name_version(egg_name)
 
 
 class TestPackage(unittest.TestCase):

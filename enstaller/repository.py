@@ -137,6 +137,29 @@ def parse_version(version):
     else:
         return parts[0], int(parts[1])
 
+def egg_name_to_name_version(egg_name):
+    """
+    Convert a eggname (filename) to a (name, version) pair.
+
+    Parameters
+    ----------
+    egg_name: str
+        The egg filename
+
+    Returns
+    -------
+    name: str
+        The name
+    version: str
+        The *full* version (e.g. for 'numpy-1.8.0-1.egg', the full version is
+        '1.8.0-1')
+    """
+    basename = os.path.splitext(os.path.basename(egg_name))[0]
+    parts = basename.split("-", 1)
+    if len(parts) != 2:
+        raise ValueError("Invalid egg name: {0!r}".format(egg_name))
+    else:
+        return parts[0].lower(), parts[1]
 
 class Repository(object):
     def __init__(self, store):
