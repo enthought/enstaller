@@ -108,13 +108,16 @@ class TestRepository(unittest.TestCase):
             "dummy_with_proxy_softlink-1.0.0-1.egg",
             "nose-1.2.1-1.egg",
             "nose-1.3.0-1.egg",
+            "nose-1.3.0-2.egg",
         ]
         self.store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
         self.repository = Repository(self.store)
 
     def test_find_package(self):
-        # Given/When
+        # Given
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+
+        # When
         metadata = self.repository.find_package("nose", "1.3.0-1")
 
         # Then
@@ -133,6 +136,19 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.size, os.path.getsize(path))
         self.assertEqual(metadata.md5, compute_md5(path))
 
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-2.egg")
+
+        # When
+        metadata = self.repository.find_package("nose", "1.3.0-2")
+
+        # Then
+        self.assertEqual(metadata.key, "nose-1.3.0-2.egg")
+
+        self.assertEqual(metadata.name, "nose")
+        self.assertEqual(metadata.version, "1.3.0")
+        self.assertEqual(metadata.build, 2)
+
     def test_find_unavailable_package(self):
         # Given/When/Then
         with self.assertRaises(MissingPackage):
@@ -144,13 +160,15 @@ class TestRepository(unittest.TestCase):
         metadata = sorted(metadata, key=operator.attrgetter("comparable_version"))
 
         # Then
-        self.assertEqual(len(metadata), 2)
+        self.assertEqual(len(metadata), 3)
 
         self.assertEqual(metadata[0].version, "1.2.1")
         self.assertEqual(metadata[1].version, "1.3.0")
+        self.assertEqual(metadata[2].version, "1.3.0")
 
         self.assertEqual(metadata[0].build, 1)
         self.assertEqual(metadata[1].build, 1)
+        self.assertEqual(metadata[2].build, 2)
 
     def test_find_packages_with_version(self):
         # Given/When

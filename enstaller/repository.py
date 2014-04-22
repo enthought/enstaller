@@ -208,7 +208,7 @@ class Repository(object):
             The corresponding metadata
         """
         upstream_version, build = parse_version(version)
-        keys = list(self._store.query_keys(type="egg", name=name, version=upstream_version))
+        keys = list(self._store.query_keys(type="egg", name=name, version=upstream_version, build=build))
         if len(keys) < 1:
             raise MissingPackage("Package '{0}-{1}' not found".format(name, version))
         else:
