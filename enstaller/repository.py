@@ -8,7 +8,7 @@ from egginst.utils import ZipFile, compute_md5
 
 
 from enstaller.errors import MissingPackage
-from enstaller.fetch import StoreResponse
+from enstaller.fetch_utils import StoreResponse
 from enstaller.utils import comparable_version
 
 
