@@ -103,20 +103,15 @@ def info_option(enpkg, name):
     print('Package:', name)
     print(install_time_string(enpkg, name))
     pad = 4*' '
-    for info in enpkg.info_list_name(name):
-        print('Version: ' + VB_FMT % info)
-        print(pad + 'Product: %s' % info.get('product', ''))
-        print(pad + 'Available: %s' % info.get('available', ''))
-        print(pad + 'Python version: %s' % info.get('python', ''))
-        print(pad + 'Store location: %s' % info.get('store_location', ''))
-        mtime = info.get('mtime', '')
-        if mtime:
-            mtime = datetime.datetime.fromtimestamp(mtime)
-        print(pad + 'Last modified: %s' % mtime)
-        print(pad + 'Type: %s' % info.get('type', ''))
-        print(pad + 'MD5: %s' % info.get('md5', ''))
-        print(pad + 'Size: %s' % info.get('size', ''))
-        reqs = set(r for r in info['packages'])
+    for metadata in enpkg.info_list_name(name):
+        print('Version: ' + metadata.full_version)
+        print(pad + 'Product: %s' % metadata.product)
+        print(pad + 'Available: %s' % metadata.available)
+        print(pad + 'Python version: %s' % metadata.python)
+        print(pad + 'Store location: %s' % metadata.store_location)
+        print(pad + 'MD5: %s' % metadata.md5)
+        print(pad + 'Size: %s' % metadata.size)
+        reqs = set(r for r in metadata.packages)
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
@@ -177,12 +172,12 @@ def search(enpkg, pat=None):
             continue
         disp_name = names[name]
         installed_version = installed.get(name)
-        for info in enpkg.info_list_name(name):
-            version = VB_FMT % info
+        for metadata in enpkg.info_list_name(name):
+            version = metadata.full_version
             disp_ver = (('* ' if installed_version == version else '  ') +
                         version)
-            available = info.get('available', True)
-            product = info.get('product', '')
+            available = metadata.available
+            product = metadata.product
             if not(available):
                 SUBSCRIBED = False
             print(FMT4 % (disp_name, disp_ver, product,
@@ -205,15 +200,15 @@ def updates_check(enpkg):
     updates = []
     EPD_update = []
     for key, info in enpkg.iter_installed_packages():
-        av_infos = enpkg.info_list_name(info['name'])
-        if len(av_infos) == 0:
+        av_metadatas = enpkg.info_list_name(info['name'])
+        if len(av_metadatas) == 0:
             continue
-        av_info = av_infos[-1]
-        if comparable_info(av_info) > comparable_info(info):
+        av_metadata = av_metadatas[-1]
+        if av_metadata.comparable_version > comparable_info(info):
             if info['name'] == "epd":
-                EPD_update.append({'current': info, 'update': av_info})
+                EPD_update.append({'current': info, 'update': av_metadata})
             else:
-                updates.append({'current': info, 'update': av_info})
+                updates.append({'current': info, 'update': av_metadata})
     return updates, EPD_update
 
 
@@ -223,7 +218,7 @@ def whats_new(enpkg):
         print("No new version of any installed package is available")
     else:
         if EPD_update:
-            new_EPD_version = VB_FMT % EPD_update[0]['update']
+            new_EPD_version = EPD_update[0]['update'].full_version
             print("EPD", new_EPD_version, "is available. "
                   "To update to it (with confirmation warning), run "
                   "'enpkg epd'.")
@@ -233,7 +228,7 @@ def whats_new(enpkg):
             for update in updates:
                 print(FMT % (name_egg(update['current']['key']),
                              VB_FMT % update['current'],
-                             VB_FMT % update['update']))
+                             update['update'].full_version))
 
 
 def update_all(enpkg, args):
@@ -242,7 +237,7 @@ def update_all(enpkg, args):
         print("No new version of any installed package is available")
     else:
         if EPD_update:
-            new_EPD_version = VB_FMT % EPD_update[0]['update']
+            new_EPD_version = EPD_update[0]['update'].full_version
             print("EPD", new_EPD_version, "is available. "
                   "To update to it (with confirmation warning), "
                   "run 'enpkg epd'.")
@@ -254,7 +249,7 @@ def update_all(enpkg, args):
             for update in updates:
                 print(FMT % (name_egg(update['current']['key']),
                              VB_FMT % update['current'],
-                             VB_FMT % update['update']))
+                             update['update'].full_version))
             for update in updates:
                 install_req(enpkg, update['current']['name'], args)
 
@@ -275,9 +270,9 @@ def add_url(filename, config, url, verbose):
 
 def pretty_print_packages(info_list):
     packages = {}
-    for info in info_list:
-        version = info['version']
-        available = info.get('available', True)
+    for metadata in info_list:
+        version = metadata.version
+        available = metadata.available
         packages[version] = packages.get(version, False) or available
     pad = 4*' '
     descriptions = [version+(' (no subscription)' if not available else '')
@@ -320,7 +315,7 @@ def install_req(enpkg, req, opts):
                 if info_list:
                     print("Versions for package %r are:\n%s" % (req.name,
                         pretty_print_packages(info_list)))
-                    if any(not i.get('available', True) for i in info_list):
+                    if any(not i.available for i in info_list):
                         _print_invalid_permissions()
                     _done(FAILURE)
                 else:
@@ -338,7 +333,7 @@ def install_req(enpkg, req, opts):
                         print(("Available versions of the required package "
                                "%r are:\n%s") % (
                             e.req.name, pretty_print_packages(info_list)))
-                        if any(not i.get('available', True) for i in info_list):
+                        if any(not i.available for i in info_list):
                             _print_invalid_permissions()
                         _done(FAILURE)
             _done(FAILURE)

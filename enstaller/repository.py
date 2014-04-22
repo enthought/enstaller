@@ -47,6 +47,10 @@ class PackageMetadata(object):
             self.name, self.version, self.build, self.key)
 
     @property
+    def full_version(self):
+        return "{0}-{1}".format(self.version, self.build)
+
+    @property
     def comparable_version(self):
         return comparable_version(self.version), self.build
 
@@ -119,6 +123,10 @@ class RepositoryPackageMetadata(object):
     @property
     def size(self):
         return self._package.size
+
+    @property
+    def full_version(self):
+        return self._package.full_version
 
 
 def parse_version(version):

@@ -5,6 +5,7 @@ import sys
 import warnings
 from uuid import uuid4
 from os.path import isdir, isfile, join
+import operator
 import os
 import threading
 
@@ -170,11 +171,10 @@ class Enpkg(object):
         req = Req(name)
         info_list = []
         for package_metadata in self._repository.find_packages(name):
-            info = package_metadata.to_dict()
-            if req.matches(info):
-                info_list.append(info)
+            if req.matches(package_metadata.to_dict()):
+                info_list.append(package_metadata)
         try:
-            return sorted(info_list, key=comparable_info)
+            return sorted(info_list, key=operator.attrgetter("comparable_version"))
         except TypeError:
             return info_list
 

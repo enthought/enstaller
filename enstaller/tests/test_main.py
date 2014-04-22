@@ -240,8 +240,6 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {1}
             Store location:{0}
-            Last modified:{0}
-            Type: egg
             MD5:{0}
             Size: 1024
             Requirements: None
@@ -250,8 +248,6 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {1}
             Store location:{0}
-            Last modified:{0}
-            Type: egg
             MD5:{0}
             Size: 1024
             Requirements: None
@@ -411,7 +407,7 @@ class TestUpdatesCheck(unittest.TestCase):
             update0 = updates[0]
             self.assertItemsEqual(update0.keys(), ["current", "update"])
             self.assertEqual(update0["current"]["version"], "1.0.1")
-            self.assertEqual(update0["update"]["version"], "1.2.0")
+            self.assertEqual(update0["update"].version, "1.2.0")
 
     def test_update_check_no_new_available(self):
         entries = [dummy_enpkg_entry_factory("dummy", "1.0.0", 1),
@@ -456,7 +452,7 @@ class TestUpdatesCheck(unittest.TestCase):
             epd_update0 = EPD_update[0]
             self.assertItemsEqual(epd_update0.keys(), ["current", "update"])
             self.assertEqual(epd_update0["current"]["version"], "7.2")
-            self.assertEqual(epd_update0["update"]["version"], "7.3")
+            self.assertEqual(epd_update0["update"].version, "7.3")
 
     def test_whats_new_no_new_epd(self):
         r_output = textwrap.dedent("""\

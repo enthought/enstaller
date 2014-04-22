@@ -169,7 +169,7 @@ class TestEnpkg(unittest.TestCase):
             queried_entries = enpkg.info_list_name("numpy")
 
             self.assertEqual(len(queried_entries), 3)
-            self.assertEqual([q["version"] for q in queried_entries],
+            self.assertEqual([q.version for q in queried_entries],
                              ["1.6.1", "1.7.1", "1.8.0"])
 
     def test_info_list_names_invalid_version(self):
@@ -187,7 +187,7 @@ class TestEnpkg(unittest.TestCase):
             queried_entries = enpkg.info_list_name("numpy")
 
             self.assertEqual(len(queried_entries), 2)
-            self.assertEqual([q["version"] for q in queried_entries],
+            self.assertEqual([q.version for q in queried_entries],
                              ["1.6.1", "1.8k"])
 
     def test_query_simple(self):
