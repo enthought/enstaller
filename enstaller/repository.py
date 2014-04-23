@@ -286,4 +286,5 @@ class Repository(object):
 
     def fetch_from_package(self, package_metadata):
         return StoreResponse(self._store.get_data(package_metadata.key),
-                             package_metadata.size)
+                             package_metadata.size, package_metadata.md5,
+                             package_metadata.key)

@@ -1,13 +1,12 @@
 import contextlib
-import math
+import hashlib
 import os
 import sys
-import hashlib
+
 from uuid import uuid4
 from os.path import basename, isdir, isfile, join
 
 from egginst.utils import compute_md5, human_bytes, rm_rf
-from enstaller.fetch_utils import StoreResponse
 from enstaller.repository import egg_name_to_name_version
 
 
