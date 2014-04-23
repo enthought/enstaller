@@ -10,7 +10,7 @@ from egginst.utils import rm_rf
 logger = logging.getLogger(__name__)
 
 
-def create_link(arcname, link, prefix, verbose):
+def create_link(arcname, link, prefix):
     usr = 'EGG-INFO/usr/'
     assert arcname.startswith(usr), arcname
     dst = join(prefix, arcname[len(usr):])
@@ -20,7 +20,7 @@ def create_link(arcname, link, prefix, verbose):
     if not isdir(dirname(dst)):
         os.makedirs(dirname(dst))
 
-    rm_rf(dst, verbose)
+    rm_rf(dst)
     logger.info("Creating: %s (link to %s)", dst, link)
     os.symlink(link, dst)
     return dst

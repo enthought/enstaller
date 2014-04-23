@@ -46,7 +46,7 @@ def rm_empty_dir(path):
         pass
 
 
-def rm_rf(path, verbose=False):
+def rm_rf(path):
     if not on_win and islink(path):
         # Note that we have to check if the destination is a link because
         # exists('/path/to/dead-link') will return False, although

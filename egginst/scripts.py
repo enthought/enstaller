@@ -9,7 +9,6 @@ from os.path import abspath, basename, join, isdir, isfile, islink
 from egginst.utils import on_win, rm_rf
 
 
-verbose = False
 hashbang_pat = re.compile(r'#!.+$', re.M)
 executable = sys.executable
 logger = logging.getLogger(__name__)

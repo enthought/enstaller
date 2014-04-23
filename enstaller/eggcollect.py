@@ -74,7 +74,6 @@ class EggCollection(AbstractEggCollection):
     def __init__(self, prefix, evt_mgr=None):
         self.prefix = prefix
         self.evt_mgr = evt_mgr
-        self.verbose = False
 
         self.pkgs_dir = join(self.prefix, 'pkgs')
 
@@ -107,7 +106,7 @@ class EggCollection(AbstractEggCollection):
         ei = egginst.EggInst(join(dir_path, egg),
                              prefix=self.prefix,
                              evt_mgr=self.evt_mgr,
-                             pkgs_dir=self.pkgs_dir, verbose=self.verbose)
+                             pkgs_dir=self.pkgs_dir)
         ei.super_id = getattr(self, 'super_id', None)
         ei.install(extra_info)
 
@@ -115,7 +114,7 @@ class EggCollection(AbstractEggCollection):
         ei = egginst.EggInst(egg,
                              prefix=self.prefix,
                              evt_mgr=self.evt_mgr,
-                             pkgs_dir=self.pkgs_dir, verbose=self.verbose)
+                             pkgs_dir=self.pkgs_dir)
         ei.super_id = getattr(self, 'super_id', None)
         ei.remove()
 
