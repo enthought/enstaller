@@ -16,10 +16,13 @@ import mock
 from encore.events.event_manager import EventManager
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
+
+from enstaller.errors import EnstallerException
 from enstaller.fetch import FetchAPI
 from enstaller.repository import Repository
 from enstaller.store.filesystem_store import DumbFilesystemStore
 from enstaller.utils import compute_md5
+
 
 class MockedStoreResponse(object):
     """
@@ -114,7 +117,7 @@ class TestFetchAPI(unittest.TestCase):
             fetch_api = FetchAPI(repository, self.d)
 
             # When/Then
-            with self.assertRaises(ValueError):
+            with self.assertRaises(EnstallerException):
                 fetch_api.fetch(filename)
 
     def test_fetch_abort(self):
