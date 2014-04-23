@@ -132,10 +132,10 @@ class History(object):
 
     def print_log(self):
         for i, (date, content) in enumerate(self.parse()):
-            print '%s  (rev %d)' % (date, i)
+            print('%s  (rev %d)' % (date, i))
             for line in pretty_content(content):
-                print '    %s' % line
-            print
+                print('    %s' % line)
+            print()
 
     def _write_egg_names(self, names):
         """ update the log file with the given list of egg names.

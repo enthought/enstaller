@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import argparse
 import collections
+import logging
 import ntpath
 import os
 import posixpath
@@ -592,6 +593,11 @@ def main(argv=None):
         p.error('Multiple action options specified')
     if count_simple_actions > 0 and len(args.cnames) > 0:
         p.error("Option takes no arguments")
+
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    else:
+        logging.basicConfig(level=logging.WARN, format="%(message)s")
 
     if args.user:
         args.prefix = user_base

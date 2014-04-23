@@ -1,9 +1,12 @@
+import logging
 import re
 from collections import defaultdict
 
 from enstaller.repository import egg_name_to_name_version
 from utils import PY_VER, comparable_version
 
+
+logger = logging.getLogger(__name__)
 
 
 def comparable_info(spec):
@@ -214,8 +217,7 @@ class Resolve(object):
             eggs.append(d)
 
         can_order = self.are_complete(eggs)
-        if self.verbose:
-            print "Can determine install order:", can_order
+        logger.info("Can determine install order: %r", can_order)
         if can_order:
             eggs = self.determine_install_order(eggs)
         return eggs
@@ -256,10 +258,9 @@ class Resolve(object):
                 assert len(ds) != 0
                 if len(ds) == 1:
                     continue
-                if self.verbose:
-                    print 'multiple: %s' % name
-                    for d in ds:
-                        print '    %s' % d
+                logger.info('multiple: %s', name)
+                for d in ds:
+                    logger.info('    %s', d)
                 r = max(reqs_deep[name], key=lambda r: r.strictness)
                 assert r.name == name
                 # remove the eggs with name
@@ -283,8 +284,7 @@ class Resolve(object):
 
         'recur': dependencies are handled recursively (default)
         """
-        if self.verbose:
-            print "Determining install sequence for %r" % req
+        logger.info("Determining install sequence for %r", req)
         root = self.get_egg(req)
         if root is None:
             return None

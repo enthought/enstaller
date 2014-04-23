@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import ntpath
 import sys
 import warnings
@@ -25,6 +26,10 @@ from history import History
 
 # Included for backward compatibility
 from enstaller.config import Configuration
+
+
+logger = logging.getLogger(__name__)
+
 
 def create_joined_store(config, urls):
     stores = []
@@ -65,7 +70,7 @@ def get_writable_local_dir(config):
         return local_dir
 
     import tempfile
-    print(('Warning: Python prefix directory is not writeable '
+    logger.warn(('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
            'Using a temporary cache for index and eggs.\n' %
@@ -235,10 +240,9 @@ class Enpkg(object):
         This method is only meant to be called with actions created by the
         *_actions methods below.
         """
-        if self.verbose:
-            print("Enpkg.execute:", len(actions))
-            for item in actions:
-                print('\t' + str(item))
+        logging.info("Enpkg.execute: %d", len(actions))
+        for item in actions:
+            logging.info('\t' + str(item))
 
         if len(actions) == 0:
             return
