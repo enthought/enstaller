@@ -7,6 +7,19 @@ from enstaller.store.base import AbstractStore
 
 
 class DumbFilesystemStore(AbstractStore):
+    """
+    A simple store implementation that automatically computes an index from a
+    bunch of eggs. Only use this for testing.
+
+    Parameters
+    ----------
+    root: str
+        Path where every egg will be looked for
+    eggs: sequence
+        List of egg filenames to add to the store
+    product_type: str or None
+        If set, every package metadata 'product' value will be set to this.
+    """
     def __init__(self, root, eggs, product_type=None):
         self.root = root
 
