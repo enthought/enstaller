@@ -1,9 +1,15 @@
 """
 Simple py2/py3 shim
 """
+import logging
 import sys
 
 PY2 = sys.version_info[0] == 2
+
+# For compatibility with 2.6
+class NullHandler(logging.Handler):  # pragma: no cover
+    def emit(self, record):
+        pass
 
 if PY2:
     import ConfigParser as configparser

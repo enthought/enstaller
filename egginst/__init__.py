@@ -29,8 +29,13 @@ get_installed(prefix):
     Each element is the filename of the egg which was used to install the
     package.
 """
+import logging
 import os.path
 
+import egginst._compat
+
 from egginst.main import EggInst, get_installed, name_version_fn
+
+logging.getLogger("egginst").addHandler(egginst._compat.NullHandler())
 
 POST_INSTALL_LIB = os.path.join(os.path.dirname(__file__), "_post_install_lib.py")

@@ -4,9 +4,12 @@ from ._compat import http_client
 
 import contextlib
 import functools
+import logging
 import os
 
 _RAISE_NETWORK_ERROR_DEFAULT = False
+
+logger = logging.getLogger(__name__)
 
 def optional_args(decorator):
     """allows a decorator to take optional positional and keyword arguments.
@@ -126,7 +129,7 @@ def network(t, raise_on_error=_RAISE_NETWORK_ERROR_DEFAULT,
                     raise
                 except Exception as e:
                     if runs < num_runs - 1:
-                        print("Failed: %r" % e)
+                        logger.debug("Failed: %r", e)
                     else:
                         raise
 

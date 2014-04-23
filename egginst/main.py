@@ -14,6 +14,7 @@ import argparse
 import ConfigParser
 import cStringIO
 import json
+import logging
 import os
 import posixpath
 import re
@@ -53,6 +54,9 @@ R_LEGACY_EGG_INFO = re.compile("(^.+.egg-info)")
 PY_PAT = re.compile(r'^(.+)\.py(c|o)?$')
 SO_PAT = re.compile(r'^lib.+\.so')
 PY_OBJ = '.pyd' if on_win else '.so'
+
+logger = logging.getLogger(__name__)
+
 
 def name_version_fn(fn):
     """
@@ -169,7 +173,7 @@ def _install_app_impl(meta_dir, prefix, remove=False):
             # arg)
             handler(path)
     except Exception as e:
-        print("Warning ({0}):\n{1!r}".format(warning, e))
+        logging.getLogger(__name__).warn("Warning ({0}):\n{1!r}".format(warning, e))
 
 
 def _run_script(meta_dir, fn, prefix):
@@ -248,8 +252,8 @@ class _EggInstRemove(object):
                     print("removing file {0}".format(filename))
                     progress(step=i)
         """
-        if not isdir(self.meta_dir):
-            print("Error: Can't find meta data for:", self.cname)
+        if not self.is_installed:
+            logger.error("Error: Can't find meta data for:", self.cname)
             return
 
         if not self.noapp:
@@ -382,9 +386,7 @@ class EggInst(object):
         conf.readfp(cStringIO.StringIO('\n'.join(lines) + '\n'))
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
-            if self.verbose:
-                print('creating scripts')
-                scripts.verbose = True
+            logging.debug('creating scripts')
             scripts.create(self, conf)
 
 
@@ -640,13 +642,18 @@ def main(argv=None):
         print_installed(prefix)
         return
 
+    if ns.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    else:
+        logging.basicConfig(level=logging.WARN, format="%(message)s")
+
     for path in ns.requirements:
         ei = EggInst(path, prefix, False, ns.pkgs_dir, verbose=ns.verbose,
                      noapp=ns.noapp)
         if ns.remove:
             er = ei._egginst_remover
             if not er.is_installed:
-                print("Error: can't find meta data for: %r" % er.cname)
+                logger.error("Error: can't find meta data for: %r", er.cname)
                 return
             # FIXME the egginst ProgressManager API contains many unused args,
             # remove them

@@ -1,9 +1,13 @@
 from __future__ import print_function
 
+import logging
 import os
 from os.path import dirname, isdir, join
 
 from egginst.utils import rm_rf
+
+
+logger = logging.getLogger(__name__)
 
 
 def create_link(arcname, link, prefix, verbose):
@@ -17,7 +21,6 @@ def create_link(arcname, link, prefix, verbose):
         os.makedirs(dirname(dst))
 
     rm_rf(dst, verbose)
-    if verbose:
-        print("Creating: %s (link to %s)" % (dst, link))
+    logger.info("Creating: %s (link to %s)", dst, link)
     os.symlink(link, dst)
     return dst
