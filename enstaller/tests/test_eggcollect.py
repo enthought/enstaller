@@ -13,14 +13,17 @@ from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
 
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
+from enstaller.eggcollect import (EggCollection, JoinedEggCollection,
+                                  info_from_metadir)
 
 # XXX: of course, installed metadata had to be different than the one in
 # eggs...
 def _dummy_installed_info(prefix):
+    meta_dir = os.path.join(prefix, "EGG-INFO", "dummy")
+    ctime = info_from_metadir(meta_dir)["ctime"]
     return {
-        u'meta_dir': os.path.join(prefix, "EGG-INFO", "dummy"),
-        u'ctime': time.ctime(),
+        u'meta_dir': meta_dir,
+        u'ctime': ctime,
         u'name': u'dummy',
         u'platform': u'linux2',
         u'python': u'2.7',
