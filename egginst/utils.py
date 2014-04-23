@@ -4,6 +4,7 @@ from ._compat import string_types
 
 import argparse
 import ast
+import contextlib
 import errno
 import hashlib
 import re
@@ -230,3 +231,55 @@ def compute_md5(path, block_size=256 * 1024):
             return _compute_checksum(fp)
     else:
         return _compute_checksum(path)
+
+
+@contextlib.contextmanager
+def atomic_file(filename, mode='w+b'):
+    """
+    Context manager that allows to write data safely.
+
+    It is safe in the sense that any error happening while writing will not
+    leave a stalled filed, and the target file is only accessible in the
+    filesystem when no error occured.
+
+    Parameters
+    ----------
+    filename: str
+        Target path to write to
+    mode: str
+        open mode.
+
+    Example
+    -------
+
+    The typical usage is::
+
+        with atomic_file("foo.txt", "w") as fp:
+            fp.write("some string")
+            # The file 'foo.txt' does NOT exist at this point
+            raise ValueError("some error is happening")
+        # If no error occured, the file would exist at this point
+
+    Note
+    ----
+    The atomicity is only guaranteed on posix platforms, assuming the
+    filesystem supports atomic rename.
+
+    A future version may use win32 API to support atomicity on this platform as
+    well.
+    """
+    temp_prefix = os.path.basename(filename)
+    temp_dir = os.path.dirname(filename)
+
+    temp_fp = None
+    try:
+        with tempfile.NamedTemporaryFile(
+                prefix=temp_prefix, suffix='.tmp', dir=temp_dir,
+                delete=False, mode=mode) as temp_fp:
+            yield temp_fp
+    except:
+        if temp_fp is not None and os.path.exists(temp_fp.name):
+            os.unlink(temp_fp.name)
+        raise
+    else:
+        os.rename(temp_fp.name, filename)
