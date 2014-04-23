@@ -74,3 +74,16 @@ class TestAtomicFile(unittest.TestCase):
 
         # Then
         self.assertFalse(os.path.exists(path))
+
+    def test_abort(self):
+        # Given
+        r_content = b"some data"
+        path = os.path.join(self.d, "some_data.bin")
+
+        # When
+        with atomic_file(path) as fp:
+            fp.write(r_content[:2])
+            fp.abort = True
+
+        # Then
+        self.assertFalse(os.path.exists(path))

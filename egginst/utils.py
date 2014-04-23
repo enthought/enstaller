@@ -249,6 +249,11 @@ def atomic_file(filename, mode='w+b'):
     mode: str
         open mode.
 
+    Returns
+    -------
+    fp: file object-like
+        An object with the write method available.
+
     Example
     -------
 
@@ -268,6 +273,18 @@ def atomic_file(filename, mode='w+b'):
     A future version may use win32 API to support atomicity on this platform as
     well.
     """
+    class _FileWrapper(object):
+        def __init__(self, fp):
+            self._fp = fp
+            self.abort = False
+            # Make the name private to prevent people from re-opening the file
+            # (not supported on e.g. windows, and will interfere with the
+            # atomic_rename feature anyway).
+            self._name = fp.name
+
+        def write(self, data):
+            self._fp.write(data)
+
     temp_prefix = os.path.basename(filename)
     temp_dir = os.path.dirname(filename)
 
@@ -275,11 +292,13 @@ def atomic_file(filename, mode='w+b'):
     try:
         with tempfile.NamedTemporaryFile(
                 prefix=temp_prefix, suffix='.tmp', dir=temp_dir,
-                delete=False, mode=mode) as temp_fp:
+                delete=False, mode=mode) as _temp_fp:
+            temp_fp = _FileWrapper(_temp_fp)
             yield temp_fp
     except:
-        if temp_fp is not None and os.path.exists(temp_fp.name):
-            os.unlink(temp_fp.name)
+        if temp_fp is not None and os.path.exists(temp_fp._name):
+            os.unlink(temp_fp._name)
         raise
     else:
-        os.rename(temp_fp.name, filename)
+        if not temp_fp.abort:
+            os.rename(temp_fp._name, filename)
