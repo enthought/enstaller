@@ -233,6 +233,20 @@ def compute_md5(path, block_size=256 * 1024):
         return _compute_checksum(path)
 
 
+def rename(source, target):
+    if sys.platform == "win32":
+        try:
+            os.rename(source, target)
+        except OSError as e:
+            if e.errno != errno.EEXIST:
+                raise
+            else:
+                os.unlink(target)
+                os.rename(source, target)
+    else:
+        return os.rename(source, target)
+
+
 @contextlib.contextmanager
 def atomic_file(filename, mode='w+b'):
     """
@@ -303,4 +317,4 @@ def atomic_file(filename, mode='w+b'):
         raise
     else:
         if not temp_fp.abort:
-            os.rename(temp_fp._name, filename)
+            rename(temp_fp._name, filename)
