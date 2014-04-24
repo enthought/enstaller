@@ -34,7 +34,6 @@ class FetchAPI(object):
         self.repository = repository
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
-        self.verbose = False
 
     def path(self, fn):
         return join(self.local_dir, fn)

@@ -109,7 +109,7 @@ class Resolve(object):
 
     eggs = Resolve(repository).install_sequence(req)
     """
-    def __init__(self, repository, verbose=False):
+    def __init__(self, repository):
         """
         Create a new Resolve instance
 
@@ -119,7 +119,6 @@ class Resolve(object):
             The repository instance to use to query package metadata
         """
         self.repository = repository
-        self.verbose = verbose
 
     def get_egg(self, req):
         """

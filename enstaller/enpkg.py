@@ -113,7 +113,7 @@ class Enpkg(object):
         at all).
     """
     def __init__(self, remote=None, userpass='<config>', prefixes=[sys.prefix],
-                 hook=False, evt_mgr=None, verbose=False, config=None):
+                 hook=False, evt_mgr=None, config=None):
         if config is None:
             self.config = Configuration._get_default_config()
         else:
@@ -135,7 +135,6 @@ class Enpkg(object):
 
         self.prefixes = prefixes
         self.evt_mgr = evt_mgr
-        self.verbose = verbose
 
         if hook is not False:
             raise EnpkgError("hook feature has been removed")
@@ -302,7 +301,7 @@ class Enpkg(object):
         mode = 'recur'
         self._connect()
         req = req_from_anything("enstaller")
-        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
         elif not len(eggs) == 1:
@@ -327,7 +326,7 @@ class Enpkg(object):
         req = req_from_anything(arg)
         # resolve the list of eggs that need to be installed
         self._connect()
-        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
         return self._install_actions(eggs, mode, force, forceall)
@@ -471,5 +470,4 @@ class Enpkg(object):
         self._connect()
         f = FetchAPI(self._repository, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
-        f.verbose = self.verbose
         f.fetch_egg(egg, force, self._execution_aborted)
