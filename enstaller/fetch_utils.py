@@ -1,6 +1,10 @@
-import math
-
 from enstaller.compat import close_file_or_response
+
+
+# 1024 should be reasonable for binary data. See
+# https://github.com/kennethreitz/requests/issues/844 for illumanting
+# discussions (especially Brandon Rhodes comments).
+_DEFAULT_CHUNK_SIZE = 1024
 
 
 class StoreResponse(object):
@@ -10,11 +14,10 @@ class StoreResponse(object):
         self.size = size
         self.label = label
 
-        # FIXME: not sure this makes a lof of sense
-        if size is None or size < 256:
-            self.buffsize = 256
+        if size is None or size >= _DEFAULT_CHUNK_SIZE:
+            self.buffsize = _DEFAULT_CHUNK_SIZE
         else:
-            self.buffsize = 2 ** int(math.log(size / 256.0) / math.log(2.0) + 1)
+            self.buffsize = size
 
     def close(self):
         close_file_or_response(self._fp)
