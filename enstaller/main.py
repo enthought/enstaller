@@ -817,7 +817,7 @@ def main(argv=None):
             install_req(enpkg, req, args)             # install (default)
 
 def main_noexc(argv=None):
-    if os.environ.get("ENSTALLER_DEBUG", None):
+    if "ENSTALLER_DEBUG" in os.environ:
         enstaller_debug = True
     else:
         enstaller_debug = False
