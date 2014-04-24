@@ -16,6 +16,7 @@ from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
 
 from enstaller.repository import (PackageMetadata, Repository,
+                                  RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
 
 
@@ -95,6 +96,32 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, "1.3.0")
         self.assertEqual(metadata.build, 1)
+
+
+class TestPackage(unittest.TestCase):
+    def test_s3index_data(self):
+        # Given
+        md5 = "c68bb183ae1ab47b6d67ca584957c83c"
+        r_s3index_data = {
+            "available": True,
+            "build": 1,
+            "md5": md5,
+            "mtime": 0.0,
+            "name": "nose",
+            "packages": [],
+            "product": "free",
+            "python": "2.7",
+            "size": 1,
+            "type": "egg",
+            "version": "1.3.0",
+
+        }
+        metadata = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             "1.3.0", 1, [], "2.7", 1, md5,
+                                             0.0, "free", True, "")
+
+        # When/Then
+        self.assertEqual(metadata.s3index_data, r_s3index_data)
 
 
 class TestRepository(unittest.TestCase):

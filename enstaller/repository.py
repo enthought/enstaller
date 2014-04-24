@@ -1,7 +1,6 @@
 import collections
 import os
 import os.path
-import textwrap
 
 from egginst.eggmeta import info_from_z
 from egginst.utils import ZipFile, compute_md5
@@ -13,8 +12,15 @@ from enstaller.utils import comparable_version
 
 
 class PackageMetadata(object):
+    """
+    PackageMetadata encompasses the metadata required to resolve dependencies.
+    They are not attached to a repository.
+    """
     @classmethod
     def from_egg(cls, path):
+        """
+        Create an instance from an egg filename.
+        """
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
         st = os.stat(path)
@@ -25,6 +31,10 @@ class PackageMetadata(object):
 
     @classmethod
     def from_json_dict(cls, key, json_dict):
+        """
+        Create an instance from a key (the egg filename) and metadata passed as
+        a dictionary
+        """
         return cls(key, json_dict["name"], json_dict["version"],
                    json_dict["build"], json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"])
@@ -48,35 +58,57 @@ class PackageMetadata(object):
 
     @property
     def full_version(self):
+        """
+        The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
+        """
         return "{0}-{1}".format(self.version, self.build)
 
     @property
     def comparable_version(self):
+        """
+        Returns an object that may be used to compare the version of two
+        package metadata (only make sense for two packages which differ only in
+        versions).
+        """
         return comparable_version(self.version), self.build
 
 
 class RepositoryPackageMetadata(object):
+    """
+    RepositoryPackageMetadata encompasses the full set of package metadata
+    available from a repository.
+
+    In particular, RepositoryPackageMetadata's instances know about which
+    repository they are coming from through the store_location attribute.
+    """
     @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],
                    json_dict["build"], json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
-                   json_dict.get("product", None), json_dict.get("available", True),
+                   json_dict.get("mtime", 0.0), json_dict.get("product", None),
+                   json_dict.get("available", True),
                    json_dict["store_location"])
 
     def __init__(self, key, name, version, build, packages, python, size, md5,
-                 product, available, store_location):
+                 mtime, product, available, store_location):
         self._package = PackageMetadata(key, name, version, build, packages, python, size, md5)
 
+        self.mtime = mtime
         self.product = product
         self.available = available
         self.store_location = store_location
 
         self.type = "egg"
 
-    def to_dict(self):
+    @property
+    def s3index_data(self):
+        """
+        Returns a dict that may be converted to json to re-create our legacy S3
+        index content
+        """
         keys = ("available", "build", "md5", "name", "packages", "product",
-                "python", "size", "type", "version")
+                "python", "mtime", "size", "type", "version")
         return dict((k, getattr(self, k)) for k in keys)
 
     def __repr__(self):
@@ -183,6 +215,8 @@ class Repository(object):
         data["store_location"] =  self._store_info
         return RepositoryPackageMetadata.from_json_dict(key, data)
 
+    # FIXME: this should be removed at some point, as repository and network
+    # concerns should be separated
     @property
     def is_connected(self):
         return self._store.is_connected
@@ -285,6 +319,10 @@ class Repository(object):
             yield self._package_metadata_from_key(latest_key)
 
     def fetch_from_package(self, package_metadata):
+        """
+        Returns a StoreResponse object for the given package, which can then be
+        used for fetching the package content.
+        """
         return StoreResponse(self._store.get_data(package_metadata.key),
                              package_metadata.size, package_metadata.md5,
                              package_metadata.key)

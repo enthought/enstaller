@@ -128,12 +128,12 @@ class Resolve(object):
             return None
         matches = []
         for key, package in d.items():
-            info = package.to_dict()
+            info = package.s3index_data
             if req.matches(info) and package.available:
                 matches.append(key)
         if not matches:
             return None
-        return max(matches, key=lambda k: comparable_info(d[k].to_dict()))
+        return max(matches, key=lambda k: comparable_info(d[k].s3index_data))
 
     def reqs_egg(self, egg):
         """

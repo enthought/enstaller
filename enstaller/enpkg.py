@@ -188,7 +188,7 @@ class Enpkg(object):
         req = Req(name)
         info_list = []
         for package_metadata in self._repository.find_packages(name):
-            if req.matches(package_metadata.to_dict()):
+            if req.matches(package_metadata.s3index_data):
                 info_list.append(package_metadata)
         try:
             return sorted(info_list, key=operator.attrgetter("comparable_version"))
@@ -275,7 +275,7 @@ class Enpkg(object):
                         name, version = egg_name_to_name_version(egg)
                         if self._repository.is_connected:
                             package = self._repository.find_package(name, version)
-                            extra_info = package.to_dict()
+                            extra_info = package.s3index_data
                         else:
                             extra_info = None
                         self.ec.install(egg, self.local_dir, extra_info)
@@ -453,7 +453,7 @@ class Enpkg(object):
         it: generator
             A generator over (key, package info dict) pairs
         """
-        index = dict((package.key, package.to_dict()) for package in
+        index = dict((package.key, package.s3index_data) for package in
                      self.find_remote_packages(name))
         for key, info in self.find_installed_packages(name):
             if key in index:
