@@ -120,8 +120,9 @@ class RepositoryPackageMetadata(object):
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \
-            "'{0}-{1}-{2}', key={3!r}, available={4!r}, product={5!r}, " \
-            "product={6!r})"
+            "'{self.name}-{self.version}-{self.build}', key={self.key!r}, " \
+            "available={self.available!r}, product={self.product!r}, " \
+            "store_location={self.store_location!r}".format(self=self)
         return template.format(self.name, self.version, self.build, self.key,
                                self.available, self.product,
                                self.store_location)
