@@ -199,6 +199,10 @@ class _EggInstRemove(object):
         self._installed_size = None
 
     @property
+    def is_installed(self):
+        return isdir(self.meta_dir)
+
+    @property
     def files(self):
         if self._files is None:
             self._read_uninstall_metadata()
@@ -244,7 +248,7 @@ class _EggInstRemove(object):
                     print("removing file {0}".format(filename))
                     progress(step=i)
         """
-        if not isdir(self.meta_dir):
+        if not self.is_installed:
             print("Error: Can't find meta data for:", self.cname)
             return
 
@@ -640,6 +644,9 @@ def main(argv=None):
         ei = EggInst(path, prefix, False, ns.pkgs_dir, verbose=ns.verbose,
                      noapp=ns.noapp)
         if ns.remove:
+            if not ei._egginst_remover.is_installed:
+                print("package {0!r} not installed, not removing".format(path))
+                return
             # FIXME the egginst ProgressManager API contains many unused args,
             # remove them
             progress = ProgressManager(
