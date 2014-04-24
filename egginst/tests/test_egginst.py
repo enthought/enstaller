@@ -129,6 +129,17 @@ class TestEggInstInstall(unittest.TestCase):
         self.assertFalse(os.path.exists(os.path.join(self.site_packages, "dummy.py")))
 
     @slow
+    def test_non_existing_removal(self):
+        """
+        Regression test for #208
+        """
+        # Given
+        non_existing_package = "nono_le_petit_robot"
+
+        # When/Then
+        main(["--remove", non_existing_package])
+
+    @slow
     def test_entry_points(self):
         """
         Test we install console entry points correctly.

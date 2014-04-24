@@ -206,7 +206,7 @@ class ControlledEnv(object):
         return [k for k in self._data if not k in self._ignored_keys]
 
     def __contains__(self, key):
-        return key in self._data
+        return not key in self._ignored_keys and key in self._data
 
     def __setitem__(self, name, value):
         self._data[name] = value

@@ -25,11 +25,11 @@ class TestZipFile(unittest.TestCase):
         # Given
         path = NOSE_1_3_0
         r_paths = [
-            "EGG-INFO/entry_points.txt",
-            "EGG-INFO/PKG-INFO",
-            "EGG-INFO/spec/depend",
-            "EGG-INFO/spec/summary",
-            "EGG-INFO/usr/share/man/man1/nosetests.1",
+            os.path.join("EGG-INFO", "entry_points.txt"),
+            os.path.join("EGG-INFO", "PKG-INFO"),
+            os.path.join("EGG-INFO", "spec", "depend"),
+            os.path.join("EGG-INFO", "spec", "summary"),
+            os.path.join("EGG-INFO", "usr", "share", "man", "man1", "nosetests.1"),
         ]
 
         # When
@@ -65,9 +65,11 @@ class TestZipFile(unittest.TestCase):
             self.assertTrue(os.path.exists(os.path.join(d, "FOO")))
             self.assertEqual(compute_md5(os.path.join(d, "FOO")),
                              compute_md5(StringIO(extracted_data)))
-            self.assertFalse(os.path.exists(os.path.join(d, "EGG-INFO/PKG-INFO")))
+            self.assertFalse(os.path.exists(os.path.join(d, "EGG-INFO",
+                                                         "PKG-INFO")))
 
-    @unittest.skipIf(not SUPPORT_SYMLINK, "this platform does not support symlink")
+    @unittest.skipIf(not SUPPORT_SYMLINK,
+                     "this platform does not support symlink")
     def test_softlink(self):
         # Given
         path = ZIP_WITH_SOFTLINK
