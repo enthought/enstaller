@@ -16,6 +16,7 @@ else:
 
 import mock
 
+from egginst.testing_utils import ControlledEnv
 from enstaller.errors import EXIT_ABORTED
 from enstaller.main import main_noexc
 from enstaller.tests.common import mock_print
@@ -66,12 +67,14 @@ class TestEnstallerMainActions(unittest.TestCase):
             http://github.com/enthought/enstaller/issues
         You can get a full traceback by setting the ENSTALLER_DEBUG environment variable
         """)
-        with mock.patch("enstaller.main.main", side_effect=Exception):
-            with mock_print() as mocked_print:
-                with self.assertRaises(SystemExit) as e:
-                    main_noexc()
-                self.assertEqual(exception_code(e), 1)
-            self.assertMultiLineEqual(mocked_print.value, r_output)
+        env = ControlledEnv(["ENSTALLER_DEBUG"])
+        with mock.patch("enstaller.main.os.environ", env):
+            with mock.patch("enstaller.main.main", side_effect=Exception):
+                with mock_print() as mocked_print:
+                    with self.assertRaises(SystemExit) as e:
+                        main_noexc()
+                    self.assertEqual(exception_code(e), 1)
+                self.assertMultiLineEqual(mocked_print.value, r_output)
 
     @without_any_configuration
     def test_crash_handling_debug(self):
