@@ -46,3 +46,7 @@ class JoinedStore(AbstractStore):
         for repo in reversed(self.repos):
             index.update(repo.query(**kwargs))
         return index.iteritems()
+
+    def query_keys(self, **kwargs):
+        for key, value in self.query(**kwargs):
+            yield key

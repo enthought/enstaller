@@ -169,7 +169,7 @@ class TestEnpkg(unittest.TestCase):
             queried_entries = enpkg.info_list_name("numpy")
 
             self.assertEqual(len(queried_entries), 3)
-            self.assertEqual([q["version"] for q in queried_entries],
+            self.assertEqual([q.version for q in queried_entries],
                              ["1.6.1", "1.7.1", "1.8.0"])
 
     def test_info_list_names_invalid_version(self):
@@ -187,7 +187,7 @@ class TestEnpkg(unittest.TestCase):
             queried_entries = enpkg.info_list_name("numpy")
 
             self.assertEqual(len(queried_entries), 2)
-            self.assertEqual([q["version"] for q in queried_entries],
+            self.assertEqual([q.version for q in queried_entries],
                              ["1.6.1", "1.8k"])
 
     def test_query_simple(self):
@@ -202,7 +202,7 @@ class TestEnpkg(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, verbose=False, config=Configuration())
-            r = dict(enpkg.query(name="numpy"))
+            r = dict(enpkg.find_packages("numpy"))
             self.assertEqual(set(r.keys()),
                              set(entry.s3index_key for entry in entries))
 
@@ -230,7 +230,7 @@ class TestEnpkg(unittest.TestCase):
             enpkg.ec.install(os.path.basename(local_egg),
                              os.path.dirname(local_egg))
 
-            r = dict(enpkg.query(name="dummy"))
+            r = dict(enpkg.find_packages("dummy"))
             self.assertEqual(set(r.keys()),
                              set(entry.s3index_key for entry in entries + [local_entry]))
 
@@ -523,6 +523,6 @@ class TestEnpkgRevert(unittest.TestCase):
 
         with mock_history_get_state_context(installed_eggs):
             enpkg = Enpkg(config=Configuration())
-            with mock.patch.object(enpkg, "remote"):
+            with mock.patch.object(enpkg, "_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)

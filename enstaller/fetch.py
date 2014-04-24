@@ -1,18 +1,33 @@
-import math
-import os
-import sys
 import hashlib
+import os
+
 from uuid import uuid4
 from os.path import basename, isdir, isfile, join
 
-from egginst.utils import compute_md5, human_bytes, rm_rf
-from enstaller.compat import close_file_or_response
+from egginst.utils import atomic_file, compute_md5, human_bytes
+
+from enstaller.errors import EnstallerException
+from enstaller.repository import egg_name_to_name_version
+
+
+class _MD5File(object):
+    def __init__(self, fp):
+        self._fp = fp
+        self._h = hashlib.md5()
+
+    @property
+    def checksum(self):
+        return self._h.hexdigest()
+
+    def write(self, data):
+        self._fp.write(data)
+        self._h.update(data)
 
 
 class FetchAPI(object):
 
-    def __init__(self, remote, local_dir, evt_mgr=None):
-        self.remote = remote
+    def __init__(self, repository, local_dir, evt_mgr=None):
+        self.repository = repository
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
         self.verbose = False
@@ -26,17 +41,17 @@ class FetchAPI(object):
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
-        path = self.path(key)
-        fi, info = self.remote.get(key)
+        name, version = egg_name_to_name_version(key)
 
-        size = info['size']
-        md5 = info.get('md5')
+        package = self.repository.find_package(name, version)
+
+        path = self.path(key)
+        size = package.size
 
         if self.evt_mgr:
             from encore.events.api import ProgressManager
         else:
             from egginst.console import ProgressManager
-
         progress = ProgressManager(
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
@@ -47,39 +62,27 @@ class FetchAPI(object):
                 disp_amount=human_bytes(size),
                 super_id=getattr(self, 'super_id', None))
 
+        response = self.repository.fetch_from_package(package)
         n = 0
-        h = hashlib.new('md5')
-        if size < 256:
-            buffsize = 1
-        else:
-            buffsize = 2 ** int(math.log(size / 256.0) / math.log(2.0) + 1)
-
-        pp = path + '.part'
-        if sys.platform == 'win32':
-            rm_rf(pp)
         with progress:
-            with open(pp, 'wb') as fo:
-                while True:
+            with atomic_file(path) as _target:
+                target = _MD5File(_target)
+                for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
-                        close_file_or_response(fi)
+                        response.close()
+                        _target.abort = True
                         return
-                    chunk = fi.read(buffsize)
-                    if not chunk:
-                        break
-                    fo.write(chunk)
-                    if md5:
-                        h.update(chunk)
+
+                    target.write(chunk)
                     n += len(chunk)
                     progress(step=n)
 
-        close_file_or_response(fi)
+                if package.md5 != target.checksum:
+                    template = "Checksum mismatch for {0!r}: received {1!r} " \
+                               "(expected {2!r})"
+                    raise EnstallerException(template.format(path, package.md5,
+                                                             target.checksum))
 
-        if md5 and h.hexdigest() != md5:
-            raise ValueError("received data MD5 sums mismatch")
-
-        if sys.platform == 'win32':
-            rm_rf(path)
-        os.rename(pp, path)
 
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
@@ -90,14 +93,16 @@ class FetchAPI(object):
         """
         if not isdir(self.local_dir):
             os.makedirs(self.local_dir)
-        info = self.remote.get_metadata(egg)
+        name, version = egg_name_to_name_version(egg)
+        package_metadata = self.repository.find_package(name, version)
+
         path = self.path(egg)
 
         # if force is used, make sure the md5 is the expected, otherwise
         # merely see if the file exists
         if isfile(path):
             if force:
-                if compute_md5(path) == info.get('md5'):
+                if compute_md5(path) == package_metadata.md5:
                     if self.verbose:
                         print "Not refetching, %r MD5 match" % path
                     return
@@ -106,4 +111,4 @@ class FetchAPI(object):
                     print "Not forcing refetch, %r exists" % path
                 return
 
-        self.fetch(egg, execution_aborted)
+        self.fetch(package_metadata.key, execution_aborted)
