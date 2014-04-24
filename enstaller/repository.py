@@ -205,6 +205,10 @@ def egg_name_to_name_version(egg_name):
         return parts[0].lower(), parts[1]
 
 class Repository(object):
+    """
+    A Repository is a set of package, and knows about which package it
+    contains.
+    """
     def __init__(self, store):
         self._store = store
         store_info = self._store.info()
