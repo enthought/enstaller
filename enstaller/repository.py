@@ -11,6 +11,13 @@ from enstaller.fetch_utils import StoreResponse
 from enstaller.utils import comparable_version
 
 
+def _first_or_raise(it, exception):
+    try:
+        return it.next()
+    except StopIteration:
+        raise exception
+
+
 class PackageMetadata(object):
     """
     PackageMetadata encompasses the metadata required to resolve dependencies.
@@ -252,12 +259,13 @@ class Repository(object):
             The corresponding metadata
         """
         upstream_version, build = parse_version(version)
-        keys = list(self._store.query_keys(type="egg", name=name, version=upstream_version, build=build))
-        if len(keys) < 1:
-            raise MissingPackage("Package '{0}-{1}' not found".format(name, version))
-        else:
-            key = keys[0]
-            return self._package_metadata_from_key(key)
+
+        keys = self._store.query_keys(type="egg", name=name,
+                                      version=upstream_version, build=build)
+
+        exception = MissingPackage("Package '{0}-{1}' not found".format(name, version))
+        key = _first_or_raise(keys, exception)
+        return self._package_metadata_from_key(key)
 
     def find_packages(self, name, version=None):
         """
