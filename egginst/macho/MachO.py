@@ -268,7 +268,7 @@ class MachOHeader(object):
     def changedHeaderSizeBy(self, bytes):
         self.sizediff += bytes
         if (self.total_size + self.sizediff) > self.low_offset:
-            print("WARNING: Mach-O header may be too large to relocate")
+            logger.warn("WARNING: Mach-O header may be too large to relocate")
 
     def rewriteLoadCommands(self, changefunc):
         """
@@ -355,19 +355,3 @@ class MachOHeader(object):
             if lc.cmd == LC_DYSYMTAB:
                 return cmd
         return None
-
-def main(fn):
-    m = MachO(fn)
-    seen = set()
-    for header in m.headers:
-        for idx, name, other in header.walkRelocatables():
-            if other not in seen:
-                seen.add(other)
-                print('\t' + name + ": " + other)
-
-if __name__ == '__main__':
-    import sys
-    files = sys.argv[1:] or ['/bin/ls']
-    for fn in files:
-        print(fn)
-        main(fn)

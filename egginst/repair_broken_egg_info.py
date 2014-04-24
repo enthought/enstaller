@@ -6,6 +6,7 @@ import os.path
 import shutil
 import sys
 
+from egginst import logger
 from egginst.main import (EggInst, get_installed, read_meta,
         setuptools_egg_info_dir, should_copy_in_egg_info)
 from egginst.utils import makedirs, rm_rf
@@ -71,7 +72,7 @@ def _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run):
                 target = os.path.join(dest_egg_info_dir,
                         os.path.relpath(source, source_egg_info_dir))
                 if dry_run:
-                    print("Would copy {0} to {1}".format(source, target))
+                    logger.dry_run.info("Would copy %r to %r", source, target)
                 else:
                     shutil.copy(source, target)
 
@@ -86,7 +87,7 @@ def _fix_pkg_info_file(egg_info_file, dest_egg_info_dir, dry_run):
     target_pkg_info = os.path.join(dest_egg_info_dir, "PKG-INFO")
 
     if dry_run:
-        print("Would copy {0} to {1}".format(source_pkg_info, target_pkg_info))
+        logger.dry_run.info("Would copy %r to %r", source_pkg_info, target_pkg_info)
     else:
         shutil.copy(source_pkg_info, target_pkg_info)
 
@@ -114,7 +115,7 @@ def _repair_package_dir(source_egg_info_dir, dest_egg_info_dir, dry_run):
         rm_rf(working_dir)
     else:
         rm_rf(temp_dir)
-    
+
 
 def repair(prefix, dry_run):
     """

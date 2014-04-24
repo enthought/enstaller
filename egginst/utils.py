@@ -7,6 +7,7 @@ import ast
 import contextlib
 import errno
 import hashlib
+import logging
 import re
 import sys
 import os
@@ -32,6 +33,8 @@ else:
     bin_dir_name = 'bin'
     rel_site_packages = 'lib/python%i.%i/site-packages' % sys.version_info[:2]
 
+logger = logging.getLogger(__name__)
+
 def rm_empty_dir(path):
     """
     Remove the directory `path` if it is a directory and empty.
@@ -43,18 +46,16 @@ def rm_empty_dir(path):
         pass
 
 
-def rm_rf(path, verbose=False):
+def rm_rf(path):
     if not on_win and islink(path):
         # Note that we have to check if the destination is a link because
         # exists('/path/to/dead-link') will return False, although
         # islink('/path/to/dead-link') is True.
-        if verbose:
-            print("Removing: %r (link)" % path)
+        logger.info("Removing: %r (link)", path)
         os.unlink(path)
 
     elif isfile(path):
-        if verbose:
-            print("Removing: %r (file)" % path)
+        logger.info("Removing: %r (file)", path)
         if on_win:
             try:
                 os.unlink(path)
@@ -64,8 +65,7 @@ def rm_rf(path, verbose=False):
             os.unlink(path)
 
     elif isdir(path):
-        if verbose:
-            print("Removing: %r (directory)" % path)
+        logger.info("Removing: %r (directory)", path)
         if on_win:
             try:
                 shutil.rmtree(path)

@@ -14,6 +14,7 @@ import argparse
 import ConfigParser
 import cStringIO
 import json
+import logging
 import os
 import posixpath
 import re
@@ -53,6 +54,9 @@ R_LEGACY_EGG_INFO = re.compile("(^.+.egg-info)")
 PY_PAT = re.compile(r'^(.+)\.py(c|o)?$')
 SO_PAT = re.compile(r'^lib.+\.so')
 PY_OBJ = '.pyd' if on_win else '.so'
+
+logger = logging.getLogger(__name__)
+
 
 def name_version_fn(fn):
     """
@@ -169,7 +173,7 @@ def _install_app_impl(meta_dir, prefix, remove=False):
             # arg)
             handler(path)
     except Exception as e:
-        print("Warning ({0}):\n{1!r}".format(warning, e))
+        logger.warn("Warning ({0}):\n{1!r}".format(warning, e))
 
 
 def _run_script(meta_dir, fn, prefix):
@@ -182,7 +186,7 @@ def _run_script(meta_dir, fn, prefix):
 
 class _EggInstRemove(object):
 
-    def __init__(self, path, prefix=sys.prefix, verbose=False, noapp=False):
+    def __init__(self, path, prefix=sys.prefix, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
@@ -192,8 +196,6 @@ class _EggInstRemove(object):
 
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
         self.meta_dir = join(self.egginfo_dir, self.cname)
-
-        self.verbose = verbose
 
         self._files = None
         self._installed_size = None
@@ -249,7 +251,7 @@ class _EggInstRemove(object):
                     progress(step=i)
         """
         if not self.is_installed:
-            print("Error: Can't find meta data for:", self.cname)
+            logger.error("Error: Can't find meta data for:", self.cname)
             return
 
         if not self.noapp:
@@ -278,7 +280,7 @@ class _EggInstRemove(object):
 class EggInst(object):
 
     def __init__(self, path, prefix=sys.prefix, hook=False, pkgs_dir=None,
-                 evt_mgr=None, verbose=False, noapp=False):
+                 evt_mgr=None, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
@@ -298,9 +300,8 @@ class EggInst(object):
 
         self.meta_json = join(self.meta_dir, 'egginst.json')
         self.files = []
-        self.verbose = verbose
 
-        self._egginst_remover = _EggInstRemove(path, prefix, verbose, noapp)
+        self._egginst_remover = _EggInstRemove(path, prefix, noapp)
         self._installed_size = None
         self._files_to_install = None
 
@@ -339,8 +340,6 @@ class EggInst(object):
                 scripts.create_proxies(self)
             else:
                 from . import object_code
-                if self.verbose:
-                    object_code.verbose = True
                 object_code.fix_files(self)
 
                 self._create_links()
@@ -371,7 +370,7 @@ class EggInst(object):
             arcname, link = line.split()
             if link == 'False':
                 continue
-            self.files.append(create_link(arcname, link, self.prefix, self.verbose))
+            self.files.append(create_link(arcname, link, self.prefix))
 
     def _entry_points(self):
         lines = list(self._lines_from_arcname('EGG-INFO/entry_points.txt',
@@ -382,9 +381,7 @@ class EggInst(object):
         conf.readfp(cStringIO.StringIO('\n'.join(lines) + '\n'))
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
-            if self.verbose:
-                print('creating scripts')
-                scripts.verbose = True
+            logger.debug('creating scripts')
             scripts.create(self, conf)
 
 
@@ -640,12 +637,17 @@ def main(argv=None):
         print_installed(prefix)
         return
 
+    if ns.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    else:
+        logging.basicConfig(level=logging.WARN, format="%(message)s")
+
     for path in ns.requirements:
-        ei = EggInst(path, prefix, False, ns.pkgs_dir, verbose=ns.verbose,
-                     noapp=ns.noapp)
+        ei = EggInst(path, prefix, False, ns.pkgs_dir, noapp=ns.noapp)
         if ns.remove:
-            if not ei._egginst_remover.is_installed:
-                print("package {0!r} not installed, not removing".format(path))
+            er = ei._egginst_remover
+            if not er.is_installed:
+                logger.error("Error: can't find meta data for: %r", er.cname)
                 return
             # FIXME the egginst ProgressManager API contains many unused args,
             # remove them
@@ -656,7 +658,7 @@ def main(argv=None):
                     steps=len(ei.files),
                     # ---
                     progress_type="removing", filename=ei.fn,
-                    disp_amount=human_bytes(ei.installed_size),
+                    disp_amount=human_bytes(er.installed_size),
                     super_id=None)
             with progress:
                 for n, filename in enumerate(ei.remove_iterator()):
