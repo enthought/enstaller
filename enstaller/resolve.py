@@ -124,7 +124,7 @@ class Resolve(object):
         """
         assert req.strictness >= 1
         d = dict((package.key, package) for package in self.repository.find_packages(req.name))
-        if len(d) < 1:
+        if len(d) == 0:
             return None
         matches = []
         for key, package in d.items():
