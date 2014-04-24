@@ -11,6 +11,7 @@ Main highlights:
   * add use_pypi = True/False configuration entry to enable/disable pypi repo
     access (True by default)
   * add enpkg-repair script to fix .egg-info directories
+  * egginst and enstaller now use logging instead of print statements
 
 Bug fixes:
 
