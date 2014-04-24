@@ -239,7 +239,7 @@ def atomic_file(filename, mode='w+b'):
     Context manager that allows to write data safely.
 
     It is safe in the sense that any error happening while writing will not
-    leave a stalled filed, and the target file is only accessible in the
+    leave a stalled file, and the target file is only accessible in the
     filesystem when no error occured.
 
     Parameters
@@ -268,7 +268,9 @@ def atomic_file(filename, mode='w+b'):
     Note
     ----
     The atomicity is only guaranteed on posix platforms, assuming the
-    filesystem supports atomic rename.
+    filesystem supports atomic rename. If filename already exists before
+    entering the context manager, the file is guaranteed to be unchanged if any
+    error occured within the context manager.
 
     A future version may use win32 API to support atomicity on this platform as
     well.
