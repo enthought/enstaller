@@ -60,7 +60,7 @@ class PackageMetadata(object):
         self.md5 = md5
 
     def __repr__(self):
-        return "PackageMetadata('{0}-{1}-{2}', key='{3}')".format(
+        return "PackageMetadata('{0}-{1}-{2}', key={0!r})".format(
             self.name, self.version, self.build, self.key)
 
     @property
