@@ -173,7 +173,7 @@ def _install_app_impl(meta_dir, prefix, remove=False):
             # arg)
             handler(path)
     except Exception as e:
-        logging.getLogger(__name__).warn("Warning ({0}):\n{1!r}".format(warning, e))
+        logger.warn("Warning ({0}):\n{1!r}".format(warning, e))
 
 
 def _run_script(meta_dir, fn, prefix):
@@ -381,7 +381,7 @@ class EggInst(object):
         conf.readfp(cStringIO.StringIO('\n'.join(lines) + '\n'))
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
-            logging.debug('creating scripts')
+            logger.debug('creating scripts')
             scripts.create(self, conf)
 
 
