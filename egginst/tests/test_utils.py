@@ -39,15 +39,15 @@ class TestParseAssignments(unittest.TestCase):
 
 class TestAtomicFile(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.d)
+        shutil.rmtree(self.tempdir)
 
     def test_simple(self):
         # Given
         r_content = b"some data"
-        path = os.path.join(self.d, "some_data.bin")
+        path = os.path.join(self.tempdir, "some_data.bin")
 
         # When
         with atomic_file(path) as fp:
@@ -62,7 +62,7 @@ class TestAtomicFile(unittest.TestCase):
     def test_failure(self):
         # Given
         r_content = b"some data"
-        path = os.path.join(self.d, "some_data.bin")
+        path = os.path.join(self.tempdir, "some_data.bin")
 
         # When
         try:
@@ -78,7 +78,7 @@ class TestAtomicFile(unittest.TestCase):
     def test_abort(self):
         # Given
         r_content = b"some data"
-        path = os.path.join(self.d, "some_data.bin")
+        path = os.path.join(self.tempdir, "some_data.bin")
 
         # When
         with atomic_file(path) as fp:
