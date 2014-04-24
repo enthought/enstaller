@@ -10,17 +10,44 @@ class TestStoreResponse(unittest.TestCase):
         response = StoreResponse(BytesIO())
 
         # When/Then
-        self.assertEqual(response.buffsize, _DEFAULT_CHUNK_SIZE)
+        self.assertEqual(response.default_buffsize, _DEFAULT_CHUNK_SIZE)
 
         # Given
         response = StoreResponse(BytesIO(), 1)
 
         # When/Then
-        self.assertEqual(response.buffsize, 1)
+        self.assertEqual(response.default_buffsize, 1)
 
         # Given
         response = StoreResponse(BytesIO(), 2**24)
 
         # When/Then
-        self.assertEqual(response.buffsize, _DEFAULT_CHUNK_SIZE)
+        self.assertEqual(response.default_buffsize, _DEFAULT_CHUNK_SIZE)
 
+    def test_full_read(self):
+        # Given
+        r_content = b"some data"
+        fp = BytesIO(r_content)
+        response = StoreResponse(fp)
+
+        # When
+        data = response.read()
+
+        # Then
+        self.assertEqual(data, r_content)
+        self.assertTrue(response.closed)
+
+    def test_chunk_read(self):
+        # Given
+        r_content = b"some data" * _DEFAULT_CHUNK_SIZE
+        fp = BytesIO(r_content)
+        response = StoreResponse(fp)
+
+        # When
+        out = BytesIO()
+        for chunk in response.iter_content():
+            out.write(chunk)
+
+        # Then
+        self.assertEqual(out.getvalue(), r_content)
+        self.assertTrue(response.closed)
