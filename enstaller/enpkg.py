@@ -154,11 +154,28 @@ class Enpkg(object):
         self._repository.connect(self.userpass)
 
     def find_remote_packages(self, name):
+        """
+        Find every package with the given name on the configured remote
+        repository(ies)
+
+        Returns
+        -------
+        packages: seq
+            List of RepositoryPackageMetadata instances
+        """
         # FIXME: we should connect in one place consistently
         self._repository.connect(self.userpass)
         return self._repository.find_packages(name)
 
-    def iter_remote_packages(self):
+    def remote_packages(self):
+        """
+        Iter over every remote package
+
+        Returns
+        -------
+        it: iterator
+            Iterate over (key, RepositoryPackageMetadata) pairs
+        """
         # FIXME: we should connect in one place consistently
         self._repository.connect(self.userpass)
         return self._repository.iter_packages()
@@ -179,7 +196,15 @@ class Enpkg(object):
             return info_list
 
     # ============= methods which relate to local installation ===========
-    def iter_installed_packages(self):
+    def installed_packages(self):
+        """
+        Iter over each installed package
+
+        Returns
+        -------
+        it: iterator
+            Iterator over (key, package info dict) pairs.
+        """
         return self.ec.query()
 
     def find_installed_packages(self, name):
@@ -415,6 +440,19 @@ class Enpkg(object):
     # == methods which relate to both (remote store and local installation) ==
 
     def find_packages(self, name):
+        """
+        Iter over each package with the given name
+
+        Parameters
+        ----------
+        name: str
+            The package name (e.g. 'numpy')
+
+        Returns
+        -------
+        it: generator
+            A generator over (key, package info dict) pairs
+        """
         index = dict((package.key, package.to_dict()) for package in
                      self.find_remote_packages(name))
         for key, info in self.find_installed_packages(name):
@@ -422,7 +460,8 @@ class Enpkg(object):
                 index[key].update(info)
             else:
                 index[key] = info
-        return index.iteritems()
+        for k in index:
+            yield k, index[k]
 
     def fetch(self, egg, force=False):
         self._connect()
