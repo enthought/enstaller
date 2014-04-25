@@ -221,6 +221,22 @@ class Enpkg(object):
         """
         return self.ec.find(egg)
 
+    def _execute_opcode(self, opcode, egg):
+        if opcode.startswith('fetch_'):
+            self.fetch(egg, force=int(opcode[-1]))
+        elif opcode == 'remove':
+            self.ec.remove(egg)
+        elif opcode == 'install':
+            name, version = egg_name_to_name_version(egg)
+            if self._repository.is_connected:
+                package = self._repository.find_package(name, version)
+                extra_info = package.s3index_data
+            else:
+                extra_info = None
+            self.ec.install(egg, self.local_dir, extra_info)
+        else:
+            raise Exception("unknown opcode: %r" % opcode)
+
     def execute(self, actions):
         """
         Execute actions, which is an iterable over tuples(action, egg_name),
@@ -260,20 +276,7 @@ class Enpkg(object):
                     if self._execution_aborted.is_set():
                         self._execution_aborted.clear()
                         break
-                    if opcode.startswith('fetch_'):
-                        self.fetch(egg, force=int(opcode[-1]))
-                    elif opcode == 'remove':
-                        self.ec.remove(egg)
-                    elif opcode == 'install':
-                        name, version = egg_name_to_name_version(egg)
-                        if self._repository.is_connected:
-                            package = self._repository.find_package(name, version)
-                            extra_info = package.s3index_data
-                        else:
-                            extra_info = None
-                        self.ec.install(egg, self.local_dir, extra_info)
-                    else:
-                        raise Exception("unknown opcode: %r" % opcode)
+                    self._execute_opcode(opcode, egg)
                     progress(step=n)
 
         self.super_id = None
