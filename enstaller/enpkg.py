@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import logging
 import ntpath
 import sys
 import warnings
@@ -25,6 +26,10 @@ from history import History
 
 # Included for backward compatibility
 from enstaller.config import Configuration
+
+
+logger = logging.getLogger(__name__)
+
 
 def create_joined_store(config, urls):
     stores = []
@@ -65,11 +70,11 @@ def get_writable_local_dir(config):
         return local_dir
 
     import tempfile
-    print(('Warning: Python prefix directory is not writeable '
+    logger.warn('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
            'Using a temporary cache for index and eggs.\n' %
-           config.prefix))
+           config.prefix)
     return tempfile.mkdtemp()
 
 
@@ -108,7 +113,7 @@ class Enpkg(object):
         at all).
     """
     def __init__(self, remote=None, userpass='<config>', prefixes=[sys.prefix],
-                 hook=False, evt_mgr=None, verbose=False, config=None):
+                 hook=False, evt_mgr=None, config=None):
         if config is None:
             self.config = Configuration._get_default_config()
         else:
@@ -130,7 +135,6 @@ class Enpkg(object):
 
         self.prefixes = prefixes
         self.evt_mgr = evt_mgr
-        self.verbose = verbose
 
         if hook is not False:
             raise EnpkgError("hook feature has been removed")
@@ -235,10 +239,9 @@ class Enpkg(object):
         This method is only meant to be called with actions created by the
         *_actions methods below.
         """
-        if self.verbose:
-            print("Enpkg.execute:", len(actions))
-            for item in actions:
-                print('\t' + str(item))
+        logger.info("Enpkg.execute: %d", len(actions))
+        for item in actions:
+            logger.info('\t' + str(item))
 
         if len(actions) == 0:
             return
@@ -298,7 +301,7 @@ class Enpkg(object):
         mode = 'recur'
         self._connect()
         req = req_from_anything("enstaller")
-        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
         elif not len(eggs) == 1:
@@ -323,7 +326,7 @@ class Enpkg(object):
         req = req_from_anything(arg)
         # resolve the list of eggs that need to be installed
         self._connect()
-        eggs = Resolve(self._repository, self.verbose).install_sequence(req, mode)
+        eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
         return self._install_actions(eggs, mode, force, forceall)
@@ -467,5 +470,4 @@ class Enpkg(object):
         self._connect()
         f = FetchAPI(self._repository, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
-        f.verbose = self.verbose
         f.fetch_egg(egg, force, self._execution_aborted)

@@ -1,4 +1,5 @@
 import hashlib
+import logging
 import os
 
 from uuid import uuid4
@@ -8,6 +9,9 @@ from egginst.utils import atomic_file, compute_md5, human_bytes
 
 from enstaller.errors import EnstallerException
 from enstaller.repository import egg_name_to_name_version
+
+
+logger = logging.getLogger(__name__)
 
 
 class _MD5File(object):
@@ -30,7 +34,6 @@ class FetchAPI(object):
         self.repository = repository
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
-        self.verbose = False
 
     def path(self, fn):
         return join(self.local_dir, fn)
@@ -103,12 +106,10 @@ class FetchAPI(object):
         if isfile(path):
             if force:
                 if compute_md5(path) == package_metadata.md5:
-                    if self.verbose:
-                        print "Not refetching, %r MD5 match" % path
+                    logger.info("Not refetching, %r MD5 match", path)
                     return
             else:
-                if self.verbose:
-                    print "Not forcing refetch, %r exists" % path
+                logger.info("Not forcing refetch, %r exists", path)
                 return
 
         self.fetch(package_metadata.key, execution_aborted)

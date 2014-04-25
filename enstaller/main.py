@@ -9,6 +9,7 @@ from __future__ import print_function
 
 import argparse
 import collections
+import logging
 import ntpath
 import os
 import posixpath
@@ -47,6 +48,9 @@ from enstaller.history import History
 
 from enstaller.store.joined import JoinedStore
 from enstaller.store.indexed import IndexedStore
+
+
+logger = logging.getLogger(__name__)
 
 
 FMT = '%-20s %-20s %s'
@@ -261,7 +265,7 @@ def epd_install_confirm():
     yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
     return yn.lower() in set(['y', 'yes'])
 
-def add_url(filename, config, url, verbose):
+def add_url(filename, config, url):
     url = fill_url(url)
     if url in config.IndexedRepos:
         print("Already configured:", url)
@@ -385,11 +389,10 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
 
     prefixes = enpkg.prefixes
     evt_mgr = enpkg.evt_mgr
-    verbose = enpkg.verbose
 
     installed_repo = MockedStore()
     remote = JoinedStore([enpkg.remote, installed_repo])
-    return Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, verbose=verbose,
+    return Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
                  config=enpkg.config)
 
 
@@ -593,6 +596,11 @@ def main(argv=None):
     if count_simple_actions > 0 and len(args.cnames) > 0:
         p.error("Option takes no arguments")
 
+    if args.verbose:
+        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    else:
+        logging.basicConfig(level=logging.WARN, format="%(message)s")
+
     if args.user:
         args.prefix = user_base
 
@@ -629,11 +637,9 @@ def main(argv=None):
 
     exit_if_sudo_on_venv(prefix)
 
-    if args.verbose:
-        print("Prefixes:")
-        for prefix in prefixes:
-            print('    %s%s' % (prefix, ['', ' (sys)'][prefix == sys.prefix]))
-        print()
+    logger.info("prefixes")
+    for prefix in prefixes:
+        logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     if args.env:                                  # --env
         env_option(prefixes)
@@ -670,7 +676,7 @@ def main(argv=None):
         remote = create_joined_store(config, urls)
 
     enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
-                  verbose=args.verbose, config=config)
+                  config=config)
 
 
     if args.config:                               # --config
@@ -678,7 +684,7 @@ def main(argv=None):
         return
 
     if args.add_url:                              # --add-url
-        add_url(config_filename, enpkg.config, args.add_url, args.verbose)
+        add_url(config_filename, enpkg.config, args.add_url)
         return
 
     if args.userpass:                             # --userpass
@@ -778,11 +784,9 @@ def main(argv=None):
         print("Enstaller is already up to date, not upgrading.")
         reqs = [req for req in reqs if req.name != "enstaller"]
 
-    if args.verbose:
-        print("Requirements:")
-        for req in reqs:
-            print('    %r' % req)
-        print()
+    logger.info("Requirements:")
+    for req in reqs:
+        logger.info('    %r', req)
 
     print("prefix:", prefix)
 
