@@ -1,28 +1,28 @@
 from __future__ import print_function
 
 import logging
-import ntpath
-import sys
-import warnings
-from uuid import uuid4
-from os.path import isdir, isfile, join
 import operator
 import os
 import threading
+import sys
+import tempfile
+
+from uuid import uuid4
+from os.path import isdir, isfile, join
 
 import enstaller
 
 from enstaller.errors import EnpkgError
 from enstaller.repository import Repository, egg_name_to_name_version
-from store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
-from store.joined import JoinedStore
+from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
+from enstaller.store.joined import JoinedStore
 
-from eggcollect import EggCollection, JoinedEggCollection
+from enstaller.eggcollect import EggCollection, JoinedEggCollection
 
-from resolve import Req, Resolve, comparable_info
-from fetch import FetchAPI
-from egg_meta import is_valid_eggname, split_eggname
-from history import History
+from enstaller.resolve import Req, Resolve
+from enstaller.fetch import FetchAPI
+from enstaller.egg_meta import is_valid_eggname, split_eggname
+from enstaller.history import History
 
 # Included for backward compatibility
 from enstaller.config import Configuration
@@ -64,12 +64,11 @@ def get_writable_local_dir(config):
         try:
             os.makedirs(local_dir)
             return local_dir
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             pass
     elif os.access(local_dir, os.W_OK):
         return local_dir
 
-    import tempfile
     logger.warn('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
