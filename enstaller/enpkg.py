@@ -24,7 +24,6 @@ from enstaller.fetch import FetchAPI
 from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.history import History
 
-# Included for backward compatibility
 from enstaller.config import Configuration
 
 
