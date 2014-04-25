@@ -31,8 +31,6 @@ try:
 except ImportError:  # pragma: no cover
     appinst = None
 
-from enstaller import __version__
-
 from . import eggmeta
 from . import scripts
 
@@ -624,6 +622,8 @@ def main(argv=None):
 
     ns = p.parse_args(argv)
     if ns.version:
+        # Local import to avoid circular imports between enstaller and egginst
+        from enstaller import __version__
         print("enstaller version:", __version__)
         return
 

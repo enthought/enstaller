@@ -70,11 +70,11 @@ def get_writable_local_dir(config):
         return local_dir
 
     import tempfile
-    logger.warn(('Warning: Python prefix directory is not writeable '
+    logger.warn('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
            'Using a temporary cache for index and eggs.\n' %
-           config.prefix))
+           config.prefix)
     return tempfile.mkdtemp()
 
 
@@ -239,9 +239,9 @@ class Enpkg(object):
         This method is only meant to be called with actions created by the
         *_actions methods below.
         """
-        logging.info("Enpkg.execute: %d", len(actions))
+        logger.info("Enpkg.execute: %d", len(actions))
         for item in actions:
-            logging.info('\t' + str(item))
+            logger.info('\t' + str(item))
 
         if len(actions) == 0:
             return

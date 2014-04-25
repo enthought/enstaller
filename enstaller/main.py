@@ -784,9 +784,9 @@ def main(argv=None):
         print("Enstaller is already up to date, not upgrading.")
         reqs = [req for req in reqs if req.name != "enstaller"]
 
-    logging.info("Requirements:")
+    logger.info("Requirements:")
     for req in reqs:
-        logging.info('    %r', req)
+        logger.info('    %r', req)
 
     print("prefix:", prefix)
 
