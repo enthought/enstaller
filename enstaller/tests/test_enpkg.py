@@ -25,7 +25,7 @@ from enstaller.config import Configuration
 from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import EggCollection, JoinedEggCollection
 from enstaller.enpkg import Enpkg, EnpkgError
-from enstaller.enpkg import get_default_kvs, req_from_anything, \
+from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.resolve import Req
@@ -42,31 +42,6 @@ class TestMisc(unittest.TestCase):
         config.webservice_entry_point = "http://acme.com"
         store = get_default_kvs(config)
         self.assertEqual(store.root, "http://acme.com/")
-
-    def test_req_from_anything_egg_string(self):
-        req_string = "numpy-1.8.0-1.egg"
-
-        req = req_from_anything(req_string)
-
-        self.assertEqual(req.name, "numpy")
-        self.assertEqual(req.version, "1.8.0")
-        self.assertEqual(req.build, 1)
-
-    def test_req_from_anything_req(self):
-        req_arg = Req("numpy 1.8.0-1")
-
-        req = req_from_anything(req_arg)
-
-        self.assertEqual(req.name, "numpy")
-        self.assertEqual(req.version, "1.8.0")
-        self.assertEqual(req.build, 1)
-
-    def test_req_from_anything_string(self):
-        req = req_from_anything("numpy")
-
-        self.assertEqual(req.name, "numpy")
-        self.assertEqual(req.version, None)
-        self.assertEqual(req.build, None)
 
     def test_writable_local_dir_writable(self):
         config = Configuration()

@@ -21,7 +21,7 @@ from enstaller.eggcollect import EggCollection, JoinedEggCollection
 
 from enstaller.resolve import Req, Resolve
 from enstaller.fetch import FetchAPI
-from enstaller.egg_meta import is_valid_eggname, split_eggname
+from enstaller.egg_meta import split_eggname
 from enstaller.history import History
 
 from enstaller.config import Configuration
@@ -47,14 +47,6 @@ def create_joined_store(config, urls):
 def get_default_kvs(config):
     url = config.webservice_entry_point
     return RemoteHTTPIndexedStore(url, config.local)
-
-
-def req_from_anything(arg):
-    if isinstance(arg, Req):
-        return arg
-    if is_valid_eggname(arg):
-        return Req('%s %s-%d' % split_eggname(arg))
-    return Req(arg)
 
 
 def get_writable_local_dir(config):
@@ -298,7 +290,7 @@ class Enpkg(object):
 
         mode = 'recur'
         self._connect()
-        req = req_from_anything("enstaller")
+        req = Req.from_anything("enstaller")
         eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
@@ -321,7 +313,7 @@ class Enpkg(object):
           * a requirement object (enstaller.resolve.Req)
           * the requirement as a string
         """
-        req = req_from_anything(arg)
+        req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
         self._connect()
         eggs = Resolve(self._repository).install_sequence(req, mode)
@@ -376,7 +368,7 @@ class Enpkg(object):
         Create the action necessary to remove an egg.  The argument, may be
         one of ..., see above.
         """
-        req = req_from_anything(arg)
+        req = Req.from_anything(arg)
         assert req.name
         index = dict(self.ec.collections[0].query(**req.as_dict()))
         if len(index) == 0:
