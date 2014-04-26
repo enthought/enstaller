@@ -75,6 +75,21 @@ def get_default_remote(config):
     return RemoteHTTPIndexedStore(url, local_dir, config.use_pypi)
 
 
+class _ExecuteContext(object):
+    def __init__(self, prefix, actions):
+        self._actions = actions
+        self._prefix = prefix
+
+    @property
+    def n_actions(self):
+        return len(self._actions)
+
+    def iter_actions(self):
+        with History(self._prefix):
+            for action in self._actions:
+                yield action
+
+
 class Enpkg(object):
     """
     This is main interface for using enpkg, it is used by the CLI.
@@ -240,14 +255,15 @@ class Enpkg(object):
             raise Exception("unknown opcode: %r" % opcode)
 
     @contextlib.contextmanager
-    def _enpkg_progress_manager(self, actions):
+    def _enpkg_progress_manager(self, execution_context):
+        # This is only used in canopy
         if self.evt_mgr:
             from encore.events.api import ProgressManager
             progress = ProgressManager(
                     self.evt_mgr, source=self,
                     operation_id=self.super_id,
                     message="super",
-                    steps=len(actions))
+                    steps=len(execution_context.n_actions))
 
         else:
             def _fake_progress(step=0):
@@ -265,6 +281,9 @@ class Enpkg(object):
             for c in self.ec.collections:
                 c.super_id = self.super_id
 
+    def get_execute_context(self, actions):
+        return _ExecuteContext(self.prefixes[0], actions)
+
     def execute(self, actions):
         """
         Execute actions, which is an iterable over tuples(action, egg_name),
@@ -275,14 +294,15 @@ class Enpkg(object):
         """
         logger.info("Enpkg.execute: %d", len(actions))
 
-        with History(self.prefixes[0]):
-            with self._enpkg_progress_manager(actions) as progress:
-                for n, (opcode, egg) in enumerate(actions):
-                    if self._execution_aborted.is_set():
-                        self._execution_aborted.clear()
-                        break
-                    self._execute_opcode(opcode, egg)
-                    progress(step=n)
+        context = self.get_execute_context(actions)
+
+        with self._enpkg_progress_manager(context) as progress:
+            for n, (opcode, egg) in enumerate(context.iter_actions()):
+                if self._execution_aborted.is_set():
+                    self._execution_aborted.clear()
+                    break
+                self._execute_opcode(opcode, egg)
+                progress(step=n)
 
     def abort_execution(self):
         self._execution_aborted.set()
