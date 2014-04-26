@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import contextlib
 import logging
 import operator
 import os
@@ -222,6 +223,7 @@ class Enpkg(object):
         return self.ec.find(egg)
 
     def _execute_opcode(self, opcode, egg):
+        logger.info('\t' + str((opcode, egg)))
         if opcode.startswith('fetch_'):
             self.fetch(egg, force=int(opcode[-1]))
         elif opcode == 'remove':
@@ -237,6 +239,32 @@ class Enpkg(object):
         else:
             raise Exception("unknown opcode: %r" % opcode)
 
+    @contextlib.contextmanager
+    def _enpkg_progress_manager(self, actions):
+        if self.evt_mgr:
+            from encore.events.api import ProgressManager
+            progress = ProgressManager(
+                    self.evt_mgr, source=self,
+                    operation_id=self.super_id,
+                    message="super",
+                    steps=len(actions))
+
+        else:
+            def _fake_progress(step=0):
+                pass
+            progress = _fake_progress
+
+        self.super_id = None
+        for c in self.ec.collections:
+            c.super_id = self.super_id
+
+        try:
+            yield progress
+        finally:
+            self.super_id = uuid4()
+            for c in self.ec.collections:
+                c.super_id = self.super_id
+
     def execute(self, actions):
         """
         Execute actions, which is an iterable over tuples(action, egg_name),
@@ -246,42 +274,15 @@ class Enpkg(object):
         *_actions methods below.
         """
         logger.info("Enpkg.execute: %d", len(actions))
-        for item in actions:
-            logger.info('\t' + str(item))
-
-        if len(actions) == 0:
-            return
-
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from egginst.console import ProgressManager
-
-        self.super_id = uuid4()
-        for c in self.ec.collections:
-            c.super_id = self.super_id
-
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=self.super_id,
-                message="super",
-                steps=len(actions),
-                # ---
-                progress_type="super", filename=actions[-1][1],
-                disp_amount=len(actions), super_id=None)
 
         with History(self.prefixes[0]):
-            with progress:
+            with self._enpkg_progress_manager(actions) as progress:
                 for n, (opcode, egg) in enumerate(actions):
                     if self._execution_aborted.is_set():
                         self._execution_aborted.clear()
                         break
                     self._execute_opcode(opcode, egg)
                     progress(step=n)
-
-        self.super_id = None
-        for c in self.ec.collections:
-            c.super_id = self.super_id
 
     def abort_execution(self):
         self._execution_aborted.set()
