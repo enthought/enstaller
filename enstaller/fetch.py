@@ -5,7 +5,7 @@ import os
 from uuid import uuid4
 from os.path import basename, isdir, isfile, join
 
-from egginst.utils import atomic_file, compute_md5, human_bytes
+from egginst.utils import atomic_file, compute_md5, human_bytes, makedirs
 
 from enstaller.errors import EnstallerException
 from enstaller.repository import egg_name_to_name_version
@@ -35,6 +35,8 @@ class FetchAPI(object):
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
 
+        makedirs(self.local_dir)
+
     def path(self, fn):
         return join(self.local_dir, fn)
 
@@ -45,11 +47,7 @@ class FetchAPI(object):
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         name, version = egg_name_to_name_version(key)
-
         package = self.repository.find_package(name, version)
-
-        path = self.path(key)
-        size = package.size
 
         if self.evt_mgr:
             from encore.events.api import ProgressManager
@@ -59,15 +57,16 @@ class FetchAPI(object):
                 self.evt_mgr, source=self,
                 operation_id=uuid4(),
                 message="fetching",
-                steps=size,
+                steps=package.size,
                 # ---
-                progress_type="fetching", filename=basename(path),
-                disp_amount=human_bytes(size),
+                progress_type="fetching", filename=key,
+                disp_amount=human_bytes(package.size),
                 super_id=getattr(self, 'super_id', None))
 
         response = self.repository.fetch_from_package(package)
         n = 0
         with progress:
+            path = self.path(key)
             with atomic_file(path) as _target:
                 target = _MD5File(_target)
                 for chunk in response.iter_content():
@@ -86,7 +85,6 @@ class FetchAPI(object):
                     raise EnstallerException(template.format(path, package.md5,
                                                              target.checksum))
 
-
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
         fetch an egg, i.e. copy or download the distribution into local dir
@@ -94,8 +92,6 @@ class FetchAPI(object):
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
-        if not isdir(self.local_dir):
-            os.makedirs(self.local_dir)
         name, version = egg_name_to_name_version(egg)
         package_metadata = self.repository.find_package(name, version)
 
