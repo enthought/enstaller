@@ -1,6 +1,13 @@
 class EnstallerException(Exception):
     pass
 
+class InvalidChecksum(EnstallerException):
+    def __init__(self, filename, expected_checksum, actual_checksum):
+        template = "Checksum mismatch for {0!r}: received {1!r} " \
+                   "(expected {2!r})"
+        self.msg = template.format(filename, actual_checksum,
+                                   expected_checksum)
+
 class InvalidPythonPathConfiguration(EnstallerException):
     pass
 

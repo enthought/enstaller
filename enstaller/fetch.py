@@ -1,32 +1,91 @@
+import contextlib
 import hashlib
 import logging
 
-from uuid import uuid4
 from os.path import isfile, join
 
 from egginst.console import SimpleCliProgressManager
 from egginst.utils import (atomic_file, compute_md5,
                            encore_progress_manager_factory, makedirs)
 
-from enstaller.errors import EnstallerException
+from enstaller.errors import InvalidChecksum
 from enstaller.repository import egg_name_to_name_version
 
 
 logger = logging.getLogger(__name__)
 
 
-class _MD5File(object):
+class MD5File(object):
     def __init__(self, fp):
+        """
+        A simple file object wrapper that computes a md5 checksum only when data
+        are being written
+
+        Parameters
+        ----------
+        fp: file object-like
+            The file object to wrap.
+        """
         self._fp = fp
         self._h = hashlib.md5()
+        self.abort = False
 
     @property
     def checksum(self):
         return self._h.hexdigest()
 
     def write(self, data):
+        """
+        Write the given data buffer to the underlying file.
+        """
         self._fp.write(data)
         self._h.update(data)
+
+
+@contextlib.contextmanager
+def checked_content(filename, expected_md5):
+    """
+    A simple context manager ensure data written to filename match the given
+    md5.
+
+    Parameters
+    ----------
+    filename: str
+        The path to write to
+    expected_checksum: str
+        The expected checksum
+
+    Returns
+    -------
+    fp: MD5File instance
+        A file-like object.
+
+    Example
+    -------
+    A simple example::
+
+        with checked_content("foo.bin", expected_md5) as fp:
+            fp.write(data)
+        # An InvalidChecksum will be raised if the checksum does not match
+        # expected_md5
+
+    The checksum may be disabled by setting up abort to fp::
+
+        with checked_content("foo.bin", expected_md5) as fp:
+            fp.write(data)
+            fp.abort = True
+            # no checksum is getting validated
+    """
+    with atomic_file(filename) as target:
+        checked_target = MD5File(target)
+        yield checked_target
+
+        if checked_target.abort:
+            target.abort = True
+            return
+        else:
+            if expected_md5 != checked_target.checksum:
+                raise InvalidChecksum(filename, expected_md5, checked_target.checksum)
 
 
 class FetchAPI(object):
@@ -61,23 +120,16 @@ class FetchAPI(object):
         n = 0
         with progress:
             path = self.path(key)
-            with atomic_file(path) as _target:
-                target = _MD5File(_target)
+            with checked_content(path, package.md5) as target:
                 for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
                         response.close()
-                        _target.abort = True
+                        target.abort = True
                         return
 
                     target.write(chunk)
                     n += len(chunk)
                     progress(step=n)
-
-                if package.md5 != target.checksum:
-                    template = "Checksum mismatch for {0!r}: received {1!r} " \
-                               "(expected {2!r})"
-                    raise EnstallerException(template.format(path, package.md5,
-                                                             target.checksum))
 
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
