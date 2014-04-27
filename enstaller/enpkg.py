@@ -11,6 +11,8 @@ import tempfile
 from uuid import uuid4
 from os.path import isdir, isfile, join
 
+from egginst.utils import encore_progress_manager_factory
+
 import enstaller
 
 from enstaller.errors import EnpkgError
@@ -256,14 +258,11 @@ class Enpkg(object):
 
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, execution_context):
-        # This is only used in canopy
         if self.evt_mgr:
-            from encore.events.api import ProgressManager
-            progress = ProgressManager(
-                    self.evt_mgr, source=self,
-                    operation_id=self.super_id,
-                    message="super",
-                    steps=len(execution_context.n_actions))
+            progress = encore_progress_manager_factory(self.evt_mgr, self,
+                                                       "super",
+                                                       execution_context.n_actions,
+                                                       self.super_id)
 
         else:
             def _fake_progress(step=0):

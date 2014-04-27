@@ -1,5 +1,7 @@
 import sys
 
+from egginst.utils import human_bytes
+
 
 class ProgressManager(object):
 
@@ -34,3 +36,20 @@ class ProgressManager(object):
         sys.stdout.write('.' * (65 - self._cur))
         sys.stdout.write(']\n')
         sys.stdout.flush()
+
+
+class SimpleCliProgressManager(object):
+    def __init__(self, message, filename, size):
+        self._progress = ProgressManager(
+            None, source=None, operation_id=None, message=message, steps=size,
+            progress_type=message, filename=filename,
+            disp_amount=human_bytes(size), super_id=None)
+
+    def __enter__(self):
+        return self._progress.__enter__()
+
+    def __exit__(self, *a, **kw):
+        return self._progress.__exit__(*a, **kw)
+
+    def __call__(self, step=0):
+        return self._progress.__call__(step)

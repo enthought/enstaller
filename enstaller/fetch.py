@@ -1,11 +1,12 @@
 import hashlib
 import logging
-import os
 
 from uuid import uuid4
-from os.path import basename, isdir, isfile, join
+from os.path import isfile, join
 
-from egginst.utils import atomic_file, compute_md5, human_bytes, makedirs
+from egginst.console import SimpleCliProgressManager
+from egginst.utils import (atomic_file, compute_md5,
+                           encore_progress_manager_factory, makedirs)
 
 from enstaller.errors import EnstallerException
 from enstaller.repository import egg_name_to_name_version
@@ -50,18 +51,11 @@ class FetchAPI(object):
         package = self.repository.find_package(name, version)
 
         if self.evt_mgr:
-            from encore.events.api import ProgressManager
+            progress = encore_progress_manager_factory(self.evt_mgr, self,
+                                                       "fetching",
+                                                       package.size)
         else:
-            from egginst.console import ProgressManager
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="fetching",
-                steps=package.size,
-                # ---
-                progress_type="fetching", filename=key,
-                disp_amount=human_bytes(package.size),
-                super_id=getattr(self, 'super_id', None))
+            progress = SimpleCliProgressManager("fetching", key, package.size)
 
         response = self.repository.fetch_from_package(package)
         n = 0

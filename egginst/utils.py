@@ -10,6 +10,7 @@ import hashlib
 import logging
 import re
 import sys
+import uuid
 import os
 import shutil
 import stat
@@ -318,3 +319,17 @@ def atomic_file(filename, mode='w+b'):
     else:
         if not temp_fp.abort:
             rename(temp_fp._name, filename)
+
+def encore_progress_manager_factory(event_manager, source, message, steps,
+                                    operation_id=None):
+    # Local import to avoid hard dependency on encore (this functionality is
+    # only used within canopy)
+    from encore.events.api import ProgressManager
+
+    if operation_id is None:
+        operation_id = uuid.uuid4()
+
+    progress = ProgressManager(event_manager, source=source,
+                               operation_id=operation_id, message=message,
+                               steps=steps)
+    return progress

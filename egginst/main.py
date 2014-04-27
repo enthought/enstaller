@@ -34,7 +34,8 @@ except ImportError:  # pragma: no cover
 from . import eggmeta
 from . import scripts
 
-from .console import ProgressManager
+from egginst.console import SimpleCliProgressManager
+
 from .links import create_link
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
@@ -649,33 +650,14 @@ def main(argv=None):
             if not er.is_installed:
                 logger.error("Error: can't find meta data for: %r", er.cname)
                 return
-            # FIXME the egginst ProgressManager API contains many unused args,
-            # remove them
-            progress = ProgressManager(
-                    None, source=None,
-                    operation_id=None,
-                    message="removing egg",
-                    steps=len(ei.files),
-                    # ---
-                    progress_type="removing", filename=ei.fn,
-                    disp_amount=human_bytes(er.installed_size),
-                    super_id=None)
+            progress = SimpleCliProgressManager("removing egg", ei.fn,
+                                                size=er.installed_size)
             with progress:
                 for n, filename in enumerate(ei.remove_iterator()):
                     progress(step=n)
         else:
-            # FIXME the egginst ProgressManager API contains many unused args,
-            # remove them
-            progress = ProgressManager(
-                    None, source=None,
-                    operation_id=None,
-                    message="installing egg",
-                    steps=ei.installed_size,
-                    # ---
-                    progress_type="installing", filename=ei.fn,
-                    disp_amount=human_bytes(ei.installed_size),
-                    super_id=None)
-
+            progress = SimpleCliProgressManager("installing egg", ei.fn,
+                                                size=ei.installed_size)
             with progress:
                 for currently_extracted_size in ei.install_iterator():
                     progress(step=currently_extracted_size)
