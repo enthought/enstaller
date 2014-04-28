@@ -4,9 +4,8 @@ import logging
 
 from os.path import isfile, join
 
-from egginst.console import SimpleCliProgressManager
-from egginst.utils import (atomic_file, compute_md5,
-                           encore_progress_manager_factory, makedirs)
+from egginst.progress import FileProgressManager, progress_manager_factory
+from egginst.utils import atomic_file, compute_md5, makedirs
 
 from enstaller.errors import InvalidChecksum
 from enstaller.repository import egg_name_to_name_version
@@ -109,16 +108,12 @@ class FetchAPI(object):
         name, version = egg_name_to_name_version(key)
         package = self.repository.find_package(name, version)
 
-        if self.evt_mgr:
-            progress = encore_progress_manager_factory(self.evt_mgr, self,
-                                                       "fetching",
-                                                       package.size)
-        else:
-            progress = SimpleCliProgressManager("fetching", key, package.size)
+        progress = progress_manager_factory("fetching", key, package.size,
+                                            self.evt_mgr, self)
 
         response = self.repository.fetch_from_package(package)
-        n = 0
-        with progress:
+
+        with FileProgressManager(progress) as progress:
             path = self.path(key)
             with checked_content(path, package.md5) as target:
                 for chunk in response.iter_content():
@@ -128,8 +123,7 @@ class FetchAPI(object):
                         return
 
                     target.write(chunk)
-                    n += len(chunk)
-                    progress(step=n)
+                    progress.update(len(chunk))
 
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """

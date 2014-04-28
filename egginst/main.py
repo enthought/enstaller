@@ -34,7 +34,7 @@ except ImportError:  # pragma: no cover
 from . import eggmeta
 from . import scripts
 
-from egginst.console import SimpleCliProgressManager
+from egginst.progress import console_progress_manager_factory
 
 from .links import create_link
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
@@ -650,14 +650,14 @@ def main(argv=None):
             if not er.is_installed:
                 logger.error("Error: can't find meta data for: %r", er.cname)
                 return
-            progress = SimpleCliProgressManager("removing egg", ei.fn,
-                                                size=er.installed_size)
+            progress = console_progress_manager_factory("removing egg", ei.fn,
+                                                        size=er.installed_size)
             with progress:
                 for n, filename in enumerate(ei.remove_iterator()):
                     progress(step=n)
         else:
-            progress = SimpleCliProgressManager("installing egg", ei.fn,
-                                                size=ei.installed_size)
+            progress = console_progress_manager_factory("installing egg", ei.fn,
+                                                        size=ei.installed_size)
             with progress:
                 for currently_extracted_size in ei.install_iterator():
                     progress(step=currently_extracted_size)

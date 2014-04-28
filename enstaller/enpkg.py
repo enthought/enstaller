@@ -11,7 +11,7 @@ import tempfile
 from uuid import uuid4
 from os.path import isdir, isfile, join
 
-from egginst.utils import encore_progress_manager_factory
+from egginst.progress import progress_manager_factory
 
 import enstaller
 
@@ -258,20 +258,13 @@ class Enpkg(object):
 
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, execution_context):
-        if self.evt_mgr:
-            progress = encore_progress_manager_factory(self.evt_mgr, self,
-                                                       "super",
-                                                       execution_context.n_actions,
-                                                       self.super_id)
-
-        else:
-            def _fake_progress(step=0):
-                pass
-            progress = _fake_progress
-
         self.super_id = None
         for c in self.ec.collections:
             c.super_id = self.super_id
+
+        progress = progress_manager_factory("super", "",
+                                            execution_context.n_actions,
+                                            self.evt_mgr, self, self.super_id)
 
         try:
             yield progress
