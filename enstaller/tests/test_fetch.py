@@ -164,7 +164,7 @@ class TestFetchAPI(unittest.TestCase):
 
         # When
         fetch_api = FetchAPI(repository, self.d)
-        fetch_api.fetch(filename)
+        fetch_api.fetch_egg(filename)
 
         # Then
         target = os.path.join(self.d, filename)
@@ -188,7 +188,7 @@ class TestFetchAPI(unittest.TestCase):
 
             # When/Then
             with self.assertRaises(EnstallerException):
-                fetch_api.fetch(filename)
+                fetch_api.fetch_egg(filename)
 
     def test_fetch_abort(self):
         # Given
@@ -202,7 +202,7 @@ class TestFetchAPI(unittest.TestCase):
         with mock.patch.object(repository, "fetch_from_package", return_value=response):
             # When
             fetch_api = FetchAPI(repository, self.d)
-            fetch_api.fetch(filename, event)
+            fetch_api.fetch_egg(filename, execution_aborted=event)
 
             # Then
             target = os.path.join(self.d, filename)

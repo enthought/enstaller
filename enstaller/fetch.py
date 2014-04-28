@@ -99,7 +99,7 @@ class FetchAPI(object):
     def path(self, fn):
         return join(self.local_dir, fn)
 
-    def fetch(self, key, execution_aborted=None):
+    def _fetch(self, key, execution_aborted=None):
         """ Fetch the given key.
 
         execution_aborted: a threading.Event object which signals when the execution
@@ -125,6 +125,21 @@ class FetchAPI(object):
                     target.write(chunk)
                     progress.update(len(chunk))
 
+    def _needs_to_download(self, package_metadata, force):
+        needs_to_download = True
+        path = self.path(package_metadata.key)
+
+        if isfile(path):
+            if force:
+                if compute_md5(path) == package_metadata.md5:
+                    logger.info("Not refetching, %r MD5 match", path)
+                    needs_to_download = False
+            else:
+                logger.info("Not forcing refetch, %r exists", path)
+                needs_to_download = False
+
+        return needs_to_download
+
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
         fetch an egg, i.e. copy or download the distribution into local dir
@@ -135,17 +150,5 @@ class FetchAPI(object):
         name, version = egg_name_to_name_version(egg)
         package_metadata = self.repository.find_package(name, version)
 
-        path = self.path(egg)
-
-        # if force is used, make sure the md5 is the expected, otherwise
-        # merely see if the file exists
-        if isfile(path):
-            if force:
-                if compute_md5(path) == package_metadata.md5:
-                    logger.info("Not refetching, %r MD5 match", path)
-                    return
-            else:
-                logger.info("Not forcing refetch, %r exists", path)
-                return
-
-        self.fetch(package_metadata.key, execution_aborted)
+        if self._needs_to_download(package_metadata, force):
+            self._fetch(package_metadata.key, execution_aborted)
