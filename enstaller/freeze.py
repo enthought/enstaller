@@ -1,7 +1,7 @@
 """
 Naive implementation of freeze-like feature
 """
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
+from enstaller.repository import Repository
 
 def get_freeze_list(prefixes):
     """
@@ -12,11 +12,8 @@ def get_freeze_list(prefixes):
     names: seq
         List of installed eggs, as full names (e.g. 'numpy-1.8.0-1')
     """
-    collection = JoinedEggCollection(
-        [EggCollection(prefix) for prefix in prefixes]
-    )
     full_names = [
-        "{0} {1}-{2}".format(req["name"], req["version"], req["build"])
-        for name, req in collection.query(type="egg")
+        "{0} {1}".format(package.name, package.full_version)
+        for package in Repository._from_prefixes(prefixes).iter_packages()
     ]
     return sorted(full_names)

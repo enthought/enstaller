@@ -28,8 +28,7 @@ from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
-from enstaller.errors import (EnstallerException,
-    InvalidPythonPathConfiguration, EXIT_ABORTED)
+from enstaller.errors import InvalidPythonPathConfiguration, EXIT_ABORTED
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
@@ -38,8 +37,8 @@ from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
-from enstaller.eggcollect import EggCollection
 from enstaller.enpkg import Enpkg, EnpkgError, create_joined_store
+from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
@@ -121,11 +120,12 @@ def info_option(enpkg, name):
 def print_installed(prefix, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    ec = EggCollection(prefix)
-    for egg, info in ec.query():
-        if pat and not pat.search(info['name']):
+    repository = Repository._from_prefixes([prefix])
+    for package in repository.iter_packages():
+        if pat and not pat.search(package.name):
             continue
-        print(FMT % (name_egg(egg), VB_FMT % info, disp_store_info(info)))
+        info = package.s3index_data
+        print(FMT % (name_egg(package.key), VB_FMT % info, disp_store_info(info)))
 
 
 def list_option(prefixes, pat=None):
