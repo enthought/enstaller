@@ -99,23 +99,21 @@ class FetchAPI(object):
     def path(self, fn):
         return join(self.local_dir, fn)
 
-    def _fetch(self, key, execution_aborted=None):
+    def _fetch(self, package_metadata, execution_aborted=None):
         """ Fetch the given key.
 
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
-        name, version = egg_name_to_name_version(key)
-        package = self.repository.find_package(name, version)
-
-        progress = progress_manager_factory("fetching", key, package.size,
+        progress = progress_manager_factory("fetching", package_metadata.key,
+                                            package_metadata.size,
                                             self.evt_mgr, self)
 
-        response = self.repository.fetch_from_package(package)
+        response = self.repository.fetch_from_package(package_metadata)
 
         with FileProgressManager(progress) as progress:
-            path = self.path(key)
-            with checked_content(path, package.md5) as target:
+            path = self.path(package_metadata.key)
+            with checked_content(path, package_metadata.md5) as target:
                 for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
                         response.close()
@@ -151,4 +149,4 @@ class FetchAPI(object):
         package_metadata = self.repository.find_package(name, version)
 
         if self._needs_to_download(package_metadata, force):
-            self._fetch(package_metadata.key, execution_aborted)
+            self._fetch(package_metadata, execution_aborted)
