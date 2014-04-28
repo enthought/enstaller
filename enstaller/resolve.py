@@ -2,6 +2,7 @@ import logging
 import re
 from collections import defaultdict
 
+from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.repository import egg_name_to_name_version
 from utils import PY_VER, comparable_version
 
@@ -28,6 +29,15 @@ class Req(object):
         2   name and version must match
         3   name, version and build must match
     """
+    @classmethod
+    def from_anything(cls, arg):
+        if isinstance(arg, cls):
+            return arg
+        elif is_valid_eggname(arg):
+            return cls('%s %s-%d' % split_eggname(arg))
+        else:
+            return cls(arg)
+
     pat = re.compile(r'(?:([\w.]+)(?:\s+([\w.]+)(?:-(\d+))?)?)?$')
 
     def __init__(self, req_string):

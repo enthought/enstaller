@@ -39,8 +39,7 @@ from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
 from enstaller.eggcollect import EggCollection
-from enstaller.enpkg import (Enpkg, EnpkgError, create_joined_store,
-    req_from_anything)
+from enstaller.enpkg import Enpkg, EnpkgError, create_joined_store
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
@@ -289,7 +288,7 @@ def install_req(enpkg, req, opts):
     """
     # Unix exit-status codes
     FAILURE = 1
-    req = req_from_anything(req)
+    req = Req.from_anything(req)
 
     def _print_invalid_permissions():
         user = authenticate(enpkg.config)

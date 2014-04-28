@@ -1,5 +1,7 @@
 import sys
 
+from egginst.utils import human_bytes
+
 
 class ProgressManager(object):
 

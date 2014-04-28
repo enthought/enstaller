@@ -17,8 +17,8 @@ from encore.events.event_manager import EventManager
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
-from enstaller.errors import EnstallerException
-from enstaller.fetch import FetchAPI
+from enstaller.errors import EnstallerException, InvalidChecksum
+from enstaller.fetch import FetchAPI, MD5File, checked_content
 from enstaller.repository import Repository
 from enstaller.store.filesystem_store import DumbFilesystemStore
 from enstaller.utils import compute_md5
@@ -73,6 +73,76 @@ class MockedStoreResponse(object):
         pass
 
 
+class TestMD5File(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _write_content(self, filename, data):
+        with open(filename, "wb") as fp:
+            fp.write(data)
+
+    def test_simple(self):
+        # Given
+        source = os.path.join(self.tempdir, "source.data")
+        self._write_content(source, b"data")
+
+        # When
+        target = os.path.join(self.tempdir, "target.data")
+        with open(target, "wb") as _fp:
+            fp = MD5File(_fp)
+            fp.write(b"data")
+
+        # Then
+        self.assertEqual(fp.checksum, compute_md5(target))
+        self.assertEqual(compute_md5(target), compute_md5(source))
+
+
+class TestCheckedContent(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _write_content(self, filename, data):
+        with open(filename, "wb") as fp:
+            fp.write(data)
+
+    def test_simple(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum) as fp:
+            fp.write(data)
+
+    def test_invalid_checksum(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with self.assertRaises(InvalidChecksum):
+            with checked_content(path, checksum) as fp:
+                fp.write("")
+
+    def test_abort(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum) as fp:
+            fp.abort = True
+
+
 class TestFetchAPI(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -94,7 +164,7 @@ class TestFetchAPI(unittest.TestCase):
 
         # When
         fetch_api = FetchAPI(repository, self.d)
-        fetch_api.fetch(filename)
+        fetch_api.fetch_egg(filename)
 
         # Then
         target = os.path.join(self.d, filename)
@@ -118,7 +188,7 @@ class TestFetchAPI(unittest.TestCase):
 
             # When/Then
             with self.assertRaises(EnstallerException):
-                fetch_api.fetch(filename)
+                fetch_api.fetch_egg(filename)
 
     def test_fetch_abort(self):
         # Given
@@ -132,7 +202,7 @@ class TestFetchAPI(unittest.TestCase):
         with mock.patch.object(repository, "fetch_from_package", return_value=response):
             # When
             fetch_api = FetchAPI(repository, self.d)
-            fetch_api.fetch(filename, event)
+            fetch_api.fetch_egg(filename, execution_aborted=event)
 
             # Then
             target = os.path.join(self.d, filename)

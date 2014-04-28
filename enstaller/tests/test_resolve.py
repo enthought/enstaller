@@ -51,6 +51,8 @@ def eggs_rs(c, req_string):
 
 
 class TestReq(unittest.TestCase):
+    def assertEqualRequirements(self, left, right):
+        self.assertEqual(left.as_dict(), right.as_dict())
 
     def test_init(self):
         for req_string, name, version, build, strictness in [
@@ -119,6 +121,46 @@ class TestReq(unittest.TestCase):
         resolve.PY_VER = '2.6'
         self.assertEqual(Req('foo').matches(spec25), False)
         self.assertEqual(Req('foo').matches(spec26), True)
+
+    def test_from_anything_name(self):
+        # Given
+        req_arg = "numpy"
+
+        # When
+        req = Req.from_anything(req_arg)
+
+        # Then
+        self.assertEqualRequirements(req, Req(req_arg))
+
+    def test_from_anything_name_and_version(self):
+        # Given
+        req_arg = "numpy 1.8.0"
+
+        # When
+        req = Req.from_anything(req_arg)
+
+        # Then
+        self.assertEqualRequirements(req, Req(req_arg))
+
+    def test_from_anything_name_and_version_and_build(self):
+        # Given
+        req_arg = "numpy 1.8.0-1"
+
+        # When
+        req = Req.from_anything(req_arg)
+
+        # Then
+        self.assertEqualRequirements(req, Req(req_arg))
+
+    def test_from_anything_req(self):
+        # Given
+        req_arg = Req("numpy 1.8.0-1")
+
+        # When
+        req = Req.from_anything(req_arg)
+
+        # Then
+        self.assertEqualRequirements(req, req_arg)
 
 
 class TestChain0(unittest.TestCase):

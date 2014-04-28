@@ -1,31 +1,90 @@
+import contextlib
 import hashlib
 import logging
-import os
 
-from uuid import uuid4
-from os.path import basename, isdir, isfile, join
+from os.path import isfile, join
 
-from egginst.utils import atomic_file, compute_md5, human_bytes
+from egginst.progress import FileProgressManager, progress_manager_factory
+from egginst.utils import atomic_file, compute_md5, makedirs
 
-from enstaller.errors import EnstallerException
+from enstaller.errors import InvalidChecksum
 from enstaller.repository import egg_name_to_name_version
 
 
 logger = logging.getLogger(__name__)
 
 
-class _MD5File(object):
+class MD5File(object):
     def __init__(self, fp):
+        """
+        A simple file object wrapper that computes a md5 checksum only when data
+        are being written
+
+        Parameters
+        ----------
+        fp: file object-like
+            The file object to wrap.
+        """
         self._fp = fp
         self._h = hashlib.md5()
+        self.abort = False
 
     @property
     def checksum(self):
         return self._h.hexdigest()
 
     def write(self, data):
+        """
+        Write the given data buffer to the underlying file.
+        """
         self._fp.write(data)
         self._h.update(data)
+
+
+@contextlib.contextmanager
+def checked_content(filename, expected_md5):
+    """
+    A simple context manager ensure data written to filename match the given
+    md5.
+
+    Parameters
+    ----------
+    filename: str
+        The path to write to
+    expected_checksum: str
+        The expected checksum
+
+    Returns
+    -------
+    fp: MD5File instance
+        A file-like object.
+
+    Example
+    -------
+    A simple example::
+
+        with checked_content("foo.bin", expected_md5) as fp:
+            fp.write(data)
+        # An InvalidChecksum will be raised if the checksum does not match
+        # expected_md5
+
+    The checksum may be disabled by setting up abort to fp::
+
+        with checked_content("foo.bin", expected_md5) as fp:
+            fp.write(data)
+            fp.abort = True
+            # no checksum is getting validated
+    """
+    with atomic_file(filename) as target:
+        checked_target = MD5File(target)
+        yield checked_target
+
+        if checked_target.abort:
+            target.abort = True
+            return
+        else:
+            if expected_md5 != checked_target.checksum:
+                raise InvalidChecksum(filename, expected_md5, checked_target.checksum)
 
 
 class FetchAPI(object):
@@ -35,57 +94,49 @@ class FetchAPI(object):
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
 
+        makedirs(self.local_dir)
+
     def path(self, fn):
         return join(self.local_dir, fn)
 
-    def fetch(self, key, execution_aborted=None):
+    def _fetch(self, package_metadata, execution_aborted=None):
         """ Fetch the given key.
 
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
-        name, version = egg_name_to_name_version(key)
+        progress = progress_manager_factory("fetching", package_metadata.key,
+                                            package_metadata.size,
+                                            self.evt_mgr, self)
 
-        package = self.repository.find_package(name, version)
+        response = self.repository.fetch_from_package(package_metadata)
 
-        path = self.path(key)
-        size = package.size
-
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from egginst.console import ProgressManager
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=uuid4(),
-                message="fetching",
-                steps=size,
-                # ---
-                progress_type="fetching", filename=basename(path),
-                disp_amount=human_bytes(size),
-                super_id=getattr(self, 'super_id', None))
-
-        response = self.repository.fetch_from_package(package)
-        n = 0
-        with progress:
-            with atomic_file(path) as _target:
-                target = _MD5File(_target)
+        with FileProgressManager(progress) as progress:
+            path = self.path(package_metadata.key)
+            with checked_content(path, package_metadata.md5) as target:
                 for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
                         response.close()
-                        _target.abort = True
+                        target.abort = True
                         return
 
                     target.write(chunk)
-                    n += len(chunk)
-                    progress(step=n)
+                    progress.update(len(chunk))
 
-                if package.md5 != target.checksum:
-                    template = "Checksum mismatch for {0!r}: received {1!r} " \
-                               "(expected {2!r})"
-                    raise EnstallerException(template.format(path, package.md5,
-                                                             target.checksum))
+    def _needs_to_download(self, package_metadata, force):
+        needs_to_download = True
+        path = self.path(package_metadata.key)
 
+        if isfile(path):
+            if force:
+                if compute_md5(path) == package_metadata.md5:
+                    logger.info("Not refetching, %r MD5 match", path)
+                    needs_to_download = False
+            else:
+                logger.info("Not forcing refetch, %r exists", path)
+                needs_to_download = False
+
+        return needs_to_download
 
     def fetch_egg(self, egg, force=False, execution_aborted=None):
         """
@@ -94,22 +145,8 @@ class FetchAPI(object):
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
-        if not isdir(self.local_dir):
-            os.makedirs(self.local_dir)
         name, version = egg_name_to_name_version(egg)
         package_metadata = self.repository.find_package(name, version)
 
-        path = self.path(egg)
-
-        # if force is used, make sure the md5 is the expected, otherwise
-        # merely see if the file exists
-        if isfile(path):
-            if force:
-                if compute_md5(path) == package_metadata.md5:
-                    logger.info("Not refetching, %r MD5 match", path)
-                    return
-            else:
-                logger.info("Not forcing refetch, %r exists", path)
-                return
-
-        self.fetch(package_metadata.key, execution_aborted)
+        if self._needs_to_download(package_metadata, force):
+            self._fetch(package_metadata, execution_aborted)

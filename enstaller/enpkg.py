@@ -1,30 +1,32 @@
 from __future__ import print_function
 
+import contextlib
 import logging
-import ntpath
-import sys
-import warnings
-from uuid import uuid4
-from os.path import isdir, isfile, join
 import operator
 import os
 import threading
+import sys
+import tempfile
+
+from uuid import uuid4
+from os.path import isdir, isfile, join
+
+from egginst.progress import progress_manager_factory
 
 import enstaller
 
 from enstaller.errors import EnpkgError
 from enstaller.repository import Repository, egg_name_to_name_version
-from store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
-from store.joined import JoinedStore
+from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
+from enstaller.store.joined import JoinedStore
 
-from eggcollect import EggCollection, JoinedEggCollection
+from enstaller.eggcollect import EggCollection, JoinedEggCollection
 
-from resolve import Req, Resolve, comparable_info
-from fetch import FetchAPI
-from egg_meta import is_valid_eggname, split_eggname
-from history import History
+from enstaller.resolve import Req, Resolve
+from enstaller.fetch import FetchAPI
+from enstaller.egg_meta import split_eggname
+from enstaller.history import History
 
-# Included for backward compatibility
 from enstaller.config import Configuration
 
 
@@ -50,26 +52,17 @@ def get_default_kvs(config):
     return RemoteHTTPIndexedStore(url, config.local)
 
 
-def req_from_anything(arg):
-    if isinstance(arg, Req):
-        return arg
-    if is_valid_eggname(arg):
-        return Req('%s %s-%d' % split_eggname(arg))
-    return Req(arg)
-
-
 def get_writable_local_dir(config):
     local_dir = config.repository_cache
     if not os.access(local_dir, os.F_OK):
         try:
             os.makedirs(local_dir)
             return local_dir
-        except (OSError, IOError) as e:
+        except (OSError, IOError):
             pass
     elif os.access(local_dir, os.W_OK):
         return local_dir
 
-    import tempfile
     logger.warn('Warning: Python prefix directory is not writeable '
            'with current permissions:\n'
            '    %s\n'
@@ -82,6 +75,21 @@ def get_default_remote(config):
     url = config.webservice_entry_point
     local_dir = get_writable_local_dir(config)
     return RemoteHTTPIndexedStore(url, local_dir, config.use_pypi)
+
+
+class _ExecuteContext(object):
+    def __init__(self, prefix, actions):
+        self._actions = actions
+        self._prefix = prefix
+
+    @property
+    def n_actions(self):
+        return len(self._actions)
+
+    def iter_actions(self):
+        with History(self._prefix):
+            for action in self._actions:
+                yield action
 
 
 class Enpkg(object):
@@ -231,6 +239,43 @@ class Enpkg(object):
         """
         return self.ec.find(egg)
 
+    def _execute_opcode(self, opcode, egg):
+        logger.info('\t' + str((opcode, egg)))
+        if opcode.startswith('fetch_'):
+            self.fetch(egg, force=int(opcode[-1]))
+        elif opcode == 'remove':
+            self.ec.remove(egg)
+        elif opcode == 'install':
+            name, version = egg_name_to_name_version(egg)
+            if self._repository.is_connected:
+                package = self._repository.find_package(name, version)
+                extra_info = package.s3index_data
+            else:
+                extra_info = None
+            self.ec.install(egg, self.local_dir, extra_info)
+        else:
+            raise Exception("unknown opcode: %r" % opcode)
+
+    @contextlib.contextmanager
+    def _enpkg_progress_manager(self, execution_context):
+        self.super_id = None
+        for c in self.ec.collections:
+            c.super_id = self.super_id
+
+        progress = progress_manager_factory("super", "",
+                                            execution_context.n_actions,
+                                            self.evt_mgr, self, self.super_id)
+
+        try:
+            yield progress
+        finally:
+            self.super_id = uuid4()
+            for c in self.ec.collections:
+                c.super_id = self.super_id
+
+    def get_execute_context(self, actions):
+        return _ExecuteContext(self.prefixes[0], actions)
+
     def execute(self, actions):
         """
         Execute actions, which is an iterable over tuples(action, egg_name),
@@ -240,55 +285,16 @@ class Enpkg(object):
         *_actions methods below.
         """
         logger.info("Enpkg.execute: %d", len(actions))
-        for item in actions:
-            logger.info('\t' + str(item))
 
-        if len(actions) == 0:
-            return
+        context = self.get_execute_context(actions)
 
-        if self.evt_mgr:
-            from encore.events.api import ProgressManager
-        else:
-            from egginst.console import ProgressManager
-
-        self.super_id = uuid4()
-        for c in self.ec.collections:
-            c.super_id = self.super_id
-
-        progress = ProgressManager(
-                self.evt_mgr, source=self,
-                operation_id=self.super_id,
-                message="super",
-                steps=len(actions),
-                # ---
-                progress_type="super", filename=actions[-1][1],
-                disp_amount=len(actions), super_id=None)
-
-        with History(self.prefixes[0]):
-            with progress:
-                for n, (opcode, egg) in enumerate(actions):
-                    if self._execution_aborted.is_set():
-                        self._execution_aborted.clear()
-                        break
-                    if opcode.startswith('fetch_'):
-                        self.fetch(egg, force=int(opcode[-1]))
-                    elif opcode == 'remove':
-                        self.ec.remove(egg)
-                    elif opcode == 'install':
-                        name, version = egg_name_to_name_version(egg)
-                        if self._repository.is_connected:
-                            package = self._repository.find_package(name, version)
-                            extra_info = package.s3index_data
-                        else:
-                            extra_info = None
-                        self.ec.install(egg, self.local_dir, extra_info)
-                    else:
-                        raise Exception("unknown opcode: %r" % opcode)
-                    progress(step=n)
-
-        self.super_id = None
-        for c in self.ec.collections:
-            c.super_id = self.super_id
+        with self._enpkg_progress_manager(context) as progress:
+            for n, (opcode, egg) in enumerate(context.iter_actions()):
+                if self._execution_aborted.is_set():
+                    self._execution_aborted.clear()
+                    break
+                self._execute_opcode(opcode, egg)
+                progress(step=n)
 
     def abort_execution(self):
         self._execution_aborted.set()
@@ -300,7 +306,7 @@ class Enpkg(object):
 
         mode = 'recur'
         self._connect()
-        req = req_from_anything("enstaller")
+        req = Req.from_anything("enstaller")
         eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
@@ -323,7 +329,7 @@ class Enpkg(object):
           * a requirement object (enstaller.resolve.Req)
           * the requirement as a string
         """
-        req = req_from_anything(arg)
+        req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
         self._connect()
         eggs = Resolve(self._repository).install_sequence(req, mode)
@@ -378,7 +384,7 @@ class Enpkg(object):
         Create the action necessary to remove an egg.  The argument, may be
         one of ..., see above.
         """
-        req = req_from_anything(arg)
+        req = Req.from_anything(arg)
         assert req.name
         index = dict(self.ec.collections[0].query(**req.as_dict()))
         if len(index) == 0:
@@ -432,12 +438,9 @@ class Enpkg(object):
 
     def get_history(self):
         """
-        return a history (h) object:
-
-        h = Enpkg().get_history()
-        h.parse() -> list of tuples(datetime strings, set of eggs/diffs)
-        h.construct_states() -> list of tuples(datetime strings, set of eggs)
+        return a history (h) object with this Enpkg instance prefix.
         """
+        # FIXME: only used by canopy
         return History(self.prefixes[0])
 
     # == methods which relate to both (remote store and local installation) ==
