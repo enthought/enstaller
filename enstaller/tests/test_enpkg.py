@@ -161,9 +161,8 @@ class TestEnpkg(unittest.TestCase):
                           evt_mgr=None, config=Configuration())
             queried_entries = enpkg.info_list_name("numpy")
 
-            self.assertEqual(len(queried_entries), 2)
-            self.assertEqual([q.version for q in queried_entries],
-                             ["1.6.1", "1.8k"])
+            self.assertItemsEqual([q.version for q in queried_entries],
+                                  ["1.6.1", "1.8k"])
 
     def test_query_simple(self):
         entries = [
@@ -209,13 +208,21 @@ class TestEnpkg(unittest.TestCase):
             self.assertEqual(set(r.keys()),
                              set(entry.s3index_key for entry in entries + [local_entry]))
 
+def _unconnected_enpkg_factory():
+    """
+    Create an Enpkg instance which does not require an authenticated
+    repository.
+    """
+    remote = MetadataOnlyStore()
+    return Enpkg(remote=remote, config=Configuration())
+
 class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
         """
         Ensuring enpkg.execute([]) does not crash
         """
         # Given
-        enpkg = Enpkg(config=Configuration())
+        enpkg = _unconnected_enpkg_factory()
 
         # When/Then
         enpkg.execute([])
@@ -436,7 +443,7 @@ class TestEnpkgRevert(unittest.TestCase):
             enpkg.revert_actions(1)
 
     def test_invalid_argument(self):
-        enpkg = Enpkg(prefixes=self.prefixes,
+        enpkg = Enpkg(remote=MetadataOnlyStore(), prefixes=self.prefixes,
                       evt_mgr=None, config=Configuration())
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
@@ -464,7 +471,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = set(["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"])
 
         with mock_history_get_state_context(installed_eggs | enstaller_egg):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(installed_eggs)
 
             self.assertEqual(ret, [])
@@ -473,7 +480,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs))
 
             self.assertEqual(ret, [])
@@ -485,7 +492,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs[:1]))
 
             self.assertEqual(ret, [("remove", "another_dummy-1.0.0-1.egg")])
@@ -498,7 +505,7 @@ class TestEnpkgRevert(unittest.TestCase):
         revert_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             with mock.patch.object(enpkg, "_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)

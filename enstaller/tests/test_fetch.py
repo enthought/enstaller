@@ -150,20 +150,21 @@ class TestFetchAPI(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.d)
 
-    def _create_repository(self, eggs):
+    def _create_store_and_repository(self, eggs):
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository(store)
-        repository.connect((None, None))
+        store.connect((None, None))
 
-        return repository
+        repository = Repository(store)
+
+        return store, repository
 
     def test_fetch_simple(self):
         # Given
         filename = "nose-1.3.0-1.egg"
-        repository = self._create_repository([filename])
+        store, repository = self._create_store_and_repository([filename])
 
         # When
-        fetch_api = FetchAPI(repository, self.d)
+        fetch_api = FetchAPI(repository, store, self.d)
         fetch_api.fetch_egg(filename)
 
         # Then
@@ -176,7 +177,7 @@ class TestFetchAPI(unittest.TestCase):
         # Given
         filename = "nose-1.3.0-1.egg"
 
-        repository = self._create_repository([filename])
+        store, repository = self._create_store_and_repository([filename])
 
         mocked_metadata = mock.Mock()
         mocked_metadata.md5 = "a" * 32
@@ -184,7 +185,7 @@ class TestFetchAPI(unittest.TestCase):
         mocked_metadata.key = filename
 
         with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            fetch_api = FetchAPI(repository, self.d)
+            fetch_api = FetchAPI(repository, store, self.d)
 
             # When/Then
             with self.assertRaises(EnstallerException):
@@ -196,12 +197,12 @@ class TestFetchAPI(unittest.TestCase):
 
         filename = "nose-1.3.0-1.egg"
 
-        repository = self._create_repository([filename])
+        store, repository = self._create_store_and_repository([filename])
 
         response = MockedStoreResponse(100000, event, 0.5)
-        with mock.patch.object(repository, "fetch_from_package", return_value=response):
+        with mock.patch.object(store, "get_data", return_value=response):
             # When
-            fetch_api = FetchAPI(repository, self.d)
+            fetch_api = FetchAPI(repository, store, self.d)
             fetch_api.fetch_egg(filename, execution_aborted=event)
 
             # Then
@@ -213,10 +214,10 @@ class TestFetchAPI(unittest.TestCase):
         #Given
         egg = "nose-1.3.0-1.egg"
 
-        repository = self._create_repository([egg])
+        store, repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, self.d)
+        fetch_api = FetchAPI(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -229,10 +230,10 @@ class TestFetchAPI(unittest.TestCase):
         # Given
         egg = "nose-1.3.0-1.egg"
 
-        repository = self._create_repository([egg])
+        store, repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, self.d)
+        fetch_api = FetchAPI(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -244,14 +245,14 @@ class TestFetchAPI(unittest.TestCase):
         egg = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
-        repository = self._create_repository([egg])
+        store, repository = self._create_store_and_repository([egg])
 
         def _corrupt_file(target):
             with open(target, "wb") as fo:
                 fo.write("")
 
         # When
-        fetch_api = FetchAPI(repository, self.d)
+        fetch_api = FetchAPI(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -273,13 +274,13 @@ class TestFetchAPI(unittest.TestCase):
     def test_encore_event_manager(self):
         # Given
         egg = "nose-1.3.0-1.egg"
-        repository = self._create_repository([egg])
+        store, repository = self._create_store_and_repository([egg])
 
         with mock.patch.object(EventManager, "emit"):
             event_manager = EventManager()
 
             # When
-            fetch_api = FetchAPI(repository, self.d, event_manager)
+            fetch_api = FetchAPI(repository, store, self.d, event_manager)
             fetch_api.fetch_egg(egg)
 
             # Then
@@ -292,11 +293,11 @@ class TestFetchAPI(unittest.TestCase):
         """
         # Given
         egg = "nose-1.3.0-1.egg"
-        repository = self._create_repository([egg])
+        store, repository = self._create_store_and_repository([egg])
 
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
-            fetch_api = FetchAPI(repository, self.d)
+            fetch_api = FetchAPI(repository, store, self.d)
             fetch_api.fetch_egg(egg)
 
             # Then

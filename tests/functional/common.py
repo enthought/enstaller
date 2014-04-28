@@ -69,9 +69,17 @@ def fake_configuration_and_auth(f):
     config.set_auth("john", "doe")
     @functools.wraps(f)
     def wrapper(*a, **kw):
-        with mock.patch("enstaller.main.Configuration.from_file", return_value=config):
-            with mock.patch("enstaller.main.ensure_authenticated_config", return_value=True):
-                return without_any_configuration(f)(*a, **kw)
+        # FIXME: we create a dummy store to bypass store authentication in
+        # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
+        # separated.
+        fake_remote = MetadataOnlyStore()
+        with mock.patch("enstaller.enpkg.get_default_remote",
+                        return_value=fake_remote):
+            with mock.patch("enstaller.main.Configuration.from_file",
+                            return_value=config):
+                with mock.patch("enstaller.main.ensure_authenticated_config",
+                                return_value=True):
+                    return without_any_configuration(f)(*a, **kw)
     return wrapper
 
 

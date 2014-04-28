@@ -478,9 +478,9 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
-def ensure_authenticated_config(config, config_filename, enpkg):
+def ensure_authenticated_config(config, config_filename, store):
     try:
-        authenticate(config, enpkg.remote)
+        authenticate(config, store)
     except AuthFailedError:
         login, _ = config.get_auth()
         print("Could not authenticate with user '{0}'.".format(login))
@@ -674,16 +674,12 @@ def main(argv=None):
         urls = [fill_url(u) for u in config.IndexedRepos]
         remote = create_joined_store(config, urls)
 
-    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
-                  config=config)
-
-
     if args.config:                               # --config
-        print_config(config, enpkg.remote, prefixes[0])
+        print_config(config, remote, prefixes[0])
         return
 
     if args.add_url:                              # --add-url
-        add_url(config_filename, enpkg.config, args.add_url)
+        add_url(config_filename, config, args.add_url)
         return
 
     if args.userpass:                             # --userpass
@@ -713,7 +709,8 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    ensure_authenticated_config(config, config_filename, enpkg)
+    ensure_authenticated_config(config, config_filename, remote)
+    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
 
     if args.dry_run:
         def print_actions(actions):

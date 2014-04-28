@@ -210,9 +210,9 @@ class TestRepository(unittest.TestCase):
     def test_has_package(self):
         # Given
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            "1.3.0", [], "2.7", 1, 1, None)
+                                            "1.3.0", 1, [], "2.7", 1, None)
         unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
-                                              "1.4.0", [], "2.7", 1, 1, None)
+                                              "1.4.0", 1, [], "2.7", 1, None)
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))
@@ -244,36 +244,3 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(len(metadata), 2)
         self.assertEqual(set(m.version for m in metadata),
                          set(["1.2.1", "1.3.0"]))
-
-    def test_connect(self):
-        # Given
-        store = mock.Mock()
-        store.connect = mock.Mock()
-        store.is_connected = False
-
-        # When
-        repository = Repository(store)
-        repository.connect((None, None))
-
-        # Then
-        self.assertTrue(store.connect.called)
-
-    def test_fetch(self):
-        # Given
-        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
-        metadata = PackageMetadata.from_egg(path)
-
-        # When
-        resp = self.repository.fetch_from_package(metadata)
-        try:
-            with mkdtemp() as d:
-                target_path = os.path.join(d, "foo.egg")
-                with open(target_path, "wb") as target:
-                    target.write(resp.read())
-                resp.close()
-                md5 = compute_md5(target_path)
-        finally:
-            resp.close()
-
-        # Then
-        self.assertEqual(md5, metadata.md5)

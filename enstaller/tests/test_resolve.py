@@ -168,8 +168,8 @@ class TestChain0(unittest.TestCase):
         store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR, fn)) for fn in
                              ['index-add.txt', 'index-5.1.txt',
                               'index-5.0.txt', 'index-cycle.txt']])
+        store.connect()
         repo = Repository(store)
-        repo.connect((None, None))
         self.resolve = Resolve(repo)
 
     def test_25(self):
@@ -201,8 +201,8 @@ class TestChain1(unittest.TestCase):
         store = JoinedStore([
                 DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
                 for name in ('epd', 'gpl')])
+        store.connect()
         repo = Repository(store)
-        repo.connect((None, None))
         self.resolve = Resolve(repo)
 
         self.store = store
@@ -268,8 +268,8 @@ class TestChain2(unittest.TestCase):
         self.store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR, name,
                                                    'index-7.1.txt'), name) for
                                   name in ('open', 'runner', 'epd')])
+        self.store.connect()
         self.repo = Repository(self.store)
-        self.repo.connect((None, None))
         self.resolve = Resolve(self.repo)
 
     def test_flat_recur1(self):
@@ -298,8 +298,8 @@ class TestCycle(unittest.TestCase):
     def setUp(self):
         store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR,
                                               'index-cycle.txt'))])
+        store.connect()
         repo = Repository(store)
-        repo.connect((None, None))
         self.resolve = Resolve(repo)
 
     def test_cycle(self):

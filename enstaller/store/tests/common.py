@@ -12,7 +12,9 @@ class MetadataOnlyStore(LocalIndexedStore):
     A simple store implementation which may be used when only metadata are
     needed in tests.
     """
-    def __init__(self, entries):
+    def __init__(self, entries=None):
+        if entries is None:
+            entries = []
         super(MetadataOnlyStore, self).__init__("")
         self._entries = entries
 

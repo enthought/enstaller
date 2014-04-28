@@ -8,6 +8,7 @@ from egginst.progress import FileProgressManager, progress_manager_factory
 from egginst.utils import atomic_file, compute_md5, makedirs
 
 from enstaller.errors import InvalidChecksum
+from enstaller.fetch_utils import StoreResponse
 from enstaller.repository import egg_name_to_name_version
 
 
@@ -89,8 +90,9 @@ def checked_content(filename, expected_md5):
 
 class FetchAPI(object):
 
-    def __init__(self, repository, local_dir, evt_mgr=None):
-        self.repository = repository
+    def __init__(self, repository, store, local_dir, evt_mgr=None):
+        self._repository = repository
+        self._store = store
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
 
@@ -109,7 +111,9 @@ class FetchAPI(object):
                                             package_metadata.size,
                                             self.evt_mgr, self)
 
-        response = self.repository.fetch_from_package(package_metadata)
+        response = StoreResponse(self._store.get_data(package_metadata.key),
+                                 package_metadata.size, package_metadata.md5,
+                                 package_metadata.key)
 
         with FileProgressManager(progress) as progress:
             path = self.path(package_metadata.key)
@@ -146,7 +150,7 @@ class FetchAPI(object):
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         name, version = egg_name_to_name_version(egg)
-        package_metadata = self.repository.find_package(name, version)
+        package_metadata = self._repository.find_package(name, version)
 
         if self._needs_to_download(package_metadata, force):
             self._fetch(package_metadata, execution_aborted)

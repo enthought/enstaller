@@ -104,6 +104,10 @@ class LocalIndexedStore(IndexedStore):
 
 
 class RemoteHTTPIndexedStore(IndexedStore):
+    @classmethod
+    def from_configuration(cls, config):
+        return cls(config.webservice_entry_point, config.local,
+                   config.use_pypi)
 
     def __init__(self, url, cache_dir, use_pypi=True):
         super(RemoteHTTPIndexedStore, self).__init__()

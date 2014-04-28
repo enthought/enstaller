@@ -1,4 +1,5 @@
 import collections
+import operator
 import os
 import os.path
 
@@ -7,7 +8,6 @@ from egginst.utils import ZipFile, compute_md5
 
 
 from enstaller.errors import MissingPackage
-from enstaller.fetch_utils import StoreResponse
 from enstaller.utils import comparable_version
 
 
@@ -218,37 +218,32 @@ class Repository(object):
     contains.
     """
     def __init__(self, store):
-        self._store = store
-        store_info = self._store.info()
+        self._name_to_packages = collections.defaultdict(list)
+        self._packages = []
+
+        store_info = store.info()
         self._store_info = store_info.get("root") if store_info else ""
 
-    def _package_metadata_from_key(self, key):
-        data = self._store.get_metadata(key)
-        data["store_location"] =  self._store_info
-        return RepositoryPackageMetadata.from_json_dict(key, data)
+        for key in store.query_keys(type="egg"):
+            raw_metadata = store.get_metadata(key)
+            raw_metadata["store_location"] = self._store_info
+            package = RepositoryPackageMetadata.from_json_dict(key,
+                                                               raw_metadata)
+            self.add_package(package)
 
-    # FIXME: this should be removed at some point, as repository and network
-    # concerns should be separated
-    @property
-    def is_connected(self):
-        return self._store.is_connected
-
-    def connect(self, auth):
-        if not self._store.is_connected:
-            self._store.connect(auth)
-
-    # FIXME: this should be removed at some point, as this is too low-level
-    def _has_package_key(self, key):
-        """
-        Returns True if the given package is available in this repository
-        """
-        return self._store.exists(key)
+    def add_package(self, package_metadata):
+        self._packages.append(package_metadata)
+        self._name_to_packages[package_metadata.name].append(package_metadata)
 
     def has_package(self, package_metadata):
         """
         Returns True if the given package is available in this repository
         """
-        return self._store.exists(package_metadata.key)
+        candidates = self._name_to_packages.get(package_metadata.name, [])
+        for candidate in candidates:
+            if candidate.full_version == package_metadata.full_version:
+                return True
+        return False
 
     def find_package(self, name, version):
         """ Search for the first match of a package with the given name and
@@ -260,13 +255,16 @@ class Repository(object):
             The corresponding metadata
         """
         upstream_version, build = parse_version(version)
-
-        keys = self._store.query_keys(type="egg", name=name,
-                                      version=upstream_version, build=build)
-
         exception = MissingPackage("Package '{0}-{1}' not found".format(name, version))
-        key = _first_or_raise(keys, exception)
-        return self._package_metadata_from_key(key)
+
+        candidates = self._name_to_packages.get(name, [])
+        if len(candidates) >= 1:
+            for candidate in candidates:
+                if candidate.full_version == version:
+                    return candidate
+            raise exception
+        else:
+            raise exception
 
     def find_packages(self, name, version=None):
         """
@@ -284,14 +282,11 @@ class Repository(object):
         packages: seq of RepositoryPackageMetadata
             The corresponding metadata (order is unspecified)
         """
-        kw = {"name": name, "type": "egg"}
-        if version is not None:
-            upstream_version, build = parse_version(version)
-            kw["version"] = upstream_version
-            kw["build"] = build
-
-        return [self._package_metadata_from_key(key)
-                for key in self._store.query_keys(**kw)]
+        candidates = self._name_to_packages.get(name, [])
+        if version is None:
+            return [package for package in candidates]
+        else:
+            return [package for package in candidates if package.full_version == version]
 
     def iter_packages(self):
         """
@@ -302,8 +297,8 @@ class Repository(object):
         packages: iterable of RepositoryPackageMetadata
             The corresponding metadata
         """
-        for key in self._store.query_keys(type="egg"):
-            yield self._package_metadata_from_key(key)
+        for package in self._packages:
+            yield package
 
     def iter_most_recent_packages(self):
         """
@@ -315,27 +310,7 @@ class Repository(object):
         packages: iterable of RepositoryPackageMetadata
             The corresponding metadata
         """
-        package_name_to_keys = collections.defaultdict(list)
-        for key in self._store.query_keys(type="egg"):
-            metadata = self._store.get_metadata(key)
-            name = metadata["name"]
-            version = metadata["version"]
-            package_name_to_keys[name].append((version, key))
-
-        def keyfunc(pair):
-            return comparable_version(pair[0])
-
-        for name, version_pairs in package_name_to_keys.items():
-            sorted_by_version = sorted(version_pairs, key=keyfunc)
-            latest_pair = sorted_by_version[-1]
-            latest_key = latest_pair[1]
-            yield self._package_metadata_from_key(latest_key)
-
-    def fetch_from_package(self, package_metadata):
-        """
-        Returns a StoreResponse object for the given package, which can then be
-        used for fetching the package content.
-        """
-        return StoreResponse(self._store.get_data(package_metadata.key),
-                             package_metadata.size, package_metadata.md5,
-                             package_metadata.key)
+        for name, packages in self._name_to_packages.items():
+            sorted_by_version = sorted(packages,
+                                       key=operator.attrgetter("comparable_version"))
+            yield sorted_by_version[-1]

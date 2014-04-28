@@ -122,6 +122,9 @@ class Enpkg(object):
     """
     def __init__(self, remote=None, userpass='<config>', prefixes=[sys.prefix],
                  hook=False, evt_mgr=None, config=None):
+        if hook is not False:
+            raise EnpkgError("hook feature has been removed")
+
         if config is None:
             self.config = Configuration._get_default_config()
         else:
@@ -130,7 +133,6 @@ class Enpkg(object):
         self.local_dir = get_writable_local_dir(self.config)
         if remote is None:
             remote = get_default_remote(self.config)
-        self._repository = Repository(remote)
 
         # XXX: remote attribute kept for backward compatibility, remove before
         # 4.7.0
@@ -141,30 +143,19 @@ class Enpkg(object):
         else:
             self.userpass = userpass
 
+        if not remote.is_connected:
+            remote.connect(self.userpass)
+        self._repository = Repository(remote)
+
         self.prefixes = prefixes
         self.evt_mgr = evt_mgr
 
-        if hook is not False:
-            raise EnpkgError("hook feature has been removed")
         self.ec = JoinedEggCollection([
                 EggCollection(prefix, self.evt_mgr)
                 for prefix in self.prefixes])
         self._execution_aborted = threading.Event()
 
     # ============= methods which relate to remove store =================
-
-    def reconnect(self):
-        """
-        Normally it is not necessary to call this method, it is only there
-        to offer a convenient way to (re)connect the key-value store.
-        This is necessary to update to changes which have occured in the
-        store, as the remote store might create a cache during connecting.
-        """
-        self._connect(force=True)
-
-    def _connect(self, force=False):
-        self._repository.connect(self.userpass)
-
     def find_remote_packages(self, name):
         """
         Find every package with the given name on the configured remote
@@ -175,8 +166,6 @@ class Enpkg(object):
         packages: seq
             List of RepositoryPackageMetadata instances
         """
-        # FIXME: we should connect in one place consistently
-        self._repository.connect(self.userpass)
         return self._repository.find_packages(name)
 
     def remote_packages(self):
@@ -188,8 +177,6 @@ class Enpkg(object):
         it: iterator
             Iterate over (key, RepositoryPackageMetadata) pairs
         """
-        # FIXME: we should connect in one place consistently
-        self._repository.connect(self.userpass)
         return self._repository.iter_packages()
 
     def info_list_name(self, name):
@@ -247,7 +234,7 @@ class Enpkg(object):
             self.ec.remove(egg)
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
-            if self._repository.is_connected:
+            if self.remote.is_connected:
                 package = self._repository.find_package(name, version)
                 extra_info = package.s3index_data
             else:
@@ -305,7 +292,6 @@ class Enpkg(object):
             installed_version = enstaller.__version__
 
         mode = 'recur'
-        self._connect()
         req = Req.from_anything("enstaller")
         eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
@@ -331,7 +317,6 @@ class Enpkg(object):
         """
         req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
-        self._connect()
         eggs = Resolve(self._repository).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
@@ -428,7 +413,6 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self.local_dir, egg)):
-                self._repository.connect(self.userpass)
                 if self._repository._has_package_key(egg):
                     res.append(('fetch_0', egg))
                 else:
@@ -470,7 +454,6 @@ class Enpkg(object):
             yield k, index[k]
 
     def fetch(self, egg, force=False):
-        self._connect()
-        f = FetchAPI(self._repository, self.local_dir, self.evt_mgr)
+        f = FetchAPI(self._repository, self.remote, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.fetch_egg(egg, force, self._execution_aborted)
