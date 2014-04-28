@@ -154,7 +154,7 @@ class TestFetchAPI(unittest.TestCase):
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
         store.connect((None, None))
 
-        repository = Repository(store)
+        repository = Repository._from_store(store)
 
         return store, repository
 
@@ -275,6 +275,7 @@ class TestFetchAPI(unittest.TestCase):
         # Given
         egg = "nose-1.3.0-1.egg"
         store, repository = self._create_store_and_repository([egg])
+        print(list(repository.iter_packages()))
 
         with mock.patch.object(EventManager, "emit"):
             event_manager = EventManager()

@@ -19,6 +19,8 @@ class MetadataOnlyStore(LocalIndexedStore):
         self._entries = entries
 
     def connect(self, auth=None):
+        self._connected = True
+
         self._index = self.get_index()
         self._groups = collections.defaultdict(list)
 
@@ -43,6 +45,8 @@ class EggsStore(LocalIndexedStore):
         self._eggs = dict((os.path.basename(egg), egg) for egg in eggs)
 
     def connect(self, auth=None):
+        self._connected = True
+
         self._index = self.get_index()
         self._groups = collections.defaultdict(list)
 

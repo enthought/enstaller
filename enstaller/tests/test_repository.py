@@ -7,10 +7,10 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import mock
-
+from egginst.main import EggInst
 from egginst.utils import compute_md5
-from egginst.tests.common import _EGGINST_COMMON_DATA, mkdtemp
+from egginst.testing_utils import slow
+from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
 
 from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
@@ -98,7 +98,7 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.build, 1)
 
 
-class TestPackage(unittest.TestCase):
+class TestRepositoryPackage(unittest.TestCase):
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
@@ -123,6 +123,44 @@ class TestPackage(unittest.TestCase):
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
 
+    def test_from_meta_dir(self):
+        # Given
+        json_dict = {
+          "arch": "amd64",
+          "build": 1,
+          "ctime": "Thu Apr 24 15:41:24 2014",
+          "hook": False,
+          "key": "VTK-5.10.1-1.egg",
+          "name": "vtk",
+          "osdist": "RedHat_5",
+          "packages": [],
+          "platform": "linux2",
+          "python": "2.7",
+          "type": "egg",
+          "version": "5.10.1"
+        }
+
+        r_s3index_data = {
+            "available": True,
+            "build": 1,
+            "md5": "a" * 32,
+            "mtime": 0.0,
+            "name": "vtk",
+            "packages": [],
+            "version": "5.10.1",
+            "product": None,
+            "python": "2.7",
+            "size": -1,
+            "type": "egg",
+        }
+
+        # When
+        metadata = RepositoryPackageMetadata.from_installed_meta_dict(json_dict)
+
+        # Then
+        self.assertEqual(metadata.s3index_data, r_s3index_data)
+        self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
+
 
 class TestRepository(unittest.TestCase):
     def setUp(self):
@@ -138,7 +176,7 @@ class TestRepository(unittest.TestCase):
             "nose-1.3.0-2.egg",
         ]
         self.store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        self.repository = Repository(self.store)
+        self.repository = Repository._from_store(self.store)
 
     def test_find_package(self):
         # Given
@@ -222,7 +260,7 @@ class TestRepository(unittest.TestCase):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository(store)
+        repository = Repository._from_store(store)
 
         # When
         metadata = list(repository.iter_most_recent_packages())
@@ -235,7 +273,7 @@ class TestRepository(unittest.TestCase):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository(store)
+        repository = Repository._from_store(store)
 
         # When
         metadata = list(repository.iter_packages())
@@ -244,3 +282,20 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(len(metadata), 2)
         self.assertEqual(set(m.version for m in metadata),
                          set(["1.2.1", "1.3.0"]))
+
+    @slow
+    def test_from_prefix(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, DUMMY_EGG)
+        with mkdtemp() as tempdir:
+            create_venv(tempdir)
+            installer = EggInst(path, prefix=tempdir)
+            installer.install()
+
+            # When
+            repository = Repository._from_prefixes([tempdir])
+
+            # Then
+            packages = repository.find_packages("dummy")
+            self.assertEqual(len(packages), 1)
+            self.assertEqual(packages[0].name, "dummy")

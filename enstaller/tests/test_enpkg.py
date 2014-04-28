@@ -135,11 +135,11 @@ class TestEnpkg(unittest.TestCase):
             dummy_enpkg_entry_factory("numpy", "1.7.1", 1),
         ]
 
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
+        store = MetadataOnlyStore(entries)
+        store.connect()
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
+            enpkg = Enpkg(store, prefixes=[d],
                           evt_mgr=None, config=Configuration())
             queried_entries = enpkg.info_list_name("numpy")
 
@@ -398,11 +398,10 @@ class TestEnpkgExecute(unittest.TestCase):
         base_egg = os.path.basename(egg)
         fetch_opcode = 0
 
-        entries = [
-            EnpkgS3IndexEntry(product="free", build=1,
-                              egg_basename="dummy", version="1.0.1",
-                              available=True),
-        ]
+        entry = EnpkgS3IndexEntry(product="free", build=1,
+                                  egg_basename="dummy", version="1.0.1",
+                                  available=True)
+        entries = [entry]
 
         repo = MetadataOnlyStore(entries)
         repo.connect()
@@ -421,7 +420,7 @@ class TestEnpkgExecute(unittest.TestCase):
 
             mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
             local_repo.install.assert_called_with(base_egg, enpkg.local_dir,
-                                                  None)
+                                                  entry.s3index_data)
 
 class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):

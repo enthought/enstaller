@@ -2,20 +2,14 @@ import collections
 import operator
 import os
 import os.path
+import sys
 
 from egginst.eggmeta import info_from_z
 from egginst.utils import ZipFile, compute_md5
 
-
 from enstaller.errors import MissingPackage
+from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import comparable_version
-
-
-def _first_or_raise(it, exception):
-    try:
-        return it.next()
-    except StopIteration:
-        raise exception
 
 
 class PackageMetadata(object):
@@ -60,7 +54,7 @@ class PackageMetadata(object):
         self.md5 = md5
 
     def __repr__(self):
-        return "PackageMetadata('{0}-{1}-{2}', key={0!r})".format(
+        return "PackageMetadata('{0}-{1}-{2}', key={3!r})".format(
             self.name, self.version, self.build, self.key)
 
     @property
@@ -96,6 +90,17 @@ class RepositoryPackageMetadata(object):
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
                    json_dict.get("available", True),
                    json_dict["store_location"])
+
+    @classmethod
+    def from_installed_meta_dict(cls, json_dict):
+        fake_size = -1
+        fake_md5 = "a" * 32
+        return cls(json_dict["key"], json_dict["name"], json_dict["version"],
+                   json_dict["build"], json_dict["packages"],
+                   json_dict["python"], fake_size, fake_md5,
+                   json_dict.get("mtime", 0.0), json_dict.get("product", None),
+                   json_dict.get("available", True),
+                   json_dict.get("store_location", ""))
 
     def __init__(self, key, name, version, build, packages, python, size, md5,
                  mtime, product, available, store_location):
@@ -217,19 +222,55 @@ class Repository(object):
     A Repository is a set of package, and knows about which package it
     contains.
     """
-    def __init__(self, store):
-        self._name_to_packages = collections.defaultdict(list)
-        self._packages = []
+    @classmethod
+    def _from_prefixes(cls, prefixes=None):
+        """
+        Create a repository representing the *installed* packages.
 
-        store_info = store.info()
-        self._store_info = store_info.get("root") if store_info else ""
+        Parameters
+        ----------
+        prefixes: seq
+            List of prefixes. [sys.prefix] by default
+        """
+        if prefixes is None: #  pragma: nocover
+            prefixes = [sys.prefix]
+
+        repository = cls()
+        for prefix in prefixes:
+            egg_info_root = os.path.join(prefix, "EGG-INFO")
+            for path in os.listdir(egg_info_root):
+                meta_dir = os.path.join(egg_info_root, path)
+                if meta_dir is not None:
+                    info = info_from_metadir(meta_dir)
+                    info["store_location"] = egg_info_root
+
+                    package = RepositoryPackageMetadata.from_installed_meta_dict(info)
+                    repository.add_package(package)
+
+        return repository
+
+    @classmethod
+    def _from_store(cls, store):
+        assert store.is_connected, "This method expected an already connected store."
+
+        _store_info = store.info()
+        store_info = _store_info.get("root") if _store_info else ""
+
+        repository = cls(store_info)
 
         for key in store.query_keys(type="egg"):
             raw_metadata = store.get_metadata(key)
-            raw_metadata["store_location"] = self._store_info
+            raw_metadata["store_location"] = store_info
             package = RepositoryPackageMetadata.from_json_dict(key,
                                                                raw_metadata)
-            self.add_package(package)
+            repository.add_package(package)
+        return repository
+
+    def __init__(self, store_info=""):
+        self._name_to_packages = collections.defaultdict(list)
+        self._packages = []
+
+        self._store_info = ""
 
     def add_package(self, package_metadata):
         self._packages.append(package_metadata)
@@ -254,17 +295,13 @@ class Repository(object):
         package: RepositoryPackageMetadata
             The corresponding metadata
         """
-        upstream_version, build = parse_version(version)
-        exception = MissingPackage("Package '{0}-{1}' not found".format(name, version))
-
         candidates = self._name_to_packages.get(name, [])
-        if len(candidates) >= 1:
-            for candidate in candidates:
-                if candidate.full_version == version:
-                    return candidate
-            raise exception
-        else:
-            raise exception
+        for candidate in candidates:
+            if candidate.full_version == version:
+                return candidate
+        raise MissingPackage("Package '{0}-{1}' not found".format(name,
+                                                                  version))
+
 
     def find_packages(self, name, version=None):
         """

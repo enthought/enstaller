@@ -145,7 +145,7 @@ class Enpkg(object):
 
         if not remote.is_connected:
             remote.connect(self.userpass)
-        self._repository = Repository(remote)
+        self._repository = Repository._from_store(remote)
 
         self.prefixes = prefixes
         self.evt_mgr = evt_mgr
