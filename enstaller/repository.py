@@ -217,6 +217,16 @@ def egg_name_to_name_version(egg_name):
     else:
         return parts[0].lower(), parts[1]
 
+
+def _valid_meta_dir_iterator(prefixes):
+    for prefix in prefixes:
+        egg_info_root = os.path.join(prefix, "EGG-INFO")
+        if os.path.isdir(egg_info_root):
+            for path in os.listdir(egg_info_root):
+                meta_dir = os.path.join(egg_info_root, path)
+                yield egg_info_root, meta_dir
+
+
 class Repository(object):
     """
     A Repository is a set of package, and knows about which package it
@@ -236,16 +246,14 @@ class Repository(object):
             prefixes = [sys.prefix]
 
         repository = cls()
-        for prefix in prefixes:
-            egg_info_root = os.path.join(prefix, "EGG-INFO")
-            for path in os.listdir(egg_info_root):
-                meta_dir = os.path.join(egg_info_root, path)
-                if meta_dir is not None:
-                    info = info_from_metadir(meta_dir)
-                    info["store_location"] = egg_info_root
+        for egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
+            info = info_from_metadir(meta_dir)
+            if info is not None:
+                info["store_location"] = egg_info_root
 
-                    package = RepositoryPackageMetadata.from_installed_meta_dict(info)
-                    repository.add_package(package)
+                package = \
+                    RepositoryPackageMetadata.from_installed_meta_dict(info)
+                repository.add_package(package)
 
         return repository
 

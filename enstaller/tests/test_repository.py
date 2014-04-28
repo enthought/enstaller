@@ -299,3 +299,13 @@ class TestRepository(unittest.TestCase):
             packages = repository.find_packages("dummy")
             self.assertEqual(len(packages), 1)
             self.assertEqual(packages[0].name, "dummy")
+
+    def test_from_empty_prefix(self):
+        # Given
+        with mkdtemp() as tempdir:
+
+            # When
+            repository = Repository._from_prefixes([tempdir])
+
+            # Then
+            self.assertEqual(len(list(repository.iter_packages())), 0)
