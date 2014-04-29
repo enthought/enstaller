@@ -323,7 +323,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._repository, enpkg._top_installed_repository)
+                search(enpkg, enpkg._remote_repository, enpkg._top_installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_installed(self):
@@ -343,7 +343,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._repository, enpkg._installed_repository)
+                search(enpkg, enpkg._remote_repository, enpkg._installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_pattern(self):
@@ -363,7 +363,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._repository,
+                search(enpkg, enpkg._remote_repository,
                        enpkg._top_installed_repository,
                        pat=re.compile("dummy"))
                 self.assertMultiLineEqual(m.value, r_output)
@@ -376,7 +376,7 @@ class TestSearch(unittest.TestCase):
                                      * 1.0.1-1            commercial           {0}
                 """.format(""))
             with mock_print() as m:
-                search(enpkg, enpkg._repository,
+                search(enpkg, enpkg._remote_repository,
                        enpkg._top_installed_repository, pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 

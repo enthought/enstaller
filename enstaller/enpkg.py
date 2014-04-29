@@ -146,7 +146,7 @@ class Enpkg(object):
 
         if not remote.is_connected:
             remote.connect(self.userpass)
-        self._repository = Repository._from_store(remote)
+        self._remote_repository = Repository._from_store(remote)
 
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
@@ -166,7 +166,7 @@ class Enpkg(object):
         """
         req = Req(name)
         info_list = []
-        for package_metadata in self._repository.find_packages(name):
+        for package_metadata in self._remote_repository.find_packages(name):
             if req.matches(package_metadata.s3index_data):
                 info_list.append(package_metadata)
         try:
@@ -222,7 +222,7 @@ class Enpkg(object):
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
             if self.remote.is_connected:
-                package = self._repository.find_package(name, version)
+                package = self._remote_repository.find_package(name, version)
                 extra_info = package.s3index_data
             else:
                 extra_info = None
@@ -276,7 +276,7 @@ class Enpkg(object):
 
         mode = 'recur'
         req = Req.from_anything("enstaller")
-        eggs = Resolve(self._repository).install_sequence(req, mode)
+        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
         elif not len(eggs) == 1:
@@ -300,7 +300,7 @@ class Enpkg(object):
         """
         req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
-        eggs = Resolve(self._repository).install_sequence(req, mode)
+        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
         return self._install_actions(eggs, mode, force, forceall)
@@ -403,7 +403,7 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self.local_dir, egg)):
-                if self._repository._has_package_key(egg):
+                if self._remote_repository._has_package_key(egg):
                     res.append(('fetch_0', egg))
                 else:
                     raise EnpkgError("cannot revert -- missing %r" % egg)
@@ -433,7 +433,7 @@ class Enpkg(object):
             A generator over (key, package info dict) pairs
         """
         index = dict((package.key, package.s3index_data) for package in
-                     self._repository.find_packages(name))
+                     self._remote_repository.find_packages(name))
         for package in self._installed_repository.find_packages(name):
             key = package.key
             info = package._compat_dict
@@ -445,6 +445,6 @@ class Enpkg(object):
             yield k, index[k]
 
     def fetch(self, egg, force=False):
-        f = FetchAPI(self._repository, self.remote, self.local_dir, self.evt_mgr)
+        f = FetchAPI(self._remote_repository, self.remote, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.fetch_egg(egg, force, self._execution_aborted)
