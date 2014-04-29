@@ -36,7 +36,7 @@ from enstaller.main import check_prefixes, disp_store_info, \
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.store.tests.common import MetadataOnlyStore
 
-from .common import MetaOnlyEggCollection, dummy_enpkg_entry_factory, \
+from .common import dummy_enpkg_entry_factory, \
     dummy_installed_egg_factory, mock_print, \
     fake_keyring, is_not_authenticated, is_authenticated, \
     PY_VER
