@@ -5,16 +5,18 @@ import os.path
 import sys
 
 from egginst.eggmeta import info_from_z
-from egginst.utils import ZipFile, compute_md5
+from egginst.utils import ZipFile
 
-from enstaller.errors import MissingPackage
+from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import comparable_version
 
 
 class PackageMetadata(object):
     """
-    PackageMetadata encompasses the metadata required to resolve dependencies.
+    PackageMetadataBase encompasses the metadata required to resolve
+    dependencies.
+
     They are not attached to a repository.
     """
     @classmethod
@@ -24,9 +26,6 @@ class PackageMetadata(object):
         """
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
-        st = os.stat(path)
-        metadata["size"] = st.st_size
-        metadata["md5"] = compute_md5(path)
         metadata["packages"] = metadata.get("packages", [])
         return cls.from_json_dict(os.path.basename(path), metadata)
 
@@ -38,9 +37,9 @@ class PackageMetadata(object):
         """
         return cls(key, json_dict["name"], json_dict["version"],
                    json_dict["build"], json_dict["packages"],
-                   json_dict["python"], json_dict["size"], json_dict["md5"])
+                   json_dict["python"])
 
-    def __init__(self, key, name, version, build, packages, python, size, md5):
+    def __init__(self, key, name, version, build, packages, python):
         self.key = key
 
         self.name = name
@@ -49,9 +48,6 @@ class PackageMetadata(object):
 
         self.packages = packages
         self.python = python
-
-        self.size = size
-        self.md5 = md5
 
     def __repr__(self):
         return "PackageMetadata('{0}-{1}-{2}', key={3!r})".format(
@@ -74,7 +70,7 @@ class PackageMetadata(object):
         return comparable_version(self.version), self.build
 
 
-class RepositoryPackageMetadata(object):
+class RepositoryPackageMetadata(PackageMetadata):
     """
     RepositoryPackageMetadata encompasses the full set of package metadata
     available from a repository.
@@ -82,13 +78,6 @@ class RepositoryPackageMetadata(object):
     In particular, RepositoryPackageMetadata's instances know about which
     repository they are coming from through the store_location attribute.
     """
-    @classmethod
-    def from_egg(cls, path):
-        package = PackageMetadata.from_egg(path)
-        return cls(package.key, package.name, package.version, package.build,
-                   package.packages, package.python, -1, "a" * 32, 0, None,
-                   True, "")
-
     @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],
@@ -100,7 +89,12 @@ class RepositoryPackageMetadata(object):
 
     def __init__(self, key, name, version, build, packages, python, size, md5,
                  mtime, product, available, store_location):
-        self._package = PackageMetadata(key, name, version, build, packages, python, size, md5)
+        super(RepositoryPackageMetadata, self).__init__(key, name, version,
+                                                        build, packages,
+                                                        python)
+
+        self.size = size
+        self.md5 = md5
 
         self.mtime = mtime
         self.product = product
@@ -123,54 +117,22 @@ class RepositoryPackageMetadata(object):
         template = "RepositoryPackageMetadata(" \
             "'{self.name}-{self.version}-{self.build}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
-            "store_location={self.store_location!r}".format(self=self)
+            "store_location={self.store_location!r})".format(self=self)
         return template.format(self.name, self.version, self.build, self.key,
                                self.available, self.product,
                                self.store_location)
 
-    @property
-    def comparable_version(self):
-        return self._package.comparable_version
 
-    # FIXME: would be nice to have some basic delegate functionalities instead
-    @property
-    def key(self):
-        return self._package.key
+class InstalledPackageMetadata(PackageMetadata):
+    @classmethod
+    def from_meta_dir(cls, meta_dir):
+        meta_dict = info_from_metadir(meta_dir)
+        if meta_dict is None:
+            message = "No installed metadata found in {0!r}".format(meta_dir)
+            raise EnstallerException(message)
+        else:
+            return cls.from_installed_meta_dict(meta_dict)
 
-    @property
-    def name(self):
-        return self._package.name
-
-    @property
-    def version(self):
-        return self._package.version
-
-    @property
-    def build(self):
-        return self._package.build
-
-    @property
-    def packages(self):
-        return self._package.packages
-
-    @property
-    def python(self):
-        return self._package.python
-
-    @property
-    def md5(self):
-        return self._package.md5
-
-    @property
-    def size(self):
-        return self._package.size
-
-    @property
-    def full_version(self):
-        return self._package.full_version
-
-
-class InstalledPackageMetadata(object):
     @classmethod
     def from_installed_meta_dict(cls, json_dict):
         return cls(json_dict["key"], json_dict["name"], json_dict["version"],
@@ -180,19 +142,11 @@ class InstalledPackageMetadata(object):
 
     def __init__(self, key, name, version, build, packages, python, ctime,
                  store_location):
-        self.key = key
+        super(InstalledPackageMetadata, self).__init__(key, name, version,
+                                                       build, packages, python)
 
-        self.name = name
-        self.version = version
-        self.build = build
-
-        self.packages = packages
-        self.python = python
         self.ctime = ctime
-
-    @property
-    def full_version(self):
-        return "{0}-{1}".format(self.version, self.build)
+        self.store_location = store_location
 
     @property
     def _compat_dict(self):

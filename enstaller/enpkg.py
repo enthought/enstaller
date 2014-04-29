@@ -17,7 +17,8 @@ from egginst.progress import progress_manager_factory
 import enstaller
 
 from enstaller.errors import EnpkgError, MissingPackage
-from enstaller.repository import (Repository, RepositoryPackageMetadata,
+from enstaller.eggcollect import meta_dir_from_prefix
+from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
@@ -148,10 +149,12 @@ class Enpkg(object):
         self._repository = Repository._from_store(remote)
 
         self.prefixes = prefixes
+        self.top_prefix = prefixes[0]
+
         self.evt_mgr = evt_mgr
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
-        self._top_installed_repository = Repository._from_prefixes([self.prefixes[0]])
+        self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
 
         self._execution_aborted = threading.Event()
 
@@ -233,11 +236,14 @@ class Enpkg(object):
         path: str
             The path to the egg to install
         """
-        package = RepositoryPackageMetadata.from_egg(path)
+        name, _ = egg_name_to_name_version(path)
 
         installer = EggInst(path, prefix=self.prefixes[0], evt_mgr=self.evt_mgr)
         installer.super_id = getattr(self, 'super_id', None)
         installer.install(extra_info)
+
+        meta_dir = meta_dir_from_prefix(self.top_prefix, name)
+        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
 
         self._top_installed_repository.add_package(package)
         self._installed_repository.add_package(package)
@@ -251,7 +257,7 @@ class Enpkg(object):
         path: str
             The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        remover = EggInst(egg, prefix=self.prefixes[0])
+        remover = EggInst(egg, prefix=self.top_prefix)
         remover.super_id = getattr(self, 'super_id', None)
         remover.remote()
 
@@ -484,7 +490,7 @@ class Enpkg(object):
                      self.find_remote_packages(name))
         for package in self.find_installed_packages(name):
             key = package.key
-            info = package.s3index_data
+            info = package._compat_dict
             if key in index:
                 index[key].update(info)
             else:

@@ -77,7 +77,7 @@ class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, [],
-                                   "2.7", 1, None)
+                                   "2.7")
 
         # When
         r = repr(metadata)
@@ -234,9 +234,9 @@ class TestRepository(unittest.TestCase):
     def test_has_package(self):
         # Given
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            "1.3.0", 1, [], "2.7", 1, None)
+                                            "1.3.0", 1, [], "2.7")
         unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
-                                              "1.4.0", 1, [], "2.7", 1, None)
+                                              "1.4.0", 1, [], "2.7")
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))
