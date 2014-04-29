@@ -96,7 +96,7 @@ def name_egg(egg):
 def install_time_string(enpkg, name):
     lines = []
     for info in enpkg.find_installed_packages(name):
-        lines.append('%s was installed on: %s' % (info.key, "unknown"))
+        lines.append('%s was installed on: %s' % (info.key, info.ctime))
     return "\n".join(lines)
 
 
@@ -124,7 +124,7 @@ def print_installed(prefix, pat=None):
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
-        info = package.s3index_data
+        info = package._compat_dict
         print(FMT % (name_egg(package.key), VB_FMT % info, disp_store_info(info)))
 
 
@@ -144,7 +144,7 @@ def imports_option(enpkg, pat=None):
         if pat and not pat.search(name):
             continue
         packages = enpkg.find_installed_packages(name)
-        info = packages[0].s3index_data
+        info = packages[0]._compat_dict
         loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
         print(FMT % (name, VB_FMT % info, loc))
 

@@ -98,17 +98,6 @@ class RepositoryPackageMetadata(object):
                    json_dict.get("available", True),
                    json_dict["store_location"])
 
-    @classmethod
-    def from_installed_meta_dict(cls, json_dict):
-        fake_size = -1
-        fake_md5 = "a" * 32
-        return cls(json_dict["key"], json_dict["name"], json_dict["version"],
-                   json_dict["build"], json_dict["packages"],
-                   json_dict["python"], fake_size, fake_md5,
-                   json_dict.get("mtime", 0.0), json_dict.get("product", None),
-                   json_dict.get("available", True),
-                   json_dict.get("store_location", ""))
-
     def __init__(self, key, name, version, build, packages, python, size, md5,
                  mtime, product, available, store_location):
         self._package = PackageMetadata(key, name, version, build, packages, python, size, md5)
@@ -180,6 +169,40 @@ class RepositoryPackageMetadata(object):
     def full_version(self):
         return self._package.full_version
 
+
+class InstalledPackageMetadata(object):
+    @classmethod
+    def from_installed_meta_dict(cls, json_dict):
+        return cls(json_dict["key"], json_dict["name"], json_dict["version"],
+                   json_dict["build"], json_dict["packages"],
+                   json_dict["python"], json_dict["ctime"],
+                   json_dict.get("store_location", ""))
+
+    def __init__(self, key, name, version, build, packages, python, ctime,
+                 store_location):
+        self.key = key
+
+        self.name = name
+        self.version = version
+        self.build = build
+
+        self.packages = packages
+        self.python = python
+        self.ctime = ctime
+
+    @property
+    def full_version(self):
+        return "{0}-{1}".format(self.version, self.build)
+
+    @property
+    def _compat_dict(self):
+        """
+        Returns a dict that is used in some old APIs
+        """
+        # FIXME: this method is to be removed
+        keys = ("name", "name", "version", "build", "packages", "python",
+                "ctime")
+        return dict((k, getattr(self, k)) for k in keys)
 
 def parse_version(version):
     """
@@ -259,7 +282,7 @@ class Repository(object):
                 info["store_location"] = prefix
 
                 package = \
-                    RepositoryPackageMetadata.from_installed_meta_dict(info)
+                    InstalledPackageMetadata.from_installed_meta_dict(info)
                 repository.add_package(package)
 
         return repository

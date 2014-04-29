@@ -33,7 +33,7 @@ from enstaller.main import check_prefixes, disp_store_info, \
     epd_install_confirm, get_package_path, imports_option, info_option, \
     install_req, install_time_string, main, name_egg, print_installed, search, \
     update_all, updates_check, update_enstaller, whats_new
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.store.tests.common import MetadataOnlyStore
 
 from .common import MetaOnlyEggCollection, dummy_enpkg_entry_factory, \
@@ -219,7 +219,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     enpkg._installed_repository = Repository(prefix)
     for installed_entry in installed_entries:
         package = \
-            RepositoryPackageMetadata.from_installed_meta_dict(installed_entry)
+            InstalledPackageMetadata.from_installed_meta_dict(installed_entry)
         package.store_location = prefix
         enpkg._top_installed_repository.add_package(package)
         enpkg._installed_repository.add_package(package)

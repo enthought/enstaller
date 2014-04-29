@@ -15,8 +15,8 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, m
 from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
 
-from enstaller.repository import (PackageMetadata, Repository,
-                                  RepositoryPackageMetadata,
+from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
+                                  Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
 
 
@@ -123,6 +123,7 @@ class TestRepositoryPackage(unittest.TestCase):
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
 
+class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir(self):
         # Given
         json_dict = {
@@ -140,25 +141,10 @@ class TestRepositoryPackage(unittest.TestCase):
           "version": "5.10.1"
         }
 
-        r_s3index_data = {
-            "available": True,
-            "build": 1,
-            "md5": "a" * 32,
-            "mtime": 0.0,
-            "name": "vtk",
-            "packages": [],
-            "version": "5.10.1",
-            "product": None,
-            "python": "2.7",
-            "size": -1,
-            "type": "egg",
-        }
-
         # When
-        metadata = RepositoryPackageMetadata.from_installed_meta_dict(json_dict)
+        metadata = InstalledPackageMetadata.from_installed_meta_dict(json_dict)
 
         # Then
-        self.assertEqual(metadata.s3index_data, r_s3index_data)
         self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
 
 

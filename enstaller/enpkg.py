@@ -209,7 +209,7 @@ class Enpkg(object):
         it: iterator
             Iterator over (key, package info dict) pairs.
         """
-        return ((p.key, p.s3index_data) for p in
+        return ((p.key, p._compat_dict) for p in
                 self._installed_repository.iter_packages())
 
     def find_installed_packages(self, name):
