@@ -159,29 +159,6 @@ class Enpkg(object):
         self._execution_aborted = threading.Event()
 
     # ============= methods which relate to remote store =================
-    def find_remote_packages(self, name):
-        """
-        Find every package with the given name on the configured remote
-        repository(ies)
-
-        Returns
-        -------
-        packages: seq
-            List of RepositoryPackageMetadata instances
-        """
-        return self._repository.find_packages(name)
-
-    def remote_packages(self):
-        """
-        Iter over every remote package
-
-        Returns
-        -------
-        it: iterator
-            Iterate over (key, RepositoryPackageMetadata) pairs
-        """
-        return self._repository.iter_packages()
-
     def info_list_name(self, name):
         """
         return (sorted by versions (when possible)), a list of metadata
@@ -456,7 +433,7 @@ class Enpkg(object):
             A generator over (key, package info dict) pairs
         """
         index = dict((package.key, package.s3index_data) for package in
-                     self.find_remote_packages(name))
+                     self._repository.find_packages(name))
         for package in self._installed_repository.find_packages(name):
             key = package.key
             info = package._compat_dict

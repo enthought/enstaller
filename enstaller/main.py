@@ -149,7 +149,7 @@ def imports_option(repository, pat=None):
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, installed_repository, pat=None):
+def search(enpkg, remote_repository, installed_repository, pat=None):
     """
     Print the packages that are available in the (remote) KVS.
     """
@@ -161,7 +161,7 @@ def search(enpkg, installed_repository, pat=None):
     print(80 * '=')
 
     names = {}
-    for metadata in enpkg.remote_packages():
+    for metadata in remote_repository.iter_packages():
         names[metadata.name] = metadata.name
 
     installed = {}
@@ -741,7 +741,7 @@ def main(argv=None):
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._installed_repository, pat)
+        search(enpkg, enpkg._repository, enpkg._installed_repository, pat)
         return
 
     if args.info:                                 # --info
