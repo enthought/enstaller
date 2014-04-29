@@ -319,3 +319,39 @@ class TestRepositoryMisc(unittest.TestCase):
         # Then
         self.assertEqual(len(packages), 2)
         self.assertItemsEqual(packages, entries)
+
+    def test_sorted_packages_valid(self):
+        # Given
+        entries = [
+            _dummy_installed_package_factory("numpy", "1.6.1", 1),
+            _dummy_installed_package_factory("numpy", "1.8.0", 2),
+            _dummy_installed_package_factory("numpy", "1.7.1", 1),
+        ]
+        repository = Repository()
+        for entry in entries:
+            repository.add_package(entry)
+
+        # When
+        packages = repository.find_sorted_packages("numpy")
+
+        # Then
+        self.assertEqual(len(packages), 3)
+        self.assertEqual([p.version for p in packages], ["1.6.1", "1.7.1",
+                                                         "1.8.0"])
+
+    def test_sorted_packages_invalid(self):
+        # Given
+        entries = [
+            _dummy_installed_package_factory("numpy", "1.6.1", 1),
+            _dummy_installed_package_factory("numpy", "1.8k", 2),
+        ]
+        repository = Repository()
+        for entry in entries:
+            repository.add_package(entry)
+
+        # When
+        packages = repository.find_sorted_packages("numpy")
+
+        # Then
+        self.assertEqual(len(packages), 2)
+        self.assertItemsEqual([p.version for p in packages], ["1.6.1", "1.8k"])

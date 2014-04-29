@@ -158,19 +158,6 @@ class Enpkg(object):
 
         self._execution_aborted = threading.Event()
 
-    # ============= methods which relate to remote store =================
-    def info_list_name(self, name):
-        """
-        return (sorted by versions (when possible)), a list of metadata
-        dictionaries which are available on the remote KVS for a given name
-        """
-        packages = self._remote_repository.find_packages(name)
-        try:
-            return sorted(packages,
-                          key=operator.attrgetter("comparable_version"))
-        except TypeError:
-            return packages
-
     def _install_egg(self, path, extra_info=None):
         """
         Install the given egg.

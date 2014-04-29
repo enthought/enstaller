@@ -105,7 +105,7 @@ def info_option(enpkg, name):
     print('Package:', name)
     print(install_time_string(enpkg._installed_repository, name))
     pad = 4*' '
-    for metadata in enpkg.info_list_name(name):
+    for metadata in enpkg._remote_repository.find_sorted_packages(name):
         print('Version: ' + metadata.full_version)
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
@@ -173,7 +173,7 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
             continue
         disp_name = names[name]
         installed_version = installed.get(name)
-        for metadata in enpkg.info_list_name(name):
+        for metadata in enpkg._remote_repository.find_sorted_packages(name):
             version = metadata.full_version
             disp_ver = (('* ' if installed_version == version else '  ') +
                         version)
@@ -205,7 +205,8 @@ def updates_check(enpkg, installed_repository):
         info = package._compat_dict
 
         info["key"] = key
-        av_metadatas = enpkg.info_list_name(info['name'])
+        av_metadatas = \
+            enpkg._remote_repository.find_sorted_packages(info['name'])
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
@@ -317,7 +318,8 @@ def install_req(enpkg, req, opts):
         except EnpkgError as e:
             if mode == 'root' or e.req is None or e.req == req:
                 # trying to install just one requirement - try to give more info
-                info_list = enpkg.info_list_name(req.name)
+                info_list = \
+                    enpkg._remote_repository.find_sorted_packages(req.name)
                 if info_list:
                     print("Versions for package %r are:\n%s" % (req.name,
                         pretty_print_packages(info_list)))
@@ -334,7 +336,8 @@ def install_req(enpkg, req, opts):
                     "egg by using the --no-deps enpkg commandline argument "
                     "after installing another version of the dependency. ")))
                 if e.req:
-                    info_list = enpkg.info_list_name(e.req.name)
+                    info_list = \
+                        enpkg._remote_repository.find_sorted_packages(e.req.name)
                     if info_list:
                         print(("Available versions of the required package "
                                "%r are:\n%s") % (

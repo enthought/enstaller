@@ -336,6 +336,30 @@ class Repository(object):
                                                                   version))
 
 
+    def find_sorted_packages(self, name):
+        """
+        Returns a list of package metadata with the given name and version,
+        sorted from lowest to highest version (when possible).
+
+        Parameters
+        ----------
+        name: str
+            The package's name
+
+        Returns
+        -------
+        packages: seq of PackageMetadata
+            The corresponding metadata
+        """
+        packages = self.find_packages(name)
+        try:
+            return sorted(packages,
+                          key=operator.attrgetter("comparable_version"))
+        except TypeError:
+            # FIXME: allowing uncomparable versions should be disallowed at
+            # some point
+            return packages
+
     def find_packages(self, name, version=None):
         """
         Returns a list of package metadata with the given name and version

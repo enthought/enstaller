@@ -128,42 +128,6 @@ class TestCreateJoinedStores(unittest.TestCase):
             create_joined_store(Configuration(), urls)
 
 class TestEnpkg(unittest.TestCase):
-    def test_info_list_names(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
-            dummy_enpkg_entry_factory("numpy", "1.7.1", 1),
-        ]
-
-        store = MetadataOnlyStore(entries)
-        store.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(store, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            queried_entries = enpkg.info_list_name("numpy")
-
-            self.assertEqual(len(queried_entries), 3)
-            self.assertEqual([q.version for q in queried_entries],
-                             ["1.6.1", "1.7.1", "1.8.0"])
-
-    def test_info_list_names_invalid_version(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8k", 2),
-        ]
-
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            queried_entries = enpkg.info_list_name("numpy")
-
-            self.assertItemsEqual([q.version for q in queried_entries],
-                                  ["1.6.1", "1.8k"])
-
     def test_query_simple_with_local(self):
         """
         Ensure enpkg.query finds both local and remote eggs.
