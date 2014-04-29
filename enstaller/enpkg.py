@@ -229,7 +229,7 @@ class Enpkg(object):
         """
         remover = EggInst(egg, prefix=self.top_prefix)
         remover.super_id = getattr(self, 'super_id', None)
-        remover.remote()
+        remover.remove()
 
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet

@@ -245,7 +245,7 @@ class TestEnpkgActions(unittest.TestCase):
             with self.assertRaises(EnpkgError):
                 enpkg.install_actions("scipy")
 
-    def test_remove(self):
+    def test_remove_actions(self):
         repo = MetadataOnlyStore([])
         repo.connect()
 
@@ -261,6 +261,25 @@ class TestEnpkgActions(unittest.TestCase):
 
             actions = enpkg.remove_actions("dummy")
             self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
+
+    def test_remove(self):
+        repo = MetadataOnlyStore([])
+        repo.connect()
+
+        with mkdtemp() as d:
+            makedirs(d)
+
+            for egg in [DUMMY_EGG]:
+                egginst = EggInst(egg, d)
+                egginst.install()
+
+            enpkg = Enpkg(repo, prefixes=[d],
+                          evt_mgr=None, config=Configuration())
+
+            with mock.patch("enstaller.enpkg.EggInst.remove") as mocked_remove:
+                actions = enpkg.remove_actions("dummy")
+                enpkg.execute(actions)
+                self.assertTrue(mocked_remove.called)
 
     def test_remove_non_existing(self):
         entries = [
