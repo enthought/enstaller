@@ -173,7 +173,7 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
             continue
         disp_name = names[name]
         installed_version = installed.get(name)
-        for metadata in enpkg._remote_repository.find_sorted_packages(name):
+        for metadata in remote_repository.find_sorted_packages(name):
             version = metadata.full_version
             disp_ver = (('* ' if installed_version == version else '  ') +
                         version)
