@@ -143,11 +143,9 @@ def imports_option(enpkg, pat=None):
     for name in sorted(names, key=string.lower):
         if pat and not pat.search(name):
             continue
-        for c in reversed(enpkg.ec.collections):
-            index = dict(c.query(name=name))
-            if index:
-                info = index.values()[0]
-                loc = 'sys' if c.prefix == sys.prefix else 'user'
+        packages = enpkg.find_installed_packages(name)
+        info = packages[0].s3index_data
+        loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
         print(FMT % (name, VB_FMT % info, loc))
 
 
@@ -203,6 +201,7 @@ def updates_check(enpkg):
     updates = []
     EPD_update = []
     for key, info in enpkg.installed_packages():
+        info["key"] = key
         av_metadatas = enpkg.info_list_name(info['name'])
         if len(av_metadatas) == 0:
             continue

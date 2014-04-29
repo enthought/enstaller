@@ -83,6 +83,13 @@ class RepositoryPackageMetadata(object):
     repository they are coming from through the store_location attribute.
     """
     @classmethod
+    def from_egg(cls, path):
+        package = PackageMetadata.from_egg(path)
+        return cls(package.key, package.name, package.version, package.build,
+                   package.packages, package.python, -1, "a" * 32, 0, None,
+                   True, "")
+
+    @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],
                    json_dict["build"], json_dict["packages"],
@@ -224,7 +231,7 @@ def _valid_meta_dir_iterator(prefixes):
         if os.path.isdir(egg_info_root):
             for path in os.listdir(egg_info_root):
                 meta_dir = os.path.join(egg_info_root, path)
-                yield egg_info_root, meta_dir
+                yield prefix, egg_info_root, meta_dir
 
 
 class Repository(object):
@@ -246,10 +253,10 @@ class Repository(object):
             prefixes = [sys.prefix]
 
         repository = cls()
-        for egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
+        for prefix, egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
             info = info_from_metadir(meta_dir)
             if info is not None:
-                info["store_location"] = egg_info_root
+                info["store_location"] = prefix
 
                 package = \
                     RepositoryPackageMetadata.from_installed_meta_dict(info)

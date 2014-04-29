@@ -199,10 +199,7 @@ class TestEnpkg(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, config=Configuration())
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            enpkg.ec.install(os.path.basename(local_egg),
-                             os.path.dirname(local_egg))
+            enpkg._install_egg(local_egg)
 
             r = dict(enpkg.find_packages("dummy"))
             self.assertEqual(set(r.keys()),
@@ -275,12 +272,9 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            local_repo = JoinedEggCollection([EggCollection(d, None)])
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, config=Configuration())
-            enpkg.ec = local_repo
 
-            self.assertTrue(local_repo.find(os.path.basename(DUMMY_EGG)))
             actions = enpkg.remove_actions("dummy")
             self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
 
@@ -413,7 +407,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 EggCollection(prefix, None) for prefix in
                 self.prefixes])
             local_repo.install = mock.MagicMock()
-            enpkg.ec = local_repo
+            enpkg._ec = local_repo
 
             actions = enpkg.install_actions("dummy")
             enpkg.execute(actions)

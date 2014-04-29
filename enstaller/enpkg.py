@@ -15,8 +15,9 @@ from egginst.progress import progress_manager_factory
 
 import enstaller
 
-from enstaller.errors import EnpkgError
-from enstaller.repository import Repository, egg_name_to_name_version
+from enstaller.errors import EnpkgError, MissingPackage
+from enstaller.repository import (Repository, RepositoryPackageMetadata,
+                                  egg_name_to_name_version)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
 
@@ -150,9 +151,13 @@ class Enpkg(object):
         self.prefixes = prefixes
         self.evt_mgr = evt_mgr
 
-        self.ec = JoinedEggCollection([
+        self._installed_repository = Repository._from_prefixes(self.prefixes)
+        self._top_installed_repository = Repository._from_prefixes([self.prefixes[0]])
+
+        self._ec = JoinedEggCollection([
                 EggCollection(prefix, self.evt_mgr)
                 for prefix in self.prefixes])
+
         self._execution_aborted = threading.Event()
 
     # ============= methods which relate to remove store =================
@@ -204,34 +209,63 @@ class Enpkg(object):
         it: iterator
             Iterator over (key, package info dict) pairs.
         """
-        return self.ec.query()
+        return ((p.key, p.s3index_data) for p in
+                self._installed_repository.iter_packages())
 
     def find_installed_packages(self, name):
         """
-        Query installed packages.  In addition to the remote metadata the
-        following attributes are added:
-
-        ctime: creation (install) time (string representing local time)
-
-        installed: True (always)
-
-        meta_dir: the path to the egg metadata directory on the local system
+        Query installed packages.
         """
-        return self.ec.query(name=name)
+        return self._installed_repository.find_packages(name=name)
 
     def find(self, egg):
         """
         Return the local egg metadata (see ``query_installed``) for a given
         egg (key) or None is the egg is not installed
         """
-        return self.ec.find(egg)
+        name, version = egg_name_to_name_version(egg)
+        try:
+            return self._repository.find_package(name, version)
+        except MissingPackage:
+            return None
+
+    def _install_egg(self, path, extra_info=None):
+        """
+        Install the given egg.
+
+        Parameters
+        ----------
+        path: str
+            The path to the egg to install
+        """
+        name = os.path.basename(path)
+        package = RepositoryPackageMetadata.from_egg(path)
+
+        self._ec.install(name, os.path.dirname(path), extra_info)
+        self._top_installed_repository.add_package(package)
+        self._installed_repository.add_package(package)
+
+    def _remove_egg(self, egg):
+        """
+        Remove the given egg.
+
+        Parameters
+        ----------
+        path: str
+            The egg basename (e.g. 'numpy-1.8.0-1.egg')
+        """
+        self._ec.remove(egg)
+        # FIXME: we recalculate the full repository because we don't have a
+        # feature to remove a package yet
+        self._top_installed_repository = \
+            Repository._from_prefixes([self.prefixes[0]])
 
     def _execute_opcode(self, opcode, egg):
         logger.info('\t' + str((opcode, egg)))
         if opcode.startswith('fetch_'):
             self.fetch(egg, force=int(opcode[-1]))
         elif opcode == 'remove':
-            self.ec.remove(egg)
+            self._remove_egg(egg)
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
             if self.remote.is_connected:
@@ -239,14 +273,14 @@ class Enpkg(object):
                 extra_info = package.s3index_data
             else:
                 extra_info = None
-            self.ec.install(egg, self.local_dir, extra_info)
+            self._install_egg(os.path.join(self.local_dir, egg), extra_info)
         else:
             raise Exception("unknown opcode: %r" % opcode)
 
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, execution_context):
         self.super_id = None
-        for c in self.ec.collections:
+        for c in self._ec.collections:
             c.super_id = self.super_id
 
         progress = progress_manager_factory("super", "",
@@ -257,7 +291,7 @@ class Enpkg(object):
             yield progress
         finally:
             self.super_id = uuid4()
-            for c in self.ec.collections:
+            for c in self._ec.collections:
                 c.super_id = self.super_id
 
     def get_execute_context(self, actions):
@@ -338,10 +372,11 @@ class Enpkg(object):
         # only, in reverse install order)
         for egg in reversed(eggs):
             name = split_eggname(egg)[0].lower()
-            index = dict(self.ec.collections[0].query(name=name))
-            assert len(index) < 2
-            if len(index) == 1:
-                res.append(('remove', index.keys()[0]))
+            installed_packages = self._top_installed_repository.find_packages(name)
+            assert len(installed_packages) < 2
+            if len(installed_packages) == 1:
+                installed_package = installed_packages[0]
+                res.append(('remove', installed_package.key))
         for egg in eggs:
             res.append(('install', egg))
         return res
@@ -357,8 +392,9 @@ class Enpkg(object):
         """
         filtered_eggs = []
         for egg in eggs:
-            for installed in self.ec.query(name=split_eggname(egg)[0].lower()):
-                if installed[0] == egg:
+            name, _ = egg_name_to_name_version(egg)
+            for installed in self._top_installed_repository.find_packages(name):
+                if installed.key == egg:
                     break
             else:
                 filtered_eggs.append(egg)
@@ -371,11 +407,16 @@ class Enpkg(object):
         """
         req = Req.from_anything(arg)
         assert req.name
-        index = dict(self.ec.collections[0].query(**req.as_dict()))
-        if len(index) == 0:
+        if req.version and req.build:
+            full_version = "{0}-{1}".format(req.version, req.build)
+        else:
+            full_version = None
+        packages = self._top_installed_repository.find_packages(req.name,
+                                                                full_version)
+        if len(packages) == 0:
             raise EnpkgError("package %s not installed in: %r" %
                              (req, self.prefixes[0]))
-        return [('remove', index.keys()[0])]
+        return [('remove', packages[0].key)]
 
     def revert_actions(self, arg):
         """
@@ -445,7 +486,9 @@ class Enpkg(object):
         """
         index = dict((package.key, package.s3index_data) for package in
                      self.find_remote_packages(name))
-        for key, info in self.find_installed_packages(name):
+        for package in self.find_installed_packages(name):
+            key = package.key
+            info = package.s3index_data
             if key in index:
                 index[key].update(info)
             else:
