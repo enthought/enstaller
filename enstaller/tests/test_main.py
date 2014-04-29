@@ -242,7 +242,8 @@ class TestInfoStrings(unittest.TestCase):
             installed_entries = [dummy_installed_egg_factory("dummy", "1.0.1", 1)]
             enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries)
 
-            self.assertRegexpMatches(install_time_string(enpkg, "dummy"),
+            self.assertRegexpMatches(install_time_string(enpkg._installed_repository,
+                                                         "dummy"),
                                      "dummy-1.0.1-1.egg was installed on:")
 
             self.assertEqual(install_time_string(enpkg, "ddummy"), "")

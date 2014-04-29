@@ -93,9 +93,9 @@ def name_egg(egg):
     return split_eggname(egg)[0]
 
 
-def install_time_string(enpkg, name):
+def install_time_string(installed_repository, name):
     lines = []
-    for info in enpkg.find_installed_packages(name):
+    for info in installed_repository.find_packages(name):
         lines.append('%s was installed on: %s' % (info.key, info.ctime))
     return "\n".join(lines)
 
@@ -103,7 +103,7 @@ def install_time_string(enpkg, name):
 def info_option(enpkg, name):
     name = name.lower()
     print('Package:', name)
-    print(install_time_string(enpkg, name))
+    print(install_time_string(enpkg._installed_repository, name))
     pad = 4*' '
     for metadata in enpkg.info_list_name(name):
         print('Version: ' + metadata.full_version)
@@ -312,7 +312,8 @@ def install_req(enpkg, req, opts):
             enpkg.execute(actions)
             if len(actions) == 0:
                 print("No update necessary, %r is up-to-date." % req.name)
-                print(install_time_string(enpkg, req.name))
+                print(install_time_string(enpkg._installed_repository,
+                                          req.name))
         except EnpkgError as e:
             if mode == 'root' or e.req is None or e.req == req:
                 # trying to install just one requirement - try to give more info

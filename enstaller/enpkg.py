@@ -197,13 +197,6 @@ class Enpkg(object):
         except TypeError:
             return info_list
 
-    # ============= methods which relate to local installation ===========
-    def find_installed_packages(self, name):
-        """
-        Query installed packages.
-        """
-        return self._installed_repository.find_packages(name=name)
-
     def _install_egg(self, path, extra_info=None):
         """
         Install the given egg.
@@ -464,7 +457,7 @@ class Enpkg(object):
         """
         index = dict((package.key, package.s3index_data) for package in
                      self.find_remote_packages(name))
-        for package in self.find_installed_packages(name):
+        for package in self._installed_repository.find_packages(name):
             key = package.key
             info = package._compat_dict
             if key in index:
