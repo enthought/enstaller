@@ -272,7 +272,7 @@ class TestRepository(unittest.TestCase):
     @slow
     def test_from_prefix(self):
         # Given
-        path = os.path.join(_EGGINST_COMMON_DATA, DUMMY_EGG)
+        path = DUMMY_EGG
         with mkdtemp() as tempdir:
             create_venv(tempdir)
             installer = EggInst(path, prefix=tempdir)
