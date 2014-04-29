@@ -23,11 +23,11 @@ import mock
 
 from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry, Dependency
 
+from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import check_prefixes, disp_store_info, \
     epd_install_confirm, get_package_path, imports_option, info_option, \
@@ -215,8 +215,6 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     repo.connect()
 
     enpkg = Enpkg(repo, prefixes=[prefix], evt_mgr=None, config=config)
-    enpkg.ec = JoinedEggCollection([
-        MetaOnlyEggCollection(prefix, installed_entries)])
     enpkg._top_installed_repository = Repository(prefix)
     enpkg._installed_repository = Repository(prefix)
     for installed_entry in installed_entries:
@@ -276,8 +274,8 @@ class TestInfoStrings(unittest.TestCase):
                 ============================================================
                 dummy                1.0.1-1              -
                 """)
-            ec = EggCollection(d, False)
-            ec.install(os.path.basename(DUMMY_EGG), os.path.dirname(DUMMY_EGG))
+            ec = EggInst(DUMMY_EGG, d)
+            ec.install()
 
             with mock_print() as m:
                 print_installed(d)

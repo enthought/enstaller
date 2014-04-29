@@ -95,8 +95,8 @@ def name_egg(egg):
 
 def install_time_string(enpkg, name):
     lines = []
-    for key, info in enpkg.ec.query(name=name):
-        lines.append('%s was installed on: %s' % (key, info['ctime']))
+    for info in enpkg.find_installed_packages(name):
+        lines.append('%s was installed on: %s' % (info.key, "unknown"))
     return "\n".join(lines)
 
 

@@ -23,7 +23,6 @@ from egginst.utils import makedirs
 
 from enstaller.config import Configuration
 from enstaller.egg_meta import split_eggname
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
 from enstaller.enpkg import Enpkg, EnpkgError
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
@@ -324,11 +323,8 @@ class TestEnpkgActions(unittest.TestCase):
             # Install older version in l1
             EggInst(l1_egg, l1).install()
 
-            local_repo = JoinedEggCollection([EggCollection(l1, None),
-                                              EggCollection(l0, None)])
             enpkg = Enpkg(repo, prefixes=[l1, l0],
                           evt_mgr=None, config=Configuration())
-            enpkg.ec = local_repo
 
             actions = enpkg.install_actions("nose")
             self.assertListEqual(actions, expected_actions)
@@ -401,19 +397,15 @@ class TestEnpkgExecute(unittest.TestCase):
         repo.connect()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            enpkg = Enpkg(repo, prefixes=self.prefixes,
-                          evt_mgr=None, config=Configuration())
-            local_repo = JoinedEggCollection([
-                EggCollection(prefix, None) for prefix in
-                self.prefixes])
-            local_repo.install = mock.MagicMock()
-            enpkg._ec = local_repo
+            with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
+                enpkg = Enpkg(repo, prefixes=self.prefixes,
+                              evt_mgr=None, config=Configuration())
+                actions = enpkg.install_actions("dummy")
+                enpkg.execute(actions)
 
-            actions = enpkg.install_actions("dummy")
-            enpkg.execute(actions)
-
-            mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
-            local_repo.install.assert_called_with(base_egg, enpkg.local_dir,
+                mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
+                mocked_install.assert_called_with(os.path.join(enpkg.local_dir,
+                                                               base_egg),
                                                   entry.s3index_data)
 
 class TestEnpkgRevert(unittest.TestCase):
