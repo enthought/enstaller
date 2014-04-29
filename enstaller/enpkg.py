@@ -16,7 +16,7 @@ from egginst.progress import progress_manager_factory
 
 import enstaller
 
-from enstaller.errors import EnpkgError, MissingPackage
+from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
@@ -164,15 +164,12 @@ class Enpkg(object):
         return (sorted by versions (when possible)), a list of metadata
         dictionaries which are available on the remote KVS for a given name
         """
-        req = Req(name)
-        info_list = []
-        for package_metadata in self._remote_repository.find_packages(name):
-            if req.matches(package_metadata.s3index_data):
-                info_list.append(package_metadata)
+        packages = self._remote_repository.find_packages(name)
         try:
-            return sorted(info_list, key=operator.attrgetter("comparable_version"))
+            return sorted(packages,
+                          key=operator.attrgetter("comparable_version"))
         except TypeError:
-            return info_list
+            return packages
 
     def _install_egg(self, path, extra_info=None):
         """
