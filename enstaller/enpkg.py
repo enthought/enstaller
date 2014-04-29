@@ -158,7 +158,7 @@ class Enpkg(object):
 
         self._execution_aborted = threading.Event()
 
-    # ============= methods which relate to remove store =================
+    # ============= methods which relate to remote store =================
     def find_remote_packages(self, name):
         """
         Find every package with the given name on the configured remote
@@ -198,34 +198,11 @@ class Enpkg(object):
             return info_list
 
     # ============= methods which relate to local installation ===========
-    def installed_packages(self):
-        """
-        Iter over each installed package
-
-        Returns
-        -------
-        it: iterator
-            Iterator over (key, package info dict) pairs.
-        """
-        return ((p.key, p._compat_dict) for p in
-                self._installed_repository.iter_packages())
-
     def find_installed_packages(self, name):
         """
         Query installed packages.
         """
         return self._installed_repository.find_packages(name=name)
-
-    def find(self, egg):
-        """
-        Return the local egg metadata (see ``query_installed``) for a given
-        egg (key) or None is the egg is not installed
-        """
-        name, version = egg_name_to_name_version(egg)
-        try:
-            return self._repository.find_package(name, version)
-        except MissingPackage:
-            return None
 
     def _install_egg(self, path, extra_info=None):
         """
@@ -471,7 +448,6 @@ class Enpkg(object):
         return History(self.prefixes[0])
 
     # == methods which relate to both (remote store and local installation) ==
-
     def find_packages(self, name):
         """
         Iter over each package with the given name

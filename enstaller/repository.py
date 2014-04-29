@@ -125,6 +125,19 @@ class RepositoryPackageMetadata(PackageMetadata):
 
 class InstalledPackageMetadata(PackageMetadata):
     @classmethod
+    def from_egg(cls, path, ctime, store_location):
+        """
+        Create an instance from an egg filename.
+        """
+        with ZipFile(path) as zp:
+            metadata = info_from_z(zp)
+        metadata["packages"] = metadata.get("packages", [])
+        metadata["ctime"] = ctime
+        metadata["store_location"] = store_location
+        metadata["key"] = os.path.basename(path)
+        return cls.from_installed_meta_dict(metadata)
+
+    @classmethod
     def from_meta_dir(cls, meta_dir):
         meta_dict = info_from_metadir(meta_dir)
         if meta_dict is None:

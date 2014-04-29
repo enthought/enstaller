@@ -27,6 +27,7 @@ from enstaller.enpkg import Enpkg, EnpkgError
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.main import _create_enstaller_update_enpkg
+from enstaller.repository import egg_name_to_name_version
 from enstaller.resolve import Req
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
@@ -162,22 +163,6 @@ class TestEnpkg(unittest.TestCase):
 
             self.assertItemsEqual([q.version for q in queried_entries],
                                   ["1.6.1", "1.8k"])
-
-    def test_query_simple(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8k", 2),
-        ]
-
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            r = dict(enpkg.find_packages("numpy"))
-            self.assertEqual(set(r.keys()),
-                             set(entry.s3index_key for entry in entries))
 
     def test_query_simple_with_local(self):
         """
@@ -445,7 +430,8 @@ class TestEnpkgRevert(unittest.TestCase):
         actions = enpkg.install_actions("dummy")
         enpkg.execute(actions)
 
-        self.assertIsNotNone(enpkg.find(os.path.basename(egg)))
+        name, version = egg_name_to_name_version(egg)
+        enpkg._installed_repository.find_package(name, version)
 
         for state in [0, 1]:
             actions = enpkg.revert_actions(state)

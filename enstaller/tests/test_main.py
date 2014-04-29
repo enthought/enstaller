@@ -84,6 +84,12 @@ class TestEnstallerUpdate(unittest.TestCase):
         self.assertFalse(self._test_update_enstaller(low_version, high_version))
 
 class TestMisc(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
     def test_disp_store_info(self):
         info = {"store_location": "https://api.enthought.com/eggs/osx-64/"}
         self.assertEqual(disp_store_info(info), "api osx-64")
@@ -177,32 +183,39 @@ class TestMisc(unittest.TestCase):
                              format(site_packages[0]))
 
     def test_imports_option_empty(self):
+        # Given
         r_output = textwrap.dedent("""\
             Name                 Version              Location
             ============================================================
             """)
-        config = Configuration()
-        enpkg = _create_prefix_with_eggs(config, config.prefix)
+        repository = Repository()
 
+        # When
         with mock_print() as m:
-            imports_option(enpkg)
+            imports_option(repository)
+
+        # Then
         self.assertMultiLineEqual(m.value, r_output)
 
     def test_imports_option_sys_only(self):
+        # Given
         r_output = textwrap.dedent("""\
             Name                 Version              Location
             ============================================================
             dummy                1.0.1-1              sys
             """)
-        from enstaller.main import imports_option
-        config = Configuration()
 
-        installed_entries = [dummy_installed_egg_factory("dummy", "1.0.1", 1)]
-        enpkg = _create_prefix_with_eggs(config, config.prefix,
-                installed_entries)
+        repository = Repository(sys.prefix)
+        metadata = InstalledPackageMetadata.from_egg(DUMMY_EGG,
+                                                     "random string",
+                                                     sys.prefix)
+        repository.add_package(metadata)
 
+        # When
         with mock_print() as m:
-            imports_option(enpkg)
+            imports_option(repository)
+
+        # Then
         self.assertMultiLineEqual(m.value, r_output)
 
 def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entries=None):
@@ -211,12 +224,10 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     if installed_entries is None:
         installed_entries = []
 
-    repo = MetadataOnlyStore(remote_entries)
-    repo.connect()
+    store = MetadataOnlyStore(remote_entries)
+    store.connect()
 
-    enpkg = Enpkg(repo, prefixes=[prefix], evt_mgr=None, config=config)
-    enpkg._top_installed_repository = Repository(prefix)
-    enpkg._installed_repository = Repository(prefix)
+    enpkg = Enpkg(store, prefixes=[prefix], evt_mgr=None, config=config)
     for installed_entry in installed_entries:
         package = \
             InstalledPackageMetadata.from_installed_meta_dict(installed_entry)
@@ -311,7 +322,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
 
             with mock_print() as m:
-                search(enpkg)
+                search(enpkg, enpkg._top_installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_installed(self):
@@ -331,7 +342,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg)
+                search(enpkg, enpkg._installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_pattern(self):
@@ -351,7 +362,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, pat=re.compile("dummy"))
+                search(enpkg, enpkg._top_installed_repository, pat=re.compile("dummy"))
                 self.assertMultiLineEqual(m.value, r_output)
 
             r_output = textwrap.dedent("""\
@@ -362,7 +373,7 @@ class TestSearch(unittest.TestCase):
                                      * 1.0.1-1            commercial           {0}
                 """.format(""))
             with mock_print() as m:
-                search(enpkg, pat=re.compile(".*"))
+                search(enpkg, enpkg._top_installed_repository, pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
     @unittest.expectedFailure
@@ -406,7 +417,7 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(Configuration(), d,
                     installed_entries, entries)
 
-            updates, EPD_update =  updates_check(enpkg)
+            updates, EPD_update =  updates_check(enpkg, enpkg._installed_repository)
 
             self.assertEqual(EPD_update, [])
             self.assertEqual(len(updates), 1)
@@ -425,7 +436,8 @@ class TestUpdatesCheck(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, entries)
 
-            updates, EPD_update =  updates_check(enpkg)
+            updates, EPD_update =  updates_check(enpkg,
+                                                 enpkg._installed_repository)
 
             self.assertEqual(EPD_update, [])
             self.assertEqual(updates, [])
@@ -437,7 +449,8 @@ class TestUpdatesCheck(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries)
 
-            updates, EPD_update =  updates_check(enpkg)
+            updates, EPD_update =  updates_check(enpkg,
+                                                 enpkg._installed_repository)
 
             self.assertEqual(EPD_update, [])
             self.assertEqual(updates, [])
@@ -450,7 +463,8 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(Configuration(), d,
                     installed_entries, remote_entries)
 
-            updates, EPD_update =  updates_check(enpkg)
+            updates, EPD_update =  updates_check(enpkg,
+                                                 enpkg._installed_repository)
 
             self.assertEqual(updates, [])
             self.assertEqual(len(EPD_update), 1)
@@ -481,7 +495,7 @@ class TestUpdatesCheck(unittest.TestCase):
                     installed_entries, remote_entries)
 
             with mock_print() as m:
-                whats_new(enpkg)
+                whats_new(enpkg, enpkg._installed_repository)
                 # FIXME: we splitlines and compared wo caring about order, as
                 # the actual line order depends on dict ordering from
                 # EggCollection.query_installed.
@@ -502,7 +516,7 @@ class TestUpdatesCheck(unittest.TestCase):
                     installed_entries, remote_entries)
 
             with mock_print() as m:
-                whats_new(enpkg)
+                whats_new(enpkg, enpkg._installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_whats_new_no_updates(self):
@@ -521,7 +535,7 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, remote_entries)
 
             with mock_print() as m:
-                whats_new(enpkg)
+                whats_new(enpkg, enpkg._installed_repository)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_update_all_no_updates(self):
