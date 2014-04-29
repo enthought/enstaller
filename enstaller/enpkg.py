@@ -11,6 +11,7 @@ import tempfile
 from uuid import uuid4
 from os.path import isdir, isfile, join
 
+from egginst.main import EggInst
 from egginst.progress import progress_manager_factory
 
 import enstaller
@@ -20,8 +21,6 @@ from enstaller.repository import (Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
-
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
 
 from enstaller.resolve import Req, Resolve
 from enstaller.fetch import FetchAPI
@@ -154,10 +153,6 @@ class Enpkg(object):
         self._installed_repository = Repository._from_prefixes(self.prefixes)
         self._top_installed_repository = Repository._from_prefixes([self.prefixes[0]])
 
-        self._ec = JoinedEggCollection([
-                EggCollection(prefix, self.evt_mgr)
-                for prefix in self.prefixes])
-
         self._execution_aborted = threading.Event()
 
     # ============= methods which relate to remove store =================
@@ -238,10 +233,12 @@ class Enpkg(object):
         path: str
             The path to the egg to install
         """
-        name = os.path.basename(path)
         package = RepositoryPackageMetadata.from_egg(path)
 
-        self._ec.install(name, os.path.dirname(path), extra_info)
+        installer = EggInst(path, prefix=self.prefixes[0], evt_mgr=self.evt_mgr)
+        installer.super_id = getattr(self, 'super_id', None)
+        installer.install(extra_info)
+
         self._top_installed_repository.add_package(package)
         self._installed_repository.add_package(package)
 
@@ -254,7 +251,10 @@ class Enpkg(object):
         path: str
             The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        self._ec.remove(egg)
+        remover = EggInst(egg, prefix=self.prefixes[0])
+        remover.super_id = getattr(self, 'super_id', None)
+        remover.remote()
+
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet
         self._top_installed_repository = \
@@ -280,8 +280,6 @@ class Enpkg(object):
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, execution_context):
         self.super_id = None
-        for c in self._ec.collections:
-            c.super_id = self.super_id
 
         progress = progress_manager_factory("super", "",
                                             execution_context.n_actions,
@@ -291,8 +289,6 @@ class Enpkg(object):
             yield progress
         finally:
             self.super_id = uuid4()
-            for c in self._ec.collections:
-                c.super_id = self.super_id
 
     def get_execute_context(self, actions):
         return _ExecuteContext(self.prefixes[0], actions)

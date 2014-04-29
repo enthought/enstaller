@@ -347,7 +347,7 @@ class TestEnpkgActions(unittest.TestCase):
         config = Configuration()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            with mock.patch("enstaller.eggcollect.JoinedEggCollection.install", fake_install):
+            with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
                 enpkg = Enpkg(remote=repo, config=config)
                 actions = enpkg.install_actions("numpy")
 
