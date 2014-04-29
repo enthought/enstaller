@@ -11,16 +11,17 @@ import tempfile
 from uuid import uuid4
 from os.path import isdir, isfile, join
 
+from egginst.main import EggInst
 from egginst.progress import progress_manager_factory
 
 import enstaller
 
 from enstaller.errors import EnpkgError
-from enstaller.repository import Repository, egg_name_to_name_version
+from enstaller.eggcollect import meta_dir_from_prefix
+from enstaller.repository import (InstalledPackageMetadata, Repository,
+                                  egg_name_to_name_version)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
-
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
 
 from enstaller.resolve import Req, Resolve
 from enstaller.fetch import FetchAPI
@@ -122,6 +123,9 @@ class Enpkg(object):
     """
     def __init__(self, remote=None, userpass='<config>', prefixes=[sys.prefix],
                  hook=False, evt_mgr=None, config=None):
+        if hook is not False:
+            raise EnpkgError("hook feature has been removed")
+
         if config is None:
             self.config = Configuration._get_default_config()
         else:
@@ -130,7 +134,6 @@ class Enpkg(object):
         self.local_dir = get_writable_local_dir(self.config)
         if remote is None:
             remote = get_default_remote(self.config)
-        self._repository = Repository(remote)
 
         # XXX: remote attribute kept for backward compatibility, remove before
         # 4.7.0
@@ -141,126 +144,79 @@ class Enpkg(object):
         else:
             self.userpass = userpass
 
+        if not remote.is_connected:
+            remote.connect(self.userpass)
+        self._remote_repository = Repository._from_store(remote)
+
         self.prefixes = prefixes
+        self.top_prefix = prefixes[0]
+
         self.evt_mgr = evt_mgr
 
-        if hook is not False:
-            raise EnpkgError("hook feature has been removed")
-        self.ec = JoinedEggCollection([
-                EggCollection(prefix, self.evt_mgr)
-                for prefix in self.prefixes])
+        self._installed_repository = Repository._from_prefixes(self.prefixes)
+        self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
+
         self._execution_aborted = threading.Event()
 
-    # ============= methods which relate to remove store =================
-
-    def reconnect(self):
+    def _install_egg(self, path, extra_info=None):
         """
-        Normally it is not necessary to call this method, it is only there
-        to offer a convenient way to (re)connect the key-value store.
-        This is necessary to update to changes which have occured in the
-        store, as the remote store might create a cache during connecting.
-        """
-        self._connect(force=True)
+        Install the given egg.
 
-    def _connect(self, force=False):
-        self._repository.connect(self.userpass)
-
-    def find_remote_packages(self, name):
+        Parameters
+        ----------
+        path: str
+            The path to the egg to install
         """
-        Find every package with the given name on the configured remote
-        repository(ies)
+        name, _ = egg_name_to_name_version(path)
 
-        Returns
-        -------
-        packages: seq
-            List of RepositoryPackageMetadata instances
-        """
-        # FIXME: we should connect in one place consistently
-        self._repository.connect(self.userpass)
-        return self._repository.find_packages(name)
+        installer = EggInst(path, prefix=self.prefixes[0], evt_mgr=self.evt_mgr)
+        installer.super_id = getattr(self, 'super_id', None)
+        installer.install(extra_info)
 
-    def remote_packages(self):
-        """
-        Iter over every remote package
+        meta_dir = meta_dir_from_prefix(self.top_prefix, name)
+        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
 
-        Returns
-        -------
-        it: iterator
-            Iterate over (key, RepositoryPackageMetadata) pairs
-        """
-        # FIXME: we should connect in one place consistently
-        self._repository.connect(self.userpass)
-        return self._repository.iter_packages()
+        self._top_installed_repository.add_package(package)
+        self._installed_repository.add_package(package)
 
-    def info_list_name(self, name):
+    def _remove_egg(self, egg):
         """
-        return (sorted by versions (when possible)), a list of metadata
-        dictionaries which are available on the remote KVS for a given name
-        """
-        req = Req(name)
-        info_list = []
-        for package_metadata in self._repository.find_packages(name):
-            if req.matches(package_metadata.s3index_data):
-                info_list.append(package_metadata)
-        try:
-            return sorted(info_list, key=operator.attrgetter("comparable_version"))
-        except TypeError:
-            return info_list
+        Remove the given egg.
 
-    # ============= methods which relate to local installation ===========
-    def installed_packages(self):
+        Parameters
+        ----------
+        path: str
+            The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        Iter over each installed package
+        remover = EggInst(egg, prefix=self.top_prefix)
+        remover.super_id = getattr(self, 'super_id', None)
+        remover.remove()
 
-        Returns
-        -------
-        it: iterator
-            Iterator over (key, package info dict) pairs.
-        """
-        return self.ec.query()
-
-    def find_installed_packages(self, name):
-        """
-        Query installed packages.  In addition to the remote metadata the
-        following attributes are added:
-
-        ctime: creation (install) time (string representing local time)
-
-        installed: True (always)
-
-        meta_dir: the path to the egg metadata directory on the local system
-        """
-        return self.ec.query(name=name)
-
-    def find(self, egg):
-        """
-        Return the local egg metadata (see ``query_installed``) for a given
-        egg (key) or None is the egg is not installed
-        """
-        return self.ec.find(egg)
+        # FIXME: we recalculate the full repository because we don't have a
+        # feature to remove a package yet
+        self._top_installed_repository = \
+            Repository._from_prefixes([self.prefixes[0]])
 
     def _execute_opcode(self, opcode, egg):
         logger.info('\t' + str((opcode, egg)))
         if opcode.startswith('fetch_'):
             self.fetch(egg, force=int(opcode[-1]))
         elif opcode == 'remove':
-            self.ec.remove(egg)
+            self._remove_egg(egg)
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
-            if self._repository.is_connected:
-                package = self._repository.find_package(name, version)
+            if self.remote.is_connected:
+                package = self._remote_repository.find_package(name, version)
                 extra_info = package.s3index_data
             else:
                 extra_info = None
-            self.ec.install(egg, self.local_dir, extra_info)
+            self._install_egg(os.path.join(self.local_dir, egg), extra_info)
         else:
             raise Exception("unknown opcode: %r" % opcode)
 
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, execution_context):
         self.super_id = None
-        for c in self.ec.collections:
-            c.super_id = self.super_id
 
         progress = progress_manager_factory("super", "",
                                             execution_context.n_actions,
@@ -270,8 +226,6 @@ class Enpkg(object):
             yield progress
         finally:
             self.super_id = uuid4()
-            for c in self.ec.collections:
-                c.super_id = self.super_id
 
     def get_execute_context(self, actions):
         return _ExecuteContext(self.prefixes[0], actions)
@@ -305,9 +259,8 @@ class Enpkg(object):
             installed_version = enstaller.__version__
 
         mode = 'recur'
-        self._connect()
         req = Req.from_anything("enstaller")
-        eggs = Resolve(self._repository).install_sequence(req, mode)
+        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
         elif not len(eggs) == 1:
@@ -331,8 +284,7 @@ class Enpkg(object):
         """
         req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
-        self._connect()
-        eggs = Resolve(self._repository).install_sequence(req, mode)
+        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         if eggs is None:
              raise EnpkgError("No egg found for requirement '%s'." % req)
         return self._install_actions(eggs, mode, force, forceall)
@@ -353,10 +305,11 @@ class Enpkg(object):
         # only, in reverse install order)
         for egg in reversed(eggs):
             name = split_eggname(egg)[0].lower()
-            index = dict(self.ec.collections[0].query(name=name))
-            assert len(index) < 2
-            if len(index) == 1:
-                res.append(('remove', index.keys()[0]))
+            installed_packages = self._top_installed_repository.find_packages(name)
+            assert len(installed_packages) < 2
+            if len(installed_packages) == 1:
+                installed_package = installed_packages[0]
+                res.append(('remove', installed_package.key))
         for egg in eggs:
             res.append(('install', egg))
         return res
@@ -372,8 +325,9 @@ class Enpkg(object):
         """
         filtered_eggs = []
         for egg in eggs:
-            for installed in self.ec.query(name=split_eggname(egg)[0].lower()):
-                if installed[0] == egg:
+            name, _ = egg_name_to_name_version(egg)
+            for installed in self._top_installed_repository.find_packages(name):
+                if installed.key == egg:
                     break
             else:
                 filtered_eggs.append(egg)
@@ -386,11 +340,16 @@ class Enpkg(object):
         """
         req = Req.from_anything(arg)
         assert req.name
-        index = dict(self.ec.collections[0].query(**req.as_dict()))
-        if len(index) == 0:
+        if req.version and req.build:
+            full_version = "{0}-{1}".format(req.version, req.build)
+        else:
+            full_version = None
+        packages = self._top_installed_repository.find_packages(req.name,
+                                                                full_version)
+        if len(packages) == 0:
             raise EnpkgError("package %s not installed in: %r" %
                              (req, self.prefixes[0]))
-        return [('remove', index.keys()[0])]
+        return [('remove', packages[0].key)]
 
     def revert_actions(self, arg):
         """
@@ -428,8 +387,7 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self.local_dir, egg)):
-                self._repository.connect(self.userpass)
-                if self._repository._has_package_key(egg):
+                if self._remote_repository._has_package_key(egg):
                     res.append(('fetch_0', egg))
                 else:
                     raise EnpkgError("cannot revert -- missing %r" % egg)
@@ -443,34 +401,7 @@ class Enpkg(object):
         # FIXME: only used by canopy
         return History(self.prefixes[0])
 
-    # == methods which relate to both (remote store and local installation) ==
-
-    def find_packages(self, name):
-        """
-        Iter over each package with the given name
-
-        Parameters
-        ----------
-        name: str
-            The package name (e.g. 'numpy')
-
-        Returns
-        -------
-        it: generator
-            A generator over (key, package info dict) pairs
-        """
-        index = dict((package.key, package.s3index_data) for package in
-                     self.find_remote_packages(name))
-        for key, info in self.find_installed_packages(name):
-            if key in index:
-                index[key].update(info)
-            else:
-                index[key] = info
-        for k in index:
-            yield k, index[k]
-
     def fetch(self, egg, force=False):
-        self._connect()
-        f = FetchAPI(self._repository, self.local_dir, self.evt_mgr)
+        f = FetchAPI(self._remote_repository, self.remote, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.fetch_egg(egg, force, self._execution_aborted)

@@ -28,8 +28,7 @@ from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
-from enstaller.errors import (EnstallerException,
-    InvalidPythonPathConfiguration, EXIT_ABORTED)
+from enstaller.errors import InvalidPythonPathConfiguration, EXIT_ABORTED
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
@@ -38,8 +37,8 @@ from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
-from enstaller.eggcollect import EggCollection
 from enstaller.enpkg import Enpkg, EnpkgError, create_joined_store
+from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
@@ -94,19 +93,19 @@ def name_egg(egg):
     return split_eggname(egg)[0]
 
 
-def install_time_string(enpkg, name):
+def install_time_string(installed_repository, name):
     lines = []
-    for key, info in enpkg.ec.query(name=name):
-        lines.append('%s was installed on: %s' % (key, info['ctime']))
+    for info in installed_repository.find_packages(name):
+        lines.append('%s was installed on: %s' % (info.key, info.ctime))
     return "\n".join(lines)
 
 
 def info_option(enpkg, name):
     name = name.lower()
     print('Package:', name)
-    print(install_time_string(enpkg, name))
+    print(install_time_string(enpkg._installed_repository, name))
     pad = 4*' '
-    for metadata in enpkg.info_list_name(name):
+    for metadata in enpkg._remote_repository.find_sorted_packages(name):
         print('Version: ' + metadata.full_version)
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
@@ -121,11 +120,12 @@ def info_option(enpkg, name):
 def print_installed(prefix, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    ec = EggCollection(prefix)
-    for egg, info in ec.query():
-        if pat and not pat.search(info['name']):
+    repository = Repository._from_prefixes([prefix])
+    for package in repository.iter_packages():
+        if pat and not pat.search(package.name):
             continue
-        print(FMT % (name_egg(egg), VB_FMT % info, disp_store_info(info)))
+        info = package._compat_dict
+        print(FMT % (name_egg(package.key), VB_FMT % info, disp_store_info(info)))
 
 
 def list_option(prefixes, pat=None):
@@ -135,23 +135,21 @@ def list_option(prefixes, pat=None):
         print()
 
 
-def imports_option(enpkg, pat=None):
+def imports_option(repository, pat=None):
     print(FMT % ('Name', 'Version', 'Location'))
     print(60 * "=")
 
-    names = set(info['name'] for _, info in enpkg.installed_packages())
+    names = set(package.name for package in repository.iter_packages())
     for name in sorted(names, key=string.lower):
         if pat and not pat.search(name):
             continue
-        for c in reversed(enpkg.ec.collections):
-            index = dict(c.query(name=name))
-            if index:
-                info = index.values()[0]
-                loc = 'sys' if c.prefix == sys.prefix else 'user'
+        packages = repository.find_packages(name)
+        info = packages[0]._compat_dict
+        loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, pat=None):
+def search(enpkg, remote_repository, installed_repository, pat=None):
     """
     Print the packages that are available in the (remote) KVS.
     """
@@ -163,19 +161,19 @@ def search(enpkg, pat=None):
     print(80 * '=')
 
     names = {}
-    for metadata in enpkg.remote_packages():
+    for metadata in remote_repository.iter_packages():
         names[metadata.name] = metadata.name
 
     installed = {}
-    for key, info in enpkg.installed_packages():
-        installed[info['name']] = VB_FMT % info
+    for package in installed_repository.iter_packages():
+        installed[package.name] = VB_FMT % package._compat_dict
 
     for name in sorted(names, key=string.lower):
         if pat and not pat.search(name):
             continue
         disp_name = names[name]
         installed_version = installed.get(name)
-        for metadata in enpkg.info_list_name(name):
+        for metadata in remote_repository.find_sorted_packages(name):
             version = metadata.full_version
             disp_ver = (('* ' if installed_version == version else '  ') +
                         version)
@@ -199,11 +197,16 @@ def search(enpkg, pat=None):
         print(subscription_message(enpkg.config, user))
 
 
-def updates_check(enpkg):
+def updates_check(enpkg, installed_repository):
     updates = []
     EPD_update = []
-    for key, info in enpkg.installed_packages():
-        av_metadatas = enpkg.info_list_name(info['name'])
+    for package in installed_repository.iter_packages():
+        key = package.key
+        info = package._compat_dict
+
+        info["key"] = key
+        av_metadatas = \
+            enpkg._remote_repository.find_sorted_packages(info['name'])
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
@@ -215,8 +218,8 @@ def updates_check(enpkg):
     return updates, EPD_update
 
 
-def whats_new(enpkg):
-    updates, EPD_update = updates_check(enpkg)
+def whats_new(enpkg, installed_repository):
+    updates, EPD_update = updates_check(enpkg, installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -235,7 +238,7 @@ def whats_new(enpkg):
 
 
 def update_all(enpkg, args):
-    updates, EPD_update = updates_check(enpkg)
+    updates, EPD_update = updates_check(enpkg, enpkg._installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -310,11 +313,13 @@ def install_req(enpkg, req, opts):
             enpkg.execute(actions)
             if len(actions) == 0:
                 print("No update necessary, %r is up-to-date." % req.name)
-                print(install_time_string(enpkg, req.name))
+                print(install_time_string(enpkg._installed_repository,
+                                          req.name))
         except EnpkgError as e:
             if mode == 'root' or e.req is None or e.req == req:
                 # trying to install just one requirement - try to give more info
-                info_list = enpkg.info_list_name(req.name)
+                info_list = \
+                    enpkg._remote_repository.find_sorted_packages(req.name)
                 if info_list:
                     print("Versions for package %r are:\n%s" % (req.name,
                         pretty_print_packages(info_list)))
@@ -331,7 +336,8 @@ def install_req(enpkg, req, opts):
                     "egg by using the --no-deps enpkg commandline argument "
                     "after installing another version of the dependency. ")))
                 if e.req:
-                    info_list = enpkg.info_list_name(e.req.name)
+                    info_list = \
+                        enpkg._remote_repository.find_sorted_packages(e.req.name)
                     if info_list:
                         print(("Available versions of the required package "
                                "%r are:\n%s") % (
@@ -478,9 +484,9 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
-def ensure_authenticated_config(config, config_filename, enpkg):
+def ensure_authenticated_config(config, config_filename, store):
     try:
-        authenticate(config, enpkg.remote)
+        authenticate(config, store)
     except AuthFailedError:
         login, _ = config.get_auth()
         print("Could not authenticate with user '{0}'.".format(login))
@@ -674,16 +680,12 @@ def main(argv=None):
         urls = [fill_url(u) for u in config.IndexedRepos]
         remote = create_joined_store(config, urls)
 
-    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
-                  config=config)
-
-
     if args.config:                               # --config
-        print_config(config, enpkg.remote, prefixes[0])
+        print_config(config, remote, prefixes[0])
         return
 
     if args.add_url:                              # --add-url
-        add_url(config_filename, enpkg.config, args.add_url)
+        add_url(config_filename, config, args.add_url)
         return
 
     if args.userpass:                             # --userpass
@@ -713,7 +715,8 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    ensure_authenticated_config(config, config_filename, enpkg)
+    ensure_authenticated_config(config, config_filename, remote)
+    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
 
     if args.dry_run:
         def print_actions(actions):
@@ -722,7 +725,8 @@ def main(argv=None):
         enpkg.execute = print_actions
 
     if args.imports:                              # --imports
-        imports_option(enpkg, pat)
+        repository = Repository._from_prefixes(enpkg.prefixes)
+        imports_option(repository, pat)
         return
 
     if args.revert:                               # --revert
@@ -740,7 +744,7 @@ def main(argv=None):
         return
 
     if args.search:                               # --search
-        search(enpkg, pat)
+        search(enpkg, enpkg._repository, enpkg._installed_repository, pat)
         return
 
     if args.info:                                 # --info
@@ -750,7 +754,7 @@ def main(argv=None):
         return
 
     if args.whats_new:                            # --whats-new
-        whats_new(enpkg)
+        whats_new(enpkg, enpkg._installed_repository)
         return
 
     if args.update_all:                           # --update-all

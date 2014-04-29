@@ -7,16 +7,16 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import mock
-
+from egginst.main import EggInst
 from egginst.utils import compute_md5
-from egginst.tests.common import _EGGINST_COMMON_DATA, mkdtemp
+from egginst.testing_utils import slow
+from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
 
 from enstaller.errors import MissingPackage
 from enstaller.store.filesystem_store import DumbFilesystemStore
 
-from enstaller.repository import (PackageMetadata, Repository,
-                                  RepositoryPackageMetadata,
+from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
+                                  Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
 
 
@@ -77,7 +77,7 @@ class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, [],
-                                   "2.7", 1, None)
+                                   "2.7")
 
         # When
         r = repr(metadata)
@@ -98,7 +98,7 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.build, 1)
 
 
-class TestPackage(unittest.TestCase):
+class TestRepositoryPackage(unittest.TestCase):
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
@@ -123,6 +123,30 @@ class TestPackage(unittest.TestCase):
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
 
+class TestInstalledPackage(unittest.TestCase):
+    def test_from_meta_dir(self):
+        # Given
+        json_dict = {
+          "arch": "amd64",
+          "build": 1,
+          "ctime": "Thu Apr 24 15:41:24 2014",
+          "hook": False,
+          "key": "VTK-5.10.1-1.egg",
+          "name": "vtk",
+          "osdist": "RedHat_5",
+          "packages": [],
+          "platform": "linux2",
+          "python": "2.7",
+          "type": "egg",
+          "version": "5.10.1"
+        }
+
+        # When
+        metadata = InstalledPackageMetadata.from_installed_meta_dict(json_dict)
+
+        # Then
+        self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
+
 
 class TestRepository(unittest.TestCase):
     def setUp(self):
@@ -138,7 +162,7 @@ class TestRepository(unittest.TestCase):
             "nose-1.3.0-2.egg",
         ]
         self.store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        self.repository = Repository(self.store)
+        self.repository = Repository._from_store(self.store)
 
     def test_find_package(self):
         # Given
@@ -210,9 +234,9 @@ class TestRepository(unittest.TestCase):
     def test_has_package(self):
         # Given
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            "1.3.0", [], "2.7", 1, 1, None)
+                                            "1.3.0", 1, [], "2.7")
         unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
-                                              "1.4.0", [], "2.7", 1, 1, None)
+                                              "1.4.0", 1, [], "2.7")
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))
@@ -222,7 +246,7 @@ class TestRepository(unittest.TestCase):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository(store)
+        repository = Repository._from_store(store)
 
         # When
         metadata = list(repository.iter_most_recent_packages())
@@ -235,7 +259,7 @@ class TestRepository(unittest.TestCase):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
         store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository(store)
+        repository = Repository._from_store(store)
 
         # When
         metadata = list(repository.iter_packages())
@@ -245,35 +269,89 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(set(m.version for m in metadata),
                          set(["1.2.1", "1.3.0"]))
 
-    def test_connect(self):
+    @slow
+    def test_from_prefix(self):
         # Given
-        store = mock.Mock()
-        store.connect = mock.Mock()
-        store.is_connected = False
+        path = DUMMY_EGG
+        with mkdtemp() as tempdir:
+            create_venv(tempdir)
+            installer = EggInst(path, prefix=tempdir)
+            installer.install()
+
+            # When
+            repository = Repository._from_prefixes([tempdir])
+
+            # Then
+            packages = repository.find_packages("dummy")
+            self.assertEqual(len(packages), 1)
+            self.assertEqual(packages[0].name, "dummy")
+
+    def test_from_empty_prefix(self):
+        # Given
+        with mkdtemp() as tempdir:
+
+            # When
+            repository = Repository._from_prefixes([tempdir])
+
+            # Then
+            self.assertEqual(len(list(repository.iter_packages())), 0)
+
+def _dummy_installed_package_factory(name, version, build, key=None, store_location=""):
+    key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
+    return InstalledPackageMetadata(key, name, version, build, [], "2.7",
+                                    "", store_location)
+
+# Unittest that used to belong to Enpkg
+class TestRepositoryMisc(unittest.TestCase):
+    def test_find_packages_invalid_versions(self):
+        # Given
+        entries = [
+            _dummy_installed_package_factory("numpy", "1.6.1", 1),
+            _dummy_installed_package_factory("numpy", "1.8k", 2),
+        ]
+        repository = Repository()
+        for entry in entries:
+            repository.add_package(entry)
 
         # When
-        repository = Repository(store)
-        repository.connect((None, None))
+        packages = repository.find_packages("numpy")
 
         # Then
-        self.assertTrue(store.connect.called)
+        self.assertEqual(len(packages), 2)
+        self.assertItemsEqual(packages, entries)
 
-    def test_fetch(self):
+    def test_sorted_packages_valid(self):
         # Given
-        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
-        metadata = PackageMetadata.from_egg(path)
+        entries = [
+            _dummy_installed_package_factory("numpy", "1.6.1", 1),
+            _dummy_installed_package_factory("numpy", "1.8.0", 2),
+            _dummy_installed_package_factory("numpy", "1.7.1", 1),
+        ]
+        repository = Repository()
+        for entry in entries:
+            repository.add_package(entry)
 
         # When
-        resp = self.repository.fetch_from_package(metadata)
-        try:
-            with mkdtemp() as d:
-                target_path = os.path.join(d, "foo.egg")
-                with open(target_path, "wb") as target:
-                    target.write(resp.read())
-                resp.close()
-                md5 = compute_md5(target_path)
-        finally:
-            resp.close()
+        packages = repository.find_sorted_packages("numpy")
 
         # Then
-        self.assertEqual(md5, metadata.md5)
+        self.assertEqual(len(packages), 3)
+        self.assertEqual([p.version for p in packages], ["1.6.1", "1.7.1",
+                                                         "1.8.0"])
+
+    def test_sorted_packages_invalid(self):
+        # Given
+        entries = [
+            _dummy_installed_package_factory("numpy", "1.6.1", 1),
+            _dummy_installed_package_factory("numpy", "1.8k", 2),
+        ]
+        repository = Repository()
+        for entry in entries:
+            repository.add_package(entry)
+
+        # When
+        packages = repository.find_sorted_packages("numpy")
+
+        # Then
+        self.assertEqual(len(packages), 2)
+        self.assertItemsEqual([p.version for p in packages], ["1.6.1", "1.8k"])

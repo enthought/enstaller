@@ -23,11 +23,11 @@ from egginst.utils import makedirs
 
 from enstaller.config import Configuration
 from enstaller.egg_meta import split_eggname
-from enstaller.eggcollect import EggCollection, JoinedEggCollection
 from enstaller.enpkg import Enpkg, EnpkgError
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.main import _create_enstaller_update_enpkg
+from enstaller.repository import egg_name_to_name_version, Repository
 from enstaller.resolve import Req
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
@@ -128,59 +128,6 @@ class TestCreateJoinedStores(unittest.TestCase):
             create_joined_store(Configuration(), urls)
 
 class TestEnpkg(unittest.TestCase):
-    def test_info_list_names(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
-            dummy_enpkg_entry_factory("numpy", "1.7.1", 1),
-        ]
-
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            queried_entries = enpkg.info_list_name("numpy")
-
-            self.assertEqual(len(queried_entries), 3)
-            self.assertEqual([q.version for q in queried_entries],
-                             ["1.6.1", "1.7.1", "1.8.0"])
-
-    def test_info_list_names_invalid_version(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8k", 2),
-        ]
-
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            queried_entries = enpkg.info_list_name("numpy")
-
-            self.assertEqual(len(queried_entries), 2)
-            self.assertEqual([q.version for q in queried_entries],
-                             ["1.6.1", "1.8k"])
-
-    def test_query_simple(self):
-        entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8k", 2),
-        ]
-
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            r = dict(enpkg.find_packages("numpy"))
-            self.assertEqual(set(r.keys()),
-                             set(entry.s3index_key for entry in entries))
-
     def test_query_simple_with_local(self):
         """
         Ensure enpkg.query finds both local and remote eggs.
@@ -192,22 +139,29 @@ class TestEnpkg(unittest.TestCase):
             dummy_enpkg_entry_factory("dummy", "1.8k", 2),
         ]
 
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
+        store = MetadataOnlyStore(entries)
+        store.connect()
 
         local_entry = EnpkgS3IndexEntry.from_egg(DUMMY_EGG)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
-            enpkg.ec.install(os.path.basename(local_egg),
-                             os.path.dirname(local_egg))
+            prefixes = [d]
+            enpkg = Enpkg(store, prefixes=prefixes, evt_mgr=None,
+                          config=Configuration())
+            enpkg._install_egg(local_egg)
 
-            r = dict(enpkg.find_packages("dummy"))
-            self.assertEqual(set(r.keys()),
-                             set(entry.s3index_key for entry in entries + [local_entry]))
+            repository = Repository._from_store_and_prefixes(store, prefixes)
+            packages = repository.find_packages("dummy")
+            self.assertItemsEqual([p.key for p in packages],
+                                  [entry.s3index_key for entry in entries + [local_entry]])
+
+def _unconnected_enpkg_factory():
+    """
+    Create an Enpkg instance which does not require an authenticated
+    repository.
+    """
+    remote = MetadataOnlyStore()
+    return Enpkg(remote=remote, config=Configuration())
 
 class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
@@ -215,7 +169,7 @@ class TestEnpkgActions(unittest.TestCase):
         Ensuring enpkg.execute([]) does not crash
         """
         # Given
-        enpkg = Enpkg(config=Configuration())
+        enpkg = _unconnected_enpkg_factory()
 
         # When/Then
         enpkg.execute([])
@@ -257,6 +211,23 @@ class TestEnpkgActions(unittest.TestCase):
             with self.assertRaises(EnpkgError):
                 enpkg.install_actions("scipy")
 
+    def test_remove_actions(self):
+        repo = MetadataOnlyStore([])
+        repo.connect()
+
+        with mkdtemp() as d:
+            makedirs(d)
+
+            for egg in [DUMMY_EGG]:
+                egginst = EggInst(egg, d)
+                egginst.install()
+
+            enpkg = Enpkg(repo, prefixes=[d],
+                          evt_mgr=None, config=Configuration())
+
+            actions = enpkg.remove_actions("dummy")
+            self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
+
     def test_remove(self):
         repo = MetadataOnlyStore([])
         repo.connect()
@@ -268,14 +239,13 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            local_repo = JoinedEggCollection([EggCollection(d, None)])
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, config=Configuration())
-            enpkg.ec = local_repo
 
-            self.assertTrue(local_repo.find(os.path.basename(DUMMY_EGG)))
-            actions = enpkg.remove_actions("dummy")
-            self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
+            with mock.patch("enstaller.enpkg.EggInst.remove") as mocked_remove:
+                actions = enpkg.remove_actions("dummy")
+                enpkg.execute(actions)
+                self.assertTrue(mocked_remove.called)
 
     def test_remove_non_existing(self):
         entries = [
@@ -323,11 +293,8 @@ class TestEnpkgActions(unittest.TestCase):
             # Install older version in l1
             EggInst(l1_egg, l1).install()
 
-            local_repo = JoinedEggCollection([EggCollection(l1, None),
-                                              EggCollection(l0, None)])
             enpkg = Enpkg(repo, prefixes=[l1, l0],
                           evt_mgr=None, config=Configuration())
-            enpkg.ec = local_repo
 
             actions = enpkg.install_actions("nose")
             self.assertListEqual(actions, expected_actions)
@@ -350,7 +317,7 @@ class TestEnpkgActions(unittest.TestCase):
         config = Configuration()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            with mock.patch("enstaller.eggcollect.JoinedEggCollection.install", fake_install):
+            with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
                 enpkg = Enpkg(remote=repo, config=config)
                 actions = enpkg.install_actions("numpy")
 
@@ -391,30 +358,25 @@ class TestEnpkgExecute(unittest.TestCase):
         base_egg = os.path.basename(egg)
         fetch_opcode = 0
 
-        entries = [
-            EnpkgS3IndexEntry(product="free", build=1,
-                              egg_basename="dummy", version="1.0.1",
-                              available=True),
-        ]
+        entry = EnpkgS3IndexEntry(product="free", build=1,
+                                  egg_basename="dummy", version="1.0.1",
+                                  available=True)
+        entries = [entry]
 
         repo = MetadataOnlyStore(entries)
         repo.connect()
 
         with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
-            enpkg = Enpkg(repo, prefixes=self.prefixes,
-                          evt_mgr=None, config=Configuration())
-            local_repo = JoinedEggCollection([
-                EggCollection(prefix, None) for prefix in
-                self.prefixes])
-            local_repo.install = mock.MagicMock()
-            enpkg.ec = local_repo
+            with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
+                enpkg = Enpkg(repo, prefixes=self.prefixes,
+                              evt_mgr=None, config=Configuration())
+                actions = enpkg.install_actions("dummy")
+                enpkg.execute(actions)
 
-            actions = enpkg.install_actions("dummy")
-            enpkg.execute(actions)
-
-            mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
-            local_repo.install.assert_called_with(base_egg, enpkg.local_dir,
-                                                  None)
+                mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
+                mocked_install.assert_called_with(os.path.join(enpkg.local_dir,
+                                                               base_egg),
+                                                  entry.s3index_data)
 
 class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):
@@ -436,7 +398,7 @@ class TestEnpkgRevert(unittest.TestCase):
             enpkg.revert_actions(1)
 
     def test_invalid_argument(self):
-        enpkg = Enpkg(prefixes=self.prefixes,
+        enpkg = Enpkg(remote=MetadataOnlyStore(), prefixes=self.prefixes,
                       evt_mgr=None, config=Configuration())
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
@@ -453,7 +415,8 @@ class TestEnpkgRevert(unittest.TestCase):
         actions = enpkg.install_actions("dummy")
         enpkg.execute(actions)
 
-        self.assertIsNotNone(enpkg.find(os.path.basename(egg)))
+        name, version = egg_name_to_name_version(egg)
+        enpkg._installed_repository.find_package(name, version)
 
         for state in [0, 1]:
             actions = enpkg.revert_actions(state)
@@ -464,7 +427,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = set(["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"])
 
         with mock_history_get_state_context(installed_eggs | enstaller_egg):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(installed_eggs)
 
             self.assertEqual(ret, [])
@@ -473,7 +436,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs))
 
             self.assertEqual(ret, [])
@@ -485,7 +448,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
+            enpkg = _unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs[:1]))
 
             self.assertEqual(ret, [("remove", "another_dummy-1.0.0-1.egg")])
@@ -498,7 +461,7 @@ class TestEnpkgRevert(unittest.TestCase):
         revert_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = Enpkg(config=Configuration())
-            with mock.patch.object(enpkg, "_repository"):
+            enpkg = _unconnected_enpkg_factory()
+            with mock.patch.object(enpkg, "_remote_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)
