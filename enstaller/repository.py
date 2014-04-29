@@ -69,6 +69,14 @@ class PackageMetadata(object):
         """
         return comparable_version(self.version), self.build
 
+    @property
+    def _spec_info(self):
+        """
+        Returns a dictionary that can be used as an argument to Req.matches
+        """
+        # FIXME: to remove before 4.7.0
+        keys = ("name", "python", "version", "build")
+        return dict((k, getattr(self, k)) for k in keys)
 
 class RepositoryPackageMetadata(PackageMetadata):
     """
