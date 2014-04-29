@@ -246,7 +246,7 @@ class TestInfoStrings(unittest.TestCase):
                                                          "dummy"),
                                      "dummy-1.0.1-1.egg was installed on:")
 
-            self.assertEqual(install_time_string(enpkg, "ddummy"), "")
+            self.assertEqual(install_time_string(enpkg._installed_repository, "ddummy"), "")
 
     def test_info_option(self):
         self.maxDiff = None

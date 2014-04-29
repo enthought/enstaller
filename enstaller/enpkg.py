@@ -417,33 +417,6 @@ class Enpkg(object):
         # FIXME: only used by canopy
         return History(self.prefixes[0])
 
-    # == methods which relate to both (remote store and local installation) ==
-    def find_packages(self, name):
-        """
-        Iter over each package with the given name
-
-        Parameters
-        ----------
-        name: str
-            The package name (e.g. 'numpy')
-
-        Returns
-        -------
-        it: generator
-            A generator over (key, package info dict) pairs
-        """
-        index = dict((package.key, package.s3index_data) for package in
-                     self._remote_repository.find_packages(name))
-        for package in self._installed_repository.find_packages(name):
-            key = package.key
-            info = package._compat_dict
-            if key in index:
-                index[key].update(info)
-            else:
-                index[key] = info
-        for k in index:
-            yield k, index[k]
-
     def fetch(self, egg, force=False):
         f = FetchAPI(self._remote_repository, self.remote, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)

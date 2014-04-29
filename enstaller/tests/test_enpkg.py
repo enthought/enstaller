@@ -27,7 +27,7 @@ from enstaller.enpkg import Enpkg, EnpkgError
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.main import _create_enstaller_update_enpkg
-from enstaller.repository import egg_name_to_name_version
+from enstaller.repository import egg_name_to_name_version, Repository
 from enstaller.resolve import Req
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
@@ -175,19 +175,21 @@ class TestEnpkg(unittest.TestCase):
             dummy_enpkg_entry_factory("dummy", "1.8k", 2),
         ]
 
-        repo = MetadataOnlyStore(entries)
-        repo.connect()
+        store = MetadataOnlyStore(entries)
+        store.connect()
 
         local_entry = EnpkgS3IndexEntry.from_egg(DUMMY_EGG)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(repo, prefixes=[d],
-                          evt_mgr=None, config=Configuration())
+            prefixes = [d]
+            enpkg = Enpkg(store, prefixes=prefixes, evt_mgr=None,
+                          config=Configuration())
             enpkg._install_egg(local_egg)
 
-            r = dict(enpkg.find_packages("dummy"))
-            self.assertEqual(set(r.keys()),
-                             set(entry.s3index_key for entry in entries + [local_entry]))
+            repository = Repository._from_store_and_prefixes(store, prefixes)
+            packages = repository.find_packages("dummy")
+            self.assertItemsEqual([p.key for p in packages],
+                                  [entry.s3index_key for entry in entries + [local_entry]])
 
 def _unconnected_enpkg_factory():
     """
