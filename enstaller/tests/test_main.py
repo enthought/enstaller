@@ -64,7 +64,7 @@ class TestEnstallerUpdate(unittest.TestCase):
         store.connect()
         with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(store, Repository._from_store(store),
+                enpkg = Enpkg(Repository._from_store(store), mock.Mock(),
                               config=config)
                 opts = mock.Mock()
                 opts.no_deps = False
@@ -246,7 +246,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     store.connect()
     repository = Repository._from_store(store)
 
-    enpkg = Enpkg(store, repository, prefixes=[prefix], config=config)
+    enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix], config=config)
     for installed_entry in installed_entries:
         package = \
             InstalledPackageMetadata.from_installed_meta_dict(installed_entry)

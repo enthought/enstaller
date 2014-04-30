@@ -87,7 +87,7 @@ class TestEnstallerUpdateHack(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        enpkg = Enpkg(store, repository, prefixes=prefixes,
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
                       config=Configuration())
         new_enpkg = _create_enstaller_update_enpkg(enpkg, local_version)
         return new_enpkg._install_actions_enstaller(local_version)
@@ -145,7 +145,7 @@ class TestEnpkg(unittest.TestCase):
 
         with mkdtemp() as d:
             prefixes = [d]
-            enpkg = Enpkg(store, Repository._from_store(store),
+            enpkg = Enpkg(Repository._from_store(store), mock.Mock(),
                           prefixes=prefixes, config=Configuration())
             enpkg._install_egg(local_egg)
 
@@ -162,7 +162,7 @@ def _unconnected_enpkg_factory():
     store = MetadataOnlyStore()
     store.connect()
     repository = Repository._from_store(store)
-    return Enpkg(store, repository, config=Configuration())
+    return Enpkg(repository, mock.Mock(), config=Configuration())
 
 class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
@@ -192,7 +192,7 @@ class TestEnpkgActions(unittest.TestCase):
         repository = Repository._from_store(store)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(store, repository, prefixes=[d],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
             actions = enpkg.install_actions("numpy")
 
@@ -209,7 +209,7 @@ class TestEnpkgActions(unittest.TestCase):
         repository = Repository._from_store(store)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(store, repository, prefixes=[d],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
             with self.assertRaises(NoPackageFound):
                 enpkg.install_actions("scipy")
@@ -226,7 +226,7 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            enpkg = Enpkg(store, repository, prefixes=[d],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
 
             actions = enpkg.remove_actions("dummy")
@@ -244,7 +244,7 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            enpkg = Enpkg(store, repository, prefixes=[d],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
 
             with mock.patch("enstaller.enpkg.EggInst.remove") as mocked_remove:
@@ -263,7 +263,7 @@ class TestEnpkgActions(unittest.TestCase):
         repository = Repository._from_store(store)
 
         with mkdtemp() as d:
-            enpkg = Enpkg(store, repository, prefixes=[d],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
             with self.assertRaises(EnpkgError):
                 enpkg.remove_actions("numpy")
@@ -301,7 +301,7 @@ class TestEnpkgActions(unittest.TestCase):
             EggInst(l1_egg, l1).install()
 
             repository = Repository._from_store(store)
-            enpkg = Enpkg(store, repository, prefixes=[l1, l0],
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[l1, l0],
                           config=Configuration())
 
             actions = enpkg.install_actions("nose")
@@ -327,7 +327,7 @@ class TestEnpkgActions(unittest.TestCase):
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch"):
             with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
-                enpkg = Enpkg(store, repository, config=config)
+                enpkg = Enpkg(repository, mock.Mock(), config=config)
                 actions = enpkg.install_actions("numpy")
 
                 t = threading.Thread(target=lambda: enpkg.execute(actions))
@@ -355,7 +355,7 @@ class TestEnpkgExecute(unittest.TestCase):
         repository = Repository._from_store(store)
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
-            enpkg = Enpkg(store, repository, prefixes=self.prefixes,
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                           config=Configuration())
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
@@ -379,7 +379,7 @@ class TestEnpkgExecute(unittest.TestCase):
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
-                enpkg = Enpkg(store, repository, prefixes=self.prefixes,
+                enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                               config=Configuration())
                 actions = enpkg.install_actions("dummy")
                 enpkg.execute(actions)
@@ -402,7 +402,7 @@ class TestEnpkgRevert(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        enpkg = Enpkg(store, repository, prefixes=self.prefixes,
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                       config=Configuration())
         enpkg.revert_actions(0)
 
@@ -414,7 +414,7 @@ class TestEnpkgRevert(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        enpkg = Enpkg(store, repository, prefixes=self.prefixes,
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                       config=Configuration())
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
@@ -427,7 +427,7 @@ class TestEnpkgRevert(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        enpkg = Enpkg(store, repository, prefixes=self.prefixes,
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                       config=Configuration())
         actions = enpkg.install_actions("dummy")
         enpkg.execute(actions)

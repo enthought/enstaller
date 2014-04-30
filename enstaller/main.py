@@ -36,6 +36,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
     prepend_url, print_config, subscription_message, write_default_config,
     subscription_level)
+from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
@@ -360,11 +361,12 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
 
     installed_store = MockedStore()
     installed_store.connect()
-    store = JoinedStore([enpkg.store, installed_store])
+    repository = Repository._from_store(installed_store)
+    for package in enpkg._remote_repository.iter_packages():
+        repository.add_package(package)
 
-    repository = Repository._from_store(store)
-    return Enpkg(store, repository, prefixes=prefixes, evt_mgr=evt_mgr,
-                 config=enpkg.config)
+    return Enpkg(repository, download_manager=enpkg._downloader,
+                 prefixes=prefixes, evt_mgr=evt_mgr, config=enpkg.config)
 
 
 def update_enstaller(enpkg, opts):
@@ -687,8 +689,12 @@ def main(argv=None):
     ensure_authenticated_config(config, config_filename, remote)
 
     remote.connect(config.get_auth())
+
     repository = Repository._from_store(remote)
-    enpkg = Enpkg(repository, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
+    downloader = DownloadManager(repository, remote, config.local, evt_mgr)
+
+    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
+                  config=config)
 
     if args.dry_run:
         def print_actions(actions):

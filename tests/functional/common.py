@@ -73,7 +73,7 @@ def fake_configuration_and_auth(f):
         # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
         # separated.
         fake_remote = MetadataOnlyStore()
-        with mock.patch("enstaller.enpkg.get_default_remote",
+        with mock.patch("enstaller.main.get_default_remote",
                         return_value=fake_remote):
             with mock.patch("enstaller.main.Configuration.from_file",
                             return_value=config):
@@ -115,7 +115,7 @@ def remote_enstaller_available(versions):
     ]
     store = MetadataOnlyStore(enstaller_eggs)
 
-    wrap = mock.patch("enstaller.enpkg.get_default_remote", lambda ignored: store)
+    wrap = mock.patch("enstaller.main.get_default_remote", lambda ignored: store)
     def dec(f):
         return wrap(f)
     return dec

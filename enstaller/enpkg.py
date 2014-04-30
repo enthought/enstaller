@@ -110,16 +110,12 @@ class Enpkg(object):
         emitted to the event manager.  By default, a simple progress bar is
         displayed on the console (which does not use the event manager at all).
     """
-    def __init__(self, store, remote_repository, prefixes=[sys.prefix], evt_mgr=None,
-                 config=None):
+    def __init__(self, remote_repository, download_manager,
+                 prefixes=[sys.prefix], evt_mgr=None, config=None):
         if config is None:
             self.config = Configuration._get_default_config()
         else:
             self.config = config
-
-        # XXX: remote attribute kept for backward compatibility, remove before
-        # 4.7.0
-        self.store = store
 
         self.local_dir = get_writable_local_dir(self.config)
 
@@ -134,6 +130,8 @@ class Enpkg(object):
         self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
 
         self._execution_aborted = threading.Event()
+
+        self._downloader = download_manager
 
     def _install_egg(self, path, extra_info=None):
         """
@@ -382,7 +380,5 @@ class Enpkg(object):
         return History(self.prefixes[0])
 
     def _fetch(self, egg, force=False):
-        f = DownloadManager(self._remote_repository, self.store,
-                            self.local_dir, self.evt_mgr)
-        f.super_id = getattr(self, 'super_id', None)
-        f.fetch_egg(egg, force, self._execution_aborted)
+        self._downloader.super_id = getattr(self, 'super_id', None)
+        self._downloader.fetch_egg(egg, force, self._execution_aborted)
