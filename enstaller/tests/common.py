@@ -8,6 +8,7 @@ import mock
 from enstaller.errors import AuthFailedError
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
+from enstaller.utils import PY_VER
 
 
 FAKE_MD5 = "a" * 32
@@ -16,7 +17,7 @@ FAKE_SIZE = -1
 
 def dummy_installed_package_factory(name, version, build, key=None, store_location=""):
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
-    return InstalledPackageMetadata(key, name.lower(), version, build, [], "2.7",
+    return InstalledPackageMetadata(key, name.lower(), version, build, [], PY_VER,
                                     "", store_location)
 
 def dummy_repository_package_factory(name, version, build, key=None, store_location=""):
@@ -24,7 +25,7 @@ def dummy_repository_package_factory(name, version, build, key=None, store_locat
     fake_size = FAKE_SIZE
     fake_md5 = FAKE_MD5
     fake_mtime = 0.0
-    return RepositoryPackageMetadata(key, name.lower(), version, build, [], "2.7",
+    return RepositoryPackageMetadata(key, name.lower(), version, build, [], PY_VER,
                                      fake_size, fake_md5, fake_mtime, "commercial",
                                      True, store_location)
 
