@@ -18,6 +18,7 @@ from enstaller.store.filesystem_store import DumbFilesystemStore
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
+from enstaller.tests.common import dummy_installed_package_factory
 
 
 class TestParseVersion(unittest.TestCase):
@@ -296,18 +297,13 @@ class TestRepository(unittest.TestCase):
             # Then
             self.assertEqual(len(list(repository.iter_packages())), 0)
 
-def _dummy_installed_package_factory(name, version, build, key=None, store_location=""):
-    key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
-    return InstalledPackageMetadata(key, name, version, build, [], "2.7",
-                                    "", store_location)
-
 # Unittest that used to belong to Enpkg
 class TestRepositoryMisc(unittest.TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8k", 2),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8k", 2),
         ]
         repository = Repository()
         for entry in entries:
@@ -323,9 +319,9 @@ class TestRepositoryMisc(unittest.TestCase):
     def test_sorted_packages_valid(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8.0", 2),
-            _dummy_installed_package_factory("numpy", "1.7.1", 1),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8.0", 2),
+            dummy_installed_package_factory("numpy", "1.7.1", 1),
         ]
         repository = Repository()
         for entry in entries:
@@ -342,8 +338,8 @@ class TestRepositoryMisc(unittest.TestCase):
     def test_sorted_packages_invalid(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8k", 2),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8k", 2),
         ]
         repository = Repository()
         for entry in entries:

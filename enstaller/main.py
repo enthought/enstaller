@@ -103,12 +103,12 @@ def install_time_string(installed_repository, name):
     return "\n".join(lines)
 
 
-def info_option(enpkg, name):
+def info_option(remote_repository, installed_repository, name):
     name = name.lower()
     print('Package:', name)
-    print(install_time_string(enpkg._installed_repository, name))
+    print(install_time_string(installed_repository, name))
     pad = 4*' '
-    for metadata in enpkg._remote_repository.find_sorted_packages(name):
+    for metadata in remote_repository.find_sorted_packages(name):
         print('Version: ' + metadata.full_version)
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
@@ -120,10 +120,9 @@ def info_option(enpkg, name):
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
-def print_installed(prefix, pat=None):
+def print_installed(repository, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    repository = Repository._from_prefixes([prefix])
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
@@ -134,7 +133,8 @@ def print_installed(prefix, pat=None):
 def list_option(prefixes, pat=None):
     for prefix in reversed(prefixes):
         print("prefix:", prefix)
-        print_installed(prefix, pat)
+        repository = Repository._from_prefixes([prefix])
+        print_installed(repository, pat)
         print()
 
 
@@ -200,7 +200,7 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
         print(subscription_message(enpkg.config, user))
 
 
-def updates_check(enpkg, installed_repository):
+def updates_check(remote_repository, installed_repository):
     updates = []
     EPD_update = []
     for package in installed_repository.iter_packages():
@@ -208,8 +208,7 @@ def updates_check(enpkg, installed_repository):
         info = package._compat_dict
 
         info["key"] = key
-        av_metadatas = \
-            enpkg._remote_repository.find_sorted_packages(info['name'])
+        av_metadatas = remote_repository.find_sorted_packages(info['name'])
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
@@ -221,8 +220,8 @@ def updates_check(enpkg, installed_repository):
     return updates, EPD_update
 
 
-def whats_new(enpkg, installed_repository):
-    updates, EPD_update = updates_check(enpkg, installed_repository)
+def whats_new(remote_repository, installed_repository):
+    updates, EPD_update = updates_check(remote_repository, installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -241,7 +240,8 @@ def whats_new(enpkg, installed_repository):
 
 
 def update_all(enpkg, args):
-    updates, EPD_update = updates_check(enpkg, enpkg._installed_repository)
+    updates, EPD_update = updates_check(enpkg._remote_repository,
+                                        enpkg._installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -724,11 +724,12 @@ def main(argv=None):
     if args.info:                                 # --info
         if len(args.cnames) != 1:
             p.error("Option requires one argument (name of package)")
-        info_option(enpkg, args.cnames[0])
+        info_option(enpkg._remote_repository, enpkg._installed_repository,
+                    args.cnames[0])
         return
 
     if args.whats_new:                            # --whats-new
-        whats_new(enpkg, enpkg._installed_repository)
+        whats_new(enpkg._remote_repository, enpkg._installed_repository)
         return
 
     if args.update_all:                           # --update-all

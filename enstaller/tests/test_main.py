@@ -31,15 +31,16 @@ from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import check_prefixes, disp_store_info, \
     epd_install_confirm, get_package_path, imports_option, info_option, \
-    install_req, install_time_string, main, name_egg, print_installed, search, \
+    install_req, install_time_string, name_egg, print_installed, search, \
     update_all, updates_check, update_enstaller, whats_new
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.store.tests.common import MetadataOnlyStore
 
-from .common import dummy_enpkg_entry_factory, \
-    dummy_installed_egg_factory, mock_print, \
-    fake_keyring, is_not_authenticated, is_authenticated, \
-    PY_VER
+from .common import (dummy_enpkg_entry_factory, dummy_installed_egg_factory,
+                     dummy_installed_package_factory,
+                     dummy_repository_package_factory, mock_print,
+                     fake_keyring, is_authenticated, FAKE_MD5, FAKE_SIZE,
+                     PY_VER)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -218,6 +219,21 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
+def _create_repositories(remote_entries=None, installed_entries=None):
+    if remote_entries is None:
+        remote_entries = []
+    if installed_entries is None:
+        installed_entries = []
+
+    remote_repository = Repository()
+    for remote_entry in remote_entries:
+        remote_repository.add_package(remote_entry)
+    installed_repository = Repository()
+    for installed_entry in installed_entries:
+        installed_repository.add_package(installed_entry)
+
+    return remote_repository, installed_repository
+
 def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entries=None):
     if remote_entries is None:
         remote_entries = []
@@ -250,34 +266,41 @@ class TestInfoStrings(unittest.TestCase):
 
     def test_info_option(self):
         self.maxDiff = None
+
+        # Given
         r_output = textwrap.dedent("""\
         Package: enstaller
 
         Version: 4.6.2-1
             Product: commercial
             Available: True
-            Python version: {1}
-            Store location:{0}
-            MD5:{0}
-            Size: 1024
+            Python version: {2}
+            Store location: {3}
+            MD5: {0}
+            Size: {1}
             Requirements: None
         Version: 4.6.3-1
             Product: commercial
             Available: True
-            Python version: {1}
-            Store location:{0}
-            MD5:{0}
-            Size: 1024
+            Python version: {2}
+            Store location: {3}
+            MD5: {0}
+            Size: {1}
             Requirements: None
-        """.format(" ", PY_VER))
-        with mkdtemp() as d:
-            entries = [dummy_enpkg_entry_factory("enstaller", "4.6.2", 1),
-                       dummy_enpkg_entry_factory("enstaller", "4.6.3", 1)]
-            enpkg = _create_prefix_with_eggs(Configuration(), d, remote_entries=entries)
+        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, ""))
 
-            with mock_print() as m:
-                info_option(enpkg, "enstaller")
-                self.assertMultiLineEqual(m.value, r_output)
+        entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
+                   dummy_repository_package_factory("enstaller", "4.6.3", 1)]
+
+        remote_repository, installed_repository = \
+                _create_repositories(remote_entries=entries)
+
+        # When
+        with mock_print() as m:
+            info_option(remote_repository, installed_repository,
+                        "enstaller")
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
 
     def test_print_installed(self):
         with mkdtemp() as d:
@@ -289,18 +312,20 @@ class TestInfoStrings(unittest.TestCase):
             ec = EggInst(DUMMY_EGG, d)
             ec.install()
 
+            repository = Repository._from_prefixes([d])
             with mock_print() as m:
-                print_installed(d)
-                self.assertEqual(m.value, r_out)
+                print_installed(repository)
+            self.assertEqual(m.value, r_out)
 
             r_out = textwrap.dedent("""\
                 Name                 Version              Store
                 ============================================================
                 """)
 
+            repository = Repository._from_prefixes([d])
             with mock_print() as m:
-                print_installed(d, pat=re.compile("no_dummy"))
-                self.assertEqual(m.value, r_out)
+                print_installed(repository, pat=re.compile("no_dummy"))
+            self.assertEqual(m.value, r_out)
 
 class TestSearch(unittest.TestCase):
     def test_no_installed(self):
@@ -421,7 +446,8 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(Configuration(), d,
                     installed_entries, entries)
 
-            updates, EPD_update =  updates_check(enpkg, enpkg._installed_repository)
+            updates, EPD_update =  updates_check(enpkg._remote_repository,
+                                                 enpkg._installed_repository)
 
             self.assertEqual(EPD_update, [])
             self.assertEqual(len(updates), 1)
@@ -440,45 +466,50 @@ class TestUpdatesCheck(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, entries)
 
-            updates, EPD_update =  updates_check(enpkg,
+            updates, EPD_update =  updates_check(enpkg._remote_repository,
                                                  enpkg._installed_repository)
 
             self.assertEqual(EPD_update, [])
             self.assertEqual(updates, [])
 
     def test_update_check_no_available(self):
+        # Given
         installed_entries = [
-                dummy_installed_egg_factory("dummy", "1.0.1", 1)
+                dummy_installed_package_factory("dummy", "1.0.1", 1)
         ]
-        with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries)
 
-            updates, EPD_update =  updates_check(enpkg,
-                                                 enpkg._installed_repository)
+        remote, installed = \
+                _create_repositories(installed_entries=installed_entries)
 
-            self.assertEqual(EPD_update, [])
-            self.assertEqual(updates, [])
+        # When
+        updates, EPD_update =  updates_check(remote, installed)
+
+        # Then
+        self.assertEqual(EPD_update, [])
+        self.assertEqual(updates, [])
 
     def test_update_check_epd(self):
-        installed_entries = [dummy_installed_egg_factory("EPD", "7.2", 1)]
-        remote_entries = [dummy_enpkg_entry_factory("EPD", "7.3", 1)]
+        # Given
+        installed_entries = [dummy_installed_package_factory("EPD", "7.2", 1)]
+        remote_entries = [dummy_repository_package_factory("EPD", "7.3", 1)]
 
-        with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d,
-                    installed_entries, remote_entries)
+        remote, installed = _create_repositories(remote_entries,
+                                                 installed_entries)
 
-            updates, EPD_update =  updates_check(enpkg,
-                                                 enpkg._installed_repository)
+        # When
+        updates, EPD_update =  updates_check(remote, installed)
 
-            self.assertEqual(updates, [])
-            self.assertEqual(len(EPD_update), 1)
+        # Then
+        self.assertEqual(updates, [])
+        self.assertEqual(len(EPD_update), 1)
 
-            epd_update0 = EPD_update[0]
-            self.assertItemsEqual(epd_update0.keys(), ["current", "update"])
-            self.assertEqual(epd_update0["current"]["version"], "7.2")
-            self.assertEqual(epd_update0["update"].version, "7.3")
+        epd_update0 = EPD_update[0]
+        self.assertItemsEqual(epd_update0.keys(), ["current", "update"])
+        self.assertEqual(epd_update0["current"]["version"], "7.2")
+        self.assertEqual(epd_update0["update"].version, "7.3")
 
     def test_whats_new_no_new_epd(self):
+        # Given
         r_output = textwrap.dedent("""\
             Name                 installed            available
             ============================================================
@@ -486,61 +517,71 @@ class TestUpdatesCheck(unittest.TestCase):
             numpy                1.7.1-1              1.7.1-2
             """)
         installed_entries = [
-            dummy_installed_egg_factory("numpy", "1.7.1", 1),
-            dummy_installed_egg_factory("scipy", "0.12.0", 1)
+            dummy_installed_package_factory("numpy", "1.7.1", 1),
+            dummy_installed_package_factory("scipy", "0.12.0", 1)
         ]
         remote_entries = [
-            dummy_enpkg_entry_factory("numpy", "1.7.1", 2),
-            dummy_enpkg_entry_factory("scipy", "0.13.0", 1)
+            dummy_repository_package_factory("numpy", "1.7.1", 2),
+            dummy_repository_package_factory("scipy", "0.13.0", 1)
         ]
 
-        with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d,
-                    installed_entries, remote_entries)
+        remote, installed = _create_repositories(remote_entries,
+                                                 installed_entries)
 
-            with mock_print() as m:
-                whats_new(enpkg, enpkg._installed_repository)
-                # FIXME: we splitlines and compared wo caring about order, as
-                # the actual line order depends on dict ordering from
-                # EggCollection.query_installed.
-                self.assertItemsEqual(m.value.splitlines(), r_output.splitlines())
+        # When
+        with mock_print() as m:
+            whats_new(remote, installed)
+
+        # Then
+
+        # FIXME: we splitlines and compared wo caring about order, as
+        # the actual line order depends on dict ordering from
+        # EggCollection.query_installed.
+        self.assertItemsEqual(m.value.splitlines(), r_output.splitlines())
 
     def test_whats_new_new_epd(self):
+        # Given
         r_output = "EPD 7.3-2 is available. To update to it (with " \
                    "confirmation warning), run 'enpkg epd'.\n"
         installed_entries = [
-            dummy_installed_egg_factory("EPD", "7.2", 1),
+            dummy_installed_package_factory("EPD", "7.2", 1),
         ]
         remote_entries = [
-            dummy_enpkg_entry_factory("EPD", "7.3", 2),
+            dummy_repository_package_factory("EPD", "7.3", 2),
         ]
 
-        with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d,
-                    installed_entries, remote_entries)
+        remote, installed = _create_repositories(remote_entries,
+                                                 installed_entries)
 
-            with mock_print() as m:
-                whats_new(enpkg, enpkg._installed_repository)
-                self.assertMultiLineEqual(m.value, r_output)
+        # When
+        with mock_print() as m:
+            whats_new(remote, installed)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
 
     def test_whats_new_no_updates(self):
+        # Given
         r_output = "No new version of any installed package is available\n"
 
         installed_entries = [
-            dummy_installed_egg_factory("numpy", "1.7.1", 2),
-            dummy_installed_egg_factory("scipy", "0.13.0", 1)
+            dummy_installed_package_factory("numpy", "1.7.1", 2),
+            dummy_installed_package_factory("scipy", "0.13.0", 1)
         ]
         remote_entries = [
-            dummy_enpkg_entry_factory("numpy", "1.7.1", 1),
-            dummy_enpkg_entry_factory("scipy", "0.12.0", 1)
+            dummy_repository_package_factory("numpy", "1.7.1", 1),
+            dummy_repository_package_factory("scipy", "0.12.0", 1)
         ]
 
-        with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, remote_entries)
+        remote, installed = _create_repositories(remote_entries,
+                                                 installed_entries)
 
-            with mock_print() as m:
-                whats_new(enpkg, enpkg._installed_repository)
-                self.assertMultiLineEqual(m.value, r_output)
+        # When
+        with mock_print() as m:
+            whats_new(remote, installed)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
 
     def test_update_all_no_updates(self):
         r_output = "No new version of any installed package is available\n"
