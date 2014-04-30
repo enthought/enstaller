@@ -22,6 +22,7 @@ from enstaller.enpkg import Enpkg
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.errors import EnpkgError, NoPackageFound
+from enstaller.fetch import DownloadManager
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
                                   Repository)
@@ -394,13 +395,15 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_simple_scenario(self):
         egg = DUMMY_EGG
         r_actions = {1: [], 0: [("remove", os.path.basename(egg))]}
+        config = Configuration()
 
         store = EggsStore([egg])
         store.connect()
         repository = Repository._from_store(store)
+        downloader = DownloadManager(repository, store, config.local)
 
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
-                      config=Configuration())
+        enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
+                      config=config)
         actions = enpkg.install_actions("dummy")
         enpkg.execute(actions)
 
