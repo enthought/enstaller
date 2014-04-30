@@ -8,7 +8,6 @@ enpkg can access eggs from both local and HTTP repositories.
 from __future__ import print_function
 
 import argparse
-import collections
 import errno
 import logging
 import ntpath
@@ -39,17 +38,15 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
+from enstaller.utils import (PY_VER, abs_expanduser, fill_url,
+                             exit_if_sudo_on_venv)
 
 from enstaller.enpkg import Enpkg, create_joined_store, get_default_remote
-from enstaller.repository import Repository
+from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.history import History
-
-from enstaller.store.joined import JoinedStore
-from enstaller.store.indexed import IndexedStore
 
 
 logger = logging.getLogger(__name__)
@@ -328,42 +325,20 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
     if version is None:
         version = __ENSTALLER_VERSION__
 
-    # This repo is used to inject the current version of
-    # enstaller into the set of enstaller eggs considered
-    # by Resolve. This is unfortunately the easiest way I
-    # could find to do so...
-    class MockedStore(IndexedStore):
-        def connect(self, auth=None):
-            pyver = ".".join(str(i) for i in sys.version_info[:2])
-            spec = {"name": "enstaller",
-                    "type": "egg",
-                    "version": version,
-                    "build": 1,
-                    "python": pyver,
-                    "packages": [],
-                    "size": 1024,
-                    "md5": "a" * 32}
-            self._index = {"enstaller-{0}-1.egg".format(version): spec}
-            self._connected = True
+    name = "enstaller"
+    build = 1
+    key = "{0}-{1}-{2}.egg".format(name, version, build)
+    current_enstaller = RepositoryPackageMetadata( key, name, version, build,
+                                                  [], PY_VER, -1, "a" * 32, 0.0,
+                                                  "free", True, "mocked_store")
 
-            self._groups = collections.defaultdict(list)
-            for key, info in self._index.iteritems():
-                self._groups[info['name']].append(key)
-
-        def get_data(self, key):
-            """Dummy so that we can instantiate this class."""
-
-        def info(self):
-            """Dummy so that we can instantiate this class."""
+    repository = Repository()
+    for package in enpkg._remote_repository.iter_packages():
+        repository.add_package(package)
+    repository.add_package(current_enstaller)
 
     prefixes = enpkg.prefixes
     evt_mgr = enpkg.evt_mgr
-
-    installed_store = MockedStore()
-    installed_store.connect()
-    repository = Repository._from_store(installed_store)
-    for package in enpkg._remote_repository.iter_packages():
-        repository.add_package(package)
 
     return Enpkg(repository, download_manager=enpkg._downloader,
                  prefixes=prefixes, evt_mgr=evt_mgr, config=enpkg.config)

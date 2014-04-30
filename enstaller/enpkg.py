@@ -23,7 +23,6 @@ from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
 
 from enstaller.resolve import Req, Resolve
-from enstaller.fetch import DownloadManager
 from enstaller.egg_meta import split_eggname
 from enstaller.history import History
 
