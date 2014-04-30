@@ -16,7 +16,7 @@ from egginst.progress import progress_manager_factory
 
 import enstaller
 
-from enstaller.errors import EnpkgError
+from enstaller.errors import EnpkgError, SolverException, UnavailablePackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
@@ -285,8 +285,14 @@ class Enpkg(object):
         req = Req.from_anything(arg)
         # resolve the list of eggs that need to be installed
         eggs = Resolve(self._remote_repository).install_sequence(req, mode)
-        if eggs is None:
-             raise EnpkgError("No egg found for requirement '%s'." % req)
+        unavailables = []
+        for egg in eggs:
+            name, version = egg_name_to_name_version(egg)
+            package = self._remote_repository.find_package(name, version)
+            if not package.available:
+                unavailables.append(egg)
+        if len(unavailables) > 0:
+            raise UnavailablePackage(req)
         return self._install_actions(eggs, mode, force, forceall)
 
     def _install_actions(self, eggs, mode, force, forceall):

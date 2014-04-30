@@ -28,11 +28,14 @@ from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
-from enstaller.errors import InvalidPythonPathConfiguration, EXIT_ABORTED
+from enstaller.errors import (InvalidPythonPathConfiguration,
+                              NoPackageFound, UnavailablePackage,
+                              EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
-    prepend_url, print_config, subscription_message, write_default_config)
+    prepend_url, print_config, subscription_message, write_default_config,
+    subscription_level)
 from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
@@ -293,72 +296,43 @@ def install_req(enpkg, req, opts):
     FAILURE = 1
     req = Req.from_anything(req)
 
-    def _print_invalid_permissions():
-        user = authenticate(enpkg.config)
-        print("No package found to fulfill your requirement at your "
-              "subscription level:")
-        for line in subscription_message(enpkg.config, user).splitlines():
-            print(" " * 4 + line)
-
-    def _perform_install():
-        """
-        Try to perform the install.
-        """
-        try:
-            mode = 'root' if opts.no_deps else 'recur'
-            actions = enpkg.install_actions(
-                    req,
-                    mode=mode,
-                    force=opts.force, forceall=opts.forceall)
-            enpkg.execute(actions)
-            if len(actions) == 0:
-                print("No update necessary, %r is up-to-date." % req.name)
-                print(install_time_string(enpkg._installed_repository,
-                                          req.name))
-        except EnpkgError as e:
-            if mode == 'root' or e.req is None or e.req == req:
-                # trying to install just one requirement - try to give more info
-                info_list = \
-                    enpkg._remote_repository.find_sorted_packages(req.name)
-                if info_list:
-                    print("Versions for package %r are:\n%s" % (req.name,
-                        pretty_print_packages(info_list)))
-                    if any(not i.available for i in info_list):
-                        _print_invalid_permissions()
-                    _done(FAILURE)
-                else:
-                    print(e.message)
-                    _done(FAILURE)
-            elif mode == 'recur':
-                print(e.message)
-                print('\n'.join(textwrap.wrap(
-                    "You may be able to force an install of just this "
-                    "egg by using the --no-deps enpkg commandline argument "
-                    "after installing another version of the dependency. ")))
-                if e.req:
-                    info_list = \
-                        enpkg._remote_repository.find_sorted_packages(e.req.name)
-                    if info_list:
-                        print(("Available versions of the required package "
-                               "%r are:\n%s") % (
-                            e.req.name, pretty_print_packages(info_list)))
-                        if any(not i.available for i in info_list):
-                            _print_invalid_permissions()
-                        _done(FAILURE)
-            _done(FAILURE)
-        except OSError as e:
-            if e.errno == errno.EACCES and sys.platform == 'darwin':
-                print("Install failed. OSX install requires admin privileges.")
-                print("You should add 'sudo ' before the 'enpkg' command.")
-                _done(FAILURE)
-            else:
-                raise
-
     def _done(exit_status):
         sys.exit(exit_status)
 
-    # kick off the state machine
-    _perform_install()
+    try:
+        mode = 'root' if opts.no_deps else 'recur'
+        actions = enpkg.install_actions(
+                req,
+                mode=mode,
+                force=opts.force, forceall=opts.forceall)
+        enpkg.execute(actions)
+        if len(actions) == 0:
+            print("No update necessary, %r is up-to-date." % req.name)
+            print(install_time_string(enpkg._installed_repository,
+                                      req.name))
+    except UnavailablePackage as e:
+        username = enpkg.config.get_auth()[0]
+        user_info = authenticate(enpkg.config)
+        subscription = subscription_level(user_info)
+        msg = textwrap.dedent("""\
+            Error: cannot install {0!r}, as some requirements are not
+            available at your subscription level.
+
+            You are currently logged in as {1!r} (subscription level:
+            {2!r}).""".format(str(e.requirement), username, subscription))
+        print(msg)
+        _done(FAILURE)
+    except NoPackageFound as e:
+        print(str(e))
+        _done(FAILURE)
+    except OSError as e:
+        if e.errno == errno.EACCES and sys.platform == 'darwin':
+            print("Install failed. OSX install requires admin privileges.")
+            print("You should add 'sudo ' before the 'enpkg' command.")
+            _done(FAILURE)
+        else:
+            raise
+
 
 def _create_enstaller_update_enpkg(enpkg, version=None):
     if version is None:
@@ -744,7 +718,7 @@ def main(argv=None):
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._repository, enpkg._installed_repository, pat)
+        search(enpkg, enpkg._remote_repository, enpkg._installed_repository, pat)
         return
 
     if args.info:                                 # --info

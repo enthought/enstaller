@@ -692,15 +692,11 @@ class TestInstallReq(unittest.TestCase):
         config.set_auth("None", "None")
 
         r_output = textwrap.dedent("""\
-        Error: could not resolve "numpy 1.7.1" required by "scipy-0.12.0-1.egg"
-        You may be able to force an install of just this egg by using the
-        --no-deps enpkg commandline argument after installing another version
-        of the dependency.
-        Available versions of the required package 'numpy' are:
-            1.7.1 (no subscription)
-        No package found to fulfill your requirement at your subscription level:
-            You are logged in as None.
-            Subscription level: Canopy / EPD
+        Error: cannot install 'scipy', as some requirements are not
+        available at your subscription level.
+
+        You are currently logged in as 'None' (subscription level:
+        'Canopy / EPD').
         """)
 
         self.maxDiff = None

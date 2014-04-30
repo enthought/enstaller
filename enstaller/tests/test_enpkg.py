@@ -23,9 +23,10 @@ from egginst.utils import makedirs
 
 from enstaller.config import Configuration
 from enstaller.egg_meta import split_eggname
-from enstaller.enpkg import Enpkg, EnpkgError
+from enstaller.enpkg import Enpkg
 from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
+from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import egg_name_to_name_version, Repository
 from enstaller.resolve import Req
@@ -208,7 +209,7 @@ class TestEnpkgActions(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = Enpkg(repo, prefixes=[d],
                           evt_mgr=None, config=Configuration())
-            with self.assertRaises(EnpkgError):
+            with self.assertRaises(NoPackageFound):
                 enpkg.install_actions("scipy")
 
     def test_remove_actions(self):
