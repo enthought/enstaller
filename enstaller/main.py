@@ -460,6 +460,9 @@ def ensure_authenticated_config(config, config_filename, store):
 
 
 def install_from_requirements(enpkg, args):
+    """
+    Install a set of requirements specified in the requirements file.
+    """
     with open(args.requirements, "r") as fp:
         for req in fp:
             args.no_deps = True
