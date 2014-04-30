@@ -277,17 +277,6 @@ def add_url(filename, config, url):
         return
     prepend_url(filename, url)
 
-def pretty_print_packages(info_list):
-    packages = {}
-    for metadata in info_list:
-        version = metadata.version
-        available = metadata.available
-        packages[version] = packages.get(version, False) or available
-    pad = 4*' '
-    descriptions = [version+(' (no subscription)' if not available else '')
-        for version, available in sorted(packages.items())]
-    return pad + '\n    '.join(textwrap.wrap(', '.join(descriptions)))
-
 def install_req(enpkg, req, opts):
     """
     Try to execute the install actions.
