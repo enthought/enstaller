@@ -1,12 +1,9 @@
-import contextlib
-import ntpath
 import os.path
 import shutil
 import sys
 import tempfile
 import threading
 import time
-import warnings
 
 if sys.version_info[:2] < (2, 7):
     import unittest2 as unittest
@@ -14,8 +11,6 @@ else:
     import unittest
 
 import mock
-
-from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
@@ -28,14 +23,14 @@ from enstaller.enpkg import get_default_kvs, \
         get_writable_local_dir, create_joined_store
 from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.main import _create_enstaller_update_enpkg
-from enstaller.repository import egg_name_to_name_version, Repository
-from enstaller.resolve import Req
+from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
+                                  Repository)
 from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
-from enstaller.store.tests.common import EggsStore, MetadataOnlyStore
-from enstaller.utils import PY_VER
+from enstaller.store.tests.common import EggsStore
 
-from .common import (dummy_enpkg_entry_factory, mock_print,
-    mock_history_get_state_context)
+from .common import (dummy_repository_package_factory,
+                     mock_history_get_state_context, repository_factory)
+
 
 class TestMisc(unittest.TestCase):
     def test_get_default_kvs(self):
@@ -81,11 +76,10 @@ class TestEnstallerUpdateHack(unittest.TestCase):
     def _compute_actions(self, remote_versions, local_version):
         prefixes = [sys.prefix]
 
-        entries = [dummy_enpkg_entry_factory("enstaller", version, build) \
+        entries = [dummy_repository_package_factory("enstaller", version,
+                                                    build)
                    for version, build in remote_versions]
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
                       config=Configuration())
@@ -134,34 +128,33 @@ class TestEnpkg(unittest.TestCase):
         local_egg = DUMMY_EGG
 
         entries = [
-            dummy_enpkg_entry_factory("dummy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("dummy", "1.8k", 2),
+            dummy_repository_package_factory("dummy", "1.6.1", 1),
+            dummy_repository_package_factory("dummy", "1.8k", 2),
         ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
+        repository = repository_factory(entries)
 
-        local_entry = EnpkgS3IndexEntry.from_egg(DUMMY_EGG)
+        local_entry = PackageMetadata.from_egg(DUMMY_EGG)
 
         with mkdtemp() as d:
             prefixes = [d]
-            enpkg = Enpkg(Repository._from_store(store), mock.Mock(),
-                          prefixes=prefixes, config=Configuration())
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
+                          config=Configuration())
             enpkg._install_egg(local_egg)
 
-            repository = Repository._from_store_and_prefixes(store, prefixes)
-            packages = repository.find_packages("dummy")
+            remote_and_local_repository = Repository._from_prefixes(prefixes)
+            for package in repository.iter_packages():
+                remote_and_local_repository.add_package(package)
+            packages = remote_and_local_repository.find_packages("dummy")
             self.assertItemsEqual([p.key for p in packages],
-                                  [entry.s3index_key for entry in entries + [local_entry]])
+                                  [entry.key for entry in entries + [local_entry]])
 
 def _unconnected_enpkg_factory():
     """
     Create an Enpkg instance which does not require an authenticated
     repository.
     """
-    store = MetadataOnlyStore()
-    store.connect()
-    repository = Repository._from_store(store)
+    repository = Repository()
     return Enpkg(repository, mock.Mock(), config=Configuration())
 
 class TestEnpkgActions(unittest.TestCase):
@@ -177,9 +170,9 @@ class TestEnpkgActions(unittest.TestCase):
 
     def test_install_simple(self):
         entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
-            dummy_enpkg_entry_factory("numpy", "1.7.1", 2),
+            dummy_repository_package_factory("numpy", "1.6.1", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("numpy", "1.7.1", 2),
         ]
 
         r_actions = [
@@ -187,9 +180,7 @@ class TestEnpkgActions(unittest.TestCase):
             ('install', 'numpy-1.8.0-2.egg')
         ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         with mkdtemp() as d:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
@@ -200,13 +191,11 @@ class TestEnpkgActions(unittest.TestCase):
 
     def test_install_no_egg_entry(self):
         entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("numpy", "1.6.1", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
         ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         with mkdtemp() as d:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
@@ -215,9 +204,7 @@ class TestEnpkgActions(unittest.TestCase):
                 enpkg.install_actions("scipy")
 
     def test_remove_actions(self):
-        store = MetadataOnlyStore([])
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
 
         with mkdtemp() as d:
             makedirs(d)
@@ -233,9 +220,7 @@ class TestEnpkgActions(unittest.TestCase):
             self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
 
     def test_remove(self):
-        store = MetadataOnlyStore([])
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
 
         with mkdtemp() as d:
             makedirs(d)
@@ -254,13 +239,11 @@ class TestEnpkgActions(unittest.TestCase):
 
     def test_remove_non_existing(self):
         entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-           dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("numpy", "1.6.1", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
         ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         with mkdtemp() as d:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
@@ -282,12 +265,10 @@ class TestEnpkgActions(unittest.TestCase):
         ]
 
         entries = [
-            dummy_enpkg_entry_factory(*split_eggname(os.path.basename(l0_egg))),
+            dummy_repository_package_factory(*split_eggname(os.path.basename(l0_egg))),
         ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         with mkdtemp() as d:
             l0 = os.path.join(d, 'l0')
@@ -300,7 +281,7 @@ class TestEnpkgActions(unittest.TestCase):
             # Install older version in l1
             EggInst(l1_egg, l1).install()
 
-            repository = Repository._from_store(store)
+            repository = repository_factory(entries)
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[l1, l0],
                           config=Configuration())
 
@@ -316,12 +297,10 @@ class TestEnpkgActions(unittest.TestCase):
             sentinel.append("oui oui")
 
         entries = [
-            dummy_enpkg_entry_factory("numpy", "1.6.1", 1),
-            dummy_enpkg_entry_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("numpy", "1.6.1", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
         ]
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         config = Configuration()
 
@@ -350,9 +329,7 @@ class TestEnpkgExecute(unittest.TestCase):
         egg = "yoyo.egg"
         fetch_opcode = 0
 
-        store = MetadataOnlyStore([])
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
@@ -368,14 +345,11 @@ class TestEnpkgExecute(unittest.TestCase):
         base_egg = os.path.basename(egg)
         fetch_opcode = 0
 
-        entry = EnpkgS3IndexEntry(product="free", build=1,
-                                  egg_basename="dummy", version="1.0.1",
-                                  available=True)
-        entries = [entry]
+        entries = [
+            dummy_repository_package_factory("dummy", "1.0.1", 1)
+        ]
 
-        store = MetadataOnlyStore(entries)
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = repository_factory(entries)
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
@@ -387,7 +361,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
                 mocked_install.assert_called_with(os.path.join(enpkg.local_dir,
                                                                base_egg),
-                                                  entry.s3index_data)
+                                                  entries[0].s3index_data)
 
 class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):
@@ -410,9 +384,7 @@ class TestEnpkgRevert(unittest.TestCase):
             enpkg.revert_actions(1)
 
     def test_invalid_argument(self):
-        store = MetadataOnlyStore()
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
 
         enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                       config=Configuration())
