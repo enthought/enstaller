@@ -88,8 +88,7 @@ def checked_content(filename, expected_md5):
                 raise InvalidChecksum(filename, expected_md5, checked_target.checksum)
 
 
-class FetchAPI(object):
-
+class DownloadManager(object):
     def __init__(self, repository, store, local_dir, evt_mgr=None):
         self._repository = repository
         self._store = store

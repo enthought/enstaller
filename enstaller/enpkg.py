@@ -23,7 +23,7 @@ from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.joined import JoinedStore
 
 from enstaller.resolve import Req, Resolve
-from enstaller.fetch import FetchAPI
+from enstaller.fetch import DownloadManager
 from enstaller.egg_meta import split_eggname
 from enstaller.history import History
 
@@ -177,16 +177,13 @@ class Enpkg(object):
     def _execute_opcode(self, opcode, egg):
         logger.info('\t' + str((opcode, egg)))
         if opcode.startswith('fetch_'):
-            self.fetch(egg, force=int(opcode[-1]))
+            self._fetch(egg, force=int(opcode[-1]))
         elif opcode == 'remove':
             self._remove_egg(egg)
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
-            if self.store.is_connected:
-                package = self._remote_repository.find_package(name, version)
-                extra_info = package.s3index_data
-            else:
-                extra_info = None
+            package = self._remote_repository.find_package(name, version)
+            extra_info = package.s3index_data
             self._install_egg(os.path.join(self.local_dir, egg), extra_info)
         else:
             raise Exception("unknown opcode: %r" % opcode)
@@ -384,7 +381,8 @@ class Enpkg(object):
         # FIXME: only used by canopy
         return History(self.prefixes[0])
 
-    def fetch(self, egg, force=False):
-        f = FetchAPI(self._remote_repository, self.store, self.local_dir, self.evt_mgr)
+    def _fetch(self, egg, force=False):
+        f = DownloadManager(self._remote_repository, self.store,
+                            self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.fetch_egg(egg, force, self._execution_aborted)

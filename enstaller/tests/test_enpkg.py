@@ -325,7 +325,7 @@ class TestEnpkgActions(unittest.TestCase):
 
         config = Configuration()
 
-        with mock.patch("enstaller.enpkg.Enpkg.fetch"):
+        with mock.patch("enstaller.enpkg.Enpkg._fetch"):
             with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
                 enpkg = Enpkg(store, repository, config=config)
                 actions = enpkg.install_actions("numpy")
@@ -354,7 +354,7 @@ class TestEnpkgExecute(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
+        with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             enpkg = Enpkg(store, repository, prefixes=self.prefixes,
                           config=Configuration())
             enpkg.ec = mock.MagicMock()
@@ -377,7 +377,7 @@ class TestEnpkgExecute(unittest.TestCase):
         store.connect()
         repository = Repository._from_store(store)
 
-        with mock.patch("enstaller.enpkg.Enpkg.fetch") as mocked_fetch:
+        with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
                 enpkg = Enpkg(store, repository, prefixes=self.prefixes,
                               config=Configuration())

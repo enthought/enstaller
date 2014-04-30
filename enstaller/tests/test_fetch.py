@@ -18,7 +18,7 @@ from encore.events.event_manager import EventManager
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import EnstallerException, InvalidChecksum
-from enstaller.fetch import FetchAPI, MD5File, checked_content
+from enstaller.fetch import DownloadManager, MD5File, checked_content
 from enstaller.repository import Repository
 from enstaller.store.filesystem_store import DumbFilesystemStore
 from enstaller.utils import compute_md5
@@ -143,7 +143,7 @@ class TestCheckedContent(unittest.TestCase):
             fp.abort = True
 
 
-class TestFetchAPI(unittest.TestCase):
+class TestDownloadManager(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
 
@@ -164,7 +164,7 @@ class TestFetchAPI(unittest.TestCase):
         store, repository = self._create_store_and_repository([filename])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
+        fetch_api = DownloadManager(repository, store, self.d)
         fetch_api.fetch_egg(filename)
 
         # Then
@@ -185,7 +185,7 @@ class TestFetchAPI(unittest.TestCase):
         mocked_metadata.key = filename
 
         with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            fetch_api = FetchAPI(repository, store, self.d)
+            fetch_api = DownloadManager(repository, store, self.d)
 
             # When/Then
             with self.assertRaises(EnstallerException):
@@ -202,7 +202,7 @@ class TestFetchAPI(unittest.TestCase):
         response = MockedStoreResponse(100000, event, 0.5)
         with mock.patch.object(store, "get_data", return_value=response):
             # When
-            fetch_api = FetchAPI(repository, store, self.d)
+            fetch_api = DownloadManager(repository, store, self.d)
             fetch_api.fetch_egg(filename, execution_aborted=event)
 
             # Then
@@ -217,7 +217,7 @@ class TestFetchAPI(unittest.TestCase):
         store, repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
+        fetch_api = DownloadManager(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -233,7 +233,7 @@ class TestFetchAPI(unittest.TestCase):
         store, repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
+        fetch_api = DownloadManager(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -252,7 +252,7 @@ class TestFetchAPI(unittest.TestCase):
                 fo.write("")
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
+        fetch_api = DownloadManager(repository, store, self.d)
         fetch_api.fetch_egg(egg)
 
         # Then
@@ -281,7 +281,7 @@ class TestFetchAPI(unittest.TestCase):
             event_manager = EventManager()
 
             # When
-            fetch_api = FetchAPI(repository, store, self.d, event_manager)
+            fetch_api = DownloadManager(repository, store, self.d, event_manager)
             fetch_api.fetch_egg(egg)
 
             # Then
@@ -298,7 +298,7 @@ class TestFetchAPI(unittest.TestCase):
 
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
-            fetch_api = FetchAPI(repository, store, self.d)
+            fetch_api = DownloadManager(repository, store, self.d)
             fetch_api.fetch_egg(egg)
 
             # Then
