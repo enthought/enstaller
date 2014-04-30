@@ -46,7 +46,7 @@ class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
         config.autoupdate = False
-        enpkg = Enpkg(config=config)
+        enpkg = Enpkg(mock.Mock(), mock.Mock(), config=config)
         self.assertFalse(update_enstaller(enpkg, {}))
 
     def _test_update_enstaller(self, low_version, high_version):
@@ -61,9 +61,11 @@ class TestEnstallerUpdate(unittest.TestCase):
                               available=True),
         ]
         store = MetadataOnlyStore(enstaller_eggs)
+        store.connect()
         with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(config=config, remote=store)
+                enpkg = Enpkg(store, Repository._from_store(store),
+                              config=config)
                 opts = mock.Mock()
                 opts.no_deps = False
                 return update_enstaller(enpkg, opts)
@@ -242,8 +244,9 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
 
     store = MetadataOnlyStore(remote_entries)
     store.connect()
+    repository = Repository._from_store(store)
 
-    enpkg = Enpkg(store, prefixes=[prefix], evt_mgr=None, config=config)
+    enpkg = Enpkg(store, repository, prefixes=[prefix], config=config)
     for installed_entry in installed_entries:
         package = \
             InstalledPackageMetadata.from_installed_meta_dict(installed_entry)

@@ -40,7 +40,7 @@ from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
-from enstaller.enpkg import Enpkg, create_joined_store
+from enstaller.enpkg import Enpkg, create_joined_store, get_default_remote
 from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
@@ -358,9 +358,12 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
     prefixes = enpkg.prefixes
     evt_mgr = enpkg.evt_mgr
 
-    installed_repo = MockedStore()
-    remote = JoinedStore([enpkg.remote, installed_repo])
-    return Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
+    installed_store = MockedStore()
+    installed_store.connect()
+    store = JoinedStore([enpkg.store, installed_store])
+
+    repository = Repository._from_store(store)
+    return Enpkg(store, repository, prefixes=prefixes, evt_mgr=evt_mgr,
                  config=enpkg.config)
 
 
@@ -641,7 +644,7 @@ def main(argv=None):
     evt_mgr = None
 
     if config.use_webservice:
-        remote = None # Enpkg will create the default
+        remote = get_default_remote(config)
     else:
         urls = [fill_url(u) for u in config.IndexedRepos]
         remote = create_joined_store(config, urls)
@@ -682,7 +685,10 @@ def main(argv=None):
         sys.exit(-1)
 
     ensure_authenticated_config(config, config_filename, remote)
-    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
+
+    remote.connect(config.get_auth())
+    repository = Repository._from_store(remote)
+    enpkg = Enpkg(repository, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
 
     if args.dry_run:
         def print_actions(actions):

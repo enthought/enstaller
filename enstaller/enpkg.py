@@ -2,7 +2,6 @@ from __future__ import print_function
 
 import contextlib
 import logging
-import operator
 import os
 import threading
 import sys
@@ -16,7 +15,7 @@ from egginst.progress import progress_manager_factory
 
 import enstaller
 
-from enstaller.errors import EnpkgError, SolverException, UnavailablePackage
+from enstaller.errors import EnpkgError, UnavailablePackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
@@ -94,64 +93,42 @@ class _ExecuteContext(object):
 
 
 class Enpkg(object):
-    """
-    This is main interface for using enpkg, it is used by the CLI.
+    """ This is main interface for using enpkg, it is used by the CLI.
     Arguments for object creation:
 
-    remote: key-value store (KVS) instance
-        This is the KVS which enpkg will try to connect to for querying
-        and fetching eggs.
-
-    All remaining arguments are optional.
-
-    userpass: tuple(username, password) -- default, see below
-        these credentials are used when the remote KVS instance is being
-        connected.
-        By default the credentials are obtained from config.get_auth(),
-        which might use the keyring package.
-
+    Parameters
+    ----------
+    repository: Repository
+        This is the remote repository which enpkg will use to resolve
+        dependencies.
     prefixes: list of path -- default: [sys.prefix]
-        Each path, is an install "prefix" (such as, e.g. /usr/local)
-        in which things get installed.
-        Eggs are installed or removed from the first prefix in the list.
-
+        Each path, is an install "prefix" (such as, e.g. /usr/local) in which
+        things get installed. Eggs are installed or removed from the first
+        prefix in the list.
     evt_mgr: encore event manager instance -- default: None
         Various progress events (e.g. for download, install, ...) are being
-        emitted to the event manager.  By default, a simple progress bar
-        is displayed on the console (which does not use the event manager
-        at all).
+        emitted to the event manager.  By default, a simple progress bar is
+        displayed on the console (which does not use the event manager at all).
     """
-    def __init__(self, remote=None, userpass='<config>', prefixes=[sys.prefix],
-                 hook=False, evt_mgr=None, config=None):
-        if hook is not False:
-            raise EnpkgError("hook feature has been removed")
-
+    def __init__(self, store, remote_repository, prefixes=[sys.prefix], evt_mgr=None,
+                 config=None):
         if config is None:
             self.config = Configuration._get_default_config()
         else:
             self.config = config
 
-        self.local_dir = get_writable_local_dir(self.config)
-        if remote is None:
-            remote = get_default_remote(self.config)
-
         # XXX: remote attribute kept for backward compatibility, remove before
         # 4.7.0
-        self.remote = remote
+        self.store = store
 
-        if userpass == '<config>':
-            self.userpass = self.config.get_auth()
-        else:
-            self.userpass = userpass
-
-        if not remote.is_connected:
-            remote.connect(self.userpass)
-        self._remote_repository = Repository._from_store(remote)
+        self.local_dir = get_writable_local_dir(self.config)
 
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
         self.evt_mgr = evt_mgr
+
+        self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
         self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
@@ -205,7 +182,7 @@ class Enpkg(object):
             self._remove_egg(egg)
         elif opcode == 'install':
             name, version = egg_name_to_name_version(egg)
-            if self.remote.is_connected:
+            if self.store.is_connected:
                 package = self._remote_repository.find_package(name, version)
                 extra_info = package.s3index_data
             else:
@@ -408,6 +385,6 @@ class Enpkg(object):
         return History(self.prefixes[0])
 
     def fetch(self, egg, force=False):
-        f = FetchAPI(self._remote_repository, self.remote, self.local_dir, self.evt_mgr)
+        f = FetchAPI(self._remote_repository, self.store, self.local_dir, self.evt_mgr)
         f.super_id = getattr(self, 'super_id', None)
         f.fetch_egg(egg, force, self._execution_aborted)
