@@ -9,18 +9,18 @@ from __future__ import print_function
 
 import argparse
 import collections
+import errno
 import logging
 import ntpath
 import os
 import posixpath
 import re
-import sys
 import site
-import errno
 import string
-import datetime
+import sys
 import textwrap
 import warnings
+
 from argparse import ArgumentParser
 from os.path import isfile, join
 
@@ -40,7 +40,7 @@ from enstaller.freeze import get_freeze_list
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
 
-from enstaller.enpkg import Enpkg, EnpkgError, create_joined_store
+from enstaller.enpkg import Enpkg, create_joined_store
 from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
