@@ -440,8 +440,8 @@ class TestAuthenticate(unittest.TestCase):
         config.use_webservice = False
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        remote = mock.Mock()
-        user = authenticate(config, remote)
+        with mock.patch("enstaller.config._head_request"):
+            user = authenticate(config)
         self.assertEqual(user, {"is_authenticated": True})
 
     @network
@@ -450,23 +450,13 @@ class TestAuthenticate(unittest.TestCase):
         config = Configuration()
         config.use_webservice = False
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        config.IndexedRepos = [
+            "http://api.enthought.com/dummy/repo",
+        ]
 
-        remote = RemoteHTTPIndexedStore("http://api.enthought.com/dummy/repo", "/fake/directory")
         with self.assertRaises(EnstallerException):
-            authenticate(config, remote)
+            authenticate(config)
 
-    @fake_keyring
-    def test_local_repo(self):
-        with mkdtemp() as d:
-            config = Configuration()
-            config.IndexedRepos = [d]
-            config.use_webservice = False
-            config.set_auth(FAKE_USER, FAKE_PASSWORD)
-
-            repo = LocalIndexedStore(config.IndexedRepos[0])
-
-            with self.assertRaises(InvalidConfiguration):
-                authenticate(config, repo)
 
 class TestSubscriptionLevel(unittest.TestCase):
     def test_unsubscribed_user(self):
@@ -609,7 +599,7 @@ class TestConfigurationPrint(unittest.TestCase):
         r_output = output_template.format(prefix=prefix, local=local)
 
         with mock_print() as m:
-            print_config(config, None, config.prefix)
+            print_config(config, config.prefix)
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -647,7 +637,7 @@ class TestConfigurationPrint(unittest.TestCase):
         r_output = output_template.format(prefix=prefix, config_file=fp.name, local=local)
 
         with mock_print() as m:
-            print_config(config, None, config.prefix)
+            print_config(config, config.prefix)
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):

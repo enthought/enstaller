@@ -627,7 +627,7 @@ def main(argv=None):
         remote = create_joined_store(config, urls)
 
     if args.config:                               # --config
-        print_config(config, remote, prefixes[0])
+        print_config(config, prefixes[0])
         return
 
     if args.add_url:                              # --add-url
