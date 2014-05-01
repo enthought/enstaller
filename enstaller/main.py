@@ -427,9 +427,9 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
-def ensure_authenticated_config(config, config_filename, store):
+def ensure_authenticated_config(config, config_filename):
     try:
-        authenticate(config, store)
+        authenticate(config)
     except AuthFailedError:
         login, _ = config.get_auth()
         print("Could not authenticate with user '{0}'.".format(login))
@@ -661,7 +661,7 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    ensure_authenticated_config(config, config_filename, remote)
+    ensure_authenticated_config(config, config_filename)
 
     remote.connect(config.get_auth())
 
