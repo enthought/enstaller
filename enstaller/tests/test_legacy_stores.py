@@ -35,6 +35,13 @@ def package_metadata_iterator(store_location):
     return contextlib.closing(data)
 
 
+@contextlib.contextmanager
+def mock_urlfetcher():
+    return_value = package_metadata_iterator("")
+    with mock.patch.object(URLFetcher, "open", return_value=return_value) as m:
+        yield m
+
+
 class TestLegacyStores(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -71,9 +78,11 @@ class TestLegacyStores(unittest.TestCase):
         config.use_pypi = False
 
         # When
-        with mock.patch("enstaller.legacy_stores.URLFetcher.open",
-                        return_value=package_metadata_iterator("")):
-            packages = list(_webservice_index_parser(config))
+        with mock_urlfetcher():
+            fetcher = URLFetcher(config.local, config.get_auth())
+            packages = list(
+                _webservice_index_parser(config.webservice_entry_point,
+                                         fetcher, config.use_pypi))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -81,15 +90,14 @@ class TestLegacyStores(unittest.TestCase):
     def test_simple_no_webservice_https(self):
         # Given
         config = Configuration()
-        config.IndexedRepos = [
+        urls = [
             'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
         ]
-        config.use_webservice = False
 
         # When
-        with mock.patch("enstaller.legacy_stores.URLFetcher.open",
-                        return_value=package_metadata_iterator("")):
-            packages = list(_old_legacy_index_parser(config))
+        with mock_urlfetcher():
+            fetcher = URLFetcher(config.local, config.get_auth())
+            packages = list(_old_legacy_index_parser(urls, fetcher))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -115,13 +123,12 @@ class TestLegacyStores(unittest.TestCase):
             fp.write(json.dumps(fake_index))
 
         config = Configuration()
-        config.IndexedRepos = [
-            "file://{0}".format(self.tempdir)
-        ]
-        config.use_webservice = False
+        urls = ["file://{0}/".format(self.tempdir)]
 
         # When
-        packages = list(_old_legacy_index_parser(config))
+        with mock_urlfetcher():
+            fetcher = URLFetcher(config.local, config.get_auth())
+            packages = list(_old_legacy_index_parser(urls, fetcher))
 
         # Then
         self.assertEqual(len(packages), 1)

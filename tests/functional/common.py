@@ -3,13 +3,14 @@ import functools
 import os
 import tempfile
 
+from cStringIO import StringIO
+
 import mock
 
-from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
-
 from enstaller.config import Configuration
-from enstaller.store.tests.common import MetadataOnlyStore
-from enstaller.tests.common import fake_keyring, succeed_authenticate
+from enstaller.repository import Repository
+from enstaller.tests.common import (fake_keyring,
+                                    dummy_repository_package_factory)
 
 def _dont_write_default_configuration(f):
     return mock.patch("enstaller.main.write_default_config",
@@ -73,11 +74,14 @@ def fake_configuration_and_auth(f):
         # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
         # separated.
         with mock.patch("enstaller.main.get_default_remote"):
-            with mock.patch("enstaller.main.Configuration.from_file",
-                            return_value=config):
-                with mock.patch("enstaller.main.ensure_authenticated_config",
-                                return_value=True):
-                    return without_any_configuration(f)(*a, **kw)
+            fake_fetch_return = contextlib.closing(StringIO("{}"))
+            with mock.patch("enstaller.legacy_stores.URLFetcher.open",
+                            return_value=fake_fetch_return):
+                with mock.patch("enstaller.main.Configuration.from_file",
+                                return_value=config):
+                    with mock.patch("enstaller.main.ensure_authenticated_config",
+                                    return_value=True):
+                        return without_any_configuration(f)(*a, **kw)
     return wrapper
 
 
@@ -105,17 +109,21 @@ def authenticated_config(f):
     return mock_authenticated_config(wrapper(f))
 
 def remote_enstaller_available(versions):
-    enstaller_eggs = [
-        EnpkgS3IndexEntry(product="free", build=1,
-                          egg_basename="enstaller", version=version,
-                          available=True)
-        for version in versions
-    ]
-    store = MetadataOnlyStore(enstaller_eggs)
+    repository = Repository()
+    for version in versions:
+        package = dummy_repository_package_factory("enstaller", version, build=1)
+        repository.add_package(package)
 
-    wrap = mock.patch("enstaller.main.get_default_remote", lambda ignored: store)
     def dec(f):
-        return wrap(f)
+        @functools.wraps(f)
+        def wrapper(*a, **kw):
+            with mock.patch("enstaller.main.repository_factory",
+                            return_value=repository):
+                with mock.patch("enstaller.main.legacy_index_parser",
+                                return_value=[]):
+                    with mock.patch("enstaller.main.get_default_remote"):
+                        return f(*a, **kw)
+        return wrapper
     return dec
 
 def raw_input_always_yes(f):

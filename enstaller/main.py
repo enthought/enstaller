@@ -37,6 +37,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     subscription_level)
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
+from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
 from enstaller.utils import (PY_VER, abs_expanduser, fill_url,
                              exit_if_sudo_on_venv)
@@ -328,7 +329,7 @@ def _create_enstaller_update_enpkg(enpkg, version=None):
     name = "enstaller"
     build = 1
     key = "{0}-{1}-{2}.egg".format(name, version, build)
-    current_enstaller = RepositoryPackageMetadata( key, name, version, build,
+    current_enstaller = RepositoryPackageMetadata(key, name, version, build,
                                                   [], PY_VER, -1, "a" * 32, 0.0,
                                                   "free", True, "mocked_store")
 
@@ -437,6 +438,12 @@ def ensure_authenticated_config(config, config_filename):
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
+
+
+def repository_factory(config):
+    repository = Repository()
+    for package in legacy_index_parser(config):
+        repository.add_package(package)
 
 
 def install_from_requirements(enpkg, args):
@@ -620,12 +627,6 @@ def main(argv=None):
 
     evt_mgr = None
 
-    if config.use_webservice:
-        remote = get_default_remote(config)
-    else:
-        urls = [fill_url(u) for u in config.IndexedRepos]
-        remote = create_joined_store(config, urls)
-
     if args.config:                               # --config
         print_config(config, prefixes[0])
         return
@@ -663,9 +664,14 @@ def main(argv=None):
 
     ensure_authenticated_config(config, config_filename)
 
-    remote.connect(config.get_auth())
+    repository = repository_factory(config)
 
-    repository = Repository._from_store(remote)
+    if config.use_webservice:
+        remote = get_default_remote(config)
+    else:
+        urls = [fill_url(u) for u in config.IndexedRepos]
+        remote = create_joined_store(config, urls)
+    remote.connect(config.get_auth())
     downloader = DownloadManager(repository, remote, config.local, evt_mgr)
 
     enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
