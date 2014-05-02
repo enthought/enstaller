@@ -640,7 +640,7 @@ def authenticate(configuration):
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
-                                format(index, e.reason)
+                                format(index, e.msg)
                         raise InvalidConfiguration(msg)
                     else:
                         raise
