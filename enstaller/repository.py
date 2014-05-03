@@ -9,7 +9,7 @@ from egginst.utils import ZipFile
 
 from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir
-from enstaller.utils import comparable_version
+from enstaller.utils import comparable_version, compute_md5
 
 
 class PackageMetadata(object):
@@ -86,6 +86,21 @@ class RepositoryPackageMetadata(PackageMetadata):
     In particular, RepositoryPackageMetadata's instances know about which
     repository they are coming from through the store_location attribute.
     """
+    @classmethod
+    def from_egg(cls, path, store_location=""):
+        """
+        Create an instance from an egg filename.
+        """
+        with ZipFile(path) as zp:
+            metadata = info_from_z(zp)
+        metadata["packages"] = metadata.get("packages", [])
+        st = os.stat(path)
+        metadata["size"] = st.st_size
+        metadata["md5"] = compute_md5(path)
+        metadata["mtime"] = st.st_mtime
+        metadata["store_location"] = store_location
+        return cls.from_json_dict(os.path.basename(path), metadata)
+
     @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],

@@ -124,6 +124,19 @@ class TestRepositoryPackage(unittest.TestCase):
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
 
+    def test_from_egg(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+
+        # When
+        metadata = RepositoryPackageMetadata.from_egg(path, _EGGINST_COMMON_DATA)
+
+        # Then
+        self.assertEqual(metadata.name, "nose")
+        self.assertEqual(metadata.version, "1.3.0")
+        self.assertEqual(metadata.store_location, _EGGINST_COMMON_DATA)
+
+
 class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir(self):
         # Given
