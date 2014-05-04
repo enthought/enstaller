@@ -3,6 +3,7 @@ import operator
 import os
 import os.path
 import sys
+import urlparse
 
 from egginst.eggmeta import info_from_z
 from egginst.utils import ZipFile
@@ -135,6 +136,10 @@ class RepositoryPackageMetadata(PackageMetadata):
         keys = ("available", "build", "md5", "name", "packages", "product",
                 "python", "mtime", "size", "type", "version")
         return dict((k, getattr(self, k)) for k in keys)
+
+    @property
+    def source_url(self):
+        return urlparse.urljoin(self.store_location, self.key)
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \
