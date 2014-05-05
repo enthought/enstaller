@@ -25,6 +25,7 @@ from enstaller.fetch import DownloadManager
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
                                   Repository, RepositoryPackageMetadata)
+from enstaller.utils import PY_VER
 from enstaller.store.tests.common import EggsStore
 
 from .common import (dummy_repository_package_factory,
@@ -356,7 +357,9 @@ class TestEnpkgRevert(unittest.TestCase):
         config = Configuration()
 
         repository = Repository()
-        repository.add_package(RepositoryPackageMetadata.from_egg(egg))
+        package = RepositoryPackageMetadata.from_egg(egg)
+        package.python = PY_VER
+        repository.add_package(package)
         downloader = DownloadManager(repository, config.local)
 
         with mock_url_fetcher(downloader, open(egg)):
