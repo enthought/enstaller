@@ -33,7 +33,6 @@ from enstaller.config import (
     Configuration)
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
     InvalidFormat)
-from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
