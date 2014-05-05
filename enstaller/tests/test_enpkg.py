@@ -19,8 +19,7 @@ from egginst.utils import makedirs
 from enstaller.config import Configuration
 from enstaller.egg_meta import split_eggname
 from enstaller.enpkg import Enpkg
-from enstaller.enpkg import get_default_kvs, \
-        get_writable_local_dir, create_joined_store
+from enstaller.enpkg import get_writable_local_dir
 from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.fetch import DownloadManager
 from enstaller.main import _create_enstaller_update_enpkg
@@ -35,12 +34,6 @@ from .common import (dummy_repository_package_factory,
 
 
 class TestMisc(unittest.TestCase):
-    def test_get_default_kvs(self):
-        config = Configuration()
-        config.webservice_entry_point = "http://acme.com"
-        store = get_default_kvs(config)
-        self.assertEqual(store.root, "http://acme.com/")
-
     def test_writable_local_dir_writable(self):
         config = Configuration()
         with mkdtemp() as d:
@@ -88,39 +81,6 @@ class TestEnstallerUpdateHack(unittest.TestCase):
         new_enpkg = _create_enstaller_update_enpkg(enpkg, local_version)
         return new_enpkg._install_actions_enstaller(local_version)
 
-class TestCreateJoinedStores(unittest.TestCase):
-    def test_simple_dir(self):
-        with mkdtemp() as d:
-            urls = [d]
-            store = create_joined_store(Configuration(), urls)
-            self.assertEqual(len(store.repos), 1)
-
-            store = store.repos[0]
-            self.assertTrue(isinstance(store, LocalIndexedStore))
-            self.assertEqual(store.root, d)
-
-    def test_simple_file_scheme(self):
-        urls = ["file:///foo"]
-        store = create_joined_store(Configuration(), urls)
-        self.assertEqual(len(store.repos), 1)
-
-        store = store.repos[0]
-        self.assertIsInstance(store, LocalIndexedStore)
-        self.assertEqual(store.root, "/foo")
-
-    def test_simple_http_scheme(self):
-        urls = ["http://acme.com/repo"]
-        store = create_joined_store(Configuration(), urls)
-        self.assertEqual(len(store.repos), 1)
-
-        store = store.repos[0]
-        self.assertIsInstance(store, RemoteHTTPIndexedStore)
-        self.assertEqual(store.root, urls[0])
-
-    def test_invalid_scheme(self):
-        urls = ["ftp://acme.com/repo"]
-        with self.assertRaises(Exception):
-            create_joined_store(Configuration(), urls)
 
 class TestEnpkg(unittest.TestCase):
     def test_query_simple_with_local(self):

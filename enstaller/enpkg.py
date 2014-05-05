@@ -8,7 +8,7 @@ import sys
 import tempfile
 
 from uuid import uuid4
-from os.path import isdir, isfile, join
+from os.path import isfile, join
 
 from egginst.main import EggInst
 from egginst.progress import progress_manager_factory
@@ -19,8 +19,6 @@ from enstaller.errors import EnpkgError, UnavailablePackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
-from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
-from enstaller.store.joined import JoinedStore
 
 from enstaller.resolve import Req, Resolve
 from enstaller.egg_meta import split_eggname
@@ -30,25 +28,6 @@ from enstaller.config import Configuration
 
 
 logger = logging.getLogger(__name__)
-
-
-def create_joined_store(config, urls):
-    stores = []
-    for url in urls:
-        if url.startswith('file://'):
-            stores.append(LocalIndexedStore(url[7:]))
-        elif url.startswith(('http://', 'https://')):
-            stores.append(RemoteHTTPIndexedStore(url, config.local))
-        elif isdir(url):
-            stores.append(LocalIndexedStore(url))
-        else:
-            raise Exception("cannot create store: %r" % url)
-    return JoinedStore(stores)
-
-
-def get_default_kvs(config):
-    url = config.webservice_entry_point
-    return RemoteHTTPIndexedStore(url, config.local)
 
 
 def get_writable_local_dir(config):
@@ -68,12 +47,6 @@ def get_writable_local_dir(config):
            'Using a temporary cache for index and eggs.\n' %
            config.prefix)
     return tempfile.mkdtemp()
-
-
-def get_default_remote(config):
-    url = config.webservice_entry_point
-    local_dir = get_writable_local_dir(config)
-    return RemoteHTTPIndexedStore(url, local_dir, config.use_pypi)
 
 
 class _ExecuteContext(object):
