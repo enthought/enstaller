@@ -1,7 +1,6 @@
 import os
 import sys
 
-from collections import defaultdict
 from os.path import abspath, dirname, join
 
 if sys.version_info[:2] < (2, 7):
@@ -10,8 +9,6 @@ else:
     import unittest
 
 from enstaller.repository import Repository, RepositoryPackageMetadata
-from enstaller.store.indexed import IndexedStore
-from enstaller.store.joined import JoinedStore
 
 from enstaller import resolve
 from enstaller.resolve import Resolve, Req
@@ -21,47 +18,30 @@ from enstaller.indexed_repo.metadata import parse_depend_index
 INDEX_REPO_DIR = abspath(join(dirname(__file__), os.pardir, "indexed_repo", "tests"))
 
 
-def _store_to_repository(store):
-    assert store.is_connected, "This method expected an already connected store."
+def _old_style_index_to_packages(index_path):
+    with open(index_path) as fp:
+        index_data = fp.read()
 
-    _store_info = store.info()
-    store_info = _store_info.get("root") if _store_info else ""
+    packages = []
+    index = parse_depend_index(index_data)
+    for key, spec in index.items():
+        spec['name'] = spec['name'].lower()
+        spec['type'] = 'egg'
+        #spec['repo_dispname'] = self.name
+        spec['store_location'] = os.path.dirname(index_path)
 
-    repository = Repository(store_info)
+        package = RepositoryPackageMetadata.from_json_dict(key, spec)
+        packages.append(package)
 
-    for key in store.query_keys(type="egg"):
-        raw_metadata = store.get_metadata(key)
-        raw_metadata["store_location"] = store_info
-        package = RepositoryPackageMetadata.from_json_dict(key, raw_metadata)
-        repository.add_package(package)
+    return packages
 
+def _old_style_indices_to_repository(indices):
+    repository = Repository()
+    for index in indices:
+        for package in _old_style_index_to_packages(index):
+            repository.add_package(package)
     return repository
 
-
-class DummyStore(IndexedStore):
-
-    def __init__(self, index_path, name=None):
-        self.index_path = index_path
-        self.name = name
-        super(DummyStore, self).__init__()
-
-    def connect(self, auth=None):
-        index_data = open(self.index_path).read()
-        self._connected = True
-        self._index = parse_depend_index(index_data)
-        for spec in self._index.itervalues():
-            spec['name'] = spec['name'].lower()
-            spec['type'] = 'egg'
-            spec['repo_dispname'] = self.name
-        self._groups = defaultdict(list)
-        for key, info in self._index.iteritems():
-            self._groups[info['name']].append(key)
-
-    def get_data(self, key):
-        pass
-
-    def info(self):
-        pass
 
 def eggs_rs(c, req_string):
     return c.install_sequence(Req(req_string))
@@ -182,11 +162,11 @@ class TestReq(unittest.TestCase):
 
 class TestChain0(unittest.TestCase):
     def setUp(self):
-        store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR, fn)) for fn in
-                             ['index-add.txt', 'index-5.1.txt',
-                              'index-5.0.txt', 'index-cycle.txt']])
-        store.connect()
-        repo = _store_to_repository(store)
+        indices = [join(INDEX_REPO_DIR, fn) for fn in ['index-add.txt',
+                                                       'index-5.1.txt',
+                                                       'index-5.0.txt',
+                                                       'index-cycle.txt']]
+        repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
 
     def test_25(self):
@@ -215,14 +195,10 @@ class TestChain0(unittest.TestCase):
 
 class TestChain1(unittest.TestCase):
     def setUp(self):
-        store = JoinedStore([
-                DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
-                for name in ('epd', 'gpl')])
-        store.connect()
-        repo = _store_to_repository(store)
+        indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
+                   in ('epd', 'gpl')]
+        repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
-
-        self.store = store
 
         resolve.PY_VER = '2.7'
 
@@ -232,11 +208,7 @@ class TestChain1(unittest.TestCase):
             ('bitarray', 'epd'),
             ('foobar', None),
             ]:
-            egg = self.resolve.get_egg(Req(req_string))
-            if egg is not None:
-                self.assertEqual(
-                    self.store.get_metadata(egg).get('repo_dispname'),
-                    repo_name)
+            self.resolve.get_egg(Req(req_string))
 
     def test_get_dist(self):
         for req_string, repo_name, egg in [
@@ -249,10 +221,6 @@ class TestChain1(unittest.TestCase):
             ('foobar', None, None),
             ]:
             self.assertEqual(self.resolve.get_egg(Req(req_string)), egg)
-            if egg is not None:
-                self.assertEqual(
-                    self.store.get_metadata(egg).get('repo_dispname'),
-                    repo_name)
 
     def test_reqs_dist(self):
         self.assertEqual(self.resolve.reqs_egg('FiPy-2.1-1.egg'),
@@ -282,11 +250,9 @@ class TestChain1(unittest.TestCase):
 
 class TestChain2(unittest.TestCase):
     def setUp(self):
-        self.store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR, name,
-                                                   'index-7.1.txt'), name) for
-                                  name in ('open', 'runner', 'epd')])
-        self.store.connect()
-        self.repo = _store_to_repository(self.store)
+        indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
+                   in ('open', 'runner', 'epd')]
+        self.repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(self.repo)
 
     def test_flat_recur1(self):
@@ -305,18 +271,13 @@ class TestChain2(unittest.TestCase):
     def test_multiple_reqs(self):
         lst = self.resolve.install_sequence(Req('ets'))
         self.assert_('numpy-1.5.1-2.egg' in lst)
-        self.assertEqual(
-            self.store.get_metadata('numpy-1.5.1-2.egg').get('repo_dispname'),
-            'epd')
 
 class TestCycle(unittest.TestCase):
     """Avoid an infinite recursion when the dependencies contain a cycle."""
 
     def setUp(self):
-        store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR,
-                                              'index-cycle.txt'))])
-        store.connect()
-        repo = _store_to_repository(store)
+        indices = [join(INDEX_REPO_DIR, 'index-cycle.txt')]
+        repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
 
     def test_cycle(self):
