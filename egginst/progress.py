@@ -33,6 +33,7 @@ class FileProgressManager(object):
 
     def __enter__(self):
         self._n = 0
+        self._progress.__enter__()
         return self
 
     def __exit__(self, *a, **kw):
