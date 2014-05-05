@@ -295,7 +295,7 @@ class TestEnpkgActions(unittest.TestCase):
         sentinel = []
 
         def fake_install(*args):
-            time.sleep(1)
+            time.sleep(5)
             sentinel.append("oui oui")
 
         entries = [
@@ -315,7 +315,7 @@ class TestEnpkgActions(unittest.TestCase):
                 t.start()
 
                 enpkg.abort_execution()
-                t.join(timeout=5)
+                t.join(timeout=10)
 
         self.assertEqual(sentinel, [])
 
