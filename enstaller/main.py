@@ -444,6 +444,7 @@ def repository_factory(config):
     repository = Repository()
     for package in legacy_index_parser(config):
         repository.add_package(package)
+    return repository
 
 
 def install_from_requirements(enpkg, args):
