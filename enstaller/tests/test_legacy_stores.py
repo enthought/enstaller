@@ -65,7 +65,7 @@ class TestLegacyStores(unittest.TestCase):
         # When
         with mkdtemp() as tempdir:
             fetcher = URLFetcher(tempdir)
-            with fetcher.open(url) as fp:
+            with contextlib.closing(fetcher.open(url)) as fp:
                 json_data = json.load(fp)
 
         # Then

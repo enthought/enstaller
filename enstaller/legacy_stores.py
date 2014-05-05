@@ -37,7 +37,7 @@ class URLFetcher(object):
             request.add_unredirected_header("Authorization", "Basic " +
                                             encoded_auth)
         request.add_header('User-Agent', 'enstaller')
-        return contextlib.closing(self._opener.open(request))
+        return self._opener.open(request)
 
 
 def _parse_index(json_dict, store_location):
