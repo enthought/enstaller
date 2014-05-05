@@ -9,7 +9,7 @@ if sys.version_info[:2] < (2, 7):
 else:
     import unittest
 
-from enstaller.repository import Repository
+from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.store.indexed import IndexedStore
 from enstaller.store.joined import JoinedStore
 
@@ -19,6 +19,23 @@ from enstaller.indexed_repo.metadata import parse_depend_index
 
 
 INDEX_REPO_DIR = abspath(join(dirname(__file__), os.pardir, "indexed_repo", "tests"))
+
+
+def _store_to_repository(store):
+    assert store.is_connected, "This method expected an already connected store."
+
+    _store_info = store.info()
+    store_info = _store_info.get("root") if _store_info else ""
+
+    repository = Repository(store_info)
+
+    for key in store.query_keys(type="egg"):
+        raw_metadata = store.get_metadata(key)
+        raw_metadata["store_location"] = store_info
+        package = RepositoryPackageMetadata.from_json_dict(key, raw_metadata)
+        repository.add_package(package)
+
+    return repository
 
 
 class DummyStore(IndexedStore):
@@ -169,7 +186,7 @@ class TestChain0(unittest.TestCase):
                              ['index-add.txt', 'index-5.1.txt',
                               'index-5.0.txt', 'index-cycle.txt']])
         store.connect()
-        repo = Repository._from_store(store)
+        repo = _store_to_repository(store)
         self.resolve = Resolve(repo)
 
     def test_25(self):
@@ -202,7 +219,7 @@ class TestChain1(unittest.TestCase):
                 DummyStore(join(INDEX_REPO_DIR, name, 'index-7.1.txt'), name)
                 for name in ('epd', 'gpl')])
         store.connect()
-        repo = Repository._from_store(store)
+        repo = _store_to_repository(store)
         self.resolve = Resolve(repo)
 
         self.store = store
@@ -269,7 +286,7 @@ class TestChain2(unittest.TestCase):
                                                    'index-7.1.txt'), name) for
                                   name in ('open', 'runner', 'epd')])
         self.store.connect()
-        self.repo = Repository._from_store(self.store)
+        self.repo = _store_to_repository(self.store)
         self.resolve = Resolve(self.repo)
 
     def test_flat_recur1(self):
@@ -299,7 +316,7 @@ class TestCycle(unittest.TestCase):
         store = JoinedStore([ DummyStore(join(INDEX_REPO_DIR,
                                               'index-cycle.txt'))])
         store.connect()
-        repo = Repository._from_store(store)
+        repo = _store_to_repository(store)
         self.resolve = Resolve(repo)
 
     def test_cycle(self):

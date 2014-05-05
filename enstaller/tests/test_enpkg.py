@@ -24,8 +24,7 @@ from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.fetch import DownloadManager
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
-                                  Repository)
-from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
+                                  Repository, RepositoryPackageMetadata)
 from enstaller.store.tests.common import EggsStore
 
 from .common import (dummy_repository_package_factory,
@@ -334,9 +333,7 @@ class TestEnpkgRevert(unittest.TestCase):
             shutil.rmtree(prefix)
 
     def test_empty_history(self):
-        store = EggsStore([])
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
 
         enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                       config=Configuration())
@@ -358,9 +355,8 @@ class TestEnpkgRevert(unittest.TestCase):
         r_actions = {1: [], 0: [("remove", os.path.basename(egg))]}
         config = Configuration()
 
-        store = EggsStore([egg])
-        store.connect()
-        repository = Repository._from_store(store)
+        repository = Repository()
+        repository.add_package(RepositoryPackageMetadata.from_egg(egg))
         downloader = DownloadManager(repository, config.local)
 
         with mock_url_fetcher(downloader, open(egg)):

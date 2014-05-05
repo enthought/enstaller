@@ -13,7 +13,6 @@ from egginst.testing_utils import slow
 from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
 
 from enstaller.errors import MissingPackage
-from enstaller.store.filesystem_store import DumbFilesystemStore
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
@@ -176,8 +175,11 @@ class TestRepository(unittest.TestCase):
             "nose-1.3.0-1.egg",
             "nose-1.3.0-2.egg",
         ]
-        self.store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        self.repository = Repository._from_store(self.store)
+        self.repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            self.repository.add_package(package)
 
     def test_find_package(self):
         # Given
@@ -197,7 +199,8 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.python, "2.7")
 
         self.assertEqual(metadata.available, True)
-        self.assertEqual(metadata.store_location, _EGGINST_COMMON_DATA)
+        self.assertEqual(metadata.store_location,
+                         "file://{0}/".format(_EGGINST_COMMON_DATA))
 
         self.assertEqual(metadata.size, os.path.getsize(path))
         self.assertEqual(metadata.md5, compute_md5(path))
@@ -260,8 +263,11 @@ class TestRepository(unittest.TestCase):
     def test_iter_most_recent_packages(self):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
-        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository._from_store(store)
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
 
         # When
         metadata = list(repository.iter_most_recent_packages())
@@ -273,8 +279,11 @@ class TestRepository(unittest.TestCase):
     def test_iter_packages(self):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
-        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository._from_store(store)
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
 
         # When
         metadata = list(repository.iter_packages())

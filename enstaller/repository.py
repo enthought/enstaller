@@ -295,49 +295,6 @@ class Repository(object):
         repository._populate_from_prefixes(prefixes)
         return repository
 
-    @classmethod
-    def _from_store(cls, store):
-        """
-        Create a repository representing packages available from the given
-        store.
-
-        Parameters
-        ----------
-        store: Store
-            An indexed store
-        """
-        assert store.is_connected, "This method expected an already connected store."
-
-        _store_info = store.info()
-        store_info = _store_info.get("root") if _store_info else ""
-
-        repository = cls(store_info)
-
-        for key in store.query_keys(type="egg"):
-            raw_metadata = store.get_metadata(key)
-            raw_metadata["store_location"] = store_info
-            package = RepositoryPackageMetadata.from_json_dict(key,
-                                                               raw_metadata)
-            repository.add_package(package)
-        return repository
-
-    @classmethod
-    def _from_store_and_prefixes(cls, store, prefixes=None):
-        """
-        Create a repository representing both installed packages and packages
-        available from the store.
-
-        Parameters
-        ----------
-        store: Store
-            An indexed store
-        prefixes: seq
-            List of prefixes. [sys.prefix] by default
-        """
-        repository = cls._from_store(store)
-        repository._populate_from_prefixes(prefixes)
-        return repository
-
     def __init__(self, store_info=""):
         self._name_to_packages = collections.defaultdict(list)
         self._packages = []
