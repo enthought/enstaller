@@ -129,12 +129,13 @@ class TestRepositoryPackage(unittest.TestCase):
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
 
         # When
-        metadata = RepositoryPackageMetadata.from_egg(path, _EGGINST_COMMON_DATA)
+        metadata = RepositoryPackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.store_location, _EGGINST_COMMON_DATA)
+        self.assertEqual(metadata.store_location, "file://{0}/".format(_EGGINST_COMMON_DATA))
+        self.assertEqual(metadata.source_url, "file://{0}".format(path))
 
 
 class TestInstalledPackage(unittest.TestCase):

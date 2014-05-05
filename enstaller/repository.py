@@ -3,6 +3,7 @@ import operator
 import os
 import os.path
 import sys
+import urllib
 import urlparse
 
 from egginst.eggmeta import info_from_z
@@ -94,6 +95,16 @@ class RepositoryPackageMetadata(PackageMetadata):
         """
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
+
+        if len(store_location) == 0:
+            store_location = os.path.dirname(path) + "/"
+            store_location = urlparse.urljoin("file:/", urllib.pathname2url(store_location))
+
+        if not store_location.endswith("/"):
+            msg = "Invalid uri for store location: {0!r} (expected an uri " \
+                  "ending with '/')".format(store_location)
+            raise ValueError(msg)
+
         metadata["packages"] = metadata.get("packages", [])
         st = os.stat(path)
         metadata["size"] = st.st_size
