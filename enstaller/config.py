@@ -375,13 +375,13 @@ class Configuration(object):
         with open(filename, 'w') as fo:
             fo.write(data)
 
-    def _checked_change_auth(self, filename, remote=None):
+    def _checked_change_auth(self, filename):
         if not self.is_auth_configured:
             raise InvalidConfiguration("No auth configured: cannot "
                                        "change auth.")
         user = {}
 
-        user = authenticate(self, remote)
+        user = authenticate(self)
         self._change_auth(filename)
         print(subscription_message(self, user))
         return user
