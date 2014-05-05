@@ -73,7 +73,7 @@ def fake_configuration_and_auth(f):
         # FIXME: we create a dummy store to bypass store authentication in
         # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
         # separated.
-        fake_fetch_return = contextlib.closing(StringIO("{}"))
+        fake_fetch_return = StringIO("{}")
         with mock.patch("enstaller.legacy_stores.URLFetcher.open",
                         return_value=fake_fetch_return):
             with mock.patch("enstaller.main.Configuration.from_file",

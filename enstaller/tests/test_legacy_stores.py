@@ -24,20 +24,19 @@ from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_
 from enstaller.tests.common import dummy_repository_package_factory
 
 
-def package_metadata_iterator(store_location):
+def _package_metadata_iterator(store_location):
     entries = [
         dummy_repository_package_factory("numpy", "1.8.0", 1,
                                          store_location=store_location),
         dummy_repository_package_factory("scipy", "0.14.0", 1,
                                          store_location=store_location)
     ]
-    data = StringIO(json.dumps(dict((entry.key, entry.s3index_data) for entry in entries)))
-    return contextlib.closing(data)
+    return StringIO(json.dumps(dict((entry.key, entry.s3index_data) for entry in entries)))
 
 
 @contextlib.contextmanager
 def mock_urlfetcher():
-    return_value = package_metadata_iterator("")
+    return_value = _package_metadata_iterator("")
     with mock.patch.object(URLFetcher, "open", return_value=return_value) as m:
         yield m
 

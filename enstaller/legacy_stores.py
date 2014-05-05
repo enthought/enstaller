@@ -58,8 +58,11 @@ def _webservice_index_parser(webservice_entry_point, fetcher, use_pypi):
 
     store_location = webservice_entry_point
 
-    with fetcher.open(url) as fp:
+    fp = fetcher.open(url)
+    try:
         json_dict = json.load(fp)
+    finally:
+        fp.close()
 
     return _parse_index(json_dict, store_location)
 
@@ -70,8 +73,11 @@ def _old_legacy_index_parser(repository_urls, fetcher):
         p = urlparse.urlparse(index)
         scheme = p.scheme
         if scheme in ("http", "https"):
-            with fetcher.open(index) as fp:
+            fp = fetcher.open(index)
+            try:
                 json_dict = json.load(fp)
+            finally:
+                fp.close()
         elif scheme in ("file",):
             with open(p.path, "rb") as fp:
                 json_dict = json.load(fp)
