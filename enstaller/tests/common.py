@@ -37,6 +37,13 @@ def repository_factory(entries):
     return repository
 
 
+@contextlib.contextmanager
+def mock_url_fetcher(downloader, path):
+    with mock.patch.object(downloader._fetcher, "open",
+                           return_value=path) as mocked:
+        yield mocked
+
+
 class MockedPrint(object):
     def __init__(self):
         self.s = StringIO()

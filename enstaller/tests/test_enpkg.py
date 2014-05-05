@@ -30,7 +30,8 @@ from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
 from enstaller.store.tests.common import EggsStore
 
 from .common import (dummy_repository_package_factory,
-                     mock_history_get_state_context, repository_factory)
+                     mock_history_get_state_context, mock_url_fetcher,
+                     repository_factory)
 
 
 class TestMisc(unittest.TestCase):
@@ -402,10 +403,11 @@ class TestEnpkgRevert(unittest.TestCase):
         repository = Repository._from_store(store)
         downloader = DownloadManager(repository, config.local)
 
-        enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
-                      config=config)
-        actions = enpkg.install_actions("dummy")
-        enpkg.execute(actions)
+        with mock_url_fetcher(downloader, open(egg)):
+            enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
+                          config=config)
+            actions = enpkg.install_actions("dummy")
+            enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
         enpkg._installed_repository.find_package(name, version)

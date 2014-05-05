@@ -1,4 +1,3 @@
-import contextlib
 import hashlib
 import os
 import os.path
@@ -22,6 +21,8 @@ from enstaller.errors import EnstallerException, InvalidChecksum
 from enstaller.fetch import DownloadManager, MD5File, checked_content
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
+
+from enstaller.tests.common import mock_url_fetcher
 
 
 class MockedStoreResponse(object):
@@ -141,13 +142,6 @@ class TestCheckedContent(unittest.TestCase):
         # When/Then
         with checked_content(path, checksum) as fp:
             fp.abort = True
-
-
-@contextlib.contextmanager
-def mock_url_fetcher(downloader, path):
-    with mock.patch.object(downloader._fetcher, "open",
-                           return_value=path) as mocked:
-        yield mocked
 
 
 class TestDownloadManager(unittest.TestCase):
