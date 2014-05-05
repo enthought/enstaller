@@ -31,7 +31,7 @@ PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
 DUMMY_EGG_WITH_INST_TARGETS = os.path.join(MACHO_DIRECTORY, "dummy_with_target_dat-1.0.0-1.egg")
 
-_EGGINST_COMMON_DATA = os.path.join(os.path.dirname(__file__), "data")
+_EGGINST_COMMON_DATA = os.path.join(os.path.abspath(os.path.dirname(__file__)), "data")
 DUMMY_EGG_WITH_APPINST = os.path.join(_EGGINST_COMMON_DATA, "dummy_with_appinst-1.0.0-1.egg")
 
 DUMMY_EGG = os.path.join(_EGGINST_COMMON_DATA, "dummy-1.0.1-1.egg")
