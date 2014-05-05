@@ -9,6 +9,7 @@ from egginst.utils import atomic_file, compute_md5, makedirs
 
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch_utils import StoreResponse
+from enstaller.legacy_stores import URLFetcher
 from enstaller.repository import egg_name_to_name_version
 
 
@@ -89,15 +90,15 @@ def checked_content(filename, expected_md5):
 
 
 class DownloadManager(object):
-    def __init__(self, repository, store, local_dir, evt_mgr=None):
+    def __init__(self, repository, local_dir, auth=None, evt_mgr=None):
         self._repository = repository
-        self._store = store
+        self._fetcher = URLFetcher(local_dir, auth)
         self.local_dir = local_dir
         self.evt_mgr = evt_mgr
 
         makedirs(self.local_dir)
 
-    def path(self, fn):
+    def _path(self, fn):
         return join(self.local_dir, fn)
 
     def _fetch(self, package_metadata, execution_aborted=None):
@@ -110,12 +111,12 @@ class DownloadManager(object):
                                             package_metadata.size,
                                             self.evt_mgr, self)
 
-        response = StoreResponse(self._store.get_data(package_metadata.key),
+        response = StoreResponse(self._fetcher.open(package_metadata.source_url),
                                  package_metadata.size, package_metadata.md5,
                                  package_metadata.key)
 
         with FileProgressManager(progress) as progress:
-            path = self.path(package_metadata.key)
+            path = self._path(package_metadata.key)
             with checked_content(path, package_metadata.md5) as target:
                 for chunk in response.iter_content():
                     if execution_aborted is not None and execution_aborted.is_set():
@@ -128,7 +129,7 @@ class DownloadManager(object):
 
     def _needs_to_download(self, package_metadata, force):
         needs_to_download = True
-        path = self.path(package_metadata.key)
+        path = self._path(package_metadata.key)
 
         if isfile(path):
             if force:

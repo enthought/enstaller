@@ -42,7 +42,7 @@ from enstaller.proxy.api import setup_proxy
 from enstaller.utils import (PY_VER, abs_expanduser, fill_url,
                              exit_if_sudo_on_venv)
 
-from enstaller.enpkg import Enpkg, create_joined_store, get_default_remote
+from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
@@ -666,13 +666,7 @@ def main(argv=None):
 
     repository = repository_factory(config)
 
-    if config.use_webservice:
-        remote = get_default_remote(config)
-    else:
-        urls = [fill_url(u) for u in config.IndexedRepos]
-        remote = create_joined_store(config, urls)
-    remote.connect(config.get_auth())
-    downloader = DownloadManager(repository, remote, config.local, evt_mgr)
+    downloader = DownloadManager(repository, config.local, evt_mgr)
 
     enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
                   config=config)

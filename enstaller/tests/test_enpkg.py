@@ -400,7 +400,7 @@ class TestEnpkgRevert(unittest.TestCase):
         store = EggsStore([egg])
         store.connect()
         repository = Repository._from_store(store)
-        downloader = DownloadManager(repository, store, config.local)
+        downloader = DownloadManager(repository, config.local)
 
         enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
                       config=config)

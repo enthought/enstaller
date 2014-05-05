@@ -73,15 +73,14 @@ def fake_configuration_and_auth(f):
         # FIXME: we create a dummy store to bypass store authentication in
         # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
         # separated.
-        with mock.patch("enstaller.main.get_default_remote"):
-            fake_fetch_return = contextlib.closing(StringIO("{}"))
-            with mock.patch("enstaller.legacy_stores.URLFetcher.open",
-                            return_value=fake_fetch_return):
-                with mock.patch("enstaller.main.Configuration.from_file",
-                                return_value=config):
-                    with mock.patch("enstaller.main.ensure_authenticated_config",
-                                    return_value=True):
-                        return without_any_configuration(f)(*a, **kw)
+        fake_fetch_return = contextlib.closing(StringIO("{}"))
+        with mock.patch("enstaller.legacy_stores.URLFetcher.open",
+                        return_value=fake_fetch_return):
+            with mock.patch("enstaller.main.Configuration.from_file",
+                            return_value=config):
+                with mock.patch("enstaller.main.ensure_authenticated_config",
+                                return_value=True):
+                    return without_any_configuration(f)(*a, **kw)
     return wrapper
 
 
@@ -121,8 +120,7 @@ def remote_enstaller_available(versions):
                             return_value=repository):
                 with mock.patch("enstaller.main.legacy_index_parser",
                                 return_value=[]):
-                    with mock.patch("enstaller.main.get_default_remote"):
-                        return f(*a, **kw)
+                    return f(*a, **kw)
         return wrapper
     return dec
 
