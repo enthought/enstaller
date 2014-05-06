@@ -142,7 +142,6 @@ class Resolve(object):
         matches = []
         for key, package in d.items():
             if req.matches(package._spec_info):
-            #if req.matches(package._spec_info) and package.available:
                 matches.append(key)
         if not matches:
             return None
