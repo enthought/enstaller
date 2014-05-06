@@ -97,8 +97,8 @@ class RepositoryPackageMetadata(PackageMetadata):
             metadata = info_from_z(zp)
 
         if len(store_location) == 0:
-            store_location = os.path.dirname(path) + "/"
-            store_location = urlparse.urljoin("file:/", urllib.pathname2url(store_location))
+            store_location = urllib.pathname2url(os.path.dirname(path)) + "/"
+            store_location = urlparse.urljoin("file:/", store_location)
 
         if not store_location.endswith("/"):
             msg = "Invalid uri for store location: {0!r} (expected an uri " \
