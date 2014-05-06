@@ -3,6 +3,7 @@ import re
 from collections import defaultdict
 
 from enstaller.egg_meta import is_valid_eggname, split_eggname
+from enstaller.errors import NoPackageFound
 from enstaller.repository import egg_name_to_name_version
 from utils import PY_VER, comparable_version
 
@@ -140,12 +141,11 @@ class Resolve(object):
             return None
         matches = []
         for key, package in d.items():
-            info = package.s3index_data
-            if req.matches(info) and package.available:
+            if req.matches(package._spec_info):
                 matches.append(key)
         if not matches:
             return None
-        return max(matches, key=lambda k: comparable_info(d[k].s3index_data))
+        return max(matches, key=lambda k: d[k].comparable_version)
 
     def reqs_egg(self, egg):
         """
@@ -296,7 +296,8 @@ class Resolve(object):
         logger.info("Determining install sequence for %r", req)
         root = self.get_egg(req)
         if root is None:
-            return None
+            msg = "No egg found for requirement {0!r}.".format(str(req))
+            raise NoPackageFound(msg, req)
         if mode == 'root':
             return [root]
         if mode == 'flat':

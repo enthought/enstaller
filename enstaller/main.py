@@ -8,19 +8,18 @@ enpkg can access eggs from both local and HTTP repositories.
 from __future__ import print_function
 
 import argparse
-import collections
+import errno
 import logging
 import ntpath
 import os
 import posixpath
 import re
-import sys
 import site
-import errno
 import string
-import datetime
+import sys
 import textwrap
 import warnings
+
 from argparse import ArgumentParser
 from os.path import isfile, join
 
@@ -28,24 +27,27 @@ from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
 from enstaller import __version__
-from enstaller.errors import InvalidPythonPathConfiguration, EXIT_ABORTED
+from enstaller.errors import (InvalidPythonPathConfiguration,
+                              NoPackageFound, UnavailablePackage,
+                              EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
     SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
     configuration_read_search_order,  convert_auth_if_required, input_auth,
-    prepend_url, print_config, subscription_message, write_default_config)
+    prepend_url, print_config, subscription_message, write_default_config,
+    subscription_level)
+from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
+from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import abs_expanduser, fill_url, exit_if_sudo_on_venv
+from enstaller.utils import (PY_VER, abs_expanduser, fill_url,
+                             exit_if_sudo_on_venv)
 
-from enstaller.enpkg import Enpkg, EnpkgError, create_joined_store
-from enstaller.repository import Repository
+from enstaller.enpkg import Enpkg
+from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.resolve import Req, comparable_info
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.history import History
-
-from enstaller.store.joined import JoinedStore
-from enstaller.store.indexed import IndexedStore
 
 
 logger = logging.getLogger(__name__)
@@ -100,12 +102,12 @@ def install_time_string(installed_repository, name):
     return "\n".join(lines)
 
 
-def info_option(enpkg, name):
+def info_option(remote_repository, installed_repository, name):
     name = name.lower()
     print('Package:', name)
-    print(install_time_string(enpkg._installed_repository, name))
+    print(install_time_string(installed_repository, name))
     pad = 4*' '
-    for metadata in enpkg._remote_repository.find_sorted_packages(name):
+    for metadata in remote_repository.find_sorted_packages(name):
         print('Version: ' + metadata.full_version)
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
@@ -117,10 +119,9 @@ def info_option(enpkg, name):
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
-def print_installed(prefix, pat=None):
+def print_installed(repository, pat=None):
     print(FMT % ('Name', 'Version', 'Store'))
     print(60 * '=')
-    repository = Repository._from_prefixes([prefix])
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
@@ -131,7 +132,8 @@ def print_installed(prefix, pat=None):
 def list_option(prefixes, pat=None):
     for prefix in reversed(prefixes):
         print("prefix:", prefix)
-        print_installed(prefix, pat)
+        repository = Repository._from_prefixes([prefix])
+        print_installed(repository, pat)
         print()
 
 
@@ -197,7 +199,7 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
         print(subscription_message(enpkg.config, user))
 
 
-def updates_check(enpkg, installed_repository):
+def updates_check(remote_repository, installed_repository):
     updates = []
     EPD_update = []
     for package in installed_repository.iter_packages():
@@ -205,8 +207,7 @@ def updates_check(enpkg, installed_repository):
         info = package._compat_dict
 
         info["key"] = key
-        av_metadatas = \
-            enpkg._remote_repository.find_sorted_packages(info['name'])
+        av_metadatas = remote_repository.find_sorted_packages(info['name'])
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
@@ -218,8 +219,8 @@ def updates_check(enpkg, installed_repository):
     return updates, EPD_update
 
 
-def whats_new(enpkg, installed_repository):
-    updates, EPD_update = updates_check(enpkg, installed_repository)
+def whats_new(remote_repository, installed_repository):
+    updates, EPD_update = updates_check(remote_repository, installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -238,7 +239,8 @@ def whats_new(enpkg, installed_repository):
 
 
 def update_all(enpkg, args):
-    updates, EPD_update = updates_check(enpkg, enpkg._installed_repository)
+    updates, EPD_update = updates_check(enpkg._remote_repository,
+                                        enpkg._installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -274,17 +276,6 @@ def add_url(filename, config, url):
         return
     prepend_url(filename, url)
 
-def pretty_print_packages(info_list):
-    packages = {}
-    for metadata in info_list:
-        version = metadata.version
-        available = metadata.available
-        packages[version] = packages.get(version, False) or available
-    pad = 4*' '
-    descriptions = [version+(' (no subscription)' if not available else '')
-        for version, available in sorted(packages.items())]
-    return pad + '\n    '.join(textwrap.wrap(', '.join(descriptions)))
-
 def install_req(enpkg, req, opts):
     """
     Try to execute the install actions.
@@ -293,112 +284,65 @@ def install_req(enpkg, req, opts):
     FAILURE = 1
     req = Req.from_anything(req)
 
-    def _print_invalid_permissions():
-        user = authenticate(enpkg.config)
-        print("No package found to fulfill your requirement at your "
-              "subscription level:")
-        for line in subscription_message(enpkg.config, user).splitlines():
-            print(" " * 4 + line)
-
-    def _perform_install():
-        """
-        Try to perform the install.
-        """
-        try:
-            mode = 'root' if opts.no_deps else 'recur'
-            actions = enpkg.install_actions(
-                    req,
-                    mode=mode,
-                    force=opts.force, forceall=opts.forceall)
-            enpkg.execute(actions)
-            if len(actions) == 0:
-                print("No update necessary, %r is up-to-date." % req.name)
-                print(install_time_string(enpkg._installed_repository,
-                                          req.name))
-        except EnpkgError as e:
-            if mode == 'root' or e.req is None or e.req == req:
-                # trying to install just one requirement - try to give more info
-                info_list = \
-                    enpkg._remote_repository.find_sorted_packages(req.name)
-                if info_list:
-                    print("Versions for package %r are:\n%s" % (req.name,
-                        pretty_print_packages(info_list)))
-                    if any(not i.available for i in info_list):
-                        _print_invalid_permissions()
-                    _done(FAILURE)
-                else:
-                    print(e.message)
-                    _done(FAILURE)
-            elif mode == 'recur':
-                print(e.message)
-                print('\n'.join(textwrap.wrap(
-                    "You may be able to force an install of just this "
-                    "egg by using the --no-deps enpkg commandline argument "
-                    "after installing another version of the dependency. ")))
-                if e.req:
-                    info_list = \
-                        enpkg._remote_repository.find_sorted_packages(e.req.name)
-                    if info_list:
-                        print(("Available versions of the required package "
-                               "%r are:\n%s") % (
-                            e.req.name, pretty_print_packages(info_list)))
-                        if any(not i.available for i in info_list):
-                            _print_invalid_permissions()
-                        _done(FAILURE)
-            _done(FAILURE)
-        except OSError as e:
-            if e.errno == errno.EACCES and sys.platform == 'darwin':
-                print("Install failed. OSX install requires admin privileges.")
-                print("You should add 'sudo ' before the 'enpkg' command.")
-                _done(FAILURE)
-            else:
-                raise
-
     def _done(exit_status):
         sys.exit(exit_status)
 
-    # kick off the state machine
-    _perform_install()
+    try:
+        mode = 'root' if opts.no_deps else 'recur'
+        actions = enpkg.install_actions(
+                req,
+                mode=mode,
+                force=opts.force, forceall=opts.forceall)
+        enpkg.execute(actions)
+        if len(actions) == 0:
+            print("No update necessary, %r is up-to-date." % req.name)
+            print(install_time_string(enpkg._installed_repository,
+                                      req.name))
+    except UnavailablePackage as e:
+        username = enpkg.config.get_auth()[0]
+        user_info = authenticate(enpkg.config)
+        subscription = subscription_level(user_info)
+        msg = textwrap.dedent("""\
+            Error: cannot install {0!r}, as some requirements are not
+            available at your subscription level.
+
+            You are currently logged in as {1!r} (subscription level:
+            {2!r}).""".format(str(e.requirement), username, subscription))
+        print(msg)
+        _done(FAILURE)
+    except NoPackageFound as e:
+        print(str(e))
+        _done(FAILURE)
+    except OSError as e:
+        if e.errno == errno.EACCES and sys.platform == 'darwin':
+            print("Install failed. OSX install requires admin privileges.")
+            print("You should add 'sudo ' before the 'enpkg' command.")
+            _done(FAILURE)
+        else:
+            raise
+
 
 def _create_enstaller_update_enpkg(enpkg, version=None):
     if version is None:
         version = __ENSTALLER_VERSION__
 
-    # This repo is used to inject the current version of
-    # enstaller into the set of enstaller eggs considered
-    # by Resolve. This is unfortunately the easiest way I
-    # could find to do so...
-    class MockedStore(IndexedStore):
-        def connect(self, auth=None):
-            pyver = ".".join(str(i) for i in sys.version_info[:2])
-            spec = {"name": "enstaller",
-                    "type": "egg",
-                    "version": version,
-                    "build": 1,
-                    "python": pyver,
-                    "packages": [],
-                    "size": 1024,
-                    "md5": "a" * 32}
-            self._index = {"enstaller-{0}-1.egg".format(version): spec}
-            self._connected = True
+    name = "enstaller"
+    build = 1
+    key = "{0}-{1}-{2}.egg".format(name, version, build)
+    current_enstaller = RepositoryPackageMetadata(key, name, version, build,
+                                                  [], PY_VER, -1, "a" * 32, 0.0,
+                                                  "free", True, "mocked_store")
 
-            self._groups = collections.defaultdict(list)
-            for key, info in self._index.iteritems():
-                self._groups[info['name']].append(key)
-
-        def get_data(self, key):
-            """Dummy so that we can instantiate this class."""
-
-        def info(self):
-            """Dummy so that we can instantiate this class."""
+    repository = Repository()
+    for package in enpkg._remote_repository.iter_packages():
+        repository.add_package(package)
+    repository.add_package(current_enstaller)
 
     prefixes = enpkg.prefixes
     evt_mgr = enpkg.evt_mgr
 
-    installed_repo = MockedStore()
-    remote = JoinedStore([enpkg.remote, installed_repo])
-    return Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr,
-                 config=enpkg.config)
+    return Enpkg(repository, download_manager=enpkg._downloader,
+                 prefixes=prefixes, evt_mgr=evt_mgr, config=enpkg.config)
 
 
 def update_enstaller(enpkg, opts):
@@ -484,9 +428,9 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
-def ensure_authenticated_config(config, config_filename, store):
+def ensure_authenticated_config(config, config_filename):
     try:
-        authenticate(config, store)
+        authenticate(config)
     except AuthFailedError:
         login, _ = config.get_auth()
         print("Could not authenticate with user '{0}'.".format(login))
@@ -496,7 +440,17 @@ def ensure_authenticated_config(config, config_filename, store):
         convert_auth_if_required(config_filename)
 
 
+def repository_factory(config):
+    repository = Repository()
+    for package in legacy_index_parser(config):
+        repository.add_package(package)
+    return repository
+
+
 def install_from_requirements(enpkg, args):
+    """
+    Install a set of requirements specified in the requirements file.
+    """
     with open(args.requirements, "r") as fp:
         for req in fp:
             args.no_deps = True
@@ -674,14 +628,8 @@ def main(argv=None):
 
     evt_mgr = None
 
-    if config.use_webservice:
-        remote = None # Enpkg will create the default
-    else:
-        urls = [fill_url(u) for u in config.IndexedRepos]
-        remote = create_joined_store(config, urls)
-
     if args.config:                               # --config
-        print_config(config, remote, prefixes[0])
+        print_config(config, prefixes[0])
         return
 
     if args.add_url:                              # --add-url
@@ -715,8 +663,14 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    ensure_authenticated_config(config, config_filename, remote)
-    enpkg = Enpkg(remote, prefixes=prefixes, evt_mgr=evt_mgr, config=config)
+    ensure_authenticated_config(config, config_filename)
+
+    repository = repository_factory(config)
+
+    downloader = DownloadManager(repository, config.local, evt_mgr)
+
+    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
+                  config=config)
 
     if args.dry_run:
         def print_actions(actions):
@@ -744,17 +698,18 @@ def main(argv=None):
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._repository, enpkg._installed_repository, pat)
+        search(enpkg, enpkg._remote_repository, enpkg._installed_repository, pat)
         return
 
     if args.info:                                 # --info
         if len(args.cnames) != 1:
             p.error("Option requires one argument (name of package)")
-        info_option(enpkg, args.cnames[0])
+        info_option(enpkg._remote_repository, enpkg._installed_repository,
+                    args.cnames[0])
         return
 
     if args.whats_new:                            # --whats-new
-        whats_new(enpkg, enpkg._installed_repository)
+        whats_new(enpkg._remote_repository, enpkg._installed_repository)
         return
 
     if args.update_all:                           # --update-all

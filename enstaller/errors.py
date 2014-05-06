@@ -27,4 +27,19 @@ class EnpkgError(EnstallerException):
 class MissingPackage(EnstallerException):
     pass
 
+class SolverException(EnstallerException):
+    pass
+
+class NoPackageFound(SolverException):
+    """Exception thrown if no egg can be found for the given requirement."""
+    def __init__(self, msg, requirement):
+        super(NoPackageFound, self).__init__(msg)
+        self.requirement = requirement
+
+class UnavailablePackage(EnstallerException):
+    """Exception thrown when a package is not available for a given
+    subscription level."""
+    def __init__(self, requirement):
+        self.requirement = requirement
+
 EXIT_ABORTED = 130

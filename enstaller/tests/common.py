@@ -1,29 +1,48 @@
 import collections
 import contextlib
-import time
 
 from cStringIO import StringIO
 
 import mock
 
-from okonomiyaki.repositories.enpkg import EnpkgS3IndexEntry
-
 from enstaller.errors import AuthFailedError
+from enstaller.repository import (InstalledPackageMetadata, Repository,
+                                  RepositoryPackageMetadata)
 from enstaller.utils import PY_VER
 
-def dummy_enpkg_entry_factory(name, version, build):
-    data = {"egg_basename": name, "packages": [], "python": PY_VER,
-            "size": 1024, "version": version, "build": build,
-            "available": True}
-    return EnpkgS3IndexEntry.from_data(data)
 
-def dummy_installed_egg_factory(name, version, build, meta_dir=None):
-    data = {"name": name.lower(), "platform": "linux2", "python": PY_VER,
-            "type": "egg", "osdist": "RedHat_5",
-            "installed": True, "hook": False, "version": version, "build": build,
-            "key": "{0}-{1}-{2}.egg".format(name, version, build),
-            "packages": [], "arch": "x86", "ctime": time.ctime()}
-    return data
+FAKE_MD5 = "a" * 32
+FAKE_SIZE = -1
+
+
+def dummy_installed_package_factory(name, version, build, key=None, store_location=""):
+    key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
+    return InstalledPackageMetadata(key, name.lower(), version, build, [], PY_VER,
+                                    "", store_location)
+
+def dummy_repository_package_factory(name, version, build, key=None, store_location=""):
+    key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
+    fake_size = FAKE_SIZE
+    fake_md5 = FAKE_MD5
+    fake_mtime = 0.0
+    return RepositoryPackageMetadata(key, name.lower(), version, build, [], PY_VER,
+                                     fake_size, fake_md5, fake_mtime, "commercial",
+                                     True, store_location)
+
+
+def repository_factory(entries):
+    repository = Repository()
+    for entry in entries:
+        repository.add_package(entry)
+    return repository
+
+
+@contextlib.contextmanager
+def mock_url_fetcher(downloader, path):
+    with mock.patch.object(downloader._fetcher, "open",
+                           return_value=path) as mocked:
+        yield mocked
+
 
 class MockedPrint(object):
     def __init__(self):

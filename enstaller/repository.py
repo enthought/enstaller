@@ -3,13 +3,15 @@ import operator
 import os
 import os.path
 import sys
+import urllib
+import urlparse
 
 from egginst.eggmeta import info_from_z
 from egginst.utils import ZipFile
 
 from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir
-from enstaller.utils import comparable_version
+from enstaller.utils import comparable_version, compute_md5
 
 
 class PackageMetadata(object):
@@ -69,6 +71,14 @@ class PackageMetadata(object):
         """
         return comparable_version(self.version), self.build
 
+    @property
+    def _spec_info(self):
+        """
+        Returns a dictionary that can be used as an argument to Req.matches
+        """
+        # FIXME: to remove before 4.7.0
+        keys = ("name", "python", "version", "build")
+        return dict((k, getattr(self, k)) for k in keys)
 
 class RepositoryPackageMetadata(PackageMetadata):
     """
@@ -78,6 +88,31 @@ class RepositoryPackageMetadata(PackageMetadata):
     In particular, RepositoryPackageMetadata's instances know about which
     repository they are coming from through the store_location attribute.
     """
+    @classmethod
+    def from_egg(cls, path, store_location=""):
+        """
+        Create an instance from an egg filename.
+        """
+        with ZipFile(path) as zp:
+            metadata = info_from_z(zp)
+
+        if len(store_location) == 0:
+            store_location = urllib.pathname2url(os.path.dirname(path)) + "/"
+            store_location = urlparse.urljoin("file:/", store_location)
+
+        if not store_location.endswith("/"):
+            msg = "Invalid uri for store location: {0!r} (expected an uri " \
+                  "ending with '/')".format(store_location)
+            raise ValueError(msg)
+
+        metadata["packages"] = metadata.get("packages", [])
+        st = os.stat(path)
+        metadata["size"] = st.st_size
+        metadata["md5"] = compute_md5(path)
+        metadata["mtime"] = st.st_mtime
+        metadata["store_location"] = store_location
+        return cls.from_json_dict(os.path.basename(path), metadata)
+
     @classmethod
     def from_json_dict(cls, key, json_dict):
         return cls(key, json_dict["name"], json_dict["version"],
@@ -112,6 +147,10 @@ class RepositoryPackageMetadata(PackageMetadata):
         keys = ("available", "build", "md5", "name", "packages", "product",
                 "python", "mtime", "size", "type", "version")
         return dict((k, getattr(self, k)) for k in keys)
+
+    @property
+    def source_url(self):
+        return urlparse.urljoin(self.store_location, self.key)
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \
@@ -253,49 +292,6 @@ class Repository(object):
             List of prefixes. [sys.prefix] by default
         """
         repository = cls()
-        repository._populate_from_prefixes(prefixes)
-        return repository
-
-    @classmethod
-    def _from_store(cls, store):
-        """
-        Create a repository representing packages available from the given
-        store.
-
-        Parameters
-        ----------
-        store: Store
-            An indexed store
-        """
-        assert store.is_connected, "This method expected an already connected store."
-
-        _store_info = store.info()
-        store_info = _store_info.get("root") if _store_info else ""
-
-        repository = cls(store_info)
-
-        for key in store.query_keys(type="egg"):
-            raw_metadata = store.get_metadata(key)
-            raw_metadata["store_location"] = store_info
-            package = RepositoryPackageMetadata.from_json_dict(key,
-                                                               raw_metadata)
-            repository.add_package(package)
-        return repository
-
-    @classmethod
-    def _from_store_and_prefixes(cls, store, prefixes=None):
-        """
-        Create a repository representing both installed packages and packages
-        available from the store.
-
-        Parameters
-        ----------
-        store: Store
-            An indexed store
-        prefixes: seq
-            List of prefixes. [sys.prefix] by default
-        """
-        repository = cls._from_store(store)
         repository._populate_from_prefixes(prefixes)
         return repository
 

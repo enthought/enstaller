@@ -13,11 +13,11 @@ from egginst.testing_utils import slow
 from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
 
 from enstaller.errors import MissingPackage
-from enstaller.store.filesystem_store import DumbFilesystemStore
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
+from enstaller.tests.common import dummy_installed_package_factory
 
 
 class TestParseVersion(unittest.TestCase):
@@ -123,6 +123,20 @@ class TestRepositoryPackage(unittest.TestCase):
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
 
+    def test_from_egg(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+
+        # When
+        metadata = RepositoryPackageMetadata.from_egg(path)
+
+        # Then
+        self.assertEqual(metadata.name, "nose")
+        self.assertEqual(metadata.version, "1.3.0")
+        self.assertEqual(metadata.store_location, "file://{0}/".format(_EGGINST_COMMON_DATA))
+        self.assertEqual(metadata.source_url, "file://{0}".format(path))
+
+
 class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir(self):
         # Given
@@ -161,8 +175,11 @@ class TestRepository(unittest.TestCase):
             "nose-1.3.0-1.egg",
             "nose-1.3.0-2.egg",
         ]
-        self.store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        self.repository = Repository._from_store(self.store)
+        self.repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            self.repository.add_package(package)
 
     def test_find_package(self):
         # Given
@@ -182,7 +199,8 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.python, "2.7")
 
         self.assertEqual(metadata.available, True)
-        self.assertEqual(metadata.store_location, _EGGINST_COMMON_DATA)
+        self.assertEqual(metadata.store_location,
+                         "file://{0}/".format(_EGGINST_COMMON_DATA))
 
         self.assertEqual(metadata.size, os.path.getsize(path))
         self.assertEqual(metadata.md5, compute_md5(path))
@@ -245,8 +263,11 @@ class TestRepository(unittest.TestCase):
     def test_iter_most_recent_packages(self):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
-        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository._from_store(store)
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
 
         # When
         metadata = list(repository.iter_most_recent_packages())
@@ -258,8 +279,11 @@ class TestRepository(unittest.TestCase):
     def test_iter_packages(self):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
-        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        repository = Repository._from_store(store)
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
 
         # When
         metadata = list(repository.iter_packages())
@@ -296,18 +320,13 @@ class TestRepository(unittest.TestCase):
             # Then
             self.assertEqual(len(list(repository.iter_packages())), 0)
 
-def _dummy_installed_package_factory(name, version, build, key=None, store_location=""):
-    key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
-    return InstalledPackageMetadata(key, name, version, build, [], "2.7",
-                                    "", store_location)
-
 # Unittest that used to belong to Enpkg
 class TestRepositoryMisc(unittest.TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8k", 2),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8k", 2),
         ]
         repository = Repository()
         for entry in entries:
@@ -323,9 +342,9 @@ class TestRepositoryMisc(unittest.TestCase):
     def test_sorted_packages_valid(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8.0", 2),
-            _dummy_installed_package_factory("numpy", "1.7.1", 1),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8.0", 2),
+            dummy_installed_package_factory("numpy", "1.7.1", 1),
         ]
         repository = Repository()
         for entry in entries:
@@ -342,8 +361,8 @@ class TestRepositoryMisc(unittest.TestCase):
     def test_sorted_packages_invalid(self):
         # Given
         entries = [
-            _dummy_installed_package_factory("numpy", "1.6.1", 1),
-            _dummy_installed_package_factory("numpy", "1.8k", 2),
+            dummy_installed_package_factory("numpy", "1.6.1", 1),
+            dummy_installed_package_factory("numpy", "1.8k", 2),
         ]
         repository = Repository()
         for entry in entries:

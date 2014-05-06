@@ -18,10 +18,11 @@ from encore.events.event_manager import EventManager
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import EnstallerException, InvalidChecksum
-from enstaller.fetch import FetchAPI, MD5File, checked_content
-from enstaller.repository import Repository
-from enstaller.store.filesystem_store import DumbFilesystemStore
+from enstaller.fetch import DownloadManager, MD5File, checked_content
+from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
+
+from enstaller.tests.common import mock_url_fetcher
 
 
 class MockedStoreResponse(object):
@@ -143,32 +144,35 @@ class TestCheckedContent(unittest.TestCase):
             fp.abort = True
 
 
-class TestFetchAPI(unittest.TestCase):
+class TestDownloadManager(unittest.TestCase):
     def setUp(self):
-        self.d = tempfile.mkdtemp()
+        self.tempdir = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.d)
+        shutil.rmtree(self.tempdir)
 
     def _create_store_and_repository(self, eggs):
-        store = DumbFilesystemStore(_EGGINST_COMMON_DATA, eggs)
-        store.connect((None, None))
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
 
-        repository = Repository._from_store(store)
-
-        return store, repository
+        return repository
 
     def test_fetch_simple(self):
         # Given
         filename = "nose-1.3.0-1.egg"
-        store, repository = self._create_store_and_repository([filename])
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        repository = self._create_store_and_repository([filename])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
-        fetch_api.fetch_egg(filename)
+        fetch_api = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(fetch_api, open(path)):
+            fetch_api.fetch_egg(filename)
 
         # Then
-        target = os.path.join(self.d, filename)
+        target = os.path.join(self.tempdir, filename)
         self.assertTrue(os.path.exists(target))
         self.assertEqual(compute_md5(target),
                          repository.find_package("nose", "1.3.0-1").md5)
@@ -176,8 +180,9 @@ class TestFetchAPI(unittest.TestCase):
     def test_fetch_invalid_md5(self):
         # Given
         filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
-        store, repository = self._create_store_and_repository([filename])
+        repository = self._create_store_and_repository([filename])
 
         mocked_metadata = mock.Mock()
         mocked_metadata.md5 = "a" * 32
@@ -185,11 +190,11 @@ class TestFetchAPI(unittest.TestCase):
         mocked_metadata.key = filename
 
         with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            fetch_api = FetchAPI(repository, store, self.d)
-
-            # When/Then
-            with self.assertRaises(EnstallerException):
-                fetch_api.fetch_egg(filename)
+            fetch_api = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(fetch_api, open(path)):
+                # When/Then
+                with self.assertRaises(EnstallerException):
+                    fetch_api.fetch_egg(filename)
 
     def test_fetch_abort(self):
         # Given
@@ -197,31 +202,33 @@ class TestFetchAPI(unittest.TestCase):
 
         filename = "nose-1.3.0-1.egg"
 
-        store, repository = self._create_store_and_repository([filename])
+        repository = self._create_store_and_repository([filename])
 
         response = MockedStoreResponse(100000, event, 0.5)
-        with mock.patch.object(store, "get_data", return_value=response):
-            # When
-            fetch_api = FetchAPI(repository, store, self.d)
+        # When
+        fetch_api = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(fetch_api, response):
             fetch_api.fetch_egg(filename, execution_aborted=event)
 
             # Then
-            target = os.path.join(self.d, filename)
+            target = os.path.join(self.tempdir, filename)
             self.assertTrue(event.is_set())
             self.assertFalse(os.path.exists(target))
 
     def test_fetch_egg_simple(self):
-        #Given
+        # Given
         egg = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
-        store, repository = self._create_store_and_repository([egg])
+        repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
-        fetch_api.fetch_egg(egg)
+        fetch_api = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(fetch_api, open(path)):
+            fetch_api.fetch_egg(egg)
 
         # Then
-        target = os.path.join(self.d, egg)
+        target = os.path.join(self.tempdir, egg)
         self.assertTrue(os.path.exists(target))
         self.assertEqual(compute_md5(target),
                          compute_md5(os.path.join(_EGGINST_COMMON_DATA, egg)))
@@ -229,15 +236,17 @@ class TestFetchAPI(unittest.TestCase):
     def test_fetch_egg_refetch(self):
         # Given
         egg = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
-        store, repository = self._create_store_and_repository([egg])
+        repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
-        fetch_api.fetch_egg(egg)
+        fetch_api = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(fetch_api, open(path)):
+            fetch_api.fetch_egg(egg)
 
         # Then
-        target = os.path.join(self.d, egg)
+        target = os.path.join(self.tempdir, egg)
         self.assertTrue(os.path.exists(target))
 
     def test_fetch_egg_refetch_invalid_md5(self):
@@ -245,18 +254,19 @@ class TestFetchAPI(unittest.TestCase):
         egg = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
-        store, repository = self._create_store_and_repository([egg])
+        repository = self._create_store_and_repository([egg])
 
         def _corrupt_file(target):
             with open(target, "wb") as fo:
                 fo.write("")
 
         # When
-        fetch_api = FetchAPI(repository, store, self.d)
-        fetch_api.fetch_egg(egg)
+        fetch_api = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(fetch_api, open(path)):
+            fetch_api.fetch_egg(egg)
 
         # Then
-        target = os.path.join(self.d, egg)
+        target = os.path.join(self.tempdir, egg)
         self.assertEqual(compute_md5(target), compute_md5(path))
 
         # When
@@ -266,7 +276,8 @@ class TestFetchAPI(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        fetch_api.fetch_egg(egg, force=True)
+        with mock_url_fetcher(fetch_api, open(path)):
+            fetch_api.fetch_egg(egg, force=True)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
@@ -274,15 +285,16 @@ class TestFetchAPI(unittest.TestCase):
     def test_encore_event_manager(self):
         # Given
         egg = "nose-1.3.0-1.egg"
-        store, repository = self._create_store_and_repository([egg])
-        print(list(repository.iter_packages()))
+        path = os.path.join(_EGGINST_COMMON_DATA, egg)
+        repository = self._create_store_and_repository([egg])
 
         with mock.patch.object(EventManager, "emit"):
             event_manager = EventManager()
 
             # When
-            fetch_api = FetchAPI(repository, store, self.d, event_manager)
-            fetch_api.fetch_egg(egg)
+            fetch_api = DownloadManager(repository, self.tempdir, evt_mgr=event_manager)
+            with mock_url_fetcher(fetch_api, open(path)):
+                fetch_api.fetch_egg(egg)
 
             # Then
             self.assertTrue(event_manager.emit.called)
@@ -294,12 +306,14 @@ class TestFetchAPI(unittest.TestCase):
         """
         # Given
         egg = "nose-1.3.0-1.egg"
-        store, repository = self._create_store_and_repository([egg])
+        path = os.path.join(_EGGINST_COMMON_DATA, egg)
+        repository = self._create_store_and_repository([egg])
 
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
-            fetch_api = FetchAPI(repository, store, self.d)
-            fetch_api.fetch_egg(egg)
+            fetch_api = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(fetch_api, open(path)):
+                fetch_api.fetch_egg(egg)
 
             # Then
             self.assertTrue(m.called)

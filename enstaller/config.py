@@ -5,6 +5,7 @@ from __future__ import absolute_import, print_function
 import base64
 import json
 import re
+import urlparse
 import os
 import sys
 import textwrap
@@ -23,6 +24,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 from enstaller import __version__
 from enstaller.errors import (
     AuthFailedError, EnpkgError, EnstallerException, InvalidConfiguration)
+from enstaller.store.indexed import _INDEX_NAME
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
@@ -373,13 +375,13 @@ class Configuration(object):
         with open(filename, 'w') as fo:
             fo.write(data)
 
-    def _checked_change_auth(self, filename, remote=None):
+    def _checked_change_auth(self, filename):
         if not self.is_auth_configured:
             raise InvalidConfiguration("No auth configured: cannot "
                                        "change auth.")
         user = {}
 
-        user = authenticate(self, remote)
+        user = authenticate(self)
         self._change_auth(filename)
         print(subscription_message(self, user))
         return user
@@ -585,24 +587,31 @@ def prepend_url(filename, url):
     f.close()
 
 
-def authenticate(configuration, remote=None):
+def _head_request(url, auth=None):
+    if auth:
+        auth = 'Basic ' + (':'.join(auth).encode('base64').strip())
+        request = urllib2.Request(url)
+        request.add_unredirected_header("Authorization", auth)
+    else:
+        request = urllib2.Request(url)
+    request.get_method = lambda : 'HEAD'
+
+    return urllib2.urlopen(request)
+
+
+def authenticate(configuration):
     """
     Attempt to authenticate the user's credentials by the appropriate
     means.
 
-    `remote` is enpkg.remote, required if not using the web API to
-    authenticate
-
     If 'use_webservice' is set, authenticate with the web API and return
     a dictionary containing user info on success.
 
-    Else, authenticate with remote.connect and return a dict containing
-    is_authenticated=True on success.
+    Else, authenticate with the configured repositories in config.IndexedRepos
+    return a dict containing is_authenticated=True on success.
 
     If authentication fails, raise an exception.
     """
-    # FIXME: remove passing remote hack.
-
     if not configuration.is_auth_configured:
         raise EnstallerException("No valid auth information in "
                                  "configuration, cannot authenticate.")
@@ -618,13 +627,29 @@ def authenticate(configuration, remote=None):
         except Exception as e:
             raise AuthFailedError('Authentication failed: %s.' % e)
     else:
-        remote.connect(auth)
+        for url in configuration.IndexedRepos:
+            parse = urlparse.urlparse(url)
+            if parse.scheme in ("http", "https"):
+                index = url + _INDEX_NAME
+                try:
+                    _head_request(index, auth)
+                except urllib2.HTTPError as e:
+                    http_code = e.getcode()
+                    if http_code in (401, 403):
+                        msg = "Authentication error: {0!r}".format(e.reason)
+                        raise AuthFailedError(msg)
+                    elif http_code == 404:
+                        msg = "Could not access repo {0!r} (error: {1!r})". \
+                                format(index, e.msg)
+                        raise InvalidConfiguration(msg)
+                    else:
+                        raise
         user = dict(is_authenticated=True)
 
     return user
 
 
-def print_config(config, remote, prefix):
+def print_config(config, prefix):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
     print("sys.prefix:", sys.prefix)
@@ -645,7 +670,7 @@ def print_config(config, remote, prefix):
 
     user = {}
     try:
-        user = authenticate(config, remote)
+        user = authenticate(config)
     except Exception as e:
         print(e)
     print(subscription_message(config, user))
