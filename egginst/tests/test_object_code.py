@@ -2,7 +2,7 @@ import os
 import shutil
 import sys
 
-if sys.version_info[:2] < (2, 7):
+if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
     import unittest
