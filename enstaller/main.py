@@ -31,16 +31,16 @@ from enstaller.errors import (InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage,
                               EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
-    SYS_PREFIX_ENSTALLER4RC, Configuration, authenticate,
-    configuration_read_search_order,  convert_auth_if_required, input_auth,
-    prepend_url, print_config, subscription_message, write_default_config,
-    subscription_level)
+                              SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
+                              authenticate, configuration_read_search_order,
+                              convert_auth_if_required, input_auth,
+                              print_config, subscription_message,
+                              write_default_config, subscription_level)
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
 from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import (PY_VER, abs_expanduser, fill_url,
-                             exit_if_sudo_on_venv)
+from enstaller.utils import PY_VER, abs_expanduser, exit_if_sudo_on_venv
 
 from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository, RepositoryPackageMetadata
@@ -268,13 +268,6 @@ def epd_install_confirm():
     print("    enpkg --update-all")
     yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
     return yn.lower() in set(['y', 'yes'])
-
-def add_url(filename, config, url):
-    url = fill_url(url)
-    if url in config.IndexedRepos:
-        print("Already configured:", url)
-        return
-    prepend_url(filename, url)
 
 def install_req(enpkg, req, opts):
     """

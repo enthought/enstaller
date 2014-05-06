@@ -92,6 +92,14 @@ def get_default_url():
     return 'https://api.enthought.com/eggs/%s/' % plat.custom_plat
 
 
+def add_url(filename, config, url):
+    url = fill_url(url)
+    if url in config.IndexedRepos:
+        print("Already configured:", url)
+        return
+    prepend_url(filename, url)
+
+
 RC_TMPL = """\
 # enstaller configuration file
 # ============================

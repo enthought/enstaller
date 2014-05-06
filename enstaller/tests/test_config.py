@@ -30,7 +30,7 @@ from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
     _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
-    Configuration)
+    Configuration, add_url)
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
     InvalidFormat)
 from enstaller.utils import PY_VER
@@ -133,6 +133,22 @@ class TestWriteConfig(unittest.TestCase):
         config = Configuration.from_file(self.f)
         self.assertEqual(config.proxy, proxystr)
 
+    def test_add_url(self):
+        # Given
+        path = os.path.join(self.d, "foo.cfg")
+
+        config = Configuration()
+        config.write(path)
+
+        url = "http://acme.com/{PLATFORM}/"
+
+        # When
+        add_url(path, config, url)
+
+        # Then
+        with open(path, "r") as fp:
+            data = fp.read()
+            self.assertRegexpMatches(data, "http://acme.com")
 
 class TestConfigKeyringConversion(unittest.TestCase):
     def test_use_epd_username(self):

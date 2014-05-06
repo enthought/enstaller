@@ -56,7 +56,3 @@ def update_index(dir_path, force=False, verbose=False):
 
     with open(index_path, 'w') as f:
         json.dump(new_index, f, indent=2, sort_keys=True)
-
-
-if __name__ == '__main__':
-    update_index('/Users/ischnell/repo')
