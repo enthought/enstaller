@@ -58,5 +58,5 @@ def update_index(dir_path, force=False, verbose=False):
         json.dump(new_index, f, indent=2, sort_keys=True)
 
 
-if __name__ == '__main__':
+if __name__ == '__main__': #  pragma: no cover
     update_index('/Users/ischnell/repo')
