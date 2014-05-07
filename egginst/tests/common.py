@@ -60,6 +60,8 @@ LEGACY_EGG_INFO_EGG_METADATA_FILES = ("PKG-INFO", "requires.txt",
 
 ZIP_WITH_SOFTLINK = os.path.join(_EGGINST_COMMON_DATA, "zip_with_softlink.zip")
 
+VTK_EGG_DEFERRED_SOFTLINK = os.path.join(_EGGINST_COMMON_DATA, "VTK-5.10.1-1.egg")
+
 @contextlib.contextmanager
 def mkdtemp():
     d = tempfile.mkdtemp()
