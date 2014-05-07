@@ -6,9 +6,9 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-from egginst.utils import compute_md5
+from egginst.utils import compute_md5, ensure_dir
 from egginst.tests.common import (NOSE_1_3_0, SUPPORT_SYMLINK,
-    ZIP_WITH_SOFTLINK, mkdtemp)
+    VTK_EGG_DEFERRED_SOFTLINK, ZIP_WITH_SOFTLINK, mkdtemp)
 from egginst._compat import StringIO
 from egginst._zipfile import ZipFile
 
@@ -19,6 +19,13 @@ def list_files(top):
         for f in files:
             paths.append(os.path.join(os.path.relpath(root, top), f))
     return paths
+
+
+def create_broken_symlink(link):
+    ensure_dir(link)
+    d = os.path.dirname(link)
+    os.symlink(os.path.join(d, "nono_le_petit_robot"), link)
+
 
 class TestZipFile(unittest.TestCase):
     def test_simple(self):
@@ -82,3 +89,37 @@ class TestZipFile(unittest.TestCase):
 
             self.assertItemsEqual(paths, ["lib/foo.so.1.3", "lib/foo.so"])
             self.assertTrue(os.path.islink(os.path.join(d, "lib", "foo.so")))
+
+    @unittest.skipIf(not SUPPORT_SYMLINK,
+                     "this platform does not support symlink")
+    def test_softlink_with_broken_entry(self):
+        self.maxDiff = None
+
+        # Given
+        path = VTK_EGG_DEFERRED_SOFTLINK
+        expected_files = [
+            'EGG-INFO/PKG-INFO',
+            'EGG-INFO/inst/targets.dat',
+            'EGG-INFO/inst/files_to_install.txt',
+            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so.5.10.1',
+            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so.5.10',
+            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so',
+            'EGG-INFO/spec/lib-provide',
+            'EGG-INFO/spec/depend',
+            'EGG-INFO/spec/lib-depend',
+            'EGG-INFO/spec/summary'
+        ]
+
+        with mkdtemp() as d:
+            existing_link = os.path.join(d, 'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so')
+            create_broken_symlink(existing_link)
+
+            # When
+            with ZipFile(path) as zp:
+                zp.extractall(d)
+            files = list_files(d)
+
+            # Then
+            self.assertItemsEqual(files, expected_files)
+            path = os.path.join(d, "EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so")
+            self.assertTrue(os.path.islink(path))

@@ -115,6 +115,8 @@ def has_legacy_egg_info_format(arcnames, is_custom_egg):
 
 
 def should_mark_executable(arcname, fn):
+    if os.path.islink(fn):
+        return False
     if (arcname.startswith(('EGG-INFO/usr/bin/', 'EGG-INFO/scripts/')) or
             fn.endswith(('.dylib', '.pyd', '.so')) or
             (arcname.startswith('EGG-INFO/usr/lib/') and
