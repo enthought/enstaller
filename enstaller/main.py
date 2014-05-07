@@ -660,8 +660,8 @@ def main(argv=None):
 
     repository = repository_factory(config)
 
-    downloader = DownloadManager(repository, config.local, config.get_auth(),
-                                 evt_mgr)
+    downloader = DownloadManager(repository, config.repository_cache,
+                                 config.get_auth(), evt_mgr)
 
     enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
                   config=config)
