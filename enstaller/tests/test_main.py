@@ -7,7 +7,7 @@ import sys
 import tempfile
 import textwrap
 
-if sys.version_info[:2] < (2, 7):
+if sys.version_info < (2, 7):
     import unittest2 as unittest
     # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
     # context manager does not contain the actual exception object ?
