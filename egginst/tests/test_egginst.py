@@ -23,8 +23,8 @@ from .common import DUMMY_EGG, DUMMY_EGG_WITH_APPINST, \
         DUMMY_EGG_WITH_ENTRY_POINTS, DUMMY_EGG_METADATA_FILES, \
         LEGACY_EGG_INFO_EGG, LEGACY_EGG_INFO_EGG_METADATA_FILES, \
         NOSE_1_3_0, PYTHON_VERSION, STANDARD_EGG, \
-        STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK, mkdtemp, \
-        create_venv
+        STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK, \
+        VTK_EGG_DEFERRED_SOFTLINK, mkdtemp, create_venv
 
 def _create_egg_with_symlink(filename, name):
     with ZipFile(filename, "w") as fp:
@@ -59,6 +59,18 @@ class TestEggInst(unittest.TestCase):
         self.assertTrue(os.path.islink(link))
         self.assertEqual(os.readlink(link), "include")
         self.assertTrue(os.path.exists(os.path.join(link, "foo.h")))
+
+    @slow
+    @unittest.skipIf(not SUPPORT_SYMLINK,
+                     "this platform does not support symlink")
+    def test_softlink_with_broken_entry(self):
+        # Given
+        path = VTK_EGG_DEFERRED_SOFTLINK
+
+        # When
+        installer = EggInst(path, prefix=self.prefix)
+        installer.install()
+
 
 class TestEggInstMain(unittest.TestCase):
     def test_print_version(self):
