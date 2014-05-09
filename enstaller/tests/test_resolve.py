@@ -8,6 +8,8 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
+import mock
+
 from enstaller.repository import Repository, RepositoryPackageMetadata
 
 from enstaller import resolve
@@ -102,8 +104,8 @@ class TestReq(unittest.TestCase):
     def test_matches_py(self):
         spec = dict(name='foo', version='2.4.1', build=3, python=None)
         for py in ['2.4', '2.5', '2.6', '3.1']:
-            resolve.PY_VER = py
-            self.assertEqual(Req('foo').matches(spec), True)
+            with mock.patch("enstaller.resolve.PY_VER", py):
+                self.assertEqual(Req('foo').matches(spec), True)
 
         spec25 = dict(spec)
         spec25.update(dict(python='2.5'))
@@ -111,13 +113,13 @@ class TestReq(unittest.TestCase):
         spec26 = dict(spec)
         spec26.update(dict(python='2.6'))
 
-        resolve.PY_VER = '2.5'
-        self.assertEqual(Req('foo').matches(spec25), True)
-        self.assertEqual(Req('foo').matches(spec26), False)
+        with mock.patch("enstaller.resolve.PY_VER", "2.5"):
+            self.assertEqual(Req('foo').matches(spec25), True)
+            self.assertEqual(Req('foo').matches(spec26), False)
 
-        resolve.PY_VER = '2.6'
-        self.assertEqual(Req('foo').matches(spec25), False)
-        self.assertEqual(Req('foo').matches(spec26), True)
+        with mock.patch("enstaller.resolve.PY_VER", "2.6"):
+            self.assertEqual(Req('foo').matches(spec25), False)
+            self.assertEqual(Req('foo').matches(spec26), True)
 
     def test_from_anything_name(self):
         # Given
@@ -169,8 +171,8 @@ class TestChain0(unittest.TestCase):
         repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
 
+    @mock.patch("enstaller.resolve.PY_VER", "2.5")
     def test_25(self):
-        resolve.PY_VER = '2.5'
         self.assertEqual(eggs_rs(self.resolve, 'SciPy 0.8.0.dev5698'),
                          ['freetype-2.3.7-1.egg', 'libjpeg-7.0-1.egg',
                           'numpy-1.3.0-1.egg', 'PIL-1.1.6-4.egg',
@@ -183,9 +185,8 @@ class TestChain0(unittest.TestCase):
                          ['AppInst-2.0.4-1.egg', 'numpy-1.3.0-1.egg',
                           'scipy-0.8.0-1.egg', 'EPDCore-1.2.5-1.egg'])
 
+    @mock.patch("enstaller.resolve.PY_VER", "2.6")
     def test_26(self):
-        resolve.PY_VER = '2.6'
-
         self.assertEqual(eggs_rs(self.resolve, 'SciPy'),
                          ['numpy-1.3.0-2.egg', 'scipy-0.8.0-2.egg'])
 
@@ -199,8 +200,6 @@ class TestChain1(unittest.TestCase):
                    in ('epd', 'gpl')]
         repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
-
-        resolve.PY_VER = '2.7'
 
     def test_get_repo(self):
         for req_string, repo_name in [
@@ -280,8 +279,8 @@ class TestCycle(unittest.TestCase):
         repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(repo)
 
+    @mock.patch("enstaller.resolve.PY_VER",  "2.5")
     def test_cycle(self):
-        resolve.PY_VER = '2.5'
         try:
             eg = eggs_rs(self.resolve, 'cycleParent 2.0-5')
         except Exception as e:
