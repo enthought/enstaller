@@ -13,20 +13,18 @@ else:
 import mock
 
 from egginst.main import EggInst
-from egginst.tests.common import mkdtemp, DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
+from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import makedirs
 
 from enstaller.config import Configuration
-from enstaller.egg_meta import split_eggname
 from enstaller.enpkg import Enpkg
 from enstaller.enpkg import get_writable_local_dir
-from enstaller.errors import EnpkgError, NoPackageFound
+from enstaller.errors import EnpkgError
 from enstaller.fetch import DownloadManager
 from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
                                   Repository, RepositoryPackageMetadata)
 from enstaller.utils import PY_VER
-from enstaller.store.tests.common import EggsStore
 
 from .common import (dummy_repository_package_factory,
                      mock_history_get_state_context, mock_url_fetcher,
@@ -130,57 +128,6 @@ class TestEnpkgActions(unittest.TestCase):
         # When/Then
         enpkg.execute([])
 
-    def test_install_simple(self):
-        entries = [
-            dummy_repository_package_factory("numpy", "1.6.1", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
-            dummy_repository_package_factory("numpy", "1.7.1", 2),
-        ]
-
-        r_actions = [
-            ('fetch_0', 'numpy-1.8.0-2.egg'),
-            ('install', 'numpy-1.8.0-2.egg')
-        ]
-
-        repository = repository_factory(entries)
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
-                          config=Configuration())
-            actions = enpkg._solver.install_actions("numpy")
-
-            self.assertEqual(actions, r_actions)
-
-    def test_install_no_egg_entry(self):
-        entries = [
-            dummy_repository_package_factory("numpy", "1.6.1", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
-        ]
-
-        repository = repository_factory(entries)
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
-                          config=Configuration())
-            with self.assertRaises(NoPackageFound):
-                enpkg._solver.install_actions("scipy")
-
-    def test_remove_actions(self):
-        repository = Repository()
-
-        with mkdtemp() as d:
-            makedirs(d)
-
-            for egg in [DUMMY_EGG]:
-                egginst = EggInst(egg, d)
-                egginst.install()
-
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
-                          config=Configuration())
-
-            actions = enpkg._solver.remove_actions("dummy")
-            self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
-
     def test_remove(self):
         repository = Repository()
 
@@ -198,57 +145,6 @@ class TestEnpkgActions(unittest.TestCase):
                 actions = enpkg._solver.remove_actions("dummy")
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
-
-    def test_remove_non_existing(self):
-        entries = [
-            dummy_repository_package_factory("numpy", "1.6.1", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
-        ]
-
-        repository = repository_factory(entries)
-
-        with mkdtemp() as d:
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
-                          config=Configuration())
-            with self.assertRaises(EnpkgError):
-                enpkg._solver.remove_actions("numpy")
-
-    def test_chained_override_update(self):
-        """ Test update to package with latest version in lower prefix
-        but an older version in primary prefix.
-        """
-        l0_egg = NOSE_1_3_0
-        l1_egg = NOSE_1_2_1
-
-        expected_actions = [
-            ('fetch_0', os.path.basename(l0_egg)),
-            ('remove', os.path.basename(l1_egg)),
-            ('install', os.path.basename(l0_egg)),
-        ]
-
-        entries = [
-            dummy_repository_package_factory(*split_eggname(os.path.basename(l0_egg))),
-        ]
-
-        repository = repository_factory(entries)
-
-        with mkdtemp() as d:
-            l0 = os.path.join(d, 'l0')
-            l1 = os.path.join(d, 'l1')
-            makedirs(l0)
-            makedirs(l1)
-
-            # Install latest version in l0
-            EggInst(l0_egg, l0).install()
-            # Install older version in l1
-            EggInst(l1_egg, l1).install()
-
-            repository = repository_factory(entries)
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[l1, l0],
-                          config=Configuration())
-
-            actions = enpkg._solver.install_actions("nose")
-            self.assertListEqual(actions, expected_actions)
 
     def test_abort(self):
         """Ensure calling abort does abort the current set of executed actions."""
