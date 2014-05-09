@@ -1,9 +1,44 @@
+from enstaller.utils import PY_VER
+
 import enstaller
 
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, UnavailablePackage
-from enstaller.repository import egg_name_to_name_version
+from enstaller.repository import (egg_name_to_name_version, Repository,
+                                  RepositoryPackageMetadata)
 from enstaller.resolve import Req, Resolve
+
+
+def create_enstaller_update_repository(repository, version):
+    """
+    Create a new repository with an additional fake package 'enstaller' at the
+    currently running version.
+
+    Parameters
+    ----------
+    repository: Repository
+        Current repository
+    version: str
+        Version of enstaller to inject
+
+    Returns
+    -------
+    """
+    name = "enstaller"
+    build = 1
+    key = "{0}-{1}-{2}.egg".format(name, version, build)
+    current_enstaller = RepositoryPackageMetadata(key, name, version, build,
+                                                  [], PY_VER, -1, "a" * 32,
+                                                  0.0, "free", True,
+                                                  "mocked_store")
+
+    new_repository = Repository()
+    for package in repository.iter_packages():
+        new_repository.add_package(package)
+    new_repository.add_package(current_enstaller)
+
+    return new_repository
+
 
 class Solver(object):
     def __init__(self, remote_repository, top_installed_repository):

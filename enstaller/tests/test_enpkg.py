@@ -21,7 +21,6 @@ from enstaller.enpkg import Enpkg
 from enstaller.enpkg import get_writable_local_dir
 from enstaller.errors import EnpkgError
 from enstaller.fetch import DownloadManager
-from enstaller.main import _create_enstaller_update_enpkg
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
                                   Repository, RepositoryPackageMetadata)
 from enstaller.utils import PY_VER
@@ -47,37 +46,6 @@ class TestMisc(unittest.TestCase):
             raise OSError("mocked makedirs")
         with mock.patch("os.makedirs", mocked_makedirs):
             self.assertNotEqual(get_writable_local_dir(config), "/foo")
-
-
-class TestEnstallerUpdateHack(unittest.TestCase):
-    def test_scenario1(self):
-        """Test that we upgrade when remote is more recent than local."""
-        remote_versions = [("4.6.1", 1)]
-        local_version = "4.6.0"
-
-        actions = self._compute_actions(remote_versions, local_version)
-        self.assertNotEqual(actions, [])
-
-    def test_scenario2(self):
-        """Test that we don't upgrade when remote is less recent than local."""
-        remote_versions = [("4.6.1", 1)]
-        local_version = "4.6.2"
-
-        actions = self._compute_actions(remote_versions, local_version)
-        self.assertEqual(actions, [])
-
-    def _compute_actions(self, remote_versions, local_version):
-        prefixes = [sys.prefix]
-
-        entries = [dummy_repository_package_factory("enstaller", version,
-                                                    build)
-                   for version, build in remote_versions]
-        repository = repository_factory(entries)
-
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
-                      config=Configuration())
-        new_enpkg = _create_enstaller_update_enpkg(enpkg, local_version)
-        return new_enpkg._solver._install_actions_enstaller(local_version)
 
 
 class TestEnpkg(unittest.TestCase):
