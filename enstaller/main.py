@@ -153,7 +153,7 @@ def imports_option(repository, pat=None):
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, remote_repository, installed_repository, pat=None):
+def search(enpkg, remote_repository, installed_repository, config, pat=None):
     """
     Print the packages that are available in the (remote) KVS.
     """
@@ -192,13 +192,13 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
     # if the user's search returns any packages that are not available
     # to them, attempt to authenticate and print out their subscriber
     # level
-    if enpkg.config.use_webservice and not(SUBSCRIBED):
+    if config.use_webservice and not(SUBSCRIBED):
         user = {}
         try:
-            user = authenticate(enpkg.config)
+            user = authenticate(config)
         except Exception as e:
             print(e.message)
-        print(subscription_message(enpkg.config, user))
+        print(subscription_message(config, user))
 
 
 def updates_check(remote_repository, installed_repository):
@@ -271,7 +271,7 @@ def epd_install_confirm():
     yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
     return yn.lower() in set(['y', 'yes'])
 
-def install_req(enpkg, req, opts):
+def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
     """
@@ -294,8 +294,8 @@ def install_req(enpkg, req, opts):
             print(install_time_string(enpkg._installed_repository,
                                       req.name))
     except UnavailablePackage as e:
-        username = enpkg.config.get_auth()[0]
-        user_info = authenticate(enpkg.config)
+        username = config.get_auth()[0]
+        user_info = authenticate(config)
         subscription = subscription_level(user_info)
         msg = textwrap.dedent("""\
             Error: cannot install {0!r}, as some requirements are not
@@ -317,15 +317,14 @@ def install_req(enpkg, req, opts):
             raise
 
 
-def update_enstaller(enpkg, opts):
+def update_enstaller(enpkg, autoupdate, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
     wants to update.  Return boolean indicating whether enstaller was
     updated.
     """
     updated = False
-    # exit early if autoupdate=False
-    if not enpkg.config.autoupdate:
+    if not autoupdate:
         return updated
     if not IS_RELEASED:
         return updated
@@ -664,13 +663,14 @@ def main(argv=None):
         return
 
     # Try to auto-update enstaller
-    if update_enstaller(enpkg, args):
+    if update_enstaller(enpkg, config.autoupdate, args):
         print("Enstaller has been updated.\n"
               "Please re-run your previous command.")
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._remote_repository, enpkg._installed_repository, pat)
+        search(enpkg, enpkg._remote_repository, enpkg._installed_repository,
+               config, pat)
         return
 
     if args.info:                                 # --info

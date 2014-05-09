@@ -27,25 +27,6 @@ from enstaller.config import Configuration
 logger = logging.getLogger(__name__)
 
 
-def get_writable_local_dir(config):
-    local_dir = config.repository_cache
-    if not os.access(local_dir, os.F_OK):
-        try:
-            os.makedirs(local_dir)
-            return local_dir
-        except (OSError, IOError):
-            pass
-    elif os.access(local_dir, os.W_OK):
-        return local_dir
-
-    logger.warn('Warning: Python prefix directory is not writeable '
-           'with current permissions:\n'
-           '    %s\n'
-           'Using a temporary cache for index and eggs.\n' %
-           config.prefix)
-    return tempfile.mkdtemp()
-
-
 class _ExecuteContext(object):
     def __init__(self, prefix, actions):
         self._actions = actions
@@ -82,11 +63,8 @@ class Enpkg(object):
     def __init__(self, remote_repository, download_manager,
                  prefixes=[sys.prefix], evt_mgr=None, config=None):
         if config is None:
-            self.config = Configuration._get_default_config()
-        else:
-            self.config = config
-
-        self.local_dir = get_writable_local_dir(self.config)
+            config = Configuration._get_default_config()
+        self.local_dir = config.repository_cache
 
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]

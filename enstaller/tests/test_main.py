@@ -41,9 +41,8 @@ from .common import (dummy_installed_package_factory,
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
-        config.autoupdate = False
         enpkg = Enpkg(mock.Mock(), mock.Mock(), config=config)
-        self.assertFalse(update_enstaller(enpkg, {}))
+        self.assertFalse(update_enstaller(enpkg, False, {}))
 
     def _test_update_enstaller(self, low_version, high_version):
         config = Configuration()
@@ -59,7 +58,7 @@ class TestEnstallerUpdate(unittest.TestCase):
                 enpkg = Enpkg(repository, mock.Mock(), config=config)
                 opts = mock.Mock()
                 opts.no_deps = False
-                return update_enstaller(enpkg, opts)
+                return update_enstaller(enpkg, config.autoupdate, opts)
 
     @mock.patch("enstaller.__version__", "4.6.3")
     @mock.patch("enstaller.main.IS_RELEASED", True)
@@ -337,7 +336,8 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository, enpkg._top_installed_repository)
+                search(enpkg, enpkg._remote_repository,
+                       enpkg._top_installed_repository, config)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_installed(self):
@@ -357,7 +357,8 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository, enpkg._installed_repository)
+                search(enpkg, enpkg._remote_repository,
+                       enpkg._installed_repository, config)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_pattern(self):
@@ -379,6 +380,7 @@ class TestSearch(unittest.TestCase):
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
                        enpkg._top_installed_repository,
+                       config,
                        pat=re.compile("dummy"))
                 self.assertMultiLineEqual(m.value, r_output)
 
@@ -391,7 +393,8 @@ class TestSearch(unittest.TestCase):
                 """.format(""))
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
-                       enpkg._top_installed_repository, pat=re.compile(".*"))
+                       enpkg._top_installed_repository, config,
+                       pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
     @unittest.expectedFailure
@@ -668,19 +671,21 @@ class TestInstallReq(unittest.TestCase):
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
                     remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
+            install_req(enpkg, Configuration(), "nose", FakeOptions())
             m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
                                   ('install', 'nose-1.3.0-1.egg')])
 
     def test_simple_non_existing_requirement(self):
+        config = Configuration()
         r_error_string = "No egg found for requirement 'nono_le_petit_robot'.\n"
         non_existing_requirement = "nono_le_petit_robot"
 
         with mock.patch("enstaller.main.Enpkg.execute") as mocked_execute:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [])
+            enpkg = _create_prefix_with_eggs(config, self.prefix, [])
             with mock_print() as mocked_print:
                 with self.assertRaises(SystemExit) as e:
-                    install_req(enpkg, non_existing_requirement, FakeOptions())
+                    install_req(enpkg, config, non_existing_requirement,
+                                FakeOptions())
                 self.assertEqual(exception_code(e), 1)
                 self.assertEqual(mocked_print.value, r_error_string)
             mocked_execute.assert_not_called()
@@ -692,11 +697,12 @@ class TestInstallReq(unittest.TestCase):
         remote_entries = [
             dummy_repository_package_factory("nose", "1.3.0", 1)
         ]
+        config = Configuration()
 
         with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix,
-                    installed_entries, remote_entries)
-            install_req(enpkg, "nose", FakeOptions())
+            enpkg = _create_prefix_with_eggs(config, self.prefix,
+                                             installed_entries, remote_entries)
+            install_req(enpkg, config, "nose", FakeOptions())
             m.assert_called_with([])
 
     @is_authenticated
@@ -712,7 +718,7 @@ class TestInstallReq(unittest.TestCase):
         with mock.patch("enstaller.main.Enpkg.execute"):
             with mock.patch("enstaller.config.subscription_message") as subscription_message:
                 with self.assertRaises(SystemExit) as e:
-                    install_req(enpkg, "nose", FakeOptions())
+                    install_req(enpkg, config, "nose", FakeOptions())
                 subscription_message.assert_called()
                 self.assertEqual(exception_code(e), 1)
 
@@ -741,7 +747,7 @@ class TestInstallReq(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with mock_print() as m:
                 with self.assertRaises(SystemExit):
-                    install_req(enpkg, "scipy", FakeOptions())
+                    install_req(enpkg, config, "scipy", FakeOptions())
                 self.assertMultiLineEqual(m.value, r_output)
 
     @mock.patch("sys.platform", "darwin")
@@ -758,7 +764,7 @@ class TestInstallReq(unittest.TestCase):
             m.side_effect = error
             enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(SystemExit):
-                install_req(enpkg, "nose", FakeOptions())
+                install_req(enpkg, config, "nose", FakeOptions())
 
     @mock.patch("sys.platform", "linux2")
     def test_os_error(self):
@@ -774,4 +780,4 @@ class TestInstallReq(unittest.TestCase):
             m.side_effect = error
             enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(OSError):
-                install_req(enpkg, "nose", FakeOptions())
+                install_req(enpkg, config, "nose", FakeOptions())

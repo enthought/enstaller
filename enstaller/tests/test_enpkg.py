@@ -18,7 +18,6 @@ from egginst.utils import makedirs
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
-from enstaller.enpkg import get_writable_local_dir
 from enstaller.errors import EnpkgError
 from enstaller.fetch import DownloadManager
 from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
@@ -28,24 +27,6 @@ from enstaller.utils import PY_VER
 from .common import (dummy_repository_package_factory,
                      mock_history_get_state_context, mock_url_fetcher,
                      repository_factory)
-
-
-class TestMisc(unittest.TestCase):
-    def test_writable_local_dir_writable(self):
-        config = Configuration()
-        with mkdtemp() as d:
-            config.repository_cache = d
-            self.assertEqual(get_writable_local_dir(config), d)
-
-    def test_writable_local_dir_non_writable(self):
-        fake_dir = "/some/dummy_dir/hopefully/doesnt/exists"
-
-        config = Configuration()
-        config.repository_cache = fake_dir
-        def mocked_makedirs(d):
-            raise OSError("mocked makedirs")
-        with mock.patch("os.makedirs", mocked_makedirs):
-            self.assertNotEqual(get_writable_local_dir(config), "/foo")
 
 
 class TestEnpkg(unittest.TestCase):
@@ -224,7 +205,7 @@ class TestEnpkgRevert(unittest.TestCase):
         package = RepositoryPackageMetadata.from_egg(egg)
         package.python = PY_VER
         repository.add_package(package)
-        downloader = DownloadManager(repository, config.local)
+        downloader = DownloadManager(repository, config.repository_cache)
 
         with mock_url_fetcher(downloader, open(egg)):
             enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,

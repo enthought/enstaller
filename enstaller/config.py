@@ -3,6 +3,7 @@
 from __future__ import absolute_import, print_function
 
 import base64
+import logging
 import json
 import re
 import urlparse
@@ -10,6 +11,7 @@ import os
 import sys
 import textwrap
 import platform
+import tempfile
 import urllib2
 import warnings
 
@@ -27,6 +29,9 @@ from enstaller.errors import (
 from enstaller.store.indexed import _INDEX_NAME
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
+
+
+logger = logging.getLogger(__name__)
 
 
 def _setup_keyring():
@@ -98,6 +103,23 @@ def add_url(filename, config, url):
         print("Already configured:", url)
         return
     prepend_url(filename, url)
+
+
+def _get_writable_local_dir(local_dir):
+    if not os.access(local_dir, os.F_OK):
+        try:
+            os.makedirs(local_dir)
+            return local_dir
+        except (OSError, IOError):
+            pass
+    elif os.access(local_dir, os.W_OK):
+        return local_dir
+
+    logger.warn('Warning: the following directory is not writeable '
+           'with current permissions:\n'
+           '    {0!r}\n'
+           'Using a temporary cache for index and eggs.\n'.format(local_dir))
+    return tempfile.mkdtemp()
 
 
 RC_TMPL = """\
@@ -244,7 +266,7 @@ class Configuration(object):
         """
         accepted_keys_as_is = set([
             "proxy", "noapp", "use_webservice", "autoupdate",
-            "prefix", "local", "IndexedRepos", "webservice_entry_point",
+            "prefix", "IndexedRepos", "webservice_entry_point",
             "repository_cache", "use_pypi", "api_url",
         ])
 
@@ -284,11 +306,10 @@ class Configuration(object):
         self.use_pypi = True
 
         self._prefix = sys.prefix
-        self._local = join(sys.prefix, 'LOCAL-REPO')
         self._IndexedRepos = []
         self._webservice_entry_point = fill_url(get_default_url())
 
-        self.repository_cache = self.local
+        self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
 
         self._username = None
         self._password = None
@@ -410,20 +431,21 @@ class Configuration(object):
             return False
 
     @property
-    def local(self):
-        return self._local
-
-    @local.setter
-    def local(self, value):
-        self._local = abs_expanduser(value)
-
-    @property
     def prefix(self):
         return self._prefix
 
     @prefix.setter
     def prefix(self, value):
         self._prefix = abs_expanduser(value)
+
+    @property
+    def repository_cache(self):
+        return self._repository_cache
+
+    @repository_cache.setter
+    def repository_cache(self, value):
+        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
+        return self._repository_cache
 
     @property
     def IndexedRepos(self):
@@ -669,7 +691,7 @@ def print_config(config, prefix):
     print("keyring backend: %s" % (_keyring_backend_name(),))
     print("settings:")
     print("    prefix = %s" % prefix)
-    print("    %s = %s" % ("local", config.local))
+    print("    %s = %s" % ("repository_cache", config.repository_cache))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))
     print("    IndexedRepos:", '(not used)' if config.use_webservice else '')

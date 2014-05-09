@@ -92,7 +92,7 @@ def legacy_index_parser(config):
     """
     Yield RepositoryPackageMetadata instances from the configured stores.
     """
-    fetcher = URLFetcher(config.local, config.get_auth())
+    fetcher = URLFetcher(config.repository_cache, config.get_auth())
     if config.use_webservice:
         return _webservice_index_parser(config.webservice_entry_point, fetcher,
                                         config.use_pypi)
