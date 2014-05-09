@@ -21,8 +21,6 @@ from enstaller.repository import (InstalledPackageMetadata, Repository,
 from enstaller.history import History
 from enstaller.solver import Solver
 
-from enstaller.config import Configuration
-
 
 logger = logging.getLogger(__name__)
 
@@ -61,11 +59,7 @@ class Enpkg(object):
         displayed on the console (which does not use the event manager at all).
     """
     def __init__(self, remote_repository, download_manager,
-                 prefixes=[sys.prefix], evt_mgr=None, config=None):
-        if config is None:
-            config = Configuration._get_default_config()
-        self.local_dir = config.repository_cache
-
+                 prefixes=[sys.prefix], evt_mgr=None):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
@@ -132,7 +126,9 @@ class Enpkg(object):
             name, version = egg_name_to_name_version(egg)
             package = self._remote_repository.find_package(name, version)
             extra_info = package.s3index_data
-            self._install_egg(os.path.join(self.local_dir, egg), extra_info)
+            self._install_egg(os.path.join(self._downloader.cache_directory,
+                                           egg),
+                              extra_info)
         else:
             raise Exception("unknown opcode: %r" % opcode)
 
@@ -210,7 +206,7 @@ class Enpkg(object):
         for egg in state - curr:
             if egg.startswith('enstaller'):
                 continue
-            if not isfile(join(self.local_dir, egg)):
+            if not isfile(join(self._downloader.cache_directory, egg)):
                 if self._remote_repository._has_package_key(egg):
                     res.append(('fetch_0', egg))
                 else:

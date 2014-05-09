@@ -640,8 +640,7 @@ def main(argv=None):
     downloader = DownloadManager(repository, config.repository_cache,
                                  config.get_auth(), evt_mgr)
 
-    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
-                  config=config)
+    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr)
 
     if args.dry_run:
         def print_actions(actions):

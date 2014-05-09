@@ -47,8 +47,7 @@ class TestEnpkg(unittest.TestCase):
 
         with mkdtemp() as d:
             prefixes = [d]
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
-                          config=Configuration())
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes)
             enpkg._install_egg(local_egg)
 
             remote_and_local_repository = Repository._from_prefixes(prefixes)
@@ -63,8 +62,11 @@ def _unconnected_enpkg_factory():
     Create an Enpkg instance which does not require an authenticated
     repository.
     """
+    config = Configuration()
     repository = Repository()
-    return Enpkg(repository, mock.Mock(), config=Configuration())
+    mocked_fetcher = mock.Mock()
+    mocked_fetcher.cache_directory = config.repository_cache
+    return Enpkg(repository, mocked_fetcher)
 
 class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
@@ -87,8 +89,7 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
-                          config=Configuration())
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d])
 
             with mock.patch("enstaller.enpkg.EggInst.remove") as mocked_remove:
                 actions = enpkg._solver.remove_actions("dummy")
@@ -109,11 +110,9 @@ class TestEnpkgActions(unittest.TestCase):
         ]
         repository = repository_factory(entries)
 
-        config = Configuration()
-
         with mock.patch("enstaller.enpkg.Enpkg._fetch"):
             with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
-                enpkg = Enpkg(repository, mock.Mock(), config=config)
+                enpkg = Enpkg(repository, mock.Mock())
                 actions = enpkg._solver.install_actions("numpy")
 
                 t = threading.Thread(target=lambda: enpkg.execute(actions))
@@ -139,8 +138,7 @@ class TestEnpkgExecute(unittest.TestCase):
         repository = Repository()
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
-                          config=Configuration())
+            enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
 
@@ -148,6 +146,8 @@ class TestEnpkgExecute(unittest.TestCase):
             mocked_fetch.assert_called_with(egg, force=fetch_opcode)
 
     def test_simple_install(self):
+        config = Configuration()
+
         egg = DUMMY_EGG
         base_egg = os.path.basename(egg)
         fetch_opcode = 0
@@ -160,15 +160,17 @@ class TestEnpkgExecute(unittest.TestCase):
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
             with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
-                enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
-                              config=Configuration())
+                mocked_fetcher = mock.Mock()
+                mocked_fetcher.cache_directory = config.repository_cache
+                enpkg = Enpkg(repository, mocked_fetcher,
+                              prefixes=self.prefixes)
                 actions = enpkg._solver.install_actions("dummy")
                 enpkg.execute(actions)
 
                 mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
-                mocked_install.assert_called_with(os.path.join(enpkg.local_dir,
-                                                               base_egg),
-                                                  entries[0].s3index_data)
+                mocked_install.assert_called_with(
+                    os.path.join(config.repository_cache, base_egg),
+                    entries[0].s3index_data)
 
 class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):
@@ -181,8 +183,7 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_empty_history(self):
         repository = Repository()
 
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
-                      config=Configuration())
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
         enpkg.revert_actions(0)
 
         with self.assertRaises(EnpkgError):
@@ -191,8 +192,7 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_invalid_argument(self):
         repository = Repository()
 
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
-                      config=Configuration())
+        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
 
@@ -208,8 +208,7 @@ class TestEnpkgRevert(unittest.TestCase):
         downloader = DownloadManager(repository, config.repository_cache)
 
         with mock_url_fetcher(downloader, open(egg)):
-            enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
-                          config=config)
+            enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
             actions = enpkg._solver.install_actions("dummy")
             enpkg.execute(actions)
 

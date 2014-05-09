@@ -90,16 +90,16 @@ def checked_content(filename, expected_md5):
 
 
 class DownloadManager(object):
-    def __init__(self, repository, local_dir, auth=None, evt_mgr=None):
+    def __init__(self, repository, cache_directory, auth=None, evt_mgr=None):
         self._repository = repository
-        self._fetcher = URLFetcher(local_dir, auth)
-        self.local_dir = local_dir
+        self._fetcher = URLFetcher(cache_directory, auth)
+        self.cache_directory = cache_directory
         self.evt_mgr = evt_mgr
 
-        makedirs(self.local_dir)
+        makedirs(self.cache_directory)
 
     def _path(self, fn):
-        return join(self.local_dir, fn)
+        return join(self.cache_directory, fn)
 
     def _fetch(self, package_metadata, execution_aborted=None):
         """ Fetch the given key.

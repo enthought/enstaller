@@ -40,8 +40,7 @@ from .common import (dummy_installed_package_factory,
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
-        config = Configuration()
-        enpkg = Enpkg(mock.Mock(), mock.Mock(), config=config)
+        enpkg = Enpkg(mock.Mock(), mock.Mock())
         self.assertFalse(update_enstaller(enpkg, False, {}))
 
     def _test_update_enstaller(self, low_version, high_version):
@@ -55,7 +54,7 @@ class TestEnstallerUpdate(unittest.TestCase):
 
         with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(repository, mock.Mock(), config=config)
+                enpkg = Enpkg(repository, mock.Mock())
                 opts = mock.Mock()
                 opts.no_deps = False
                 return update_enstaller(enpkg, config.autoupdate, opts)
@@ -232,7 +231,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
 
     repository = repository_factory(remote_entries)
 
-    enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix], config=config)
+    enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix])
     for package in installed_entries:
         package.store_location = prefix
         enpkg._top_installed_repository.add_package(package)
