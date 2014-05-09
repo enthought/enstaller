@@ -282,7 +282,7 @@ def install_req(enpkg, req, opts):
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
-        actions = enpkg.install_actions(
+        actions = enpkg._solver.install_actions(
                 req,
                 mode=mode,
                 force=opts.force, forceall=opts.forceall)
@@ -354,7 +354,7 @@ def update_enstaller(enpkg, opts):
     # fake local repo to take into account our locally
     # installed enstaller
     new_enpkg = _create_enstaller_update_enpkg(enpkg)
-    if len(new_enpkg._install_actions_enstaller()) > 0:
+    if len(new_enpkg._solver._install_actions_enstaller()) > 0:
         yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
         if yn in set(['y', 'Y', '', None]):
             install_req(enpkg, 'enstaller', opts)

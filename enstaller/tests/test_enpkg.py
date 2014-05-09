@@ -79,7 +79,7 @@ class TestEnstallerUpdateHack(unittest.TestCase):
         enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes,
                       config=Configuration())
         new_enpkg = _create_enstaller_update_enpkg(enpkg, local_version)
-        return new_enpkg._install_actions_enstaller(local_version)
+        return new_enpkg._solver._install_actions_enstaller(local_version)
 
 
 class TestEnpkg(unittest.TestCase):
@@ -147,7 +147,7 @@ class TestEnpkgActions(unittest.TestCase):
         with mkdtemp() as d:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
-            actions = enpkg.install_actions("numpy")
+            actions = enpkg._solver.install_actions("numpy")
 
             self.assertEqual(actions, r_actions)
 
@@ -163,7 +163,7 @@ class TestEnpkgActions(unittest.TestCase):
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
             with self.assertRaises(NoPackageFound):
-                enpkg.install_actions("scipy")
+                enpkg._solver.install_actions("scipy")
 
     def test_remove_actions(self):
         repository = Repository()
@@ -178,7 +178,7 @@ class TestEnpkgActions(unittest.TestCase):
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
 
-            actions = enpkg.remove_actions("dummy")
+            actions = enpkg._solver.remove_actions("dummy")
             self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
 
     def test_remove(self):
@@ -195,7 +195,7 @@ class TestEnpkgActions(unittest.TestCase):
                           config=Configuration())
 
             with mock.patch("enstaller.enpkg.EggInst.remove") as mocked_remove:
-                actions = enpkg.remove_actions("dummy")
+                actions = enpkg._solver.remove_actions("dummy")
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
 
@@ -211,7 +211,7 @@ class TestEnpkgActions(unittest.TestCase):
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d],
                           config=Configuration())
             with self.assertRaises(EnpkgError):
-                enpkg.remove_actions("numpy")
+                enpkg._solver.remove_actions("numpy")
 
     def test_chained_override_update(self):
         """ Test update to package with latest version in lower prefix
@@ -247,7 +247,7 @@ class TestEnpkgActions(unittest.TestCase):
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[l1, l0],
                           config=Configuration())
 
-            actions = enpkg.install_actions("nose")
+            actions = enpkg._solver.install_actions("nose")
             self.assertListEqual(actions, expected_actions)
 
     def test_abort(self):
@@ -269,7 +269,7 @@ class TestEnpkgActions(unittest.TestCase):
         with mock.patch("enstaller.enpkg.Enpkg._fetch"):
             with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
                 enpkg = Enpkg(repository, mock.Mock(), config=config)
-                actions = enpkg.install_actions("numpy")
+                actions = enpkg._solver.install_actions("numpy")
 
                 t = threading.Thread(target=lambda: enpkg.execute(actions))
                 t.start()
@@ -317,7 +317,7 @@ class TestEnpkgExecute(unittest.TestCase):
             with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
                 enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes,
                               config=Configuration())
-                actions = enpkg.install_actions("dummy")
+                actions = enpkg._solver.install_actions("dummy")
                 enpkg.execute(actions)
 
                 mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
@@ -365,7 +365,7 @@ class TestEnpkgRevert(unittest.TestCase):
         with mock_url_fetcher(downloader, open(egg)):
             enpkg = Enpkg(repository, downloader, prefixes=self.prefixes,
                           config=config)
-            actions = enpkg.install_actions("dummy")
+            actions = enpkg._solver.install_actions("dummy")
             enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
