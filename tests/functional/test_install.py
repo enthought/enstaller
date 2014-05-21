@@ -120,6 +120,5 @@ class TestEnstallerInstallActions(unittest.TestCase):
 
     @fake_configuration_and_auth
     def test_remove(self):
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
+        with mock.patch("enstaller.main.Enpkg.execute"):
             main(["--remove", "numpy"])
-            self.assertTrue(m.called)
