@@ -1,6 +1,7 @@
 import contextlib
 import json
 import sys
+import urllib
 import urllib2
 import urlparse
 
@@ -78,7 +79,7 @@ def _file_uri_parse_to_path(p):
     "c:/server.log"
     """
     if sys.platform == "win32" and p.path.startswith("/"):
-        return p.path[1:]
+        return urllib.url2pathname(p.path[1:])
     else:
         return p.path
 
