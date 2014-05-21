@@ -5,7 +5,6 @@ import logging
 import os
 import threading
 import sys
-import tempfile
 
 from uuid import uuid4
 from os.path import isfile, join
@@ -49,6 +48,8 @@ class Enpkg(object):
     repository: Repository
         This is the remote repository which enpkg will use to resolve
         dependencies.
+    download_manager: DownloadManager
+        The download manager used to fetch eggs.
     prefixes: list of path -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
