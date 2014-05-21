@@ -12,6 +12,7 @@ from egginst.utils import compute_md5
 from egginst.testing_utils import slow
 from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
 
+from enstaller.compat import path_to_uri
 from enstaller.errors import MissingPackage
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
@@ -133,8 +134,8 @@ class TestRepositoryPackage(unittest.TestCase):
         # Then
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.store_location, "file://{0}/".format(_EGGINST_COMMON_DATA))
-        self.assertEqual(metadata.source_url, "file://{0}".format(path))
+        self.assertEqual(metadata.store_location, "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
+        self.assertEqual(metadata.source_url, path_to_uri(path))
 
 
 class TestInstalledPackage(unittest.TestCase):
@@ -200,7 +201,7 @@ class TestRepository(unittest.TestCase):
 
         self.assertEqual(metadata.available, True)
         self.assertEqual(metadata.store_location,
-                         "file://{0}/".format(_EGGINST_COMMON_DATA))
+                         "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
 
         self.assertEqual(metadata.size, os.path.getsize(path))
         self.assertEqual(metadata.md5, compute_md5(path))
