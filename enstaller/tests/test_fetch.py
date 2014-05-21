@@ -168,7 +168,7 @@ class TestDownloadManager(unittest.TestCase):
 
         # When
         fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path)):
+        with mock_url_fetcher(fetch_api, open(path, "rb")):
             fetch_api.fetch_egg(filename)
 
         # Then
@@ -224,7 +224,7 @@ class TestDownloadManager(unittest.TestCase):
 
         # When
         fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path)):
+        with mock_url_fetcher(fetch_api, open(path, "rb")):
             fetch_api.fetch_egg(egg)
 
         # Then
@@ -242,7 +242,7 @@ class TestDownloadManager(unittest.TestCase):
 
         # When
         fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path)):
+        with mock_url_fetcher(fetch_api, open(path, "rb")):
             fetch_api.fetch_egg(egg)
 
         # Then
@@ -262,7 +262,7 @@ class TestDownloadManager(unittest.TestCase):
 
         # When
         fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path)):
+        with mock_url_fetcher(fetch_api, open(path, "rb")):
             fetch_api.fetch_egg(egg)
 
         # Then
@@ -276,7 +276,7 @@ class TestDownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        with mock_url_fetcher(fetch_api, open(path)):
+        with mock_url_fetcher(fetch_api, open(path, "rb")):
             fetch_api.fetch_egg(egg, force=True)
 
         # Then
@@ -293,7 +293,7 @@ class TestDownloadManager(unittest.TestCase):
 
             # When
             fetch_api = DownloadManager(repository, self.tempdir, evt_mgr=event_manager)
-            with mock_url_fetcher(fetch_api, open(path)):
+            with mock_url_fetcher(fetch_api, open(path, "rb")):
                 fetch_api.fetch_egg(egg)
 
             # Then
@@ -312,7 +312,7 @@ class TestDownloadManager(unittest.TestCase):
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
             fetch_api = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(fetch_api, open(path)):
+            with mock_url_fetcher(fetch_api, open(path, "rb")):
                 fetch_api.fetch_egg(egg)
 
             # Then
