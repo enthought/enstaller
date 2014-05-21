@@ -78,7 +78,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         with mock_urlfetcher():
-            fetcher = URLFetcher(config.local, config.get_auth())
+            fetcher = URLFetcher(config.repository_cache, config.get_auth())
             packages = list(
                 _webservice_index_parser(config.webservice_entry_point,
                                          fetcher, config.use_pypi))
@@ -95,7 +95,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         with mock_urlfetcher():
-            fetcher = URLFetcher(config.local, config.get_auth())
+            fetcher = URLFetcher(config.repository_cache, config.get_auth())
             packages = list(_old_legacy_index_parser(urls, fetcher))
 
         # Then
@@ -126,7 +126,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         with mock_urlfetcher():
-            fetcher = URLFetcher(config.local, config.get_auth())
+            fetcher = URLFetcher(config.repository_cache, config.get_auth())
             packages = list(_old_legacy_index_parser(urls, fetcher))
 
         # Then

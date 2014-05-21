@@ -598,7 +598,7 @@ class TestConfigurationPrint(unittest.TestCase):
             keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
-                local = {{local}}
+                repository_cache = {{repository_cache}}
                 noapp = False
                 proxy = None
                 IndexedRepos: (not used)
@@ -610,8 +610,9 @@ class TestConfigurationPrint(unittest.TestCase):
 
         config = Configuration()
         prefix = config.prefix
-        local = os.path.join(prefix, "LOCAL-REPO")
-        r_output = output_template.format(prefix=prefix, local=local)
+        repository_cache = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix,
+                                          repository_cache=repository_cache)
 
         with mock_print() as m:
             print_config(config, config.prefix)
@@ -630,7 +631,7 @@ class TestConfigurationPrint(unittest.TestCase):
             keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
-                local = {{local}}
+                repository_cache = {{repository_cache}}
                 noapp = False
                 proxy = None
                 IndexedRepos: (not used)
@@ -648,8 +649,9 @@ class TestConfigurationPrint(unittest.TestCase):
             os.unlink(fp.name)
 
         prefix = config.prefix
-        local = os.path.join(prefix, "LOCAL-REPO")
-        r_output = output_template.format(prefix=prefix, config_file=fp.name, local=local)
+        repository_cache = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix, config_file=fp.name,
+                                          repository_cache=repository_cache)
 
         with mock_print() as m:
             print_config(config, config.prefix)
@@ -680,13 +682,12 @@ class TestConfiguration(unittest.TestCase):
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
-    def test_set_local(self):
+    def test_set_repository_cache(self):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.local = os.path.normpath("~/.env/LOCAL-REPO")
-
-        self.assertEqual(config.local, os.path.join(homedir, ".env", "LOCAL-REPO"))
+        config.repository_cache = "~/.env/LOCAL-REPO"
+        self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
 
     def test_set_epd_auth(self):
         config = Configuration()
@@ -700,6 +701,24 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.EPD_auth = FAKE_USER
+
+class TestMisc(unittest.TestCase):
+    def test_writable_repository_cache(self):
+        config = Configuration()
+        with mkdtemp() as d:
+            config.repository_cache = d
+            self.assertEqual(config.repository_cache, d)
+
+    def test_non_writable_repository_cache(self):
+        fake_dir = "/some/dummy_dir/hopefully/doesnt/exists"
+
+        config = Configuration()
+        def mocked_makedirs(d):
+            raise OSError("mocked makedirs")
+        with mock.patch("os.makedirs", mocked_makedirs):
+            config.repository_cache = fake_dir
+            self.assertNotEqual(config.repository_cache, fake_dir)
+
 
 class TestPrependUrl(unittest.TestCase):
     def setUp(self):

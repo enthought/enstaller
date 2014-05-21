@@ -23,10 +23,11 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile, join
 
-from enstaller import __version__ as __ENSTALLER_VERSION__
 from enstaller._version import is_released as IS_RELEASED
 from egginst.utils import bin_dir_name, rel_site_packages
-from enstaller import __version__
+
+import enstaller
+
 from enstaller.errors import (InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage,
                               EXIT_ABORTED)
@@ -40,11 +41,12 @@ from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
 from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import PY_VER, abs_expanduser, exit_if_sudo_on_venv
+from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
 
 from enstaller.enpkg import Enpkg
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
+from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.history import History
@@ -151,7 +153,7 @@ def imports_option(repository, pat=None):
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, remote_repository, installed_repository, pat=None):
+def search(enpkg, remote_repository, installed_repository, config, pat=None):
     """
     Print the packages that are available in the (remote) KVS.
     """
@@ -190,13 +192,13 @@ def search(enpkg, remote_repository, installed_repository, pat=None):
     # if the user's search returns any packages that are not available
     # to them, attempt to authenticate and print out their subscriber
     # level
-    if enpkg.config.use_webservice and not(SUBSCRIBED):
+    if config.use_webservice and not(SUBSCRIBED):
         user = {}
         try:
-            user = authenticate(enpkg.config)
+            user = authenticate(config)
         except Exception as e:
             print(e.message)
-        print(subscription_message(enpkg.config, user))
+        print(subscription_message(config, user))
 
 
 def updates_check(remote_repository, installed_repository):
@@ -269,7 +271,7 @@ def epd_install_confirm():
     yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
     return yn.lower() in set(['y', 'yes'])
 
-def install_req(enpkg, req, opts):
+def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
     """
@@ -282,7 +284,7 @@ def install_req(enpkg, req, opts):
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
-        actions = enpkg.install_actions(
+        actions = enpkg._solver.install_actions(
                 req,
                 mode=mode,
                 force=opts.force, forceall=opts.forceall)
@@ -292,8 +294,8 @@ def install_req(enpkg, req, opts):
             print(install_time_string(enpkg._installed_repository,
                                       req.name))
     except UnavailablePackage as e:
-        username = enpkg.config.get_auth()[0]
-        user_info = authenticate(enpkg.config)
+        username = config.get_auth()[0]
+        user_info = authenticate(config)
         subscription = subscription_level(user_info)
         msg = textwrap.dedent("""\
             Error: cannot install {0!r}, as some requirements are not
@@ -315,46 +317,21 @@ def install_req(enpkg, req, opts):
             raise
 
 
-def _create_enstaller_update_enpkg(enpkg, version=None):
-    if version is None:
-        version = __ENSTALLER_VERSION__
-
-    name = "enstaller"
-    build = 1
-    key = "{0}-{1}-{2}.egg".format(name, version, build)
-    current_enstaller = RepositoryPackageMetadata(key, name, version, build,
-                                                  [], PY_VER, -1, "a" * 32, 0.0,
-                                                  "free", True, "mocked_store")
-
-    repository = Repository()
-    for package in enpkg._remote_repository.iter_packages():
-        repository.add_package(package)
-    repository.add_package(current_enstaller)
-
-    prefixes = enpkg.prefixes
-    evt_mgr = enpkg.evt_mgr
-
-    return Enpkg(repository, download_manager=enpkg._downloader,
-                 prefixes=prefixes, evt_mgr=evt_mgr, config=enpkg.config)
-
-
-def update_enstaller(enpkg, opts):
+def update_enstaller(enpkg, autoupdate, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
     wants to update.  Return boolean indicating whether enstaller was
     updated.
     """
     updated = False
-    # exit early if autoupdate=False
-    if not enpkg.config.autoupdate:
+    if not autoupdate:
         return updated
     if not IS_RELEASED:
         return updated
-    # Ugly: we create a new enpkg class to merge a
-    # fake local repo to take into account our locally
-    # installed enstaller
-    new_enpkg = _create_enstaller_update_enpkg(enpkg)
-    if len(new_enpkg._install_actions_enstaller()) > 0:
+    new_repository = create_enstaller_update_repository(
+        enpkg._remote_repository, enstaller.__version__)
+    solver = Solver(new_repository, enpkg._top_installed_repository)
+    if len(solver._install_actions_enstaller()) > 0:
         yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
         if yn in set(['y', 'Y', '', None]):
             install_req(enpkg, 'enstaller', opts)
@@ -518,7 +495,7 @@ def main(argv=None):
                    "configuration file .enstaller4rc")
     p.add_argument('-v', "--verbose", action="store_true")
     p.add_argument('--version', action="version",
-                   version='enstaller version: ' + __version__)
+                   version='enstaller version: ' + enstaller.__version__)
     p.add_argument("--whats-new", action="store_true",
                    help="display available updates for installed packages")
 
@@ -663,8 +640,7 @@ def main(argv=None):
     downloader = DownloadManager(repository, config.repository_cache,
                                  config.get_auth(), evt_mgr)
 
-    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr,
-                  config=config)
+    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr)
 
     if args.dry_run:
         def print_actions(actions):
@@ -686,13 +662,14 @@ def main(argv=None):
         return
 
     # Try to auto-update enstaller
-    if update_enstaller(enpkg, args):
+    if update_enstaller(enpkg, config.autoupdate, args):
         print("Enstaller has been updated.\n"
               "Please re-run your previous command.")
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._remote_repository, enpkg._installed_repository, pat)
+        search(enpkg, enpkg._remote_repository, enpkg._installed_repository,
+               config, pat)
         return
 
     if args.info:                                 # --info
