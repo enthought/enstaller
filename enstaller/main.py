@@ -28,9 +28,8 @@ from egginst.utils import bin_dir_name, rel_site_packages
 
 import enstaller
 
-from enstaller.errors import (InvalidPythonPathConfiguration,
-                              NoPackageFound, UnavailablePackage,
-                              EXIT_ABORTED)
+from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
+                              NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
                               authenticate, configuration_read_search_order,
@@ -745,7 +744,10 @@ def main(argv=None):
 
     for req in reqs:
         if args.remove:                               # --remove
-            enpkg.execute(enpkg.remove_actions(req))
+            try:
+                enpkg.execute(enpkg._solver.remove_actions(req))
+            except EnpkgError as e:
+                print(e.message)
         else:
             install_req(enpkg, req, args)             # install (default)
 
