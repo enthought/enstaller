@@ -78,10 +78,10 @@ def _file_uri_parse_to_path(p):
     >>> _file_uri_parse_to_path(urlparse("file:///c:/server.log"))
     "c:/server.log"
     """
+    path = p.path
     if sys.platform == "win32" and p.path.startswith("/"):
-        return urllib.url2pathname(p.path[1:])
-    else:
-        return p.path
+        path = path[1:]
+    return urllib.url2pathname(path)
 
 def _old_legacy_index_parser(repository_urls, fetcher):
     for url in repository_urls:
