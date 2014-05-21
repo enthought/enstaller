@@ -745,7 +745,7 @@ def main(argv=None):
 
     for req in reqs:
         if args.remove:                               # --remove
-            enpkg.execute(enpkg.remove_actions(req))
+            enpkg.execute(enpkg._solver.remove_actions(req))
         else:
             install_req(enpkg, req, args)             # install (default)
 
