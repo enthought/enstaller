@@ -239,7 +239,7 @@ def whats_new(remote_repository, installed_repository):
                              update['update'].full_version))
 
 
-def update_all(enpkg, args):
+def update_all(enpkg, config, args):
     updates, EPD_update = updates_check(enpkg._remote_repository,
                                         enpkg._installed_repository)
     if not (updates or EPD_update):
@@ -260,7 +260,7 @@ def update_all(enpkg, args):
                              VB_FMT % update['current'],
                              update['update'].full_version))
             for update in updates:
-                install_req(enpkg, update['current']['name'], args)
+                install_req(enpkg, config, update['current']['name'], args)
 
 def epd_install_confirm():
     print("Warning: 'enpkg epd' will downgrade any packages that are currently")
@@ -316,7 +316,7 @@ def install_req(enpkg, config, req, opts):
             raise
 
 
-def update_enstaller(enpkg, autoupdate, opts):
+def update_enstaller(enpkg, config, autoupdate, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
     wants to update.  Return boolean indicating whether enstaller was
@@ -333,7 +333,7 @@ def update_enstaller(enpkg, autoupdate, opts):
     if len(solver._install_actions_enstaller()) > 0:
         yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
         if yn in set(['y', 'Y', '', None]):
-            install_req(enpkg, 'enstaller', opts)
+            install_req(enpkg, config, 'enstaller', opts)
             updated = True
     return updated
 
@@ -416,14 +416,14 @@ def repository_factory(config):
     return repository
 
 
-def install_from_requirements(enpkg, args):
+def install_from_requirements(enpkg, config, args):
     """
     Install a set of requirements specified in the requirements file.
     """
     with open(args.requirements, "r") as fp:
         for req in fp:
             args.no_deps = True
-            install_req(enpkg, req, args)
+            install_req(enpkg, config, req, args)
 
 
 def main(argv=None):
@@ -661,7 +661,7 @@ def main(argv=None):
         return
 
     # Try to auto-update enstaller
-    if update_enstaller(enpkg, config.autoupdate, args):
+    if update_enstaller(enpkg, config, config.autoupdate, args):
         print("Enstaller has been updated.\n"
               "Please re-run your previous command.")
         return
@@ -683,11 +683,11 @@ def main(argv=None):
         return
 
     if args.update_all:                           # --update-all
-        update_all(enpkg, args)
+        update_all(enpkg, config, args)
         return
 
     if args.requirements:
-        install_from_requirements(enpkg, args)
+        install_from_requirements(enpkg, config, args)
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
@@ -749,7 +749,7 @@ def main(argv=None):
             except EnpkgError as e:
                 print(e.message)
         else:
-            install_req(enpkg, req, args)             # install (default)
+            install_req(enpkg, config, req, args)
 
 def main_noexc(argv=None):
     if "ENSTALLER_DEBUG" in os.environ:
