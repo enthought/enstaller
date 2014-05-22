@@ -22,9 +22,10 @@ import mock
 from enstaller.main import main
 from enstaller.tests.common import mock_print
 
-from .common import (fake_configuration_and_auth, enstaller_version,
-                     authenticated_config, raw_input_always_yes,
-                     remote_enstaller_available)
+from .common import (fake_empty_install_actions, fake_configuration_and_auth,
+                     enstaller_version, authenticated_config,
+                     raw_input_always_yes, remote_enstaller_available,
+                     mock_enpkg_class)
 
 class TestEnstallerMainActions(unittest.TestCase):
     def setUp(self):
@@ -96,11 +97,16 @@ class TestEnstallerMainActions(unittest.TestCase):
 
 class TestEnstallerInstallActions(unittest.TestCase):
     @fake_configuration_and_auth
+    @fake_empty_install_actions
+    def test_install_numpy(self):
+        main(["numpy"])
+
+    @fake_configuration_and_auth
+    @fake_empty_install_actions
     def test_install_epd(self):
         with mock.patch("enstaller.main.epd_install_confirm") as m:
-            with mock.patch("enstaller.main.install_req"):
-                main(["epd"])
-            self.assertTrue(m.called)
+            main(["epd"])
+        self.assertTrue(m.called)
 
     @fake_configuration_and_auth
     def test_remove_epd_fails(self):

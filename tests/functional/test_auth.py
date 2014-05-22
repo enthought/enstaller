@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import contextlib
 import os.path
 import shutil
 import sys
@@ -14,20 +15,27 @@ else:
 import mock
 
 from enstaller.main import main_noexc
-from enstaller.config import _encode_auth, _set_keyring_password, Configuration
+from enstaller.config import _encode_auth, _set_keyring_password
 
 from enstaller.tests.common import (
     fake_keyring, mock_print, fail_authenticate, mock_input_auth,
     succeed_authenticate)
 
 from .common import (
-    mock_enpkg_class, use_given_config_context, without_any_configuration)
+    empty_index, mock_enpkg_class, use_given_config_context,
+    without_any_configuration)
 
 FAKE_USER = "nono"
 FAKE_PASSWORD = "le petit robot"
 FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
 
 class TestAuth(unittest.TestCase):
+    @contextlib.contextmanager
+    def assertSuccessfulExit(self):
+        with self.assertRaises(SystemExit) as e:
+            yield e
+        self.assertEqual(e.exception.code, 0)
+
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.config = os.path.join(self.d, ".enstaller4rc")
@@ -37,9 +45,8 @@ class TestAuth(unittest.TestCase):
 
     def _run_main_with_dummy_req(self):
         with use_given_config_context(self.config):
-            with self.assertRaises(SystemExit) as e:
+            with self.assertSuccessfulExit():
                 main_noexc(["dummy_requirement"])
-                self.assertEqual(e.exception.code, 0)
 
     def test_auth_requested_without_config(self):
         """
@@ -103,6 +110,7 @@ class TestAuth(unittest.TestCase):
         self.assertMultiLineEqual(m.value, r_output)
 
     @succeed_authenticate
+    @empty_index
     @mock_enpkg_class
     @fake_keyring
     def test_no_keyring_to_no_keyring_conversion(self):
@@ -121,6 +129,7 @@ class TestAuth(unittest.TestCase):
         with open(self.config) as fp:
             self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
 
+    @empty_index
     @succeed_authenticate
     @mock_enpkg_class
     @fake_keyring

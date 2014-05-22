@@ -45,6 +45,22 @@ def mock_enpkg_class(f):
     return dec1(dec2(f))
 
 
+def fake_empty_install_actions(f):
+    @functools.wraps(f)
+    def wrapper(*a, **kw):
+        with mock.patch("enstaller.enpkg.Solver.install_actions", return_value=[]):
+            return f(*a, **kw)
+    return wrapper
+
+
+def empty_index(f):
+    @functools.wraps(f)
+    def wrapper(*a, **kw):
+        with mock.patch("enstaller.main.legacy_index_parser", return_value=[]):
+            return f(*a, **kw)
+    return wrapper
+
+
 @contextlib.contextmanager
 def set_env_vars(**kw):
     old_env = os.environ.copy()
