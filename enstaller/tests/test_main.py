@@ -40,8 +40,10 @@ from .common import (dummy_installed_package_factory,
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
+        config = Configuration()
+
         enpkg = Enpkg(mock.Mock(), mock.Mock())
-        self.assertFalse(update_enstaller(enpkg, False, {}))
+        self.assertFalse(update_enstaller(enpkg, config, False, {}))
 
     def _test_update_enstaller(self, low_version, high_version):
         config = Configuration()
@@ -57,7 +59,7 @@ class TestEnstallerUpdate(unittest.TestCase):
                 enpkg = Enpkg(repository, mock.Mock())
                 opts = mock.Mock()
                 opts.no_deps = False
-                return update_enstaller(enpkg, config.autoupdate, opts)
+                return update_enstaller(enpkg, config, config.autoupdate, opts)
 
     @mock.patch("enstaller.__version__", "4.6.3")
     @mock.patch("enstaller.main.IS_RELEASED", True)
@@ -576,6 +578,7 @@ class TestUpdatesCheck(unittest.TestCase):
 
     def test_update_all_no_updates(self):
         r_output = "No new version of any installed package is available\n"
+        config = Configuration()
 
         installed_entries = [
             dummy_installed_package_factory("numpy", "1.7.1", 2),
@@ -587,10 +590,10 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d,
+            enpkg = _create_prefix_with_eggs(config, d,
                     installed_entries, remote_entries)
             with mock_print() as m:
-                update_all(enpkg, FakeOptions())
+                update_all(enpkg, config, FakeOptions())
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_update_all_no_epd_updates(self):
@@ -600,6 +603,7 @@ class TestUpdatesCheck(unittest.TestCase):
         ============================================================
         scipy                0.13.0-1             0.13.2-1
         """)
+        config = Configuration()
 
         installed_entries = [
             dummy_installed_package_factory("numpy", "1.7.1", 2),
@@ -613,10 +617,10 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, remote_entries)
+            enpkg = _create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.main.install_req") as mocked_install_req:
                 with mock_print() as m:
-                    update_all(enpkg, FakeOptions())
+                    update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
 
@@ -628,6 +632,7 @@ class TestUpdatesCheck(unittest.TestCase):
         ============================================================
         scipy                0.13.0-1             0.13.2-1
         """)
+        config = Configuration()
 
         installed_entries = [
             dummy_installed_package_factory("numpy", "1.7.1", 2),
@@ -641,10 +646,10 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries, remote_entries)
+            enpkg = _create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.main.install_req") as mocked_install_req:
                 with mock_print() as m:
-                    update_all(enpkg, FakeOptions())
+                    update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
 
