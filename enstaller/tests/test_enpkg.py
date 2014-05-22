@@ -207,7 +207,7 @@ class TestEnpkgRevert(unittest.TestCase):
         repository.add_package(package)
         downloader = DownloadManager(repository, config.repository_cache)
 
-        with mock_url_fetcher(downloader, open(egg)):
+        with mock_url_fetcher(downloader, open(egg, "rb")):
             enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
             actions = enpkg._solver.install_actions("dummy")
             enpkg.execute(actions)

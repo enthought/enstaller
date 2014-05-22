@@ -17,6 +17,7 @@ import mock
 from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
 
+from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.legacy_stores import URLFetcher
 from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_parser
@@ -122,7 +123,8 @@ class TestLegacyStores(unittest.TestCase):
             fp.write(json.dumps(fake_index))
 
         config = Configuration()
-        urls = ["file://{0}/".format(self.tempdir)]
+
+        urls = ["{0}/".format(path_to_uri(self.tempdir))]
 
         # When
         with mock_urlfetcher():
