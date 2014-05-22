@@ -411,7 +411,7 @@ class EggInst(object):
                     continue
                 yield line
 
-    def install_iterator(self):
+    def install_iterator(self, extra_info=None):
         """
         Create an iterator that will iterate over each archive to be extracted.
 
@@ -446,7 +446,7 @@ class EggInst(object):
                     n += self._extract(arcname, is_custom_egg)
                 yield n
 
-        self.post_extract()
+        self.post_extract(extra_info)
 
     def _extract_egg_with_legacy_egg_info(self, name, is_custom_egg):
         zip_info = self.z.getinfo(name)
@@ -587,6 +587,35 @@ def print_installed(prefix=sys.prefix):
         print(fmt % name_version_fn(fn))
 
 
+def install_egg_cli(path, prefix, noapp=False, extra_info=None):
+    """
+    Simple wrapper to install an egg using default egginst progress bar.
+    """
+    installer = EggInst(path, prefix, False, None, noapp)
+
+    progress = console_progress_manager_factory("installing egg", installer.fn,
+                                                size=installer.installed_size)
+    with progress:
+        for currently_extracted_size in installer.install_iterator(extra_info):
+            progress(step=currently_extracted_size)
+
+
+def remove_egg_cli(path, prefix, noapp=False):
+    """
+    Simple wrapper to remove an egg using default egginst progress bar.
+    """
+    installer = EggInst(path, prefix, False, None, noapp=noapp)
+    remover = installer._egginst_remover
+    if not remover.is_installed:
+        logger.error("Error: can't find meta data for: %r", remover.cname)
+        return
+    progress = console_progress_manager_factory("removing egg", installer.fn,
+                                                size=remover.installed_size)
+    with progress:
+        for n, filename in enumerate(remover.remove_iterator()):
+            progress(step=n)
+
+
 def main(argv=None):
     if argv is None:
         argv = sys.argv[1:]  # pragma: no cover
@@ -646,23 +675,10 @@ def main(argv=None):
         logging.basicConfig(level=logging.WARN, format="%(message)s")
 
     for path in ns.requirements:
-        ei = EggInst(path, prefix, False, ns.pkgs_dir, noapp=ns.noapp)
         if ns.remove:
-            er = ei._egginst_remover
-            if not er.is_installed:
-                logger.error("Error: can't find meta data for: %r", er.cname)
-                return
-            progress = console_progress_manager_factory("removing egg", ei.fn,
-                                                        size=er.installed_size)
-            with progress:
-                for n, filename in enumerate(ei.remove_iterator()):
-                    progress(step=n)
+            remove_egg_cli(path, prefix, ns.noapp)
         else:
-            progress = console_progress_manager_factory("installing egg", ei.fn,
-                                                        size=ei.installed_size)
-            with progress:
-                for currently_extracted_size in ei.install_iterator():
-                    progress(step=currently_extracted_size)
+            install_egg_cli(path, prefix, ns.noapp)
 
 
 if __name__ == '__main__': # pragma: no cover
