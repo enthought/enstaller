@@ -9,8 +9,9 @@ import sys
 from uuid import uuid4
 from os.path import isfile, join
 
-from egginst.main import EggInst
-from egginst.progress import progress_manager_factory
+from egginst.main import EggInst, install_egg_cli, remove_egg_cli
+from egginst.progress import (console_progress_manager_factory,
+                              progress_manager_factory)
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -89,9 +90,13 @@ class Enpkg(object):
         """
         name, _ = egg_name_to_name_version(path)
 
-        installer = EggInst(path, prefix=self.prefixes[0], evt_mgr=self.evt_mgr)
-        installer.super_id = getattr(self, 'super_id', None)
-        installer.install(extra_info)
+        if self.evt_mgr is None:
+            install_egg_cli(path, self.top_prefix, extra_info=extra_info)
+        else:
+            installer = EggInst(path, prefix=self.top_prefix,
+                                evt_mgr=self.evt_mgr)
+            installer.super_id = getattr(self, 'super_id', None)
+            installer.install(extra_info)
 
         meta_dir = meta_dir_from_prefix(self.top_prefix, name)
         package = InstalledPackageMetadata.from_meta_dir(meta_dir)
@@ -108,9 +113,12 @@ class Enpkg(object):
         path: str
             The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        remover = EggInst(egg, prefix=self.top_prefix)
-        remover.super_id = getattr(self, 'super_id', None)
-        remover.remove()
+        if self.evt_mgr is None:
+            remove_egg_cli(egg, self.top_prefix)
+        else:
+            remover = EggInst(egg, prefix=self.top_prefix)
+            remover.super_id = getattr(self, 'super_id', None)
+            remover.remove()
 
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet
