@@ -93,10 +93,6 @@ def configuration_read_search_order():
     return [os.path.normpath(p) for p in paths]
 
 
-def get_default_url():
-    return 'https://api.enthought.com/eggs/%s/' % plat.custom_plat
-
-
 def add_url(filename, config, url):
     url = fill_url(url)
     if url in config.IndexedRepos:
@@ -141,10 +137,9 @@ RC_TMPL = """\
 # IndexedRepos listed below.
 #use_webservice = False
 
-# When use_webservice is True, one can control the webservice entry point enpkg
-# will talk to. If not specified, a default will be used. Mostly useful for
-# testing
-#webservice_entry_point = "https://acme.com/api/{PLATFORM}/"
+# When use_webservice is True, one can control the store entry point enpkg will
+# talk to. If not specified, a default will be used. Mostly useful for testing
+#store_url = "https://acme.com"
 
 # The enpkg command searches for eggs in the list `IndexedRepos` defined
 # below.  When enpkg searches for an egg, it tries each repository in
@@ -266,8 +261,8 @@ class Configuration(object):
         """
         accepted_keys_as_is = set([
             "proxy", "noapp", "use_webservice", "autoupdate",
-            "prefix", "IndexedRepos", "webservice_entry_point",
-            "repository_cache", "use_pypi", "api_url",
+            "prefix", "IndexedRepos", "repository_cache", "use_pypi",
+            "store_url",
         ])
 
         def _create(fp):
@@ -307,7 +302,7 @@ class Configuration(object):
 
         self._prefix = sys.prefix
         self._IndexedRepos = []
-        self._webservice_entry_point = fill_url(get_default_url())
+        self.store_url = "https://api.enthought.com"
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
 
@@ -316,7 +311,13 @@ class Configuration(object):
 
         self._filename = None
 
-        self.api_url = "https://api.enthought.com/accounts/user/info/"
+    @property
+    def webservice_entry_point(self):
+        return fill_url("{0}/eggs/{1}/".format(self.store_url, plat.custom_plat))
+
+    @property
+    def api_url(self):
+        return fill_url("{0}/accounts/user/info/".format(self.store_url))
 
     @property
     def filename(self):
@@ -454,14 +455,6 @@ class Configuration(object):
     @IndexedRepos.setter
     def IndexedRepos(self, urls):
         self._IndexedRepos = [fill_url(url) for url in urls]
-
-    @property
-    def webservice_entry_point(self):
-        return self._webservice_entry_point
-
-    @webservice_entry_point.setter
-    def webservice_entry_point(self, url):
-        self._webservice_entry_point = fill_url(url)
 
     @property
     def EPD_username(self):

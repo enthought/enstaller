@@ -22,10 +22,12 @@ import mock
 from egginst.tests.common import mkdtemp
 from egginst.testing_utils import network
 
+from enstaller.plat import custom_plat
+
 from enstaller import __version__
 
 from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
-    configuration_read_search_order, get_auth, get_default_url, get_path,
+    configuration_read_search_order, get_auth, get_path,
     input_auth, prepend_url, print_config, subscription_level, _web_auth,
     _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
@@ -120,7 +122,10 @@ class TestWriteConfig(unittest.TestCase):
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
-        self.assertEqual(config.webservice_entry_point, get_default_url())
+        self.assertEqual(config.webservice_entry_point,
+                         "https://api.enthought.com/eggs/{0}/".format(custom_plat))
+        self.assertEqual(config.api_url,
+                         "https://api.enthought.com/accounts/user/info/")
 
     @make_keyring_unavailable
     def test_simple_with_proxy(self):
@@ -149,6 +154,24 @@ class TestWriteConfig(unittest.TestCase):
         with open(path, "r") as fp:
             data = fp.read()
             self.assertRegexpMatches(data, "http://acme.com")
+
+    @make_keyring_unavailable
+    def test_change_store_url(self):
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        config.write(self.f)
+
+        config = Configuration.from_file(self.f)
+        config.store_url = "https://acme.com"
+
+        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.autoupdate, True)
+        self.assertEqual(config.proxy, None)
+        self.assertEqual(config.use_webservice, True)
+        self.assertEqual(config.webservice_entry_point,
+                         "https://acme.com/eggs/{0}/".format(custom_plat))
+        self.assertEqual(config.api_url,
+                         "https://acme.com/accounts/user/info/")
 
 class TestConfigKeyringConversion(unittest.TestCase):
     def test_use_epd_username(self):
