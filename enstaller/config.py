@@ -131,7 +131,7 @@ RC_TMPL = """\
 
 # When use_webservice is True, one can control the webservice entry point enpkg
 # will talk to.
-store_url = "https://acme.com"
+#store_url = "https://acme.com"
 
 # The enpkg command searches for eggs in the list `IndexedRepos` defined
 # below.  When enpkg searches for an egg, it tries each repository in
