@@ -20,6 +20,8 @@ from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
 
+import enstaller.plat
+
 from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import EggCollection, JoinedEggCollection
 from enstaller.enpkg import Enpkg, EnpkgError
@@ -50,7 +52,7 @@ class TestMisc(unittest.TestCase):
                 lambda: patched_read(store_url="http://acme.com"))
     def test_get_default_kvs(self):
         store = get_default_kvs()
-        self.assertEqual(store.root, "http://acme.com/eggs/rh5-64/")
+        self.assertEqual(store.root, "http://acme.com/eggs/{0}/".format(enstaller.plat.custom_plat))
 
     def test_req_from_anything_egg_string(self):
         req_string = "numpy-1.8.0-1.egg"
