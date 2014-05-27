@@ -47,10 +47,10 @@ def dummy_enpkg_entry_factory(name, version, build):
 
 class TestMisc(unittest.TestCase):
     @mock.patch("enstaller.config.read",
-                lambda: patched_read(webservice_entry_point="http://acme.com"))
+                lambda: patched_read(store_url="http://acme.com"))
     def test_get_default_kvs(self):
         store = get_default_kvs()
-        self.assertEqual(store.root, "http://acme.com")
+        self.assertEqual(store.root, "http://acme.com/eggs/rh5-64/")
 
     def test_req_from_anything_egg_string(self):
         req_string = "numpy-1.8.0-1.egg"

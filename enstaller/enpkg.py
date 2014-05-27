@@ -36,7 +36,7 @@ def create_joined_store(urls):
 
 
 def get_default_kvs():
-    url = enstaller.config.read()['webservice_entry_point']
+    url = get_default_url()
     return RemoteHTTPIndexedStore(url)
 
 
@@ -106,7 +106,7 @@ class EnpkgError(Exception):
 
 
 def get_default_remote(prefixes):
-    url = enstaller.config.read()['webservice_entry_point']
+    url = get_default_url()
     local_dir = get_writable_local_dir(prefixes[0])
     return RemoteHTTPIndexedStore(url, local_dir)
 

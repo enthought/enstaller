@@ -108,7 +108,6 @@ class TestWriteConfig(unittest.TestCase):
             self.assertEqual(get("autoupdate"), True)
             self.assertEqual(get("proxy"), None)
             self.assertEqual(get("use_webservice"), True)
-            self.assertEqual(get("webservice_entry_point"), get_default_url())
 
     @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
     @mock.patch("enstaller.config.keyring", None)
@@ -156,6 +155,13 @@ class TestWriteConfig(unittest.TestCase):
                 self.assertEqual(mocked_keyring.set_password.call_args[0],
                                  ("Enthought.com", FAKE_USER, FAKE_PASSWORD))
 
+    @mock.patch("enstaller.config.read",
+                lambda: patched_read(store_url="http://acme.com"))
+    def test_get_default_url(self):
+        r_default_url = "http://acme.com/eggs/{0}/". \
+                format(enstaller.plat.custom_plat)
+        self.assertEqual(get_default_url(), r_default_url)
+
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 
@@ -182,6 +188,8 @@ class TestWebAuth(unittest.TestCase):
             self.assertEqual(web_auth((FAKE_USER, FAKE_PASSWORD)),
                              R_JSON_AUTH_RESP)
 
+    @mock.patch("enstaller.config.read",
+                lambda: patched_read(store_url="https://api.enthought.com"))
     def test_auth_encoding(self):
         r_headers = {"Authorization": "Basic " + FAKE_CREDS}
         with mock.patch("enstaller.config.urllib2") as murllib2:
