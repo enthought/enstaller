@@ -10,11 +10,11 @@ except ImportError:
 
 MAJOR = 4
 MINOR = 6
-MICRO = 4
+MICRO = 5
 
-IS_RELEASED = True
+IS_RELEASED = False
 
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+VERSION = '%d.%d.%d.dev1' % (MAJOR, MINOR, MICRO)
 
 # Return the git revision as a string
 def git_version():
