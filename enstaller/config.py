@@ -68,7 +68,7 @@ system_config_path = join(sys.prefix, config_fn)
 
 def get_default_url():
     import plat
-    return 'https://api.enthought.com/eggs/%s/' % plat.custom_plat
+    return "{0}/eggs/{1}/".format(get("store_url"), plat.custom_plat)
 
 default = dict(
     prefix=sys.prefix,
@@ -80,7 +80,7 @@ default = dict(
     use_webservice=True,
     autoupdate = True,
     IndexedRepos=[],
-    webservice_entry_point=get_default_url(),
+    store_url='https://api.enthought.com',
 )
 
 def get_path():
@@ -130,9 +130,8 @@ RC_TMPL = """\
 #use_webservice = False
 
 # When use_webservice is True, one can control the webservice entry point enpkg
-# will talk to. If not specified, a default will be used. Mostly useful for
-# testing
-#webservice_entry_point = "https://acme.com/api/{PLATFORM}/"
+# will talk to.
+#store_url = "https://acme.com"
 
 # The enpkg command searches for eggs in the list `IndexedRepos` defined
 # below.  When enpkg searches for an egg, it tries each repository in
@@ -240,8 +239,7 @@ def get_auth():
 
 
 
-def web_auth(auth,
-        api_url='https://api.enthought.com/accounts/user/info/'):
+def web_auth(auth, api_url=None):
     """
     Authenticate a user's credentials (an `auth` tuple of username,
     password) using the web API.  Return a dictionary containing user
@@ -249,6 +247,8 @@ def web_auth(auth,
 
     Function taken from Canopy and modified.
     """
+    if api_url is None:
+        api_url = "{0}/accounts/user/info/".format(get("store_url"))
     # Make basic local checks
     username, password = auth
     if username is None or password is None:
@@ -469,8 +469,6 @@ def read():
             read.cache[k] = [fill_url(url) for url in v]
         elif k in ('prefix', 'local'):
             read.cache[k] = abs_expanduser(v)
-        elif k == 'webservice_entry_point':
-            read.cache[k] = fill_url(v)
         elif k == REPOSITORY_CACHE_CONFIG_NAME:
             read.cache[k] = v
     return read.cache
