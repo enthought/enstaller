@@ -1,3 +1,11 @@
+2014-05-28   4.6.5:
+-------------------
+
+Main highlights:
+
+  * backport store_url settings in .enstaller4rc to allow changing the repo
+    server url.
+
 2014-04-03   4.6.4:
 -------------------
 
