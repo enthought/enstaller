@@ -89,6 +89,29 @@ def checked_content(filename, expected_md5):
                 raise InvalidChecksum(filename, expected_md5, checked_target.checksum)
 
 
+class _CancelableResponse(object):
+    def __init__(self, path, package_metadata, response):
+        self._path = path
+        self._package_metadata = package_metadata
+        self._response = response
+
+        self._canceled = False
+
+    def cancel(self):
+        self._canceled = True
+
+    def iter_content(self):
+        with checked_content(self._path, self._package_metadata.md5) as target:
+            for chunk in self._response.iter_content():
+                if self._canceled:
+                    self._response.close()
+                    target.abort = True
+                    return
+
+                target.write(chunk)
+                yield chunk
+
+
 class DownloadManager(object):
     def __init__(self, repository, cache_directory, auth=None, evt_mgr=None):
         self._repository = repository
@@ -101,6 +124,14 @@ class DownloadManager(object):
     def _path(self, fn):
         return join(self.cache_directory, fn)
 
+    def _iter_fetch(self, package_metadata):
+        response = StoreResponse(self._fetcher.open(package_metadata.source_url),
+                                 package_metadata.size, package_metadata.md5,
+                                 package_metadata.key)
+
+        path = self._path(package_metadata.key)
+        return _CancelableResponse(path, package_metadata, response)
+
     def _fetch(self, package_metadata, execution_aborted=None):
         """ Fetch the given key.
 
@@ -111,21 +142,13 @@ class DownloadManager(object):
                                             package_metadata.size,
                                             self.evt_mgr, self)
 
-        response = StoreResponse(self._fetcher.open(package_metadata.source_url),
-                                 package_metadata.size, package_metadata.md5,
-                                 package_metadata.key)
-
         with FileProgressManager(progress) as progress:
-            path = self._path(package_metadata.key)
-            with checked_content(path, package_metadata.md5) as target:
-                for chunk in response.iter_content():
-                    if execution_aborted is not None and execution_aborted.is_set():
-                        response.close()
-                        target.abort = True
-                        return
-
-                    target.write(chunk)
-                    progress.update(len(chunk))
+            context = self._iter_fetch(package_metadata)
+            for chunk in context.iter_content():
+                if execution_aborted is not None and execution_aborted.is_set():
+                    context.cancel()
+                    return
+                progress.update(len(chunk))
 
     def _needs_to_download(self, package_metadata, force):
         needs_to_download = True
