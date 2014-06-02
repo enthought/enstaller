@@ -10,8 +10,7 @@ from uuid import uuid4
 from os.path import isfile, join
 
 from egginst.main import EggInst, install_egg_cli, remove_egg_cli
-from egginst.progress import (console_progress_manager_factory,
-                              progress_manager_factory)
+from egginst.progress import progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -40,6 +39,33 @@ class _ExecuteContext(object):
                 yield action
 
 
+class EggInstaller(object):
+    def __init__(self, prefix):
+        self.prefix = prefix
+
+    def install(self, path, extra_info=None):
+        install_egg_cli(path, self.prefix, extra_info=extra_info)
+
+    def remove(self, name):
+        remove_egg_cli(name, self.prefix)
+
+
+class EventedEggInstaller(object):
+    def __init__(self, prefix, evt_mgr):
+        self.prefix = prefix
+        self.evt_mgr = evt_mgr
+
+    def install(self, path, extra_info=None):
+        installer = EggInst(path, prefix=self.prefix, evt_mgr=self.evt_mgr)
+        installer.super_id = getattr(self, 'super_id', None)
+        installer.install(extra_info)
+
+    def remove(self, name):
+        remover = EggInst(name, prefix=self.prefix)
+        remover.super_id = getattr(self, 'super_id', None)
+        remover.remove()
+
+
 class Enpkg(object):
     """ This is main interface for using enpkg, it is used by the CLI.
     Arguments for object creation:
@@ -65,6 +91,10 @@ class Enpkg(object):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
+        if evt_mgr is not None:
+            self._installer = EventedEggInstaller(self.top_prefix, evt_mgr)
+        else:
+            self._installer = EggInstaller(self.top_prefix)
         self.evt_mgr = evt_mgr
 
         self._remote_repository = remote_repository
@@ -90,13 +120,7 @@ class Enpkg(object):
         """
         name, _ = egg_name_to_name_version(path)
 
-        if self.evt_mgr is None:
-            install_egg_cli(path, self.top_prefix, extra_info=extra_info)
-        else:
-            installer = EggInst(path, prefix=self.top_prefix,
-                                evt_mgr=self.evt_mgr)
-            installer.super_id = getattr(self, 'super_id', None)
-            installer.install(extra_info)
+        self._installer.install(path, extra_info)
 
         meta_dir = meta_dir_from_prefix(self.top_prefix, name)
         package = InstalledPackageMetadata.from_meta_dir(meta_dir)
@@ -113,31 +137,34 @@ class Enpkg(object):
         path: str
             The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        if self.evt_mgr is None:
-            remove_egg_cli(egg, self.top_prefix)
-        else:
-            remover = EggInst(egg, prefix=self.top_prefix)
-            remover.super_id = getattr(self, 'super_id', None)
-            remover.remove()
+        self._installer.remove(egg)
 
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet
         self._top_installed_repository = \
             Repository._from_prefixes([self.prefixes[0]])
 
+    def _execute_fetch(self, opcode, egg):
+        self._fetch(egg, force=int(opcode[-1]))
+
+    def _execute_remove(self, opcode, egg):
+        self._remove_egg(egg)
+
+    def _execute_install(self, opcode, egg):
+        name, version = egg_name_to_name_version(egg)
+        package = self._remote_repository.find_package(name, version)
+        extra_info = package.s3index_data
+        self._install_egg(os.path.join(self._downloader.cache_directory, egg),
+                          extra_info)
+
     def _execute_opcode(self, opcode, egg):
         logger.info('\t' + str((opcode, egg)))
         if opcode.startswith('fetch_'):
-            self._fetch(egg, force=int(opcode[-1]))
+            self._execute_fetch(opcode, egg)
         elif opcode == 'remove':
-            self._remove_egg(egg)
+            self._execute_remove(opcode, egg)
         elif opcode == 'install':
-            name, version = egg_name_to_name_version(egg)
-            package = self._remote_repository.find_package(name, version)
-            extra_info = package.s3index_data
-            self._install_egg(os.path.join(self._downloader.cache_directory,
-                                           egg),
-                              extra_info)
+            self._execute_install(opcode, egg)
         else:
             raise Exception("unknown opcode: %r" % opcode)
 
