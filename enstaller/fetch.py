@@ -45,20 +45,19 @@ class MD5File(object):
 
 @contextlib.contextmanager
 def checked_content(filename, expected_md5):
-    """
-    A simple context manager ensure data written to filename match the given
+    """A simple context manager ensure data written to filename match the given
     md5.
 
     Parameters
     ----------
-    filename: str
+    filename : str
         The path to write to
-    expected_checksum: str
+    expected_checksum : str
         The expected checksum
 
     Returns
     -------
-    fp: MD5File instance
+    fp : MD5File
         A file-like object.
 
     Example

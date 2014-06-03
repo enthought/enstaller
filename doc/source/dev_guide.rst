@@ -81,3 +81,23 @@ To see the available versions of a given package, say 'numpy'::
 
     for package in package.find_packages("numpy"):
         print package.name, package.full_version
+
+Fetching eggs
+=============
+
+Enstaller has some APIs to helps fetching eggs reliably and efficiently. The
+main one is checked_content context manager::
+
+    # Find latest version of numpy
+    numpy = repository.find_sorted_packages("numpy")[-1]
+
+    with checked_content("some_file.egg", numpy.md5) as target:
+        response = requests.get(numpy.source_url, auth=config.get_auth(),
+                                stream=True)
+        response.raise_for_status()
+        for chunk in response.iter_content(1024):
+            target.write(chunk)
+
+This will ensure checksums match (if given), and will not write stalled data
+(safe to abort). Note that the API allows seamless integration with 3rd-party
+libraries like requests.
