@@ -63,7 +63,7 @@ class TestEnpkgActions(unittest.TestCase):
 
             enpkg = Enpkg(repository, mock.Mock(), prefixes=[d])
 
-            with mock.patch("enstaller.enpkg.remove_egg_cli") as mocked_remove:
+            with mock.patch("enstaller.enpkg.RemoveAction.execute") as mocked_remove:
                 actions = enpkg._solver.remove_actions("dummy")
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)

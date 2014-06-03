@@ -100,8 +100,46 @@ class RemoveAction(_ActionReprMixing):
         self._enpkg = enpkg
         self._egg = egg
 
+        def _progress_factory(filename, installed_size):
+            return console_progress_manager_factory("removing egg", filename,
+                                                    installed_size)
+
+        self._progress_factory = _progress_factory
+        self._progress = None
+
+    def progress_update(self, step):
+        self._progress(step=step)
+
+    def __iter__(self):
+        return self.iter_execute()
+
+    def iter_execute(self):
+        installer = EggInst(self._egg, self._enpkg.top_prefix, False,
+                            self._enpkg.evt_mgr)
+        remover = installer._egginst_remover
+        if not remover.is_installed:
+            logger.error("Error: can't find meta data for: %r", remover.cname)
+            return
+
+        if self._enpkg.evt_mgr is not None:
+            remover = EggInst(self._egg, prefix=self._enpkg.top_prefix,
+                              evt_mgr=self._enpkg.evt_mgr)
+            remover.super_id = getattr(self._enpkg, 'super_id', None)
+
+        self._progress = self._progress_factory(installer.fn, remover.installed_size)
+
+        with self._progress:
+            for n, filename in enumerate(remover.remove_iterator()):
+                yield n
+
+        # FIXME: we recalculate the full repository because we don't have a
+        # feature to remove a package yet
+        self._top_installed_repository = \
+            Repository._from_prefixes([self._enpkg.top_prefix])
+
     def execute(self):
-        self._enpkg._remove_egg(self._egg)
+        for n in self.iter_execute():
+            self.progress_update(n)
 
 
 class Enpkg(object):
@@ -142,28 +180,6 @@ class Enpkg(object):
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
-
-    def _remove_egg(self, egg):
-        """
-        Remove the given egg.
-
-        Parameters
-        ----------
-        path: str
-            The egg basename (e.g. 'numpy-1.8.0-1.egg')
-        """
-        if self.evt_mgr is None:
-            remove_egg_cli(egg, self.top_prefix)
-        else:
-            remover = EggInst(egg, prefix=self.top_prefix,
-                              evt_mgr=self.evt_mgr)
-            remover.super_id = getattr(self, 'super_id', None)
-            remover.remove()
-
-        # FIXME: we recalculate the full repository because we don't have a
-        # feature to remove a package yet
-        self._top_installed_repository = \
-            Repository._from_prefixes([self.prefixes[0]])
 
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, n_actions):
