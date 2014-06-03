@@ -24,21 +24,6 @@ from enstaller.solver import Solver
 logger = logging.getLogger(__name__)
 
 
-class _ExecuteContext(object):
-    def __init__(self, prefix, actions):
-        self._actions = actions
-        self._prefix = prefix
-
-    @property
-    def n_actions(self):
-        return len(self._actions)
-
-    def iter_actions(self):
-        with History(self._prefix):
-            for action in self._actions:
-                yield action
-
-
 class EggInstaller(object):
     def __init__(self, prefix):
         self.prefix = prefix
@@ -169,20 +154,17 @@ class Enpkg(object):
             raise Exception("unknown opcode: %r" % opcode)
 
     @contextlib.contextmanager
-    def _enpkg_progress_manager(self, execution_context):
+    def _enpkg_progress_manager(self, n_actions):
         self.super_id = None
 
         progress = progress_manager_factory("super", "",
-                                            execution_context.n_actions,
+                                            n_actions,
                                             self.evt_mgr, self, self.super_id)
 
         try:
             yield progress
         finally:
             self.super_id = uuid4()
-
-    def get_execute_context(self, actions):
-        return _ExecuteContext(self.prefixes[0], actions)
 
     def execute(self, actions):
         """
@@ -194,15 +176,14 @@ class Enpkg(object):
         """
         logger.info("Enpkg.execute: %d", len(actions))
 
-        context = self.get_execute_context(actions)
-
-        with self._enpkg_progress_manager(context) as progress:
-            for n, (opcode, egg) in enumerate(context.iter_actions()):
-                if self._execution_aborted.is_set():
-                    self._execution_aborted.clear()
-                    break
-                self._execute_opcode(opcode, egg)
-                progress(step=n)
+        with History(self.top_prefix):
+            with self._enpkg_progress_manager(len(actions)) as progress:
+                for n, (opcode, egg) in enumerate(actions):
+                    if self._execution_aborted.is_set():
+                        self._execution_aborted.clear()
+                        break
+                    self._execute_opcode(opcode, egg)
+                    progress(step=n)
 
     def abort_execution(self):
         self._execution_aborted.set()
