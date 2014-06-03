@@ -9,8 +9,9 @@ import sys
 from uuid import uuid4
 from os.path import isfile, join
 
-from egginst.main import EggInst, install_egg_cli, remove_egg_cli
-from egginst.progress import progress_manager_factory
+from egginst.main import EggInst, remove_egg_cli
+from egginst.progress import (console_progress_manager_factory,
+                              progress_manager_factory)
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -22,28 +23,6 @@ from enstaller.solver import Solver
 
 
 logger = logging.getLogger(__name__)
-
-
-class EggInstaller(object):
-    def __init__(self, prefix, event_manager=None):
-        self.prefix = prefix
-        self.event_manager = event_manager
-
-    def install(self, path, extra_info=None):
-        if self.event_manager is None:
-            install_egg_cli(path, self.prefix, extra_info=extra_info)
-        else:
-            installer = EggInst(path, prefix=self.prefix, evt_mgr=self.evt_mgr)
-            installer.super_id = getattr(self, 'super_id', None)
-            installer.install(extra_info)
-
-    def remove(self, name):
-        if self.event_manager is None:
-            remove_egg_cli(name, self.prefix)
-        else:
-            remover = EggInst(name, prefix=self.prefix, evt_mgr=self.evt_mgr)
-            remover.super_id = getattr(self, 'super_id', None)
-            remover.remove()
 
 
 class _ActionReprMixing(object):
@@ -65,15 +44,55 @@ class InstallAction(_ActionReprMixing):
         self._enpkg = enpkg
         self._egg = egg
 
+        self._egg_path = os.path.join(self._enpkg._downloader.cache_directory,
+                                      self._egg)
+
+        def _progress_factory(filename, installed_size):
+            return console_progress_manager_factory("installing egg", filename,
+                                                    installed_size)
+
+        self._progress_factory = _progress_factory
+        self._progress = None
+
+    def progress_update(self, step):
+        self._progress(step=step)
+
     def _extract_extra_info(self):
         name, version = egg_name_to_name_version(self._egg)
         package = self._enpkg._remote_repository.find_package(name, version)
         return package.s3index_data
 
+    def iter_execute(self):
+        extra_info = self._extract_extra_info()
+
+        installer = EggInst(self._egg_path, prefix=self._enpkg.top_prefix,
+                                  evt_mgr=self._enpkg.evt_mgr)
+        if self._enpkg.evt_mgr is not None:
+            installer.super_id = getattr(self._enpkg, 'super_id', None)
+
+        self._progress = self._progress_factory(installer.fn,
+                                                installer.installed_size)
+
+        with self._progress:
+            for step in installer.install_iterator(extra_info):
+                yield step
+
+        self._post_install()
+
+    def __iter__(self):
+        return self.iter_execute()
+
     def execute(self):
-        self._enpkg._install_egg(os.path.join(self._enpkg._downloader.cache_directory,
-                                              self._egg),
-                                 self._extract_extra_info())
+        for currently_extracted_size in self.iter_execute():
+            self.progress_update(currently_extracted_size)
+
+    def _post_install(self):
+        name, _ = egg_name_to_name_version(self._egg_path)
+        meta_dir = meta_dir_from_prefix(self._enpkg.top_prefix, name)
+        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
+
+        self._enpkg._top_installed_repository.add_package(package)
+        self._enpkg._installed_repository.add_package(package)
 
 
 class RemoveAction(_ActionReprMixing):
@@ -110,7 +129,6 @@ class Enpkg(object):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
-        self._installer = EggInstaller(self.top_prefix, event_manager=evt_mgr)
         self.evt_mgr = evt_mgr
 
         self._remote_repository = remote_repository
@@ -125,25 +143,6 @@ class Enpkg(object):
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
 
-    def _install_egg(self, path, extra_info=None):
-        """
-        Install the given egg.
-
-        Parameters
-        ----------
-        path: str
-            The path to the egg to install
-        """
-        name, _ = egg_name_to_name_version(path)
-
-        self._installer.install(path, extra_info)
-
-        meta_dir = meta_dir_from_prefix(self.top_prefix, name)
-        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
-
-        self._top_installed_repository.add_package(package)
-        self._installed_repository.add_package(package)
-
     def _remove_egg(self, egg):
         """
         Remove the given egg.
@@ -153,7 +152,13 @@ class Enpkg(object):
         path: str
             The egg basename (e.g. 'numpy-1.8.0-1.egg')
         """
-        self._installer.remove(egg)
+        if self.evt_mgr is None:
+            remove_egg_cli(egg, self.top_prefix)
+        else:
+            remover = EggInst(egg, prefix=self.top_prefix,
+                              evt_mgr=self.evt_mgr)
+            remover.super_id = getattr(self, 'super_id', None)
+            remover.remove()
 
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet

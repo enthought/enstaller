@@ -20,7 +20,7 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import EnpkgError
 from enstaller.fetch import DownloadManager
-from enstaller.repository import (egg_name_to_name_version, PackageMetadata,
+from enstaller.repository import (egg_name_to_name_version,
                                   Repository, RepositoryPackageMetadata)
 from enstaller.utils import PY_VER
 
@@ -28,34 +28,6 @@ from .common import (dummy_repository_package_factory,
                      mock_history_get_state_context, mock_url_fetcher,
                      repository_factory)
 
-
-class TestEnpkg(unittest.TestCase):
-    def test_query_simple_with_local(self):
-        """
-        Ensure enpkg.query finds both local and remote eggs.
-        """
-        local_egg = DUMMY_EGG
-
-        entries = [
-            dummy_repository_package_factory("dummy", "1.6.1", 1),
-            dummy_repository_package_factory("dummy", "1.8k", 2),
-        ]
-
-        repository = repository_factory(entries)
-
-        local_entry = PackageMetadata.from_egg(DUMMY_EGG)
-
-        with mkdtemp() as d:
-            prefixes = [d]
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=prefixes)
-            enpkg._install_egg(local_egg)
-
-            remote_and_local_repository = Repository._from_prefixes(prefixes)
-            for package in repository.iter_packages():
-                remote_and_local_repository.add_package(package)
-            packages = remote_and_local_repository.find_packages("dummy")
-            self.assertItemsEqual([p.key for p in packages],
-                                  [entry.key for entry in entries + [local_entry]])
 
 def _unconnected_enpkg_factory():
     """
@@ -111,7 +83,7 @@ class TestEnpkgActions(unittest.TestCase):
         repository = repository_factory(entries)
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch"):
-            with mock.patch("enstaller.enpkg.Enpkg._install_egg", fake_install):
+            with mock.patch("enstaller.enpkg.InstallAction.execute", fake_install):
                 enpkg = Enpkg(repository, mock.Mock())
                 actions = enpkg._solver.install_actions("numpy")
 
@@ -159,7 +131,7 @@ class TestEnpkgExecute(unittest.TestCase):
         repository = repository_factory(entries)
 
         with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
-            with mock.patch("enstaller.enpkg.Enpkg._install_egg") as mocked_install:
+            with mock.patch("enstaller.enpkg.InstallAction.execute") as mocked_install:
                 mocked_fetcher = mock.Mock()
                 mocked_fetcher.cache_directory = config.repository_cache
                 enpkg = Enpkg(repository, mocked_fetcher,
@@ -168,9 +140,8 @@ class TestEnpkgExecute(unittest.TestCase):
                 enpkg.execute(actions)
 
                 mocked_fetch.assert_called_with(base_egg, fetch_opcode)
-                mocked_install.assert_called_with(
-                    os.path.join(config.repository_cache, base_egg),
-                    entries[0].s3index_data)
+                mocked_install.assert_called_with()
+
 
 class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):
