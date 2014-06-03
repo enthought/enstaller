@@ -143,7 +143,7 @@ class TestEnpkgExecute(unittest.TestCase):
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
 
             self.assertTrue(mocked_fetch.called)
-            mocked_fetch.assert_called_with(egg, force=fetch_opcode)
+            mocked_fetch.assert_called_with(egg, fetch_opcode)
 
     def test_simple_install(self):
         config = Configuration()
@@ -167,7 +167,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 actions = enpkg._solver.install_actions("dummy")
                 enpkg.execute(actions)
 
-                mocked_fetch.assert_called_with(base_egg, force=fetch_opcode)
+                mocked_fetch.assert_called_with(base_egg, fetch_opcode)
                 mocked_install.assert_called_with(
                     os.path.join(config.repository_cache, base_egg),
                     entries[0].s3index_data)

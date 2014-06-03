@@ -46,6 +46,45 @@ class EggInstaller(object):
             remover.remove()
 
 
+class _ActionReprMixing(object):
+    def __str__(self):
+        return "{}: <{}>".format(self.__class__.__name__, self._egg)
+
+class FetchAction(_ActionReprMixing):
+    def __init__(self, enpkg, egg, force=True):
+        self._enpkg = enpkg
+        self._egg = egg
+        self._force = force
+
+    def execute(self):
+        self._enpkg._fetch(self._egg, self._force)
+
+
+class InstallAction(_ActionReprMixing):
+    def __init__(self, enpkg, egg):
+        self._enpkg = enpkg
+        self._egg = egg
+
+    def _extract_extra_info(self):
+        name, version = egg_name_to_name_version(self._egg)
+        package = self._enpkg._remote_repository.find_package(name, version)
+        return package.s3index_data
+
+    def execute(self):
+        self._enpkg._install_egg(os.path.join(self._enpkg._downloader.cache_directory,
+                                              self._egg),
+                                 self._extract_extra_info())
+
+
+class RemoveAction(_ActionReprMixing):
+    def __init__(self, enpkg, egg):
+        self._enpkg = enpkg
+        self._egg = egg
+
+    def execute(self):
+        self._enpkg._remove_egg(self._egg)
+
+
 class Enpkg(object):
     """ This is main interface for using enpkg, it is used by the CLI.
     Arguments for object creation:
@@ -121,30 +160,6 @@ class Enpkg(object):
         self._top_installed_repository = \
             Repository._from_prefixes([self.prefixes[0]])
 
-    def _execute_fetch(self, opcode, egg):
-        self._fetch(egg, force=int(opcode[-1]))
-
-    def _execute_remove(self, opcode, egg):
-        self._remove_egg(egg)
-
-    def _execute_install(self, opcode, egg):
-        name, version = egg_name_to_name_version(egg)
-        package = self._remote_repository.find_package(name, version)
-        extra_info = package.s3index_data
-        self._install_egg(os.path.join(self._downloader.cache_directory, egg),
-                          extra_info)
-
-    def _execute_opcode(self, opcode, egg):
-        logger.info('\t' + str((opcode, egg)))
-        if opcode.startswith('fetch_'):
-            self._execute_fetch(opcode, egg)
-        elif opcode == 'remove':
-            self._execute_remove(opcode, egg)
-        elif opcode == 'install':
-            self._execute_install(opcode, egg)
-        else:
-            raise Exception("unknown opcode: %r" % opcode)
-
     @contextlib.contextmanager
     def _enpkg_progress_manager(self, n_actions):
         self.super_id = None
@@ -157,6 +172,35 @@ class Enpkg(object):
             yield progress
         finally:
             self.super_id = uuid4()
+
+    class _ExecuteContext(object):
+        def __init__(self, actions, enpkg):
+            self._top_prefix = enpkg.top_prefix
+            self._actions = actions
+            self._remote_repository = enpkg._remote_repository
+            self._enpkg = enpkg
+
+        def _action_factory(self, action):
+            opcode, egg = action
+
+            if opcode.startswith('fetch_'):
+                force = int(opcode[-1])
+                return FetchAction(self._enpkg, egg, force)
+            elif opcode.startswith("install"):
+                return InstallAction(self._enpkg, egg)
+            elif opcode.startswith("remove"):
+                return RemoveAction(self._enpkg, egg)
+            else:
+                raise ValueError("Unknown opcode: {0!r}".format(opcode))
+
+        def __iter__(self):
+            with History(self._top_prefix):
+                for action in self._actions:
+                    logger.info('\t' + str(action))
+                    yield self._action_factory(action)
+
+    def execute_context(self, actions):
+        return self._ExecuteContext(actions, self)
 
     def execute(self, actions):
         """
@@ -173,16 +217,15 @@ class Enpkg(object):
         """
         logger.info("Enpkg.execute: %d", len(actions))
 
-        with History(self.top_prefix):
-            with self._enpkg_progress_manager(len(actions)) as progress:
-                self._execute(actions, progress)
+        with self._enpkg_progress_manager(len(actions)) as progress:
+            self._execute(actions, progress)
 
     def _execute(self, actions, progress):
-        for n, (opcode, egg) in enumerate(actions):
+        for n, action in enumerate(self.execute_context(actions)):
             if self._execution_aborted.is_set():
                 self._execution_aborted.clear()
                 break
-            self._execute_opcode(opcode, egg)
+            action.execute()
             progress(step=n)
 
     def abort_execution(self):
