@@ -25,30 +25,25 @@ logger = logging.getLogger(__name__)
 
 
 class EggInstaller(object):
-    def __init__(self, prefix):
+    def __init__(self, prefix, event_manager=None):
         self.prefix = prefix
+        self.event_manager = event_manager
 
     def install(self, path, extra_info=None):
-        install_egg_cli(path, self.prefix, extra_info=extra_info)
+        if self.event_manager is None:
+            install_egg_cli(path, self.prefix, extra_info=extra_info)
+        else:
+            installer = EggInst(path, prefix=self.prefix, evt_mgr=self.evt_mgr)
+            installer.super_id = getattr(self, 'super_id', None)
+            installer.install(extra_info)
 
     def remove(self, name):
-        remove_egg_cli(name, self.prefix)
-
-
-class EventedEggInstaller(object):
-    def __init__(self, prefix, evt_mgr):
-        self.prefix = prefix
-        self.evt_mgr = evt_mgr
-
-    def install(self, path, extra_info=None):
-        installer = EggInst(path, prefix=self.prefix, evt_mgr=self.evt_mgr)
-        installer.super_id = getattr(self, 'super_id', None)
-        installer.install(extra_info)
-
-    def remove(self, name):
-        remover = EggInst(name, prefix=self.prefix)
-        remover.super_id = getattr(self, 'super_id', None)
-        remover.remove()
+        if self.event_manager is None:
+            remove_egg_cli(name, self.prefix)
+        else:
+            remover = EggInst(name, prefix=self.prefix, evt_mgr=self.evt_mgr)
+            remover.super_id = getattr(self, 'super_id', None)
+            remover.remove()
 
 
 class Enpkg(object):
@@ -76,10 +71,7 @@ class Enpkg(object):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
-        if evt_mgr is not None:
-            self._installer = EventedEggInstaller(self.top_prefix, evt_mgr)
-        else:
-            self._installer = EggInstaller(self.top_prefix)
+        self._installer = EggInstaller(self.top_prefix, event_manager=evt_mgr)
         self.evt_mgr = evt_mgr
 
         self._remote_repository = remote_repository
@@ -183,12 +175,15 @@ class Enpkg(object):
 
         with History(self.top_prefix):
             with self._enpkg_progress_manager(len(actions)) as progress:
-                for n, (opcode, egg) in enumerate(actions):
-                    if self._execution_aborted.is_set():
-                        self._execution_aborted.clear()
-                        break
-                    self._execute_opcode(opcode, egg)
-                    progress(step=n)
+                self._execute(actions, progress)
+
+    def _execute(self, actions, progress):
+        for n, (opcode, egg) in enumerate(actions):
+            if self._execution_aborted.is_set():
+                self._execution_aborted.clear()
+                break
+            self._execute_opcode(opcode, egg)
+            progress(step=n)
 
     def abort_execution(self):
         self._execution_aborted.set()
