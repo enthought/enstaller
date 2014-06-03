@@ -306,8 +306,17 @@ class Repository(object):
         self._name_to_packages[package_metadata.name].append(package_metadata)
 
     def has_package(self, package_metadata):
-        """
-        Returns True if the given package is available in this repository
+        """Returns True if the given package is available in this repository
+
+        Parameters
+        ----------
+        package_metadata : PackageMetadata
+            The package to look for.
+
+        Returns
+        -------
+        ret : bool
+            True if the package is in the repository, false otherwise.
         """
         candidates = self._name_to_packages.get(package_metadata.name, [])
         for candidate in candidates:
@@ -316,13 +325,20 @@ class Repository(object):
         return False
 
     def find_package(self, name, version):
-        """ Search for the first match of a package with the given name and
+        """Search for the first match of a package with the given name and
         version.
+
+        Parameters
+        ----------
+        name : str
+            The package name to look for.
+        version : str
+            The full version string to look for (e.g. '1.8.0-1').
 
         Returns
         -------
-        package: RepositoryPackageMetadata
-            The corresponding metadata
+        package : RepositoryPackageMetadata
+            The corresponding metadata.
         """
         candidates = self._name_to_packages.get(name, [])
         for candidate in candidates:
@@ -333,18 +349,17 @@ class Repository(object):
 
 
     def find_sorted_packages(self, name):
-        """
-        Returns a list of package metadata with the given name and version,
+        """Returns a list of package metadata with the given name and version,
         sorted from lowest to highest version (when possible).
 
         Parameters
         ----------
-        name: str
+        name : str
             The package's name
 
         Returns
         -------
-        packages: seq of PackageMetadata
+        packages : seq of RepositoryPackageMetadata
             The corresponding metadata
         """
         packages = self.find_packages(name)
@@ -357,19 +372,18 @@ class Repository(object):
             return packages
 
     def find_packages(self, name, version=None):
-        """
-        Returns a list of package metadata with the given name and version
+        """Returns a list of package metadata with the given name and version
 
         Parameters
         ----------
-        name: str
+        name : str
             The package's name
-        version: str or None
+        version : str or None
             If not None, the version to look for
 
         Returns
         -------
-        packages: seq of RepositoryPackageMetadata
+        packages : seq of RepositoryPackageMetadata-like
             The corresponding metadata (order is unspecified)
         """
         candidates = self._name_to_packages.get(name, [])
@@ -379,25 +393,23 @@ class Repository(object):
             return [package for package in candidates if package.full_version == version]
 
     def iter_packages(self):
-        """
-        Iter over each package of the repository
+        """Iter over each package of the repository
 
         Returns
         -------
-        packages: iterable of RepositoryPackageMetadata
+        packages : iterable of RepositoryPackageMetadata-like
             The corresponding metadata
         """
         for package in self._packages:
             yield package
 
     def iter_most_recent_packages(self):
-        """
-        Iter over each package of the repository, but only the most recent
+        """Iter over each package of the repository, but only the most recent
         version of a given package
 
         Returns
         -------
-        packages: iterable of RepositoryPackageMetadata
+        packages : iterable of RepositoryPackageMetadata-like
             The corresponding metadata
         """
         for name, packages in self._name_to_packages.items():
