@@ -3,4 +3,9 @@ Welcome to enstaller's documentation!
 
 Enstaller is Enthought's package manager.
 
-.. include:: contents.rst.inc
+Developer's guide
+-----------------
+
+.. toctree::
+   reference/contents.rst
+   :maxdepth: 2
