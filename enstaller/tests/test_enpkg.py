@@ -82,7 +82,7 @@ class TestEnpkgActions(unittest.TestCase):
         ]
         repository = repository_factory(entries)
 
-        with mock.patch("enstaller.enpkg.Enpkg._fetch"):
+        with mock.patch("enstaller.enpkg.FetchAction.execute"):
             with mock.patch("enstaller.enpkg.InstallAction.execute", fake_install):
                 enpkg = Enpkg(repository, mock.Mock())
                 actions = enpkg._solver.install_actions("numpy")
@@ -109,13 +109,13 @@ class TestEnpkgExecute(unittest.TestCase):
 
         repository = Repository()
 
-        with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
+        with mock.patch("enstaller.enpkg.FetchAction") as mocked_fetch:
             enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
 
             self.assertTrue(mocked_fetch.called)
-            mocked_fetch.assert_called_with(egg, fetch_opcode)
+            mocked_fetch.assert_called()
 
     def test_simple_install(self):
         config = Configuration()
@@ -130,7 +130,7 @@ class TestEnpkgExecute(unittest.TestCase):
 
         repository = repository_factory(entries)
 
-        with mock.patch("enstaller.enpkg.Enpkg._fetch") as mocked_fetch:
+        with mock.patch("enstaller.enpkg.FetchAction.execute") as mocked_fetch:
             with mock.patch("enstaller.enpkg.InstallAction.execute") as mocked_install:
                 mocked_fetcher = mock.Mock()
                 mocked_fetcher.cache_directory = config.repository_cache
@@ -139,7 +139,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 actions = enpkg._solver.install_actions("dummy")
                 enpkg.execute(actions)
 
-                mocked_fetch.assert_called_with(base_egg, fetch_opcode)
+                mocked_fetch.assert_called()
                 mocked_install.assert_called_with()
 
 

@@ -30,13 +30,17 @@ class _ActionReprMixing(object):
         return "{}: <{}>".format(self.__class__.__name__, self._egg)
 
 class FetchAction(_ActionReprMixing):
-    def __init__(self, enpkg, egg, force=True):
-        self._enpkg = enpkg
+    def __init__(self, downloader, egg, force=True, execution_aborted=None):
+        self._downloader = downloader
         self._egg = egg
         self._force = force
+        self._execution_aborted = execution_aborted
 
     def execute(self):
-        self._enpkg._fetch(self._egg, self._force)
+        downloader = self._downloader
+        downloader.super_id = getattr(self, 'super_id', None)
+
+        downloader.fetch_egg(self._egg, self._force, self._execution_aborted)
 
 
 class InstallAction(_ActionReprMixing):
@@ -206,7 +210,8 @@ class Enpkg(object):
 
             if opcode.startswith('fetch_'):
                 force = int(opcode[-1])
-                return FetchAction(self._enpkg, egg, force)
+                return FetchAction(self._enpkg._downloader, egg, force,
+                                   self._enpkg._execution_aborted)
             elif opcode.startswith("install"):
                 return InstallAction(self._enpkg, egg)
             elif opcode.startswith("remove"):
@@ -301,7 +306,3 @@ class Enpkg(object):
         """
         # FIXME: only used by canopy
         return History(self.prefixes[0])
-
-    def _fetch(self, egg, force=False):
-        self._downloader.super_id = getattr(self, 'super_id', None)
-        self._downloader.fetch_egg(egg, force, self._execution_aborted)
