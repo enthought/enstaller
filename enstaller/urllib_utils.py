@@ -31,7 +31,7 @@ class CachedHandler(urllib2.BaseHandler):
     def cache_is_valid(self, metadata=None):
         metadata = metadata or self.read_metadata()
         if 'etag' in metadata and 'md5' in metadata \
-           and os.path.exists(self._index_path):
+                and os.path.exists(self._index_path):
             # All the data is there, check if it's valid
             sum = md5()
             for line in open(self._index_path, 'rb'):
@@ -71,7 +71,7 @@ class CachedHandler(urllib2.BaseHandler):
         metadata = self.read_metadata()
 
         if self.cache_re.search(req.get_full_url()) \
-           and self.cache_is_valid(metadata):
+                and self.cache_is_valid(metadata):
             req.headers['If-None-Match'] = metadata['etag']
 
         return req
@@ -94,7 +94,7 @@ class CachedHandler(urllib2.BaseHandler):
     def http_response(self, req, response):
         etag = response.headers.get('Etag')
         if etag and response.code == 200 \
-           and self.cache_re.search(response.url):
+                and self.cache_re.search(response.url):
             self.fill_cache(etag, response.read())
             res = urllib2.addinfourl(open(self._index_path, 'rb'),
                                      response.headers, response.url)
