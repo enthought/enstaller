@@ -9,3 +9,6 @@ nose
 randomize
 six
 tox
+refactordoc
+sphinx
+sphinx-rtd-theme

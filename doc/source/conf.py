@@ -25,7 +25,11 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.viewcode']
+extensions = [
+    'sphinx.ext.viewcode',
+    'sphinx.ext.autodoc',
+    'refactordoc',
+]
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['.templates']
@@ -95,7 +99,9 @@ on_rtd = os.environ.get('READTHEDOCS', None) == 'True'
 if on_rtd:
     html_theme = 'default'
 else:
-    html_theme = 'default'
+    import sphinx_rtd_theme
+    html_theme_path = [sphinx_rtd_theme.get_html_theme_path()]
+    html_theme = 'sphinx_rtd_theme'
 
 
 # Theme options are theme-specific and customize the look and feel of a theme
@@ -246,6 +252,6 @@ texinfo_documents = [
 # How to display URL addresses: 'footnote', 'no', or 'inline'.
 #texinfo_show_urls = 'footnote'
 
-sys.path.append(os.path.abspath('.themes'))
-html_theme_path = ['.themes']
-html_theme = 'kr'
+#sys.path.append(os.path.abspath('.themes'))
+#html_theme_path = ['.themes']
+#html_theme = 'kr'
