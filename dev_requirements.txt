@@ -9,3 +9,5 @@ nose
 randomize
 six
 tox
+refactordoc
+sphinx
