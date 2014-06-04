@@ -137,10 +137,14 @@ class InstallAction(_BaseAction):
 
 
 class RemoveAction(_BaseAction):
-    def __init__(self, egg, top_prefix):
+    def __init__(self, egg, top_prefix, top_installed_repository,
+                 installed_repository):
         super(RemoveAction, self).__init__()
         self._egg = egg
         self._top_prefix = top_prefix
+
+        self._top_installed_repository = top_installed_repository
+        self._installed_repository = installed_repository
 
         def _progress_factory(filename, installed_size):
             return console_progress_manager_factory("removing egg", filename,
@@ -158,6 +162,8 @@ class RemoveAction(_BaseAction):
         if not remover.is_installed:
             logger.error("Error: can't find meta data for: %r", remover.cname)
             return
+        name, version = egg_name_to_name_version(self._egg)
+        package = self._top_installed_repository.find_package(name, version)
 
         self._progress = self._progress_factory(installer.fn, remover.installed_size)
 
@@ -165,10 +171,8 @@ class RemoveAction(_BaseAction):
             for n, filename in enumerate(remover.remove_iterator()):
                 yield n
 
-        # FIXME: we recalculate the full repository because we don't have a
-        # feature to remove a package yet
-        self._top_installed_repository = \
-            Repository._from_prefixes([self._top_prefix])
+        self._top_installed_repository.delete_package(package)
+        self._installed_repository.delete_package(package)
 
     def execute(self):
         for n in self.iter_execute():
@@ -226,7 +230,9 @@ class Enpkg(object):
                                      self._enpkg._installed_repository,
                                      self._enpkg._downloader.cache_directory)
             elif opcode.startswith("remove"):
-                return RemoveAction(egg, self._enpkg.top_prefix)
+                return RemoveAction(egg, self._enpkg.top_prefix,
+                                    self._enpkg._top_installed_repository,
+                                    self._enpkg._installed_repository,)
             else:
                 raise ValueError("Unknown opcode: {0!r}".format(opcode))
 
