@@ -9,7 +9,7 @@ import sys
 from uuid import uuid4
 from os.path import isfile, join
 
-from egginst.main import EggInst, remove_egg_cli
+from egginst.main import EggInst
 from egginst.progress import (console_progress_manager_factory,
                               progress_manager_factory)
 
@@ -25,24 +25,48 @@ from enstaller.solver import Solver
 logger = logging.getLogger(__name__)
 
 
-class _ActionReprMixing(object):
+class _BaseAction(object):
     def __str__(self):
         return "{}: <{}>".format(self.__class__.__name__, self._egg)
 
-class FetchAction(_ActionReprMixing):
+    def execute(self):
+        """ Execute the given action."""
+
+    def iter_execute(self):
+        """ Iterator wich execute the action step by step when iterated
+        over."""
+
+    def __iter__(self):
+        return self.iter_execute()
+
+
+class FetchAction(_BaseAction):
     def __init__(self, downloader, egg, force=True):
         self._downloader = downloader
         self._egg = egg
         self._force = force
 
-    def execute(self):
+        self._progress = None
+
+    def progress_update(self, step):
+        self._progress(step)
+
+    def iter_execute(self):
         downloader = self._downloader
         downloader.super_id = getattr(self, 'super_id', None)
 
-        downloader.fetch(self._egg, self._force)
+        context = downloader.iter_fetch(self._egg, self._force)
+        context_iterator =  context.iter_content()
+        self._progress = context._progress
+        for chunk_size in context_iterator:
+            yield chunk_size
+
+    def execute(self):
+        for chunk_size in self.iter_execute():
+            self.progress_update(chunk_size)
 
 
-class InstallAction(_ActionReprMixing):
+class InstallAction(_BaseAction):
     def __init__(self, enpkg, egg):
         self._enpkg = enpkg
         self._egg = egg
@@ -82,9 +106,6 @@ class InstallAction(_ActionReprMixing):
 
         self._post_install()
 
-    def __iter__(self):
-        return self.iter_execute()
-
     def execute(self):
         for currently_extracted_size in self.iter_execute():
             self.progress_update(currently_extracted_size)
@@ -98,7 +119,7 @@ class InstallAction(_ActionReprMixing):
         self._enpkg._installed_repository.add_package(package)
 
 
-class RemoveAction(_ActionReprMixing):
+class RemoveAction(_BaseAction):
     def __init__(self, enpkg, egg):
         self._enpkg = enpkg
         self._egg = egg
@@ -112,9 +133,6 @@ class RemoveAction(_ActionReprMixing):
 
     def progress_update(self, step):
         self._progress(step=step)
-
-    def __iter__(self):
-        return self.iter_execute()
 
     def iter_execute(self):
         installer = EggInst(self._egg, self._enpkg.top_prefix, False,
