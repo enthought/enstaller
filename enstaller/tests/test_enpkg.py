@@ -11,15 +11,16 @@ else:
 import mock
 
 from egginst.main import EggInst
-from egginst.tests.common import mkdtemp, DUMMY_EGG
-from egginst.utils import makedirs
+from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
+from egginst.utils import compute_md5, makedirs
 
 from enstaller.config import Configuration
-from enstaller.enpkg import Enpkg
+from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError
 from enstaller.fetch import DownloadManager
 from enstaller.repository import (egg_name_to_name_version,
-                                  Repository, RepositoryPackageMetadata)
+                                  PackageMetadata, Repository,
+                                  RepositoryPackageMetadata)
 from enstaller.utils import PY_VER
 
 from .common import (dummy_repository_package_factory,
@@ -204,3 +205,166 @@ class TestEnpkgRevert(unittest.TestCase):
             with mock.patch.object(enpkg, "_remote_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)
+
+
+class TestFetchAction(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _downloader_factory(self, paths):
+        repository = Repository()
+        for path in paths:
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
+
+        return DownloadManager(repository, self.tempdir)
+
+    def test_simple(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader = self._downloader_factory([path])
+
+        # When
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            action = FetchAction(path, downloader)
+            action.execute()
+
+        # Then
+        target = os.path.join(downloader.cache_directory, filename)
+        self.assertTrue(os.path.exists(target))
+        self.assertEqual(compute_md5(target), compute_md5(path))
+        self.assertFalse(action.is_canceled)
+
+    def test_iteration(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader = self._downloader_factory([path])
+
+        # When
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            action = FetchAction(path, downloader)
+            for step in action:
+                pass
+
+        # Then
+        target = os.path.join(downloader.cache_directory, filename)
+        self.assertTrue(os.path.exists(target))
+        self.assertEqual(compute_md5(target), compute_md5(path))
+        self.assertFalse(action.is_canceled)
+
+    def test_iteration_cancel(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader = self._downloader_factory([path])
+
+        # When
+        with mock_url_fetcher(downloader, open(path)):
+            action = FetchAction(path, downloader)
+            for step in action:
+                action.cancel()
+
+        # Then
+        target = os.path.join(downloader.cache_directory, filename)
+        self.assertFalse(os.path.exists(target))
+        self.assertTrue(action.is_canceled)
+
+
+class TestRemoveAction(unittest.TestCase):
+    def setUp(self):
+        self.top_prefix = tempfile.mkdtemp()
+        self.top_installed_repository = Repository(self.top_prefix)
+        self.installed_repository = Repository(self.top_prefix)
+
+    def tearDown(self):
+        shutil.rmtree(self.top_prefix)
+
+    def _install_eggs(self, paths):
+        repository = Repository()
+        for path in paths:
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
+
+        for path in paths:
+            action = InstallAction(path, self.top_prefix, repository,
+                                   self.top_installed_repository,
+                                   self.installed_repository,
+                                   os.path.dirname(path))
+            action.execute()
+
+    def test_simple(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+
+        metadata = PackageMetadata.from_egg(path)
+
+        self._install_eggs([path])
+
+        # When
+        action = RemoveAction(path, self.top_prefix,
+                              self.top_installed_repository,
+                              self.installed_repository)
+        action.execute()
+
+        # Then
+        repository = Repository._from_prefixes([self.top_prefix])
+        self.assertFalse(repository.has_package(metadata))
+        self.assertFalse(self.top_installed_repository.has_package(metadata))
+        self.assertFalse(self.installed_repository.has_package(metadata))
+        self.assertFalse(action.is_canceled)
+
+    def test_iteration(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+
+        metadata = PackageMetadata.from_egg(path)
+
+        self._install_eggs([path])
+
+
+        # When
+        action = RemoveAction(path, self.top_prefix,
+                              self.top_installed_repository,
+                              self.installed_repository)
+        for step in action:
+            pass
+
+        # Then
+        repository = Repository._from_prefixes([self.top_prefix])
+        self.assertFalse(repository.has_package(metadata))
+        self.assertFalse(self.top_installed_repository.has_package(metadata))
+        self.assertFalse(self.installed_repository.has_package(metadata))
+        self.assertFalse(action.is_canceled)
+
+
+    def test_iteration_cancel(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+
+        metadata = PackageMetadata.from_egg(path)
+
+        self._install_eggs([path])
+
+
+        # When
+        action = RemoveAction(path, self.top_prefix,
+                              self.top_installed_repository,
+                              self.installed_repository)
+        for step in action:
+            action.cancel()
+
+        # Then
+        repository = Repository._from_prefixes([self.top_prefix])
+        self.assertFalse(repository.has_package(metadata))
+        self.assertFalse(self.top_installed_repository.has_package(metadata))
+        self.assertFalse(self.installed_repository.has_package(metadata))
+
+        self.assertTrue(action.is_canceled)

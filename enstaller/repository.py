@@ -297,13 +297,31 @@ class Repository(object):
 
     def __init__(self, store_info=""):
         self._name_to_packages = collections.defaultdict(list)
-        self._packages = []
 
         self._store_info = ""
 
     def add_package(self, package_metadata):
-        self._packages.append(package_metadata)
         self._name_to_packages[package_metadata.name].append(package_metadata)
+
+    def delete_package(self, package_metadata):
+        """ Remove the given package.
+
+        Removing a non-existent package is an error.
+
+        Parameters
+        ----------
+        package_metadata : PackageMetadata
+            The package to remove
+        """
+        if not self.has_package(package_metadata):
+            msg = "Package '{0}-{1}' not found".format(
+                package_metadata.name, package_metadata.version)
+            raise MissingPackage(msg)
+        else:
+            candidates = [p for p in
+                          self._name_to_packages[package_metadata.name]
+                          if p.full_version != package_metadata.full_version]
+            self._name_to_packages[package_metadata.name] = candidates
 
     def has_package(self, package_metadata):
         """Returns True if the given package is available in this repository
@@ -400,8 +418,9 @@ class Repository(object):
         packages : iterable of RepositoryPackageMetadata-like
             The corresponding metadata
         """
-        for package in self._packages:
-            yield package
+        for packages_set in self._name_to_packages.itervalues():
+            for package in packages_set:
+                yield package
 
     def iter_most_recent_packages(self):
         """Iter over each package of the repository, but only the most recent
