@@ -346,18 +346,6 @@ class Configuration(object):
     def get_auth(self):
         return (self._username, self._password)
 
-    def _ensure_keyring_is_set(self):
-        """
-        Store current password in keyring, but only if not set already, or if
-        the password has changed.
-
-        It is an error to call this if username or password are not set.
-        """
-        assert self.is_auth_configured, "username/password must be set !"
-        if _get_keyring_password(self._username) is None \
-           or _get_keyring_password(self._username) != self._password:
-            _set_keyring_password(self._username, self._password)
-
     def write(self, filename):
         username, password = self.get_auth()
         if username and password:
