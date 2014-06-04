@@ -7,9 +7,6 @@ from os.path import basename, isfile, isdir, join
 
 from egginst.utils import human_bytes
 
-from enstaller.config import HOME_ENSTALLER4RC, Configuration
-from enstaller.store.indexed import LocalIndexedStore, RemoteHTTPIndexedStore
-
 from enstaller.utils import comparable_version, compute_md5, uri_to_path
 import metadata
 import dist_naming
@@ -76,25 +73,8 @@ class Chain(object):
 
 
     def connect(self, repo):
-        config = Configuration.from_file(HOME_ENSTALLER4RC)
-        if repo in self.repo_objs:
-            return self.repo_objs[repo]
-
-        if repo.startswith('file://'):
-            repo_path = uri_to_path(repo)
-            r = LocalIndexedStore(repo_path)
-            r.connect()
-
-        elif repo.startswith(('http://', 'https://')):
-            r = RemoteHTTPIndexedStore(repo, config.local)
-            if repo.startswith('https://'):
-                r.connect(userpass=('EPDUser', 'Epd789'))
-            else:
-                r.connect()
-
-        self.repo_objs[repo] = r
-        return r
-
+        msg = "If you need this method, contact the enstaller maintainers."
+        raise NotImplementedError(msg)
 
     def add_repo(self, repo, index_fn=None):
         """

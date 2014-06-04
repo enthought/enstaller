@@ -1,9 +1,14 @@
+import bz2
+import gzip
 from hashlib import md5
 import json
 import os.path
 import re
 import urllib2
 import errno
+
+
+from cStringIO import StringIO
 
 
 class CachedHandler(urllib2.BaseHandler):
@@ -25,10 +30,8 @@ class CachedHandler(urllib2.BaseHandler):
 
     def cache_is_valid(self, metadata=None):
         metadata = metadata or self.read_metadata()
-        if ('etag' in metadata  # metadata has an etag
-            and 'md5' in metadata  # and an md5 sum
-            and os.path.exists(self._index_path)  # and the index exists
-            ):
+        if 'etag' in metadata and 'md5' in metadata \
+                and os.path.exists(self._index_path):
             # All the data is there, check if it's valid
             sum = md5()
             for line in open(self._index_path, 'rb'):
@@ -67,7 +70,8 @@ class CachedHandler(urllib2.BaseHandler):
     def http_request(self, req):
         metadata = self.read_metadata()
 
-        if self.cache_re.search(req.get_full_url()) and self.cache_is_valid(metadata):
+        if self.cache_re.search(req.get_full_url()) \
+                and self.cache_is_valid(metadata):
             req.headers['If-None-Match'] = metadata['etag']
 
         return req
@@ -89,13 +93,44 @@ class CachedHandler(urllib2.BaseHandler):
 
     def http_response(self, req, response):
         etag = response.headers.get('Etag')
-        if etag and response.code == 200 and self.cache_re.search(response.url):
+        if etag and response.code == 200 \
+                and self.cache_re.search(response.url):
             self.fill_cache(etag, response.read())
             res = urllib2.addinfourl(open(self._index_path, 'rb'),
-                                          response.headers, response.url)
+                                     response.headers, response.url)
             res.code = response.code
             res.msg = response.msg
             return res
+
+        return response
+
+    https_response = http_response
+
+
+class CompressedHandler(urllib2.BaseHandler):
+    compression_types = [
+        ('bzip2', bz2.decompress),
+        ('gzip', lambda data: gzip.GzipFile(fileobj=StringIO(data)).read()),
+        ('*', lambda data: data)
+    ]
+
+    def http_request(self, req):
+        if not req.headers.get('Accept-Encoding'):
+            req.headers['Accept-Encoding'] = ','.join(
+                [enc for enc, _ in self.compression_types])
+        return req
+
+    https_request = http_request
+
+    def http_response(self, req, response):
+        content_encoding = response.headers.get('Content-Encoding')
+        if not content_encoding:
+            return response
+
+        for encoding, decompress in self.compression_types:
+            if encoding in content_encoding:
+                decompressed = decompress(response.read())
+                response.read = lambda: decompressed
 
         return response
 
