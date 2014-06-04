@@ -321,6 +321,36 @@ class TestRepository(unittest.TestCase):
             # Then
             self.assertEqual(len(list(repository.iter_packages())), 0)
 
+    def test_delete_non_existing(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+        to_remove = PackageMetadata.from_egg(path)
+        repository = Repository()
+
+        # When/Then
+        with self.assertRaises(MissingPackage):
+            repository.delete_package(to_remove)
+
+    def test_delete_simple(self):
+        # Given
+        eggs = ["flake8-2.0.0-2.egg", "nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RepositoryPackageMetadata.from_egg(path)
+            repository.add_package(package)
+
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+        to_remove = PackageMetadata.from_egg(path)
+
+        # When
+        repository.delete_package(to_remove)
+
+        # Then
+        self.assertItemsEqual(
+            [p.key for p in repository.iter_packages()],
+            ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
+
 # Unittest that used to belong to Enpkg
 class TestRepositoryMisc(unittest.TestCase):
     def test_find_packages_invalid_versions(self):
