@@ -50,7 +50,7 @@ def authenticate(configuration):
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
-                                format(index, e.msg)
+                              format(index, e.msg)
                         raise InvalidConfiguration(msg)
                     else:
                         raise
@@ -125,9 +125,11 @@ def subscription_level(user):
     web API.
     """
     if 'has_subscription' in user:
-        if user.get('is_authenticated', False) and user.get('has_subscription', False):
+        if user.get('is_authenticated', False) \
+                and user.get('has_subscription', False):
             return 'Canopy / EPD Basic or above'
-        elif user.get('is_authenticated', False) and not(user.get('has_subscription', False)):
+        elif user.get('is_authenticated', False) \
+                and not(user.get('has_subscription', False)):
             return 'Canopy / EPD Free'
         else:
             return None
@@ -145,6 +147,6 @@ def _head_request(url, auth=None):
         request.add_unredirected_header("Authorization", auth)
     else:
         request = urllib2.Request(url)
-    request.get_method = lambda : 'HEAD'
+    request.get_method = lambda: 'HEAD'
 
     return urllib2.urlopen(request)

@@ -28,9 +28,7 @@ from enstaller.utils import real_prefix
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
-
 logger = logging.getLogger(__name__)
-
 
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
@@ -58,7 +56,6 @@ def _setup_keyring():
         pass
 
     keyring.set_keyring(backend)
-
 
 _setup_keyring()
 
@@ -98,11 +95,11 @@ def _get_writable_local_dir(local_dir):
         return local_dir
 
     logger.warn('Warning: the following directory is not writeable '
-           'with current permissions:\n'
-           '    {0!r}\n'
-           'Using a temporary cache for index and eggs.\n'.format(local_dir))
+                'with current permissions:\n'
+                '    {0!r}\n'
+                'Using a temporary cache for index and eggs.\n'.
+                format(local_dir))
     return tempfile.mkdtemp()
-
 
 RC_TMPL = """\
 # enstaller configuration file
@@ -210,7 +207,8 @@ def convert_auth_if_required(filename):
         username = config.EPD_username
         password = _get_keyring_password(username)
         if password is None:
-            raise EnpkgError("Cannot convert password: no password found in keyring")
+            raise EnpkgError("Cannot convert password: no password found "
+                             "in keyring")
         else:
             config.set_auth(username, password)
             config._change_auth(filename)
@@ -222,8 +220,10 @@ def convert_auth_if_required(filename):
 def _get_keyring_password(username):
     return keyring.get_password(KEYRING_SERVICE_NAME, username)
 
+
 def _set_keyring_password(username, password):
     return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
+
 
 class Configuration(object):
     @classmethod
@@ -299,7 +299,8 @@ class Configuration(object):
 
     @property
     def webservice_entry_point(self):
-        return fill_url("{0}/eggs/{1}/".format(self.store_url, plat.custom_plat))
+        return fill_url("{0}/eggs/{1}/".
+                        format(self.store_url, plat.custom_plat))
 
     @property
     def api_url(self):
@@ -350,8 +351,9 @@ class Configuration(object):
             proxy_line = ('#proxy = <proxy string>  '
                           '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
 
-        variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version": __version__,
-                     "proxy_line": proxy_line, "auth_section": auth_section}
+        variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version":
+                     __version__, "proxy_line": proxy_line, "auth_section":
+                     auth_section}
         with open(filename, "w") as fo:
             fo.write(RC_TMPL % variables)
 
@@ -514,7 +516,7 @@ def print_config(config, prefix):
     print("use_webservice:", config.use_webservice)
     if config.filename is not None:
         print("config file:", config.filename)
-    print("keyring backend: %s" % (_keyring_backend_name(),))
+    print("keyring backend: %s" % (_keyring_backend_name(), ))
     print("settings:")
     print("    prefix = %s" % prefix)
     print("    %s = %s" % ("repository_cache", config.repository_cache))
