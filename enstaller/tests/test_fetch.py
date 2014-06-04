@@ -96,9 +96,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([filename])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(filename)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(filename)
 
         # Then
         target = os.path.join(self.tempdir, filename)
@@ -119,11 +119,11 @@ class TestDownloadManager(unittest.TestCase):
         mocked_metadata.key = filename
 
         with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            fetch_api = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(fetch_api, open(path)):
+            downloader = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(downloader, open(path)):
                 # When/Then
                 with self.assertRaises(EnstallerException):
-                    fetch_api.fetch_egg(filename)
+                    downloader.fetch(filename)
 
     def test_fetch_abort(self):
         # Given
@@ -135,9 +135,10 @@ class TestDownloadManager(unittest.TestCase):
 
         response = MockedStoreResponse(100000, event, 0.5)
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, response):
-            fetch_api.fetch_egg(filename, execution_aborted=event)
+        downloader = DownloadManager(repository, self.tempdir,
+                                     execution_aborted=event)
+        with mock_url_fetcher(downloader, response):
+            downloader.fetch(filename)
 
             # Then
             target = os.path.join(self.tempdir, filename)
@@ -152,9 +153,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -170,9 +171,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -190,9 +191,9 @@ class TestDownloadManager(unittest.TestCase):
                 fo.write("")
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -205,11 +206,17 @@ class TestDownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg, force=True)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg, force=True)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
+
+        # When/Then
+        # Ensure we deal correctly with force=False when the egg is already
+        # there.
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg, force=False)
 
     def test_encore_event_manager(self):
         # Given
@@ -221,9 +228,9 @@ class TestDownloadManager(unittest.TestCase):
             event_manager = EventManager()
 
             # When
-            fetch_api = DownloadManager(repository, self.tempdir, evt_mgr=event_manager)
-            with mock_url_fetcher(fetch_api, open(path, "rb")):
-                fetch_api.fetch_egg(egg)
+            downloader = DownloadManager(repository, self.tempdir, evt_mgr=event_manager)
+            with mock_url_fetcher(downloader, open(path, "rb")):
+                downloader.fetch(egg)
 
             # Then
             self.assertTrue(event_manager.emit.called)
@@ -240,9 +247,9 @@ class TestDownloadManager(unittest.TestCase):
 
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
-            fetch_api = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(fetch_api, open(path, "rb")):
-                fetch_api.fetch_egg(egg)
+            downloader = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(downloader, open(path, "rb")):
+                downloader.fetch(egg)
 
             # Then
             self.assertTrue(m.called)

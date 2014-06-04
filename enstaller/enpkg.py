@@ -30,17 +30,16 @@ class _ActionReprMixing(object):
         return "{}: <{}>".format(self.__class__.__name__, self._egg)
 
 class FetchAction(_ActionReprMixing):
-    def __init__(self, downloader, egg, force=True, execution_aborted=None):
+    def __init__(self, downloader, egg, force=True):
         self._downloader = downloader
         self._egg = egg
         self._force = force
-        self._execution_aborted = execution_aborted
 
     def execute(self):
         downloader = self._downloader
         downloader.super_id = getattr(self, 'super_id', None)
 
-        downloader.fetch_egg(self._egg, self._force, self._execution_aborted)
+        downloader.fetch(self._egg, self._force)
 
 
 class InstallAction(_ActionReprMixing):
@@ -181,6 +180,9 @@ class Enpkg(object):
         self._execution_aborted = threading.Event()
 
         self._downloader = download_manager
+        # XXX: will be removed once the execution_aborted is not passed across
+        # classes anymore
+        self._downloader._execution_aborted = self._execution_aborted
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
@@ -210,8 +212,7 @@ class Enpkg(object):
 
             if opcode.startswith('fetch_'):
                 force = int(opcode[-1])
-                return FetchAction(self._enpkg._downloader, egg, force,
-                                   self._enpkg._execution_aborted)
+                return FetchAction(self._enpkg._downloader, egg, force)
             elif opcode.startswith("install"):
                 return InstallAction(self._enpkg, egg)
             elif opcode.startswith("remove"):
