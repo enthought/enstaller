@@ -12,7 +12,6 @@ from enstaller.repository import egg_name_to_name_version
 
 logger = logging.getLogger(__name__)
 
-
 class _CancelableResponse(object):
     def __init__(self, path, package_metadata, fetcher, force, progress_factory):
         self._path = path
@@ -20,8 +19,8 @@ class _CancelableResponse(object):
 
         self._canceled = False
 
-        self._progress_factory = progress_factory
-        self._progress = None
+        self._progress = progress_factory(self._package_metadata.key,
+                                          self._package_metadata.size)
 
         self._fetcher = fetcher
         self._force = force
@@ -36,17 +35,15 @@ class _CancelableResponse(object):
         return self.iter_content()
 
     def iter_content(self):
-        if not self._needs_to_download(self._package_metadata, self._force):
-            return
-
-        response = StoreResponse(
-            self._fetcher.open(self._package_metadata.source_url),
-            self._package_metadata.size, self._package_metadata.md5,
-            self._package_metadata.key)
-
-        self._progress = self._progress_factory(self._package_metadata.key,
-                                                self._package_metadata.size)
         with FileProgressManager(self._progress):
+            if not self._needs_to_download(self._package_metadata, self._force):
+                return
+
+            response = StoreResponse(
+                self._fetcher.open(self._package_metadata.source_url),
+                self._package_metadata.size, self._package_metadata.md5,
+                self._package_metadata.key)
+
             with checked_content(self._path, self._package_metadata.md5) as target:
                 for chunk in response.iter_content():
                     if self._canceled:
