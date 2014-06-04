@@ -1,17 +1,13 @@
 from __future__ import print_function
 
-import contextlib
 import logging
 import os
-import threading
 import sys
 
-from uuid import uuid4
 from os.path import isfile, join
 
-from egginst.main import EggInst, install_egg_cli, remove_egg_cli
-from egginst.progress import (console_progress_manager_factory,
-                              progress_manager_factory)
+from egginst.main import EggInst
+from egginst.progress import console_progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -25,19 +21,158 @@ from enstaller.solver import Solver
 logger = logging.getLogger(__name__)
 
 
-class _ExecuteContext(object):
-    def __init__(self, prefix, actions):
-        self._actions = actions
-        self._prefix = prefix
+class _BaseAction(object):
+    def __init__(self):
+        self._is_canceled = False
+
+    def __str__(self):
+        return "{}: <{}>".format(self.__class__.__name__, self._egg)
 
     @property
-    def n_actions(self):
-        return len(self._actions)
+    def is_canceled(self):
+        return self._is_canceled
 
-    def iter_actions(self):
-        with History(self._prefix):
-            for action in self._actions:
-                yield action
+    def cancel(self):
+        """ Cancel the action.
+
+        Note: may not do anything for operations that cannot be safely
+        canceled.
+        """
+        self._is_canceled = True
+
+    def execute(self):
+        """ Execute the given action."""
+
+    def iter_execute(self):
+        """ Iterator wich execute the action step by step when iterated
+        over."""
+
+    def __iter__(self):
+        return self.iter_execute()
+
+
+class FetchAction(_BaseAction):
+    def __init__(self, egg, downloader, force=True):
+        super(FetchAction, self).__init__()
+        self._downloader = downloader
+        self._egg = egg
+        self._force = force
+
+        self._progress = None
+
+        self._current_context = None
+
+    def cancel(self):
+        super(FetchAction, self).cancel()
+        self._current_context.cancel()
+
+    def progress_update(self, step):
+        self._progress(step)
+
+    def iter_execute(self):
+        context = self._downloader.iter_fetch(self._egg, self._force)
+        self._current_context = context
+        self._progress = context.progress_update
+        for chunk_size in context.iter_content():
+            yield chunk_size
+
+    def execute(self):
+        for chunk_size in self.iter_execute():
+            self.progress_update(chunk_size)
+
+
+class InstallAction(_BaseAction):
+    def __init__(self, egg, top_prefix, remote_repository,
+                 top_installed_repository, installed_repository,
+                 cache_directory):
+        super(InstallAction, self).__init__()
+
+        self._egg = egg
+        self._egg_path = os.path.join(cache_directory, self._egg)
+        self._top_prefix = top_prefix
+        self._remote_repository = remote_repository
+        self._top_installed_repository = top_installed_repository
+        self._installed_repository = installed_repository
+
+        def _progress_factory(filename, installed_size):
+            return console_progress_manager_factory("installing egg", filename,
+                                                    installed_size)
+
+        self._progress_factory = _progress_factory
+        self._progress = None
+
+    def progress_update(self, step):
+        self._progress(step=step)
+
+    def _extract_extra_info(self):
+        name, version = egg_name_to_name_version(self._egg)
+        package = self._remote_repository.find_package(name, version)
+        return package.s3index_data
+
+    def iter_execute(self):
+        extra_info = self._extract_extra_info()
+
+        installer = EggInst(self._egg_path, prefix=self._top_prefix)
+
+        self._progress = self._progress_factory(installer.fn,
+                                                installer.installed_size)
+
+        with self._progress:
+            for step in installer.install_iterator(extra_info):
+                yield step
+
+        self._post_install()
+
+    def execute(self):
+        for currently_extracted_size in self.iter_execute():
+            self.progress_update(currently_extracted_size)
+
+    def _post_install(self):
+        name, _ = egg_name_to_name_version(self._egg_path)
+        meta_dir = meta_dir_from_prefix(self._top_prefix, name)
+        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
+
+        self._top_installed_repository.add_package(package)
+        self._installed_repository.add_package(package)
+
+
+class RemoveAction(_BaseAction):
+    def __init__(self, egg, top_prefix):
+        super(RemoveAction, self).__init__()
+        self._egg = egg
+        self._top_prefix = top_prefix
+
+        def _progress_factory(filename, installed_size):
+            return console_progress_manager_factory("removing egg", filename,
+                                                    installed_size)
+
+        self._progress_factory = _progress_factory
+        self._progress = None
+
+    def progress_update(self, step):
+        self._progress(step=step)
+
+    def iter_execute(self):
+        installer = EggInst(self._egg, self._top_prefix, False)
+        remover = installer._egginst_remover
+        if not remover.is_installed:
+            logger.error("Error: can't find meta data for: %r", remover.cname)
+            return
+
+        self._progress = self._progress_factory(installer.fn, remover.installed_size)
+
+        with self._progress:
+            for n, filename in enumerate(remover.remove_iterator()):
+                yield n
+
+        # FIXME: we recalculate the full repository because we don't have a
+        # feature to remove a package yet
+        self._top_installed_repository = \
+            Repository._from_prefixes([self._top_prefix])
+
+    def execute(self):
+        for n in self.iter_execute():
+            self.progress_update(n)
 
 
 class Enpkg(object):
@@ -55,130 +190,71 @@ class Enpkg(object):
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
         prefix in the list.
-    evt_mgr: encore event manager instance -- default: None
-        Various progress events (e.g. for download, install, ...) are being
-        emitted to the event manager.  By default, a simple progress bar is
-        displayed on the console (which does not use the event manager at all).
     """
     def __init__(self, remote_repository, download_manager,
-                 prefixes=[sys.prefix], evt_mgr=None):
+                 prefixes=[sys.prefix]):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
-
-        self.evt_mgr = evt_mgr
 
         self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
         self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
 
-        self._execution_aborted = threading.Event()
-
         self._downloader = download_manager
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
 
-    def _install_egg(self, path, extra_info=None):
-        """
-        Install the given egg.
+    class _ExecuteContext(object):
+        def __init__(self, actions, enpkg):
+            self._top_prefix = enpkg.top_prefix
+            self._actions = actions
+            self._remote_repository = enpkg._remote_repository
+            self._enpkg = enpkg
 
-        Parameters
-        ----------
-        path: str
-            The path to the egg to install
-        """
-        name, _ = egg_name_to_name_version(path)
+        def _action_factory(self, action):
+            opcode, egg = action
 
-        if self.evt_mgr is None:
-            install_egg_cli(path, self.top_prefix, extra_info=extra_info)
-        else:
-            installer = EggInst(path, prefix=self.top_prefix,
-                                evt_mgr=self.evt_mgr)
-            installer.super_id = getattr(self, 'super_id', None)
-            installer.install(extra_info)
+            if opcode.startswith('fetch_'):
+                force = int(opcode[-1])
+                return FetchAction(egg, self._enpkg._downloader, force)
+            elif opcode.startswith("install"):
+                return InstallAction(egg, self._enpkg.top_prefix,
+                                     self._enpkg._remote_repository,
+                                     self._enpkg._top_installed_repository,
+                                     self._enpkg._installed_repository,
+                                     self._enpkg._downloader.cache_directory)
+            elif opcode.startswith("remove"):
+                return RemoveAction(egg, self._enpkg.top_prefix)
+            else:
+                raise ValueError("Unknown opcode: {0!r}".format(opcode))
 
-        meta_dir = meta_dir_from_prefix(self.top_prefix, name)
-        package = InstalledPackageMetadata.from_meta_dir(meta_dir)
+        def __iter__(self):
+            with History(self._top_prefix):
+                for action in self._actions:
+                    logger.info('\t' + str(action))
+                    yield self._action_factory(action)
 
-        self._top_installed_repository.add_package(package)
-        self._installed_repository.add_package(package)
-
-    def _remove_egg(self, egg):
-        """
-        Remove the given egg.
-
-        Parameters
-        ----------
-        path: str
-            The egg basename (e.g. 'numpy-1.8.0-1.egg')
-        """
-        if self.evt_mgr is None:
-            remove_egg_cli(egg, self.top_prefix)
-        else:
-            remover = EggInst(egg, prefix=self.top_prefix)
-            remover.super_id = getattr(self, 'super_id', None)
-            remover.remove()
-
-        # FIXME: we recalculate the full repository because we don't have a
-        # feature to remove a package yet
-        self._top_installed_repository = \
-            Repository._from_prefixes([self.prefixes[0]])
-
-    def _execute_opcode(self, opcode, egg):
-        logger.info('\t' + str((opcode, egg)))
-        if opcode.startswith('fetch_'):
-            self._fetch(egg, force=int(opcode[-1]))
-        elif opcode == 'remove':
-            self._remove_egg(egg)
-        elif opcode == 'install':
-            name, version = egg_name_to_name_version(egg)
-            package = self._remote_repository.find_package(name, version)
-            extra_info = package.s3index_data
-            self._install_egg(os.path.join(self._downloader.cache_directory,
-                                           egg),
-                              extra_info)
-        else:
-            raise Exception("unknown opcode: %r" % opcode)
-
-    @contextlib.contextmanager
-    def _enpkg_progress_manager(self, execution_context):
-        self.super_id = None
-
-        progress = progress_manager_factory("super", "",
-                                            execution_context.n_actions,
-                                            self.evt_mgr, self, self.super_id)
-
-        try:
-            yield progress
-        finally:
-            self.super_id = uuid4()
-
-    def get_execute_context(self, actions):
-        return _ExecuteContext(self.prefixes[0], actions)
+    def execute_context(self, actions):
+        return self._ExecuteContext(actions, self)
 
     def execute(self, actions):
         """
-        Execute actions, which is an iterable over tuples(action, egg_name),
-        where action is one of 'fetch', 'remote', or 'install' and egg_name
-        is the filename of the egg.
+        Execute the given set of actions.
+
         This method is only meant to be called with actions created by the
         *_actions methods below.
+
+        Parameters
+        ----------
+        actions : list
+            List of (opcode, egg) pairs, as returned by the *_actions from
+            Solver.
         """
         logger.info("Enpkg.execute: %d", len(actions))
-
-        context = self.get_execute_context(actions)
-
-        with self._enpkg_progress_manager(context) as progress:
-            for n, (opcode, egg) in enumerate(context.iter_actions()):
-                if self._execution_aborted.is_set():
-                    self._execution_aborted.clear()
-                    break
-                self._execute_opcode(opcode, egg)
-                progress(step=n)
-
-    def abort_execution(self):
-        self._execution_aborted.set()
+        for action in self.execute_context(actions):
+            action.execute()
 
     def revert_actions(self, arg):
         """
@@ -229,7 +305,3 @@ class Enpkg(object):
         """
         # FIXME: only used by canopy
         return History(self.prefixes[0])
-
-    def _fetch(self, egg, force=False):
-        self._downloader.super_id = getattr(self, 'super_id', None)
-        self._downloader.fetch_egg(egg, force, self._execution_aborted)
