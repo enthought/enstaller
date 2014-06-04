@@ -229,7 +229,7 @@ class TestFetchAction(unittest.TestCase):
         downloader = self._downloader_factory([path])
 
         # When
-        with mock_url_fetcher(downloader, open(path)):
+        with mock_url_fetcher(downloader, open(path, "rb")):
             action = FetchAction(path, downloader)
             action.execute()
 
@@ -246,7 +246,7 @@ class TestFetchAction(unittest.TestCase):
         downloader = self._downloader_factory([path])
 
         # When
-        with mock_url_fetcher(downloader, open(path)):
+        with mock_url_fetcher(downloader, open(path, "rb")):
             action = FetchAction(path, downloader)
             for step in action:
                 pass
