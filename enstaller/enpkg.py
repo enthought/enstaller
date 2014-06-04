@@ -52,7 +52,7 @@ class _BaseAction(object):
 
 
 class FetchAction(_BaseAction):
-    def __init__(self, downloader, egg, force=True):
+    def __init__(self, egg, downloader, force=True):
         super(FetchAction, self).__init__()
         self._downloader = downloader
         self._egg = egg
@@ -70,9 +70,7 @@ class FetchAction(_BaseAction):
         self._progress(step)
 
     def iter_execute(self):
-        downloader = self._downloader
-
-        context = downloader.iter_fetch(self._egg, self._force)
+        context = self._downloader.iter_fetch(self._egg, self._force)
         self._current_context = context
         self._progress = context.progress_update
         for chunk_size in context.iter_content():
@@ -84,13 +82,17 @@ class FetchAction(_BaseAction):
 
 
 class InstallAction(_BaseAction):
-    def __init__(self, enpkg, egg):
+    def __init__(self, egg, top_prefix, remote_repository,
+                 top_installed_repository, installed_repository,
+                 cache_directory):
         super(InstallAction, self).__init__()
-        self._enpkg = enpkg
-        self._egg = egg
 
-        self._egg_path = os.path.join(self._enpkg._downloader.cache_directory,
-                                      self._egg)
+        self._egg = egg
+        self._egg_path = os.path.join(cache_directory, self._egg)
+        self._top_prefix = top_prefix
+        self._remote_repository = remote_repository
+        self._top_installed_repository = top_installed_repository
+        self._installed_repository = installed_repository
 
         def _progress_factory(filename, installed_size):
             return console_progress_manager_factory("installing egg", filename,
@@ -104,13 +106,13 @@ class InstallAction(_BaseAction):
 
     def _extract_extra_info(self):
         name, version = egg_name_to_name_version(self._egg)
-        package = self._enpkg._remote_repository.find_package(name, version)
+        package = self._remote_repository.find_package(name, version)
         return package.s3index_data
 
     def iter_execute(self):
         extra_info = self._extract_extra_info()
 
-        installer = EggInst(self._egg_path, prefix=self._enpkg.top_prefix)
+        installer = EggInst(self._egg_path, prefix=self._top_prefix)
 
         self._progress = self._progress_factory(installer.fn,
                                                 installer.installed_size)
@@ -127,18 +129,18 @@ class InstallAction(_BaseAction):
 
     def _post_install(self):
         name, _ = egg_name_to_name_version(self._egg_path)
-        meta_dir = meta_dir_from_prefix(self._enpkg.top_prefix, name)
+        meta_dir = meta_dir_from_prefix(self._top_prefix, name)
         package = InstalledPackageMetadata.from_meta_dir(meta_dir)
 
-        self._enpkg._top_installed_repository.add_package(package)
-        self._enpkg._installed_repository.add_package(package)
+        self._top_installed_repository.add_package(package)
+        self._installed_repository.add_package(package)
 
 
 class RemoveAction(_BaseAction):
-    def __init__(self, enpkg, egg):
+    def __init__(self, egg, top_prefix):
         super(RemoveAction, self).__init__()
-        self._enpkg = enpkg
         self._egg = egg
+        self._top_prefix = top_prefix
 
         def _progress_factory(filename, installed_size):
             return console_progress_manager_factory("removing egg", filename,
@@ -151,7 +153,7 @@ class RemoveAction(_BaseAction):
         self._progress(step=step)
 
     def iter_execute(self):
-        installer = EggInst(self._egg, self._enpkg.top_prefix, False)
+        installer = EggInst(self._egg, self._top_prefix, False)
         remover = installer._egginst_remover
         if not remover.is_installed:
             logger.error("Error: can't find meta data for: %r", remover.cname)
@@ -166,7 +168,7 @@ class RemoveAction(_BaseAction):
         # FIXME: we recalculate the full repository because we don't have a
         # feature to remove a package yet
         self._top_installed_repository = \
-            Repository._from_prefixes([self._enpkg.top_prefix])
+            Repository._from_prefixes([self._top_prefix])
 
     def execute(self):
         for n in self.iter_execute():
@@ -216,11 +218,15 @@ class Enpkg(object):
 
             if opcode.startswith('fetch_'):
                 force = int(opcode[-1])
-                return FetchAction(self._enpkg._downloader, egg, force)
+                return FetchAction(egg, self._enpkg._downloader, force)
             elif opcode.startswith("install"):
-                return InstallAction(self._enpkg, egg)
+                return InstallAction(egg, self._enpkg.top_prefix,
+                                     self._enpkg._remote_repository,
+                                     self._enpkg._top_installed_repository,
+                                     self._enpkg._installed_repository,
+                                     self._enpkg._downloader.cache_directory)
             elif opcode.startswith("remove"):
-                return RemoveAction(self._enpkg, egg)
+                return RemoveAction(egg, self._enpkg.top_prefix)
             else:
                 raise ValueError("Unknown opcode: {0!r}".format(opcode))
 
