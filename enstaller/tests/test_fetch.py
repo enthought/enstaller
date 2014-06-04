@@ -176,7 +176,7 @@ class TestDownloadManager(unittest.TestCase):
         path = os.path.join(_EGGINST_COMMON_DATA, egg)
         repository = self._create_store_and_repository([egg])
 
-        with mock.patch("egginst.console.ProgressManager") as m:
+        with mock.patch("egginst.progress.ProgressManager") as m:
             # When
             downloader = DownloadManager(repository, self.tempdir)
             with mock_url_fetcher(downloader, open(path, "rb")):
