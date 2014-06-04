@@ -19,15 +19,19 @@ class _CancelableResponse(object):
 
         self._canceled = False
         self._progress_factory = progress_factory
+        self._progress_update = None
 
         self._fetcher = fetcher
         self._force = force
 
     def progress_update(self, step):
-        self._progress(step)
+        self._progress_update(step)
 
     def cancel(self):
         self._canceled = True
+        # XXX: hack to not display the remaining progress bar, as the egginst
+        # progress bar API does not allow for cancellation yet.
+        self._progress.silent = True
 
     def __iter__(self):
         return self.iter_content()
@@ -38,10 +42,11 @@ class _CancelableResponse(object):
 
         progress = self._progress_factory(self._package_metadata.key,
                                           self._package_metadata.size)
+        self._progress = progress
         file_progress = FileProgressManager(progress)
 
         with file_progress:
-            self._progress = file_progress.update
+            self._progress_update = file_progress.update
             with checked_content(self._path, self._package_metadata.md5) as target:
                 response = StoreResponse(
                     self._fetcher.open(self._package_metadata.source_url),
@@ -50,7 +55,7 @@ class _CancelableResponse(object):
 
                 for chunk in response.iter_content():
                     if self._canceled:
-                        self._response.close()
+                        response.close()
                         target.abort = True
                         return
 

@@ -26,8 +26,23 @@ logger = logging.getLogger(__name__)
 
 
 class _BaseAction(object):
+    def __init__(self):
+        self._is_canceled = False
+
     def __str__(self):
         return "{}: <{}>".format(self.__class__.__name__, self._egg)
+
+    @property
+    def is_canceled(self):
+        return self._is_canceled
+
+    def cancel(self):
+        """ Cancel the action.
+
+        Note: may not do anything for operations that cannot be safely
+        canceled.
+        """
+        self._is_canceled = True
 
     def execute(self):
         """ Execute the given action."""
@@ -42,11 +57,18 @@ class _BaseAction(object):
 
 class FetchAction(_BaseAction):
     def __init__(self, downloader, egg, force=True):
+        super(FetchAction, self).__init__()
         self._downloader = downloader
         self._egg = egg
         self._force = force
 
         self._progress = None
+
+        self._current_context = None
+
+    def cancel(self):
+        super(FetchAction, self).cancel()
+        self._current_context.cancel()
 
     def progress_update(self, step):
         self._progress(step)
@@ -56,9 +78,9 @@ class FetchAction(_BaseAction):
         downloader.super_id = getattr(self, 'super_id', None)
 
         context = downloader.iter_fetch(self._egg, self._force)
-        context_iterator =  context.iter_content()
+        self._current_context = context
         self._progress = context.progress_update
-        for chunk_size in context_iterator:
+        for chunk_size in context.iter_content():
             yield chunk_size
 
     def execute(self):
@@ -68,6 +90,7 @@ class FetchAction(_BaseAction):
 
 class InstallAction(_BaseAction):
     def __init__(self, enpkg, egg):
+        super(InstallAction, self).__init__()
         self._enpkg = enpkg
         self._egg = egg
 
@@ -121,6 +144,7 @@ class InstallAction(_BaseAction):
 
 class RemoveAction(_BaseAction):
     def __init__(self, enpkg, egg):
+        super(RemoveAction, self).__init__()
         self._enpkg = enpkg
         self._egg = egg
 
