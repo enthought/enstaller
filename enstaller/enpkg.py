@@ -57,7 +57,7 @@ class FetchAction(_BaseAction):
 
         context = downloader.iter_fetch(self._egg, self._force)
         context_iterator =  context.iter_content()
-        self._progress = context._progress
+        self._progress = context.progress_update
         for chunk_size in context_iterator:
             yield chunk_size
 

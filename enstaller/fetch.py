@@ -18,15 +18,13 @@ class _CancelableResponse(object):
         self._package_metadata = package_metadata
 
         self._canceled = False
-
-        self._progress = progress_factory(self._package_metadata.key,
-                                          self._package_metadata.size)
+        self._progress_factory = progress_factory
 
         self._fetcher = fetcher
         self._force = force
 
     def progress_update(self, step):
-        self._progress(step=step)
+        self._progress(step)
 
     def cancel(self):
         self._canceled = True
@@ -38,13 +36,18 @@ class _CancelableResponse(object):
         if not self._needs_to_download(self._package_metadata, self._force):
             return
 
-        with FileProgressManager(self._progress):
-            response = StoreResponse(
-                self._fetcher.open(self._package_metadata.source_url),
-                self._package_metadata.size, self._package_metadata.md5,
-                self._package_metadata.key)
+        progress = self._progress_factory(self._package_metadata.key,
+                                          self._package_metadata.size)
+        file_progress = FileProgressManager(progress)
 
+        with file_progress:
+            self._progress = file_progress.update
             with checked_content(self._path, self._package_metadata.md5) as target:
+                response = StoreResponse(
+                    self._fetcher.open(self._package_metadata.source_url),
+                    self._package_metadata.size, self._package_metadata.md5,
+                    self._package_metadata.key)
+
                 for chunk in response.iter_content():
                     if self._canceled:
                         self._response.close()
