@@ -2,7 +2,7 @@ import logging
 
 from os.path import isfile, join
 
-from egginst.progress import FileProgressManager, progress_manager_factory
+from egginst.progress import FileProgressManager, console_progress_manager_factory
 from egginst.utils import compute_md5, makedirs
 
 from enstaller.fetch_utils import StoreResponse, checked_content
@@ -11,6 +11,7 @@ from enstaller.repository import egg_name_to_name_version
 
 
 logger = logging.getLogger(__name__)
+
 
 class _CancelableResponse(object):
     def __init__(self, path, package_metadata, fetcher, force, progress_factory):
@@ -78,8 +79,7 @@ class _CancelableResponse(object):
 
 
 class DownloadManager(object):
-    def __init__(self, repository, cache_directory, auth=None, evt_mgr=None,
-                 execution_aborted=None):
+    def __init__(self, repository, cache_directory, auth=None):
         """
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
@@ -87,11 +87,8 @@ class DownloadManager(object):
         self._repository = repository
         self._fetcher = URLFetcher(cache_directory, auth)
         self.cache_directory = cache_directory
-        self.evt_mgr = evt_mgr
 
         makedirs(self.cache_directory)
-
-        self._execution_aborted = execution_aborted
 
     def _path(self, fn):
         return join(self.cache_directory, fn)
@@ -102,8 +99,8 @@ class DownloadManager(object):
 
         path = self._path(package_metadata.key)
         def _progress_factory(filename, installed_size):
-            return progress_manager_factory("fetching", filename,
-                                            installed_size, self.evt_mgr, self)
+            return console_progress_manager_factory("fetching", filename,
+                                                    installed_size)
 
         return _CancelableResponse(path, package_metadata, self._fetcher,
                                    force, _progress_factory)
@@ -121,8 +118,4 @@ class DownloadManager(object):
         """
         context = self.iter_fetch(egg, force)
         for chunk_size in context:
-            if self._execution_aborted is not None \
-               and self._execution_aborted.is_set():
-                context.cancel()
-                return
             context.progress_update(chunk_size)

@@ -2,8 +2,6 @@ import os.path
 import shutil
 import sys
 import tempfile
-import threading
-import time
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -67,33 +65,6 @@ class TestEnpkgActions(unittest.TestCase):
                 actions = enpkg._solver.remove_actions("dummy")
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
-
-    def test_abort(self):
-        """Ensure calling abort does abort the current set of executed actions."""
-        sentinel = []
-
-        def fake_install(*args):
-            time.sleep(5)
-            sentinel.append("oui oui")
-
-        entries = [
-            dummy_repository_package_factory("numpy", "1.6.1", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
-        ]
-        repository = repository_factory(entries)
-
-        with mock.patch("enstaller.enpkg.FetchAction.execute"):
-            with mock.patch("enstaller.enpkg.InstallAction.execute", fake_install):
-                enpkg = Enpkg(repository, mock.Mock())
-                actions = enpkg._solver.install_actions("numpy")
-
-                t = threading.Thread(target=lambda: enpkg.execute(actions))
-                t.start()
-
-                enpkg.abort_execution()
-                t.join(timeout=10)
-
-        self.assertEqual(sentinel, [])
 
 class TestEnpkgExecute(unittest.TestCase):
     def setUp(self):

@@ -208,39 +208,20 @@ class Enpkg(object):
         displayed on the console (which does not use the event manager at all).
     """
     def __init__(self, remote_repository, download_manager,
-                 prefixes=[sys.prefix], evt_mgr=None):
+                 prefixes=[sys.prefix]):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
-        self.evt_mgr = evt_mgr
-
+        self.evt_mgr = None
         self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
         self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
 
-        self._execution_aborted = threading.Event()
-
         self._downloader = download_manager
-        # XXX: will be removed once the execution_aborted is not passed across
-        # classes anymore
-        self._downloader._execution_aborted = self._execution_aborted
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
-
-    @contextlib.contextmanager
-    def _enpkg_progress_manager(self, n_actions):
-        self.super_id = None
-
-        progress = progress_manager_factory("super", "",
-                                            n_actions,
-                                            self.evt_mgr, self, self.super_id)
-
-        try:
-            yield progress
-        finally:
-            self.super_id = uuid4()
 
     class _ExecuteContext(object):
         def __init__(self, actions, enpkg):
@@ -285,20 +266,8 @@ class Enpkg(object):
             Solver.
         """
         logger.info("Enpkg.execute: %d", len(actions))
-
-        with self._enpkg_progress_manager(len(actions)) as progress:
-            self._execute(actions, progress)
-
-    def _execute(self, actions, progress):
-        for n, action in enumerate(self.execute_context(actions)):
-            if self._execution_aborted.is_set():
-                self._execution_aborted.clear()
-                break
+        for action in self.execute_context(actions):
             action.execute()
-            progress(step=n)
-
-    def abort_execution(self):
-        self._execution_aborted.set()
 
     def revert_actions(self, arg):
         """

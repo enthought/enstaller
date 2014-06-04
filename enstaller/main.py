@@ -595,8 +595,6 @@ def main(argv=None):
     else:
         setup_proxy()
 
-    evt_mgr = None
-
     if args.config:                               # --config
         print_config(config, prefixes[0])
         return
@@ -637,9 +635,9 @@ def main(argv=None):
     repository = repository_factory(config)
 
     downloader = DownloadManager(repository, config.repository_cache,
-                                 config.get_auth(), evt_mgr)
+                                 config.get_auth())
 
-    enpkg = Enpkg(repository, downloader, prefixes=prefixes, evt_mgr=evt_mgr)
+    enpkg = Enpkg(repository, downloader, prefixes=prefixes)
 
     if args.dry_run:
         def print_actions(actions):
