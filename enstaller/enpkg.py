@@ -1,17 +1,13 @@
 from __future__ import print_function
 
-import contextlib
 import logging
 import os
-import threading
 import sys
 
-from uuid import uuid4
 from os.path import isfile, join
 
 from egginst.main import EggInst
-from egginst.progress import (console_progress_manager_factory,
-                              progress_manager_factory)
+from egginst.progress import console_progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -75,7 +71,6 @@ class FetchAction(_BaseAction):
 
     def iter_execute(self):
         downloader = self._downloader
-        downloader.super_id = getattr(self, 'super_id', None)
 
         context = downloader.iter_fetch(self._egg, self._force)
         self._current_context = context
@@ -115,10 +110,7 @@ class InstallAction(_BaseAction):
     def iter_execute(self):
         extra_info = self._extract_extra_info()
 
-        installer = EggInst(self._egg_path, prefix=self._enpkg.top_prefix,
-                                  evt_mgr=self._enpkg.evt_mgr)
-        if self._enpkg.evt_mgr is not None:
-            installer.super_id = getattr(self._enpkg, 'super_id', None)
+        installer = EggInst(self._egg_path, prefix=self._enpkg.top_prefix)
 
         self._progress = self._progress_factory(installer.fn,
                                                 installer.installed_size)
@@ -159,17 +151,11 @@ class RemoveAction(_BaseAction):
         self._progress(step=step)
 
     def iter_execute(self):
-        installer = EggInst(self._egg, self._enpkg.top_prefix, False,
-                            self._enpkg.evt_mgr)
+        installer = EggInst(self._egg, self._enpkg.top_prefix, False)
         remover = installer._egginst_remover
         if not remover.is_installed:
             logger.error("Error: can't find meta data for: %r", remover.cname)
             return
-
-        if self._enpkg.evt_mgr is not None:
-            remover = EggInst(self._egg, prefix=self._enpkg.top_prefix,
-                              evt_mgr=self._enpkg.evt_mgr)
-            remover.super_id = getattr(self._enpkg, 'super_id', None)
 
         self._progress = self._progress_factory(installer.fn, remover.installed_size)
 
@@ -202,17 +188,12 @@ class Enpkg(object):
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
         prefix in the list.
-    evt_mgr: encore event manager instance -- default: None
-        Various progress events (e.g. for download, install, ...) are being
-        emitted to the event manager.  By default, a simple progress bar is
-        displayed on the console (which does not use the event manager at all).
     """
     def __init__(self, remote_repository, download_manager,
                  prefixes=[sys.prefix]):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
-        self.evt_mgr = None
         self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
