@@ -26,6 +26,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 from enstaller import __version__
 from enstaller.errors import (
     AuthFailedError, EnpkgError, EnstallerException, InvalidConfiguration)
+from enstaller.utils import real_prefix
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
@@ -34,6 +35,12 @@ logger = logging.getLogger(__name__)
 
 
 _INDEX_NAME = "index.json"
+
+KEYRING_SERVICE_NAME = 'Enthought.com'
+
+ENSTALLER4RC_FILENAME = ".enstaller4rc"
+SYS_PREFIX_ENSTALLER4RC = os.path.join(real_prefix(), ENSTALLER4RC_FILENAME)
+HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
 
 
 def _setup_keyring():
@@ -62,25 +69,6 @@ _setup_keyring()
 
 def _keyring_backend_name():
     return str(type(keyring.get_keyring()))
-
-
-KEYRING_SERVICE_NAME = 'Enthought.com'
-
-
-def under_venv():
-    return hasattr(sys, "real_prefix")
-
-
-def real_prefix():
-    if under_venv():
-        return sys.real_prefix
-    else:
-        return sys.prefix
-
-
-ENSTALLER4RC_FILENAME = ".enstaller4rc"
-SYS_PREFIX_ENSTALLER4RC = os.path.join(real_prefix(), ENSTALLER4RC_FILENAME)
-HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
 
 
 def configuration_read_search_order():

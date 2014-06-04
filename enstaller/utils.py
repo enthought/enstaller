@@ -169,3 +169,14 @@ def uri_to_path(uri):
         return urllib.url2pathname(urlpart.path)
     else:
         raise ValueError("Invalid file uri: {0}".format(uri))
+
+
+def under_venv():
+    return hasattr(sys, "real_prefix")
+
+
+def real_prefix():
+    if under_venv():
+        return sys.real_prefix
+    else:
+        return sys.prefix
