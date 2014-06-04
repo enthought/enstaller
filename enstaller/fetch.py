@@ -35,10 +35,10 @@ class _CancelableResponse(object):
         return self.iter_content()
 
     def iter_content(self):
-        with FileProgressManager(self._progress):
-            if not self._needs_to_download(self._package_metadata, self._force):
-                return
+        if not self._needs_to_download(self._package_metadata, self._force):
+            return
 
+        with FileProgressManager(self._progress):
             response = StoreResponse(
                 self._fetcher.open(self._package_metadata.source_url),
                 self._package_metadata.size, self._package_metadata.md5,
