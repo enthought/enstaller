@@ -1,8 +1,13 @@
 import hashlib
 import os.path
 import shutil
+import sys
 import tempfile
-import unittest
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 from egginst._compat import BytesIO
 
