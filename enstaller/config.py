@@ -26,7 +26,6 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 from enstaller import __version__
 from enstaller.errors import (
     AuthFailedError, EnpkgError, EnstallerException, InvalidConfiguration)
-#from enstaller.store.indexed import _INDEX_NAME
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
