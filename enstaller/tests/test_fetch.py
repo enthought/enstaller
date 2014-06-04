@@ -1,10 +1,8 @@
-import hashlib
 import os
 import os.path
 import shutil
 import sys
 import tempfile
-import threading
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -13,135 +11,14 @@ else:
 
 import mock
 
-from encore.events.event_manager import EventManager
-
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
-from enstaller.errors import EnstallerException, InvalidChecksum
-from enstaller.fetch import DownloadManager, MD5File, checked_content
+from enstaller.errors import EnstallerException
+from enstaller.fetch import DownloadManager
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
 
 from enstaller.tests.common import mock_url_fetcher
-
-
-class MockedStoreResponse(object):
-    """
-    A StoreResponse-like object which read may abort when some Thread.Event is
-    set.
-
-    Parameters
-    ----------
-    size: int
-        How large the fake file is
-    event: threading.Event
-        Instance will be set when abort_threshold will be reached
-    abort_threshold: float
-        when the internal read pointer reaches abort_threshold * total size,
-        event.set() will be called
-    """
-    def __init__(self, size, event=None, abort_threshold=0):
-        self._read_pos = 0
-        self.size = size
-
-        self.event = event
-        self._failing_count = int(self.size * abort_threshold)
-
-    @property
-    def _should_abort(self):
-        return self.event is not None and self._read_pos >= self._failing_count
-
-    def iter_content(self):
-        while True:
-            chunk = self.read(1024)
-            if chunk is None:
-                break
-            else:
-                yield chunk
-
-    def read(self, n):
-        if self._should_abort:
-            self.event.set()
-
-        if self._read_pos < self.size:
-            remain = self.size - self._read_pos
-            self._read_pos += n
-            return "a" * min(n, remain)
-        else:
-            return None
-
-    def close(self):
-        pass
-
-
-class TestMD5File(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    def _write_content(self, filename, data):
-        with open(filename, "wb") as fp:
-            fp.write(data)
-
-    def test_simple(self):
-        # Given
-        source = os.path.join(self.tempdir, "source.data")
-        self._write_content(source, b"data")
-
-        # When
-        target = os.path.join(self.tempdir, "target.data")
-        with open(target, "wb") as _fp:
-            fp = MD5File(_fp)
-            fp.write(b"data")
-
-        # Then
-        self.assertEqual(fp.checksum, compute_md5(target))
-        self.assertEqual(compute_md5(target), compute_md5(source))
-
-
-class TestCheckedContent(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
-    def _write_content(self, filename, data):
-        with open(filename, "wb") as fp:
-            fp.write(data)
-
-    def test_simple(self):
-        # Given
-        data = b"data"
-        checksum = hashlib.md5(data).hexdigest()
-        path = os.path.join(self.tempdir, "foo.data")
-
-        # When/Then
-        with checked_content(path, checksum) as fp:
-            fp.write(data)
-
-    def test_invalid_checksum(self):
-        # Given
-        data = b"data"
-        checksum = hashlib.md5(data).hexdigest()
-        path = os.path.join(self.tempdir, "foo.data")
-
-        # When/Then
-        with self.assertRaises(InvalidChecksum):
-            with checked_content(path, checksum) as fp:
-                fp.write("")
-
-    def test_abort(self):
-        # Given
-        data = b"data"
-        checksum = hashlib.md5(data).hexdigest()
-        path = os.path.join(self.tempdir, "foo.data")
-
-        # When/Then
-        with checked_content(path, checksum) as fp:
-            fp.abort = True
 
 
 class TestDownloadManager(unittest.TestCase):
@@ -167,9 +44,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([filename])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(filename)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(filename)
 
         # Then
         target = os.path.join(self.tempdir, filename)
@@ -190,29 +67,30 @@ class TestDownloadManager(unittest.TestCase):
         mocked_metadata.key = filename
 
         with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            fetch_api = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(fetch_api, open(path)):
+            downloader = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(downloader, open(path)):
                 # When/Then
                 with self.assertRaises(EnstallerException):
-                    fetch_api.fetch_egg(filename)
+                    downloader.fetch(filename)
 
     def test_fetch_abort(self):
         # Given
-        event = threading.Event()
-
         filename = "nose-1.3.0-1.egg"
-
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
         repository = self._create_store_and_repository([filename])
 
-        response = MockedStoreResponse(100000, event, 0.5)
+        target = os.path.join(self.tempdir, filename)
+
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, response):
-            fetch_api.fetch_egg(filename, execution_aborted=event)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path)):
+            context = downloader.iter_fetch(filename)
+            for i, chunk in enumerate(context):
+                if i == 1:
+                    context.cancel()
+                    break
 
             # Then
-            target = os.path.join(self.tempdir, filename)
-            self.assertTrue(event.is_set())
             self.assertFalse(os.path.exists(target))
 
     def test_fetch_egg_simple(self):
@@ -223,9 +101,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -241,9 +119,9 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -261,9 +139,9 @@ class TestDownloadManager(unittest.TestCase):
                 fo.write("")
 
         # When
-        fetch_api = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg)
+        downloader = DownloadManager(repository, self.tempdir)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -276,28 +154,17 @@ class TestDownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        with mock_url_fetcher(fetch_api, open(path, "rb")):
-            fetch_api.fetch_egg(egg, force=True)
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg, force=True)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
 
-    def test_encore_event_manager(self):
-        # Given
-        egg = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, egg)
-        repository = self._create_store_and_repository([egg])
-
-        with mock.patch.object(EventManager, "emit"):
-            event_manager = EventManager()
-
-            # When
-            fetch_api = DownloadManager(repository, self.tempdir, evt_mgr=event_manager)
-            with mock_url_fetcher(fetch_api, open(path, "rb")):
-                fetch_api.fetch_egg(egg)
-
-            # Then
-            self.assertTrue(event_manager.emit.called)
+        # When/Then
+        # Ensure we deal correctly with force=False when the egg is already
+        # there.
+        with mock_url_fetcher(downloader, open(path, "rb")):
+            downloader.fetch(egg, force=False)
 
     def test_progress_manager(self):
         """
@@ -311,9 +178,9 @@ class TestDownloadManager(unittest.TestCase):
 
         with mock.patch("egginst.console.ProgressManager") as m:
             # When
-            fetch_api = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(fetch_api, open(path, "rb")):
-                fetch_api.fetch_egg(egg)
+            downloader = DownloadManager(repository, self.tempdir)
+            with mock_url_fetcher(downloader, open(path, "rb")):
+                downloader.fetch(egg)
 
             # Then
             self.assertTrue(m.called)
