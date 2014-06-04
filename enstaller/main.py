@@ -28,14 +28,15 @@ from egginst.utils import bin_dir_name, rel_site_packages
 
 import enstaller
 
+from enstaller.auth import (authenticate, subscription_level,
+                            subscription_message)
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
-                              authenticate, configuration_read_search_order,
+                              configuration_read_search_order,
                               convert_auth_if_required, input_auth,
-                              print_config, subscription_message,
-                              write_default_config, subscription_level)
+                              print_config, write_default_config)
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
 from enstaller.legacy_stores import legacy_index_parser

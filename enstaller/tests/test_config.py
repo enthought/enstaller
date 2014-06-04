@@ -1,14 +1,11 @@
 import base64
 import contextlib
-import json
 import os.path
 import platform
-import re
 import shutil
 import sys
 import tempfile
 import textwrap
-import urllib2
 
 from cStringIO import StringIO
 
@@ -20,27 +17,23 @@ else:
 import mock
 
 from egginst.tests.common import mkdtemp
-from egginst.testing_utils import network
 
 from enstaller.plat import custom_plat
 
 from enstaller import __version__
 
-from enstaller.config import (AuthFailedError, abs_expanduser, authenticate,
+from enstaller.config import (abs_expanduser,
     configuration_read_search_order, get_auth, get_path,
-    input_auth, prepend_url, print_config, subscription_level, _web_auth,
-    _is_using_epd_username, convert_auth_if_required, _keyring_backend_name)
+    input_auth, prepend_url, print_config, _is_using_epd_username,
+    convert_auth_if_required, _keyring_backend_name)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url)
-from enstaller.errors import (EnstallerException, InvalidConfiguration,
-    InvalidFormat)
+from enstaller.errors import InvalidConfiguration
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
-                     make_keyring_unavailable_context, mock_print,
-                     fake_keyring_context, fake_keyring
-                     )
+                     mock_print, fake_keyring_context, fake_keyring)
 
 def compute_creds(username, password):
     return "{0}:{1}".format(username, password).encode("base64").rstrip()
@@ -223,74 +216,6 @@ class TestConfigKeyringConversion(unittest.TestCase):
             with open(filename) as fp:
                 self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
 
-AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
-
-R_JSON_AUTH_RESP = {'first_name': u'David',
-        'has_subscription': True,
-        'is_active': True,
-        'is_authenticated': True,
-        'last_name': u'Cournapeau',
-        'subscription_level': u'basic'}
-
-R_JSON_NOAUTH_RESP = {'is_authenticated': False,
-        'last_name': u'Cournapeau',
-        'subscription_level': u'basic'}
-
-class TestWebAuth(unittest.TestCase):
-    def setUp(self):
-        self.config = Configuration()
-
-    def test_invalid_auth_args(self):
-        with self.assertRaises(AuthFailedError):
-            _web_auth((None, None), self.config.api_url)
-
-    def test_simple(self):
-        with mock.patch("enstaller.config.urllib2") as murllib2:
-            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
-            murllib2.configure_mock(**attrs)
-            self.assertEqual(_web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url),
-                             R_JSON_AUTH_RESP)
-
-    def test_auth_encoding(self):
-        r_headers = {"Authorization": "Basic " + FAKE_CREDS}
-        with mock.patch("enstaller.config.urllib2") as murllib2:
-            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
-            murllib2.configure_mock(**attrs)
-
-            _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
-            murllib2.Request.assert_called_with(AUTH_API_URL, headers=r_headers)
-
-    def test_urllib_failures(self):
-        with mock.patch("enstaller.config.urllib2") as murllib2:
-            # XXX: we can't rely on mock for exceptions, but there has to be a
-            # better way ?
-            murllib2.URLError = urllib2.URLError
-
-            attrs = {'urlopen.side_effect': urllib2.URLError("dummy")}
-            murllib2.configure_mock(**attrs)
-
-            with self.assertRaises(AuthFailedError):
-                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
-
-        with mock.patch("enstaller.config.urllib2") as murllib2:
-            murllib2.HTTPError = urllib2.URLError
-
-            mocked_fp = mock.MagicMock()
-            mocked_fp.read.side_effect = murllib2.HTTPError("dummy")
-            attrs = {'urlopen.return_value': mocked_fp}
-            murllib2.configure_mock(**attrs)
-
-            with self.assertRaises(AuthFailedError):
-                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
-
-    def test_unauthenticated_user(self):
-        with mock.patch("enstaller.config.urllib2") as murllib2:
-            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_NOAUTH_RESP))}
-            murllib2.configure_mock(**attrs)
-
-            with self.assertRaises(AuthFailedError):
-                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
-
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -450,69 +375,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
         with open(fp.name, "r") as fp:
             self.assertEqual(fp.read(), config_data)
-
-class TestAuthenticate(unittest.TestCase):
-    @fake_keyring
-    def test_use_webservice_valid_user(self):
-        config = Configuration()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
-
-        with mock.patch("enstaller.config._web_auth") as mocked_auth:
-            authenticate(config)
-            self.assertTrue(mocked_auth.called)
-
-    @fake_keyring
-    def test_use_webservice_invalid_user(self):
-        config = Configuration()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
-
-        with mock.patch("enstaller.config._web_auth") as mocked_auth:
-            mocked_auth.return_value = {"is_authenticated": False}
-
-            with self.assertRaises(AuthFailedError):
-                authenticate(config)
-
-    @fake_keyring
-    def test_use_remote(self):
-        config = Configuration()
-        config.use_webservice = False
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
-
-        with mock.patch("enstaller.config._head_request"):
-            user = authenticate(config)
-        self.assertEqual(user, {"is_authenticated": True})
-
-    @network
-    @fake_keyring
-    def test_non_existing_remote(self):
-        config = Configuration()
-        config.use_webservice = False
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
-        config.IndexedRepos = [
-            "http://api.enthought.com/dummy/repo",
-        ]
-
-        with self.assertRaises(EnstallerException):
-            authenticate(config)
-
-
-class TestSubscriptionLevel(unittest.TestCase):
-    def test_unsubscribed_user(self):
-        user_info = {"is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD")
-
-        user_info = {"is_authenticated": False}
-        self.assertIsNone(subscription_level(user_info))
-
-    def test_subscribed_user(self):
-        user_info = {"has_subscription": True, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD Basic or above")
-
-        user_info = {"has_subscription": False, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD Free")
-
-        user_info = {"has_subscription": False, "is_authenticated": False}
-        self.assertIsNone(subscription_level(user_info))
 
 class TestAuthenticationConfiguration(unittest.TestCase):
     @make_keyring_unavailable

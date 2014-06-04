@@ -5,7 +5,7 @@ import urllib
 import urllib2
 import urlparse
 
-from enstaller.config import _INDEX_NAME
+from enstaller.auth import _INDEX_NAME
 from enstaller.errors import InvalidConfiguration
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.urllib_utils import CachedHandler, CompressedHandler
