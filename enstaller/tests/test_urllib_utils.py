@@ -7,7 +7,7 @@ import tempfile
 import urllib2
 from unittest import TestCase
 
-from enstaller.store.cached import CachedHandler
+from enstaller.urllib_utils import CachedHandler
 
 
 class CacheTest(TestCase):

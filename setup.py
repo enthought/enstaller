@@ -96,7 +96,7 @@ setup(
         'egginst',
         'egginst/macho',
         'enstaller',
-        'enstaller/store',
+        #'enstaller/store',
         'enstaller/indexed_repo',
         'enstaller/proxy',
         'enstaller/vendor',

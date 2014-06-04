@@ -5,11 +5,10 @@ import urllib
 import urllib2
 import urlparse
 
+from enstaller.config import _INDEX_NAME
 from enstaller.errors import InvalidConfiguration
 from enstaller.repository import RepositoryPackageMetadata
-from enstaller.store.cached import CachedHandler
-from enstaller.store.compressed import CompressedHandler
-from enstaller.store.indexed import _INDEX_NAME
+from enstaller.urllib_utils import CachedHandler, CompressedHandler
 from enstaller.utils import PY_VER
 
 
