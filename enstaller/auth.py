@@ -9,6 +9,53 @@ from enstaller.errors import (AuthFailedError, EnstallerException,
 _INDEX_NAME = "index.json"
 
 
+class UserInfo(object):
+    @classmethod
+    def from_json_string(cls, s):
+        return cls.from_json(json.loads(s))
+
+    @classmethod
+    def from_json(cls, json_data):
+        return cls(json_data["is_authenticated"],
+                   json_data["first_name"],
+                   json_data["last_name"],
+                   json_data["has_subscription"],
+                   json_data["subscription_level"])
+
+    def __init__(self, is_authenticated, first_name="", last_name="",
+                 has_subscription=False, subscription_level="free"):
+        self.is_authenticated = is_authenticated
+        self.first_name = first_name
+        self.last_name = last_name
+        self.has_subscription = has_subscription
+        self._subscription_level = subscription_level
+
+    @property
+    def subscription_level(self):
+        if self.is_authenticated and self.has_subscription:
+            return 'Canopy / EPD Basic or above'
+        elif self.is_authenticated and not self.has_subscription:
+            return 'Canopy / EPD Free'
+        else:
+            return None
+
+    def to_dict(self):
+        keys = (
+             "is_authenticated",
+             "first_name",
+             "last_name",
+             "has_subscription",
+             "subscription_level",
+        )
+        return dict((k, getattr(self, k)) for k in keys)
+
+    def __eq__(self, other):
+        return self.to_dict() == other.to_dict()
+
+
+DUMMY_USER = UserInfo(False)
+
+
 def authenticate(configuration):
     """
     Attempt to authenticate the user's credentials by the appropriate
@@ -26,7 +73,6 @@ def authenticate(configuration):
         raise EnstallerException("No valid auth information in "
                                  "configuration, cannot authenticate.")
 
-    user = {}
     auth = configuration.get_auth()
 
     if configuration.use_webservice:
@@ -54,7 +100,7 @@ def authenticate(configuration):
                         raise InvalidConfiguration(msg)
                     else:
                         raise
-        user = dict(is_authenticated=True)
+        user = UserInfo(is_authenticated=True)
 
     return user
 
@@ -69,11 +115,11 @@ def subscription_message(config, user):
     """
     message = ""
 
-    if user.get('is_authenticated', False):
+    if user.is_authenticated:
         username, password = config.get_auth()
         login = "You are logged in as %s" % username
-        subscription = "Subscription level: %s" % subscription_level(user)
-        name = user.get('first_name', '') + ' ' + user.get('last_name', '')
+        subscription = "Subscription level: %s" % user.subscription_level
+        name = user.first_name + ' ' + user.last_name
         name = name.strip()
         if name:
             name = ' (' + name + ')'
@@ -112,32 +158,11 @@ def _web_auth(auth, api_url):
         raise AuthFailedError("Authentication error: %s" % e.reason)
 
     # See if web API refused to authenticate
-    user = json.loads(res)
-    if not(user['is_authenticated']):
+    user = UserInfo.from_json_string(res)
+    if not user.is_authenticated:
         raise AuthFailedError('Authentication error: Invalid user login.')
 
     return user
-
-
-def subscription_level(user):
-    """
-    Extract the subscription level from the dictionary (`user`) returned by the
-    web API.
-    """
-    if 'has_subscription' in user:
-        if user.get('is_authenticated', False) \
-                and user.get('has_subscription', False):
-            return 'Canopy / EPD Basic or above'
-        elif user.get('is_authenticated', False) \
-                and not(user.get('has_subscription', False)):
-            return 'Canopy / EPD Free'
-        else:
-            return None
-    else:  # don't know the subscription level
-        if user.get('is_authenticated', False):
-            return 'Canopy / EPD'
-        else:
-            return None
 
 
 def _head_request(url, auth=None):

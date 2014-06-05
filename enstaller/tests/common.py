@@ -5,6 +5,7 @@ from cStringIO import StringIO
 
 import mock
 
+from enstaller.auth import UserInfo
 from enstaller.errors import AuthFailedError
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -66,11 +67,11 @@ def mock_print():
 # Decorators to force a certain configuration
 def is_authenticated(f):
     return mock.patch("enstaller.main.authenticate",
-                      lambda ignored: {"is_authenticated": True})(f)
+                      lambda ignored: UserInfo(True))(f)
 
 def is_not_authenticated(f):
     return mock.patch("enstaller.main.authenticate",
-                      lambda ignored: {"is_authenticated": False})(f)
+                      lambda ignored: UserInfo(False))(f)
 
 def make_keyring_unavailable(f):
     return mock.patch("enstaller.config.keyring", None)(f)

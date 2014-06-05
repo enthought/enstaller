@@ -18,19 +18,17 @@ import enstaller.config
 
 from egginst.testing_utils import network
 
-from enstaller.auth import _web_auth, authenticate, subscription_level
+from enstaller.auth import _web_auth, DUMMY_USER, UserInfo, authenticate
 from enstaller.config import Configuration, write_default_config
 from enstaller.errors import (AuthFailedError, EnstallerException,
                               InvalidConfiguration)
 from enstaller.tests.common import fake_keyring
 
 
-basic_user = dict(first_name="Jane", last_name="Doe", is_authenticated=True,
-        has_subscription=True)
-free_user = dict(first_name="John", last_name="Smith", is_authenticated=True,
-        has_subscription=False)
-anon_user = dict(is_authenticated=False)
-old_auth_user = {}
+basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription=True)
+free_user = UserInfo(True, first_name="John", last_name="Smith", has_subscription=False)
+anon_user = UserInfo(False)
+old_auth_user = DUMMY_USER
 
 def compute_creds(username, password):
     return "{0}:{1}".format(username, password).encode("base64").rstrip()
@@ -50,6 +48,8 @@ R_JSON_AUTH_RESP = {'first_name': u'David',
 
 R_JSON_NOAUTH_RESP = {'is_authenticated': False,
         'last_name': u'Cournapeau',
+        'first_name': u'David',
+        'has_subscription': True,
         'subscription_level': u'basic'}
 
 
@@ -72,15 +72,15 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         new_config = Configuration.from_file(self.f)
         usr = enstaller.config.authenticate(new_config)
 
-        self.assertTrue(usr.get('is_authenticated'))
-        self.assertTrue(usr.get('has_subscription'))
+        self.assertTrue(usr.is_authenticated)
+        self.assertTrue(usr.has_subscription)
 
     def test_no_acct(self):
         def mocked_authenticate(configuration, remote=None):
             if configuration.get_auth() != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
-                return {"is_authenticated": True}
+                return UserInfo(is_authenticated=True)
 
         write_default_config(self.f)
         with patch('enstaller.config.authenticate', mocked_authenticate):
@@ -94,7 +94,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             config.set_auth("valid_user", "valid_password")
             usr = config._checked_change_auth(self.f)
 
-            self.assertEqual(usr, {"is_authenticated": True})
+            self.assertTrue(usr.is_authenticated)
 
     @patch('enstaller.config.authenticate', return_value=old_auth_user)
     def test_remote_success(self, mock1):
@@ -104,7 +104,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         config.set_auth("usr", "password")
 
         usr = config._checked_change_auth(self.f)
-        self.assertEqual(usr, {})
+        self.assertEqual(usr, DUMMY_USER)
 
     def test_nones(self):
         config = Configuration()
@@ -122,21 +122,21 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
 class TestSubscriptionLevel(unittest.TestCase):
     def test_unsubscribed_user(self):
-        user_info = {"is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD")
+        user_info = UserInfo(True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
 
-        user_info = {"is_authenticated": False}
-        self.assertIsNone(subscription_level(user_info))
+        user_info = UserInfo(False)
+        self.assertIsNone(user_info.subscription_level)
 
     def test_subscribed_user(self):
-        user_info = {"has_subscription": True, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD Basic or above")
+        user_info = UserInfo(True, has_subscription=True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Basic or above")
 
-        user_info = {"has_subscription": False, "is_authenticated": True}
-        self.assertEqual(subscription_level(user_info), "Canopy / EPD Free")
+        user_info = UserInfo(True, has_subscription=False)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
 
-        user_info = {"has_subscription": False, "is_authenticated": False}
-        self.assertIsNone(subscription_level(user_info))
+        user_info = UserInfo(False, has_subscription=False)
+        self.assertIsNone(user_info.subscription_level)
 
 
 class TestWebAuth(unittest.TestCase):
@@ -152,7 +152,7 @@ class TestWebAuth(unittest.TestCase):
             attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
             murllib2.configure_mock(**attrs)
             self.assertEqual(_web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url),
-                             R_JSON_AUTH_RESP)
+                             UserInfo.from_json(R_JSON_AUTH_RESP))
 
     def test_auth_encoding(self):
         r_headers = {"Authorization": "Basic " + FAKE_CREDS}
@@ -224,7 +224,7 @@ class TestAuthenticate(unittest.TestCase):
 
         with patch("enstaller.auth._head_request"):
             user = authenticate(config)
-        self.assertEqual(user, {"is_authenticated": True})
+        self.assertEqual(user, UserInfo(True))
 
     @network
     @fake_keyring

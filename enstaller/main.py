@@ -28,8 +28,7 @@ from egginst.utils import bin_dir_name, rel_site_packages
 
 import enstaller
 
-from enstaller.auth import (authenticate, subscription_level,
-                            subscription_message)
+from enstaller.auth import (authenticate, subscription_message)
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
@@ -296,7 +295,7 @@ def install_req(enpkg, config, req, opts):
     except UnavailablePackage as e:
         username = config.get_auth()[0]
         user_info = authenticate(config)
-        subscription = subscription_level(user_info)
+        subscription = user_info.subscription_level
         msg = textwrap.dedent("""\
             Error: cannot install {0!r}, as some requirements are not
             available at your subscription level.

@@ -21,7 +21,7 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import authenticate, subscription_message
+from enstaller.auth import DUMMY_USER, authenticate, subscription_message
 from enstaller.errors import (EnpkgError, EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import real_prefix
@@ -526,7 +526,7 @@ def print_config(config, prefix):
     for repo in config.IndexedRepos:
         print('        %r' % repo)
 
-    user = {}
+    user = DUMMY_USER
     try:
         user = authenticate(config)
     except Exception as e:

@@ -736,7 +736,7 @@ class TestInstallReq(unittest.TestCase):
         available at your subscription level.
 
         You are currently logged in as 'None' (subscription level:
-        'Canopy / EPD').
+        'Canopy / EPD Free').
         """)
 
         self.maxDiff = None
