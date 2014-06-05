@@ -496,15 +496,14 @@ def input_auth():
 
 
 def prepend_url(filename, url):
-    f = open(filename, 'r+')
-    data = f.read()
-    pat = re.compile(r'^IndexedRepos\s*=\s*\[\s*$', re.M)
-    if not pat.search(data):
-        sys.exit("Error: IndexedRepos section not found")
-    data = pat.sub(r"IndexedRepos = [\n  '%s'," % url, data)
-    f.seek(0)
-    f.write(data)
-    f.close()
+    with open(filename, 'r+') as fp:
+        data = fp.read()
+        pat = re.compile(r'^IndexedRepos\s*=\s*\[\s*$', re.M)
+        if not pat.search(data):
+            sys.exit("Error: IndexedRepos section not found")
+        data = pat.sub(r"IndexedRepos = [\n  '%s'," % url, data)
+        fp.seek(0)
+        fp.write(data)
 
 
 def print_config(config, prefix):
