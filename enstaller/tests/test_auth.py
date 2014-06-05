@@ -186,6 +186,47 @@ class TestWebAuth(unittest.TestCase):
             with self.assertRaises(AuthFailedError):
                 _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
 
+    def _no_webservice_config(self):
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        config.use_webservice = False
+        config.IndexedRepos = ["http://acme.com"]
+
+        return config
+
+    def _httperror_factory(self, code):
+        return urllib2.HTTPError("dummy", code, "url does not exist", {}, StringIO())
+
+    def test_auth_failure_404(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(404)):
+            with self.assertRaises(InvalidConfiguration):
+                authenticate(config)
+
+    def test_auth_failure_50x(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(503)):
+            with self.assertRaises(urllib2.HTTPError):
+                authenticate(config)
+
+    def test_auth_failure_401(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(401)):
+            with self.assertRaises(AuthFailedError):
+                authenticate(config)
+
     def test_unauthenticated_user(self):
         with patch("enstaller.auth.urllib2") as murllib2:
             attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_NOAUTH_RESP))}
