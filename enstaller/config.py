@@ -522,9 +522,10 @@ def print_config(config, prefix):
     print("    %s = %s" % ("repository_cache", config.repository_cache))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))
-    print("    IndexedRepos:", '(not used)' if config.use_webservice else '')
-    for repo in config.IndexedRepos:
-        print('        %r' % repo)
+    if not config.use_webservice:
+        print("    IndexedRepos:")
+        for repo in config.IndexedRepos:
+            print('        %r' % repo)
 
     user = DUMMY_USER
     try:

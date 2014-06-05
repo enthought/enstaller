@@ -486,7 +486,6 @@ class TestConfigurationPrint(unittest.TestCase):
                 repository_cache = {{repository_cache}}
                 noapp = False
                 proxy = None
-                IndexedRepos: (not used)
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
@@ -519,7 +518,6 @@ class TestConfigurationPrint(unittest.TestCase):
                 repository_cache = {{repository_cache}}
                 noapp = False
                 proxy = None
-                IndexedRepos: (not used)
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
@@ -537,6 +535,41 @@ class TestConfigurationPrint(unittest.TestCase):
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
         r_output = output_template.format(prefix=prefix, config_file=fp.name,
                                           repository_cache=repository_cache)
+
+        with mock_print() as m:
+            print_config(config, config.prefix)
+            self.assertMultiLineEqual(m.value, r_output)
+
+    def test_simple_no_webservice(self):
+        output_template = textwrap.dedent("""\
+            Python version: {pyver}
+            enstaller version: {version}
+            sys.prefix: {sys_prefix}
+            platform: {platform}
+            architecture: {arch}
+            use_webservice: False
+            keyring backend: {keyring_backend}
+            settings:
+                prefix = {{prefix}}
+                repository_cache = {{repository_cache}}
+                noapp = False
+                proxy = None
+                IndexedRepos:
+                    'http://acme.com/'
+            No valid auth information in configuration, cannot authenticate.
+            You are not logged in.  To log in, type 'enpkg --userpass'.
+        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                    platform=platform.platform(), arch=platform.architecture()[0],
+                    keyring_backend=_keyring_backend_name())
+
+        prefix = sys.prefix
+        repository_cache = os.path.join(prefix, "LOCAL-REPO")
+        r_output = output_template.format(prefix=prefix,
+                                          repository_cache=repository_cache)
+
+        config = Configuration()
+        config.IndexedRepos = ["http://acme.com"]
+        config.use_webservice = False
 
         with mock_print() as m:
             print_config(config, config.prefix)
