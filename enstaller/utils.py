@@ -1,3 +1,4 @@
+import os.path
 import sys
 import hashlib
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
@@ -166,7 +167,7 @@ def uri_to_path(uri):
     on windows instead of C:\\foo.txt)."""
     urlpart = urlparse.urlparse(uri)
     if urlpart.scheme == "file":
-        return urllib.url2pathname(urlpart.path)
+        return urllib.unquote(uri)[len("file://"):]
     else:
         raise ValueError("Invalid file uri: {0}".format(uri))
 
