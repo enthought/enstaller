@@ -90,8 +90,10 @@ def authenticate(configuration):
                     _head_request(index, auth)
                 except urllib2.HTTPError as e:
                     http_code = e.getcode()
+                    # Python 2.6 compat: HTTPError.reason not available there
+                    reason = getattr(e, "reason", "Unkown")
                     if http_code in (401, 403):
-                        msg = "Authentication error: {0!r}".format(e.reason)
+                        msg = "Authentication error: {0!r}".format(reason)
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
