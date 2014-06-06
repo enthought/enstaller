@@ -152,13 +152,14 @@ def imports_option(repository, pat=None):
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, remote_repository, installed_repository, config, pat=None):
+def search(enpkg, remote_repository, installed_repository, config, user,
+           pat=None):
     """
     Print the packages that are available in the (remote) KVS.
     """
     # Flag indicating if the user received any 'not subscribed to'
     # messages
-    SUBSCRIBED = True
+    subscribed = True
 
     print(FMT4 % ('Name', '  Versions', 'Product', 'Note'))
     print(80 * '=')
@@ -183,7 +184,7 @@ def search(enpkg, remote_repository, installed_repository, config, pat=None):
             available = metadata.available
             product = metadata.product
             if not(available):
-                SUBSCRIBED = False
+                subscribed = False
             print(FMT4 % (disp_name, disp_ver, product,
                    '' if available else 'not subscribed to'))
             disp_name = ''
@@ -191,13 +192,11 @@ def search(enpkg, remote_repository, installed_repository, config, pat=None):
     # if the user's search returns any packages that are not available
     # to them, attempt to authenticate and print out their subscriber
     # level
-    if config.use_webservice and not(SUBSCRIBED):
-        user = {}
-        try:
-            user = authenticate(config)
-        except Exception as e:
-            print(e.message)
-        print(subscription_message(config, user))
+    if config.use_webservice and not subscribed:
+        msg = textwrap.dedent("""\
+            Note: some of those packages are not available at your current
+            subscription level ({0!r}).""".format(user.subscription_level))
+        print(msg)
 
 
 def updates_check(remote_repository, installed_repository):
@@ -399,7 +398,7 @@ def get_config_filename(use_sys_config):
 
 def ensure_authenticated_config(config, config_filename):
     try:
-        authenticate(config)
+        user = authenticate(config)
     except AuthFailedError:
         login, _ = config.get_auth()
         print("Could not authenticate with user '{0}'.".format(login))
@@ -407,6 +406,7 @@ def ensure_authenticated_config(config, config_filename):
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
+        return user
 
 
 def repository_factory(config):
@@ -630,7 +630,7 @@ def main(argv=None):
         print(PLEASE_AUTH_MESSAGE)
         sys.exit(-1)
 
-    ensure_authenticated_config(config, config_filename)
+    user = ensure_authenticated_config(config, config_filename)
 
     repository = repository_factory(config)
 
@@ -666,7 +666,7 @@ def main(argv=None):
 
     if args.search:                               # --search
         search(enpkg, enpkg._remote_repository, enpkg._installed_repository,
-               config, pat)
+               config, user, pat)
         return
 
     if args.info:                                 # --info
