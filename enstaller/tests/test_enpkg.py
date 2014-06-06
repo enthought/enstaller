@@ -9,6 +9,7 @@ else:
     import unittest
 
 import mock
+import responses
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
@@ -21,11 +22,10 @@ from enstaller.fetch import DownloadManager
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
-from enstaller.utils import PY_VER
+from enstaller.utils import PY_VER, path_to_uri
 
 from .common import (dummy_repository_package_factory,
-                     mock_history_get_state_context, mock_url_fetcher,
-                     repository_factory)
+                     mock_history_get_state_context, repository_factory)
 
 
 def _unconnected_enpkg_factory():
@@ -139,6 +139,7 @@ class TestEnpkgRevert(unittest.TestCase):
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
 
+    @responses.activate
     def test_simple_scenario(self):
         egg = DUMMY_EGG
         r_actions = {1: [], 0: [("remove", os.path.basename(egg))]}
@@ -148,12 +149,17 @@ class TestEnpkgRevert(unittest.TestCase):
         package = RepositoryPackageMetadata.from_egg(egg)
         package.python = PY_VER
         repository.add_package(package)
+
+        with open(egg, "rb") as fp:
+            responses.add(responses.GET, package.source_url,
+                         body=fp.read(), status=200,
+                         content_type='application/json')
+
         downloader = DownloadManager(repository, config.repository_cache)
 
-        with mock_url_fetcher(downloader, open(egg, "rb")):
-            enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
-            actions = enpkg._solver.install_actions("dummy")
-            enpkg.execute(actions)
+        enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
+        actions = enpkg._solver.install_actions("dummy")
+        enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
         enpkg._installed_repository.find_package(name, version)
@@ -222,16 +228,23 @@ class TestFetchAction(unittest.TestCase):
 
         return DownloadManager(repository, self.tempdir)
 
+    def _add_response_for_path(self, path):
+        with open(path, "rb") as fp:
+            responses.add(responses.GET, path_to_uri(path),
+                         body=fp.read(), status=200,
+                         content_type='application/octet-stream')
+
+    @responses.activate
     def test_simple(self):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader = self._downloader_factory([path])
+        self._add_response_for_path(path)
 
         # When
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            action = FetchAction(path, downloader)
-            action.execute()
+        action = FetchAction(path, downloader)
+        action.execute()
 
         # Then
         target = os.path.join(downloader.cache_directory, filename)
@@ -239,17 +252,18 @@ class TestFetchAction(unittest.TestCase):
         self.assertEqual(compute_md5(target), compute_md5(path))
         self.assertFalse(action.is_canceled)
 
+    @responses.activate
     def test_iteration(self):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader = self._downloader_factory([path])
+        self._add_response_for_path(path)
 
         # When
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            action = FetchAction(path, downloader)
-            for step in action:
-                pass
+        action = FetchAction(path, downloader)
+        for step in action:
+            pass
 
         # Then
         target = os.path.join(downloader.cache_directory, filename)
@@ -257,17 +271,18 @@ class TestFetchAction(unittest.TestCase):
         self.assertEqual(compute_md5(target), compute_md5(path))
         self.assertFalse(action.is_canceled)
 
+    @responses.activate
     def test_iteration_cancel(self):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader = self._downloader_factory([path])
+        self._add_response_for_path(path)
 
         # When
-        with mock_url_fetcher(downloader, open(path)):
-            action = FetchAction(path, downloader)
-            for step in action:
-                action.cancel()
+        action = FetchAction(path, downloader)
+        for step in action:
+            action.cancel()
 
         # Then
         target = os.path.join(downloader.cache_directory, filename)

@@ -1,18 +1,16 @@
-import contextlib
 import json
 import os.path
 import shutil
 import sys
 import tempfile
 
-from cStringIO import StringIO
-
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
     import unittest
 
-import mock
+#import mock
+import responses
 
 from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
@@ -25,21 +23,14 @@ from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_
 from enstaller.tests.common import dummy_repository_package_factory
 
 
-def _package_metadata_iterator(store_location):
+def _index_provider(store_location):
     entries = [
         dummy_repository_package_factory("numpy", "1.8.0", 1,
                                          store_location=store_location),
         dummy_repository_package_factory("scipy", "0.14.0", 1,
                                          store_location=store_location)
     ]
-    return StringIO(json.dumps(dict((entry.key, entry.s3index_data) for entry in entries)))
-
-
-@contextlib.contextmanager
-def mock_urlfetcher():
-    return_value = _package_metadata_iterator("")
-    with mock.patch.object(URLFetcher, "open", return_value=return_value) as m:
-        yield m
+    return json.dumps(dict((entry.key, entry.s3index_data) for entry in entries))
 
 
 class TestLegacyStores(unittest.TestCase):
@@ -65,42 +56,55 @@ class TestLegacyStores(unittest.TestCase):
         # When
         with mkdtemp() as tempdir:
             fetcher = URLFetcher(tempdir)
-            with contextlib.closing(fetcher.open(url)) as fp:
-                json_data = json.load(fp)
+            json_data = fetcher.fetch(url).json()
 
         # Then
         self.assertEqual(json_data, r_user_info)
 
+    @responses.activate
     def test_simple_webservice(self):
         # Given
         config = Configuration()
         config.use_webservice = True
         config.use_pypi = False
 
-        # When
-        with mock_urlfetcher():
-            fetcher = URLFetcher(config.repository_cache, config.get_auth())
-            packages = list(
-                _webservice_index_parser(config.webservice_entry_point,
-                                         fetcher, config.use_pypi))
+        responses.add(responses.GET, "https://api.enthought.com/eggs/rh5-64/index.json",
+                      body=_index_provider(""), status=200,
+                      content_type='application/json')
+
+        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        packages = list(
+            _webservice_index_parser(config.webservice_entry_point,
+                                     fetcher, config.use_pypi))
 
         # Then
         self.assertTrue(len(packages) > 0)
+        self.assertItemsEqual([p.name for p in packages], ["numpy", "scipy"])
+        self.assertItemsEqual([p.full_version for p in packages], ["1.8.0-1",
+                                                                   "0.14.0-1"])
 
+    @responses.activate
     def test_simple_no_webservice_https(self):
         # Given
         config = Configuration()
-        urls = [
+        config.IndexedRepos = [
             'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
         ]
 
+        responses.add(responses.GET, config.IndexedRepos[0] + "index.json",
+                      body=_index_provider(""), status=200,
+                      content_type='application/json')
+
         # When
-        with mock_urlfetcher():
-            fetcher = URLFetcher(config.repository_cache, config.get_auth())
-            packages = list(_old_legacy_index_parser(urls, fetcher))
+        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        packages = list(_old_legacy_index_parser(config.IndexedRepos, fetcher))
 
         # Then
         self.assertTrue(len(packages) > 0)
+        self.assertItemsEqual([p.name for p in packages], ["numpy", "scipy"])
+        self.assertItemsEqual([p.full_version for p in packages], ["1.8.0-1",
+                                                                   "0.14.0-1"])
+
 
     def test_simple_no_webservice_file(self):
         # Given
@@ -123,13 +127,15 @@ class TestLegacyStores(unittest.TestCase):
             fp.write(json.dumps(fake_index))
 
         config = Configuration()
+        config.IndexedRepos = ["{0}/".format(path_to_uri(self.tempdir))]
 
-        urls = ["{0}/".format(path_to_uri(self.tempdir))]
+        responses.add(responses.GET, config.IndexedRepos[0] + "index.json",
+                      body=_index_provider(""), status=200,
+                      content_type='application/json')
 
         # When
-        with mock_urlfetcher():
-            fetcher = URLFetcher(config.repository_cache, config.get_auth())
-            packages = list(_old_legacy_index_parser(urls, fetcher))
+        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        packages = list(_old_legacy_index_parser(config.IndexedRepos, fetcher))
 
         # Then
         self.assertEqual(len(packages), 1)

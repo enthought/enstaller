@@ -3,18 +3,19 @@ import functools
 import os
 import tempfile
 
-from cStringIO import StringIO
-
 import mock
+import responses
 
 from enstaller.config import Configuration
 from enstaller.repository import Repository
 from enstaller.tests.common import (fake_keyring,
                                     dummy_repository_package_factory)
 
+
 def _dont_write_default_configuration(f):
     return mock.patch("enstaller.main.write_default_config",
                       lambda filename, use_keyring=None: None)(f)
+
 
 def without_any_configuration(f):
     """
@@ -85,18 +86,20 @@ def fake_configuration_and_auth(f):
     config = Configuration()
     config.set_auth("john", "doe")
     @functools.wraps(f)
+    @responses.activate
     def wrapper(*a, **kw):
+        responses.add(responses.GET, "https://api.enthought.com/eggs/rh5-64/index.json",
+                      body="{}", status=200,
+                      content_type='application/json')
+
         # FIXME: we create a dummy store to bypass store authentication in
         # Enpkg ctor. Will be fixed once Enpkg, repository, stores are clearly
         # separated.
-        fake_fetch_return = StringIO("{}")
-        with mock.patch("enstaller.legacy_stores.URLFetcher.open",
-                        return_value=fake_fetch_return):
-            with mock.patch("enstaller.main.Configuration.from_file",
-                            return_value=config):
-                with mock.patch("enstaller.main.ensure_authenticated_config",
-                                return_value=True):
-                    return without_any_configuration(f)(*a, **kw)
+        with mock.patch("enstaller.main.Configuration.from_file",
+                        return_value=config):
+            with mock.patch("enstaller.main.ensure_authenticated_config",
+                            return_value=True):
+                return without_any_configuration(f)(*a, **kw)
     return wrapper
 
 
