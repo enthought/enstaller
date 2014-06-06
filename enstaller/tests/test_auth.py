@@ -1,6 +1,7 @@
 import json
 import os.path
 import shutil
+import socket
 import sys
 import tempfile
 import urllib2
@@ -20,8 +21,8 @@ from egginst.testing_utils import network
 
 from enstaller.auth import _web_auth, DUMMY_USER, UserInfo, authenticate
 from enstaller.config import Configuration, write_default_config
-from enstaller.errors import (AuthFailedError, EnstallerException,
-                              InvalidConfiguration)
+from enstaller.errors import (AuthFailedError, ConnectionError,
+                              EnstallerException, InvalidConfiguration)
 from enstaller.tests.common import fake_keyring
 
 
@@ -197,6 +198,17 @@ class TestWebAuth(unittest.TestCase):
     def _httperror_factory(self, code):
         return urllib2.HTTPError("dummy", code, "url does not exist", {}, StringIO())
 
+    def test_auth_failure_gaierror(self):
+        # Given
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=urllib2.URLError(reason=socket.gaierror())):
+            with self.assertRaises(ConnectionError):
+                authenticate(config)
+
     def test_auth_failure_404(self):
         # Given
         config = self._no_webservice_config()
@@ -252,7 +264,7 @@ class TestAuthenticate(unittest.TestCase):
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
         with patch("enstaller.auth._web_auth") as mocked_auth:
-            mocked_auth.return_value = {"is_authenticated": False}
+            mocked_auth.return_value = UserInfo(False)
 
             with self.assertRaises(AuthFailedError):
                 authenticate(config)

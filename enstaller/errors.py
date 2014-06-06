@@ -8,6 +8,9 @@ class InvalidChecksum(EnstallerException):
         self.msg = template.format(filename, actual_checksum,
                                    expected_checksum)
 
+class ConnectionError(EnstallerException):
+    pass
+
 class InvalidPythonPathConfiguration(EnstallerException):
     pass
 

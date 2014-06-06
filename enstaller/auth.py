@@ -1,9 +1,10 @@
 import json
+import socket
 import urllib2
 import urlparse
 
-from enstaller.errors import (AuthFailedError, EnstallerException,
-                              InvalidConfiguration)
+from enstaller.errors import (AuthFailedError, ConnectionError,
+                              EnstallerException, InvalidConfiguration)
 
 
 _INDEX_NAME = "index.json"
@@ -77,11 +78,9 @@ def authenticate(configuration):
 
     if configuration.use_webservice:
         # check credentials using web API
-        try:
-            user = _web_auth(auth, configuration.api_url)
-            assert user['is_authenticated']
-        except Exception as e:
-            raise AuthFailedError('Authentication failed: %s.' % e)
+        user = _web_auth(auth, configuration.api_url)
+        if not user.is_authenticated:
+            raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         for url in configuration.IndexedRepos:
             parse = urlparse.urlparse(url)
@@ -150,7 +149,12 @@ def _web_auth(auth, api_url):
     try:
         f = urllib2.urlopen(req)
     except urllib2.URLError as e:
-        raise AuthFailedError("Authentication error: %s" % e.reason)
+        if isinstance(e.reason, socket.gaierror):
+            msg = "could not connect to {0!r}".format(api_url)
+            raise ConnectionError(msg)
+        else:
+            msg = e.reason
+            raise AuthFailedError("Authentication error ({0!r})".format(msg))
 
     try:
         res = f.read()
