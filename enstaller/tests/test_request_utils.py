@@ -61,7 +61,7 @@ class TestLocalFileAdapter(unittest.TestCase):
             r_data = fp.read()
 
         # When
-        resp = session.get("file://{}".format(os.path.abspath(__file__)))
+        resp = session.get("file://{0}".format(os.path.abspath(__file__)))
         data = resp.content
 
         # Then
