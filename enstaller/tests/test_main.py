@@ -23,6 +23,7 @@ import mock
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 
+from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
@@ -338,7 +339,7 @@ class TestSearch(unittest.TestCase):
 
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
-                       enpkg._top_installed_repository, config)
+                       enpkg._top_installed_repository, config, UserInfo(True))
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_installed(self):
@@ -359,7 +360,7 @@ class TestSearch(unittest.TestCase):
 
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
-                       enpkg._installed_repository, config)
+                       enpkg._installed_repository, config, UserInfo(True))
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_pattern(self):
@@ -381,7 +382,7 @@ class TestSearch(unittest.TestCase):
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
                        enpkg._top_installed_repository,
-                       config,
+                       config, UserInfo(True),
                        pat=re.compile("dummy"))
                 self.assertMultiLineEqual(m.value, r_output)
 
@@ -395,7 +396,7 @@ class TestSearch(unittest.TestCase):
             with mock_print() as m:
                 search(enpkg, enpkg._remote_repository,
                        enpkg._top_installed_repository, config,
-                       pat=re.compile(".*"))
+                       UserInfo(True), pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
     @unittest.expectedFailure
@@ -736,7 +737,7 @@ class TestInstallReq(unittest.TestCase):
         available at your subscription level.
 
         You are currently logged in as 'None' (subscription level:
-        'Canopy / EPD').
+        'Canopy / EPD Free').
         """)
 
         self.maxDiff = None

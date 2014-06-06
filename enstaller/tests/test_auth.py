@@ -1,28 +1,57 @@
+import json
 import os.path
 import shutil
+import socket
 import sys
 import tempfile
+import urllib2
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
 else:
     import unittest
 
-from mock import patch
+from cStringIO import StringIO
+
+from mock import MagicMock, patch
 
 import enstaller.config
 
+from egginst.testing_utils import network
+
+from enstaller.auth import _web_auth, DUMMY_USER, UserInfo, authenticate
 from enstaller.config import Configuration, write_default_config
-from enstaller.errors import AuthFailedError, InvalidConfiguration
+from enstaller.errors import (AuthFailedError, ConnectionError,
+                              EnstallerException, InvalidConfiguration)
 from enstaller.tests.common import fake_keyring
 
 
-basic_user = dict(first_name="Jane", last_name="Doe", is_authenticated=True,
-        has_subscription=True)
-free_user = dict(first_name="John", last_name="Smith", is_authenticated=True,
-        has_subscription=False)
-anon_user = dict(is_authenticated=False)
-old_auth_user = {}
+basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription=True)
+free_user = UserInfo(True, first_name="John", last_name="Smith", has_subscription=False)
+anon_user = UserInfo(False)
+old_auth_user = DUMMY_USER
+
+def compute_creds(username, password):
+    return "{0}:{1}".format(username, password).encode("base64").rstrip()
+
+AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
+
+FAKE_USER = "john.doe"
+FAKE_PASSWORD = "fake_password"
+FAKE_CREDS = compute_creds(FAKE_USER, FAKE_PASSWORD)
+
+R_JSON_AUTH_RESP = {'first_name': u'David',
+        'has_subscription': True,
+        'is_active': True,
+        'is_authenticated': True,
+        'last_name': u'Cournapeau',
+        'subscription_level': u'basic'}
+
+R_JSON_NOAUTH_RESP = {'is_authenticated': False,
+        'last_name': u'Cournapeau',
+        'first_name': u'David',
+        'has_subscription': True,
+        'subscription_level': u'basic'}
 
 
 @fake_keyring
@@ -44,15 +73,15 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         new_config = Configuration.from_file(self.f)
         usr = enstaller.config.authenticate(new_config)
 
-        self.assertTrue(usr.get('is_authenticated'))
-        self.assertTrue(usr.get('has_subscription'))
+        self.assertTrue(usr.is_authenticated)
+        self.assertTrue(usr.has_subscription)
 
     def test_no_acct(self):
         def mocked_authenticate(configuration, remote=None):
             if configuration.get_auth() != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
-                return {"is_authenticated": True}
+                return UserInfo(is_authenticated=True)
 
         write_default_config(self.f)
         with patch('enstaller.config.authenticate', mocked_authenticate):
@@ -66,7 +95,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             config.set_auth("valid_user", "valid_password")
             usr = config._checked_change_auth(self.f)
 
-            self.assertEqual(usr, {"is_authenticated": True})
+            self.assertTrue(usr.is_authenticated)
 
     @patch('enstaller.config.authenticate', return_value=old_auth_user)
     def test_remote_success(self, mock1):
@@ -76,7 +105,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         config.set_auth("usr", "password")
 
         usr = config._checked_change_auth(self.f)
-        self.assertEqual(usr, {})
+        self.assertEqual(usr, DUMMY_USER)
 
     def test_nones(self):
         config = Configuration()
@@ -90,6 +119,178 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config._checked_change_auth(self.f)
+
+
+class TestSubscriptionLevel(unittest.TestCase):
+    def test_unsubscribed_user(self):
+        user_info = UserInfo(True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
+
+        user_info = UserInfo(False)
+        self.assertIsNone(user_info.subscription_level)
+
+    def test_subscribed_user(self):
+        user_info = UserInfo(True, has_subscription=True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Basic or above")
+
+        user_info = UserInfo(True, has_subscription=False)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
+
+        user_info = UserInfo(False, has_subscription=False)
+        self.assertIsNone(user_info.subscription_level)
+
+
+class TestWebAuth(unittest.TestCase):
+    def setUp(self):
+        self.config = Configuration()
+
+    def test_invalid_auth_args(self):
+        with self.assertRaises(AuthFailedError):
+            _web_auth((None, None), self.config.api_url)
+
+    def test_simple(self):
+        with patch("enstaller.auth.urllib2") as murllib2:
+            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
+            murllib2.configure_mock(**attrs)
+            self.assertEqual(_web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url),
+                             UserInfo.from_json(R_JSON_AUTH_RESP))
+
+    def test_auth_encoding(self):
+        r_headers = {"Authorization": "Basic " + FAKE_CREDS}
+        with patch("enstaller.auth.urllib2") as murllib2:
+            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_AUTH_RESP))}
+            murllib2.configure_mock(**attrs)
+
+            _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
+            murllib2.Request.assert_called_with(AUTH_API_URL, headers=r_headers)
+
+    def test_urllib_failures(self):
+        with patch("enstaller.auth.urllib2") as murllib2:
+            # XXX: we can't rely on mock for exceptions, but there has to be a
+            # better way ?
+            murllib2.URLError = urllib2.URLError
+
+            attrs = {'urlopen.side_effect': urllib2.URLError("dummy")}
+            murllib2.configure_mock(**attrs)
+
+            with self.assertRaises(AuthFailedError):
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
+
+        with patch("enstaller.auth.urllib2") as murllib2:
+            murllib2.HTTPError = urllib2.URLError
+
+            mocked_fp = MagicMock()
+            mocked_fp.read.side_effect = murllib2.HTTPError("dummy")
+            attrs = {'urlopen.return_value': mocked_fp}
+            murllib2.configure_mock(**attrs)
+
+            with self.assertRaises(AuthFailedError):
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
+
+    def _no_webservice_config(self):
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        config.use_webservice = False
+        config.IndexedRepos = ["http://acme.com"]
+
+        return config
+
+    def _httperror_factory(self, code):
+        return urllib2.HTTPError("dummy", code, "url does not exist", {}, StringIO())
+
+    def test_auth_failure_gaierror(self):
+        # Given
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=urllib2.URLError(reason=socket.gaierror())):
+            with self.assertRaises(ConnectionError):
+                authenticate(config)
+
+    def test_auth_failure_404(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(404)):
+            with self.assertRaises(InvalidConfiguration):
+                authenticate(config)
+
+    def test_auth_failure_50x(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(503)):
+            with self.assertRaises(urllib2.HTTPError):
+                authenticate(config)
+
+    def test_auth_failure_401(self):
+        # Given
+        config = self._no_webservice_config()
+
+        # When/Given
+        with patch("enstaller.auth.urllib2.urlopen",
+                   side_effect=self._httperror_factory(401)):
+            with self.assertRaises(AuthFailedError):
+                authenticate(config)
+
+    def test_unauthenticated_user(self):
+        with patch("enstaller.auth.urllib2") as murllib2:
+            attrs = {'urlopen.return_value': StringIO(json.dumps(R_JSON_NOAUTH_RESP))}
+            murllib2.configure_mock(**attrs)
+
+            with self.assertRaises(AuthFailedError):
+                _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
+
+
+class TestAuthenticate(unittest.TestCase):
+    @fake_keyring
+    def test_use_webservice_valid_user(self):
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        with patch("enstaller.auth._web_auth") as mocked_auth:
+            authenticate(config)
+            self.assertTrue(mocked_auth.called)
+
+    @fake_keyring
+    def test_use_webservice_invalid_user(self):
+        config = Configuration()
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        with patch("enstaller.auth._web_auth") as mocked_auth:
+            mocked_auth.return_value = UserInfo(False)
+
+            with self.assertRaises(AuthFailedError):
+                authenticate(config)
+
+    @fake_keyring
+    def test_use_remote(self):
+        config = Configuration()
+        config.use_webservice = False
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+
+        with patch("enstaller.auth._head_request"):
+            user = authenticate(config)
+        self.assertEqual(user, UserInfo(True))
+
+    @network
+    @fake_keyring
+    def test_non_existing_remote(self):
+        config = Configuration()
+        config.use_webservice = False
+        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        config.IndexedRepos = [
+            "http://api.enthought.com/dummy/repo",
+        ]
+
+        with self.assertRaises(EnstallerException):
+            authenticate(config)
 
 
 class SearchTestCase(unittest.TestCase):
