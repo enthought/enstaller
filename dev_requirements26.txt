@@ -10,3 +10,5 @@ randomize
 six
 tox
 unittest2
+requests
+responses
