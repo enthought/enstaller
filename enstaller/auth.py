@@ -62,11 +62,20 @@ def authenticate(configuration):
     Attempt to authenticate the user's credentials by the appropriate
     means.
 
-    If 'use_webservice' is set, authenticate with the web API and return
-    a dictionary containing user info on success.
+    Parameters
+    ----------
+    configuration : Configuration_like
+        A Configuration instance. The authentication information need to be set
+        up.
+
+    Returns
+    -------
+    user_info : UserInfo
+
+    If the 'use_webservice' mode is enabled in the configuration, authenticate
+    with the web API and return the corresponding information.
 
     Else, authenticate with the configured repositories in config.IndexedRepos
-    return a dict containing is_authenticated=True on success.
 
     If authentication fails, raise an exception.
     """
@@ -109,10 +118,17 @@ def authenticate(configuration):
 def subscription_message(config, user):
     """
     Return a 'subscription level' message based on the `user`
-    dictionary.
+    information.
 
-    `user` is a dictionary, probably retrieved from the web API, that
-    may contain `is_authenticated`, and `has_subscription`.
+    Parameters
+    ----------
+    config : Configuration
+    user : UserInfo
+
+    Returns
+    -------
+    message : str
+        The subscription message.
     """
     message = ""
 
@@ -133,11 +149,8 @@ def subscription_message(config, user):
 
 def _web_auth(auth, api_url):
     """
-    Authenticate a user's credentials (an `auth` tuple of username,
-    password) using the web API.  Return a dictionary containing user
-    info.
-
-    Function taken from Canopy and modified.
+    Authenticate a user's credentials (an `auth` tuple of username, password)
+    using the web API.
     """
     # Make basic local checks
     username, password = auth
