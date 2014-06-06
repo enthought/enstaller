@@ -3,6 +3,10 @@ A few utilities for python requests.
 """
 from io import FileIO
 
+import requests
+
+from enstaller.utils import uri_to_path
+
 
 class FileResponse(FileIO):
     """
@@ -27,3 +31,27 @@ class FileResponse(FileIO):
 
     def release_conn(self):
         self.close()
+
+
+class LocalFileAdapter(requests.adapters.HTTPAdapter):
+    """
+    A requests adapter to support local file IO.
+
+    Example
+    -------
+
+    session = requests.session()
+    session.mount("file://", LocalFileAdapter())
+
+    session.get("file:///bin/ls")
+    """
+    def build_response_from_file(self, request, stream):
+        path = uri_to_path(request.url)
+
+        from enstaller.requests_utils import FileResponse
+        return self.build_response(request, FileResponse(path, "rb"))
+
+    def send(self, request, stream=False, timeout=None,
+             verify=True, cert=None, proxies=None):
+
+        return self.build_response_from_file(request, stream)
