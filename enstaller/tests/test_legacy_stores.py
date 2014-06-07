@@ -19,6 +19,7 @@ from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.legacy_stores import URLFetcher
 from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_parser
+from enstaller.plat import custom_plat
 
 from enstaller.tests.common import dummy_repository_package_factory
 
@@ -68,7 +69,8 @@ class TestLegacyStores(unittest.TestCase):
         config.use_webservice = True
         config.use_pypi = False
 
-        responses.add(responses.GET, "https://api.enthought.com/eggs/rh5-64/index.json",
+        responses.add(responses.GET,
+                      "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
                       body=_index_provider(""), status=200,
                       content_type='application/json')
 

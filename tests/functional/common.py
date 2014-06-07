@@ -8,6 +8,7 @@ import responses
 
 from enstaller.config import Configuration
 from enstaller.repository import Repository
+from enstaller.plat import custom_plat
 from enstaller.tests.common import (fake_keyring,
                                     dummy_repository_package_factory)
 
@@ -88,7 +89,9 @@ def fake_configuration_and_auth(f):
     @functools.wraps(f)
     @responses.activate
     def wrapper(*a, **kw):
-        responses.add(responses.GET, "https://api.enthought.com/eggs/rh5-64/index.json",
+        responses.add(responses.GET,
+                      "https://api.enthought.com/eggs/{0}/index.json". \
+                        format(custom_plat),
                       body="{}", status=200,
                       content_type='application/json')
 
