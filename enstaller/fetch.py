@@ -94,7 +94,6 @@ class DownloadManager(object):
     def iter_fetch(self, egg, force=False):
         name, version = egg_name_to_name_version(egg)
         package_metadata = self._repository.find_package(name, version)
-        print package_metadata.source_url
 
         path = self._path(package_metadata.key)
         def _progress_factory(filename, installed_size):
