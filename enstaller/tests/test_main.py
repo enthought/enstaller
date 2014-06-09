@@ -1,5 +1,6 @@
 import errno
 import ntpath
+import os.path
 import posixpath
 import re
 import shutil
@@ -28,11 +29,13 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import (check_prefixes, disp_store_info,
-                            epd_install_confirm, env_option, get_package_path,
+                            epd_install_confirm, env_option,
+                            get_config_filename, get_package_path,
                             imports_option, info_option, install_req,
                             install_time_string, needs_to_downgrade_enstaller,
                             name_egg, print_installed, search, update_all,
                             updates_check, update_enstaller, whats_new)
+from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.resolve import Req
 from enstaller.utils import PY_VER
@@ -302,6 +305,37 @@ class TestMisc(unittest.TestCase):
 
         # When/Then
         self.assertTrue(needs_to_downgrade_enstaller(reqs))
+
+    def test_get_config_filename_sys_config(self):
+        # Given
+        use_sys_config = True
+
+        # When/Then
+        self.assertEqual(get_config_filename(use_sys_config), SYS_PREFIX_ENSTALLER4RC)
+
+    def test_get_config_filename_no_sys_config_default(self):
+        # Given
+        use_sys_config = False
+
+        # When/Then
+        self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
+
+    def test_get_config_filename_no_sys_config_with_single_prefix(self):
+        # Given
+        use_sys_config = False
+
+        # When/Then
+        with mock.patch("enstaller.main.configuration_read_search_order",
+                        return_value=[self.tempdir]):
+            self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
+
+        # When/Then
+        with mock.patch("enstaller.main.configuration_read_search_order",
+                        return_value=[self.tempdir]):
+            path = os.path.join(self.tempdir, ".enstaller4rc")
+            with open(path, "w") as fp:
+                fp.write("")
+            self.assertEqual(get_config_filename(use_sys_config), path)
 
 def _create_repositories(remote_entries=None, installed_entries=None):
     if remote_entries is None:
