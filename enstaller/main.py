@@ -138,14 +138,12 @@ def list_option(prefixes, pat=None):
         print()
 
 
-def imports_option(repository, pat=None):
+def imports_option(repository):
     print(FMT % ('Name', 'Version', 'Location'))
     print(60 * "=")
 
     names = set(package.name for package in repository.iter_packages())
     for name in sorted(names, key=string.lower):
-        if pat and not pat.search(name):
-            continue
         packages = repository.find_packages(name)
         info = packages[0]._compat_dict
         loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
@@ -647,7 +645,7 @@ def main(argv=None):
 
     if args.imports:                              # --imports
         repository = Repository._from_prefixes(enpkg.prefixes)
-        imports_option(repository, pat)
+        imports_option(repository)
         return
 
     if args.revert:                               # --revert
