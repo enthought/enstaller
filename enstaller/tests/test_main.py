@@ -30,10 +30,11 @@ from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import (check_prefixes, disp_store_info,
                             epd_install_confirm, env_option, get_package_path,
                             imports_option, info_option, install_req,
-                            install_time_string, name_egg, print_installed,
-                            search, update_all, updates_check,
-                            update_enstaller, whats_new)
+                            install_time_string, needs_to_downgrade_enstaller,
+                            name_egg, print_installed, search, update_all,
+                            updates_check, update_enstaller, whats_new)
 from enstaller.repository import Repository, InstalledPackageMetadata
+from enstaller.resolve import Req
 from enstaller.utils import PY_VER
 
 from .common import (dummy_installed_package_factory,
@@ -254,6 +255,31 @@ class TestMisc(unittest.TestCase):
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)
+
+    def test_needs_to_downgrade(self):
+        # Given
+        reqs = []
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("numpy"), Req.from_anything("scipy")]
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("enstaller"), Req.from_anything("scipy")]
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("enstaller 4.5.1")]
+
+        # When/Then
+        self.assertTrue(needs_to_downgrade_enstaller(reqs))
 
 def _create_repositories(remote_entries=None, installed_entries=None):
     if remote_entries is None:
