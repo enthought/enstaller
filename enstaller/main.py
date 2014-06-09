@@ -28,7 +28,7 @@ from egginst.utils import bin_dir_name
 
 import enstaller
 
-from enstaller.auth import (authenticate)
+from enstaller.auth import authenticate
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
