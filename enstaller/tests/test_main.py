@@ -1,4 +1,5 @@
 import errno
+import json
 import ntpath
 import os.path
 import posixpath
@@ -20,9 +21,11 @@ else:
         return ctx.exception.code
 
 import mock
+import responses
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
+
 
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
@@ -34,16 +37,19 @@ from enstaller.main import (check_prefixes, disp_store_info,
                             imports_option, info_option,
                             install_from_requirements, install_req,
                             install_time_string, needs_to_downgrade_enstaller,
-                            name_egg, print_installed, search, update_all,
-                            updates_check, update_enstaller, whats_new)
+                            name_egg, print_installed, repository_factory,
+                            search, update_all, updates_check,
+                            update_enstaller, whats_new)
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
+from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.resolve import Req
 from enstaller.utils import PY_VER
 
+import enstaller.tests.common
 from .common import (dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     repository_factory, fake_keyring, is_authenticated,
+                     fake_keyring, is_authenticated,
                      FAKE_MD5, FAKE_SIZE)
 
 class TestEnstallerUpdate(unittest.TestCase):
@@ -60,7 +66,7 @@ class TestEnstallerUpdate(unittest.TestCase):
             dummy_repository_package_factory("enstaller", low_version, 1),
             dummy_repository_package_factory("enstaller", high_version, 1),
         ]
-        repository = repository_factory(enstaller_eggs)
+        repository = enstaller.tests.common.repository_factory(enstaller_eggs)
 
         with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
@@ -338,6 +344,34 @@ class TestMisc(unittest.TestCase):
                 fp.write("")
             self.assertEqual(get_config_filename(use_sys_config), path)
 
+    def _mock_index(self, entries):
+        index = dict((entry.key, entry.s3index_data) for entry in entries)
+
+        responses.add(responses.GET,
+                      "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
+                      body=json.dumps(index), status=200,
+                      content_type='application/json')
+
+    @responses.activate
+    def test_repository_factory(self):
+        # Given
+        config = Configuration()
+        entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 1),
+            dummy_repository_package_factory("scipy", "0.13.3", 1),
+        ]
+        self._mock_index(entries)
+
+        # When
+        repository = repository_factory(config)
+
+        # Then
+        repository.find_package("numpy", "1.8.0-1")
+        repository.find_package("scipy", "0.13.3-1")
+
+        self.assertEqual(repository.find_packages("nose"), [])
+
+
 def _create_repositories(remote_entries=None, installed_entries=None):
     if remote_entries is None:
         remote_entries = []
@@ -359,7 +393,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     if installed_entries is None:
         installed_entries = []
 
-    repository = repository_factory(remote_entries)
+    repository = enstaller.tests.common.repository_factory(remote_entries)
 
     enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix])
     for package in installed_entries:
