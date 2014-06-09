@@ -1,6 +1,3 @@
-import sys
-import urllib
-
 import requests
 
 from enstaller.auth import _INDEX_NAME
@@ -46,20 +43,6 @@ def _webservice_index_parser(webservice_entry_point, fetcher, use_pypi):
 
     return _parse_index(resp.json(), store_location)
 
-def _file_uri_parse_to_path(p):
-    """Convert a urlparse.urlparse returns value to a 'normal' path usable in
-    open, etc...
-
-    Example
-    -------
-    >>> from urlparse import urlparse
-    >>> _file_uri_parse_to_path(urlparse("file:///c:/server.log"))
-    "c:/server.log"
-    """
-    path = p.path
-    if sys.platform == "win32" and p.path.startswith("/"):
-        path = path[1:]
-    return urllib.url2pathname(path)
 
 def _old_legacy_index_parser(repository_urls, fetcher):
     for url in repository_urls:
