@@ -25,11 +25,12 @@ from enstaller import __version__
 from enstaller.config import (abs_expanduser,
     configuration_read_search_order, get_auth, get_path,
     input_auth, prepend_url, print_config, _is_using_epd_username,
-    convert_auth_if_required, _keyring_backend_name)
+    convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url)
-from enstaller.errors import EnpkgError, InvalidConfiguration
+from enstaller.errors import (EnpkgError, EnstallerException,
+                              InvalidConfiguration)
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
@@ -658,6 +659,26 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.EPD_auth = FAKE_USER
+
+    def test_write_default_config_simple(self):
+        # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+
+        # When
+        write_default_config(path)
+
+        # Then
+        self.assertTrue(os.path.exists(path))
+
+    def test_write_default_config_already_exists(self):
+        # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+        with open(path, "w") as fp:
+            fp.write("")
+
+        # When/Then
+        with self.assertRaises(EnstallerException):
+            write_default_config(path)
 
 class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
