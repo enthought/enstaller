@@ -19,8 +19,6 @@ from enstaller.fetch import DownloadManager
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
 
-from enstaller.tests.common import mock_url_fetcher
-
 
 class TestDownloadManager(unittest.TestCase):
     def setUp(self):
