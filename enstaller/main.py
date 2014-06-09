@@ -181,15 +181,12 @@ def search(enpkg, remote_repository, installed_repository, config, user,
                         version)
             available = metadata.available
             product = metadata.product
-            if not(available):
+            if not available:
                 subscribed = False
             print(FMT4 % (disp_name, disp_ver, product,
                    '' if available else 'not subscribed to'))
             disp_name = ''
 
-    # if the user's search returns any packages that are not available
-    # to them, attempt to authenticate and print out their subscriber
-    # level
     if config.use_webservice and not subscribed:
         msg = textwrap.dedent("""\
             Note: some of those packages are not available at your current

@@ -443,10 +443,8 @@ class TestSearch(unittest.TestCase):
                        UserInfo(True), pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
-    @unittest.expectedFailure
     def test_not_available(self):
         config = Configuration()
-        config.use_webservice = False
 
         r_output = textwrap.dedent("""\
             Name                   Versions           Product              Note
@@ -454,6 +452,8 @@ class TestSearch(unittest.TestCase):
             another_package        2.0.0-1            commercial           not subscribed to
             dummy                  0.9.8-1            commercial           {0}
                                    1.0.1-1            commercial           {0}
+            Note: some of those packages are not available at your current
+            subscription level ('Canopy / EPD Free').
             """.format(""))
         another_entry = dummy_repository_package_factory("another_package", "2.0.0", 1)
         another_entry.available = False
@@ -462,15 +462,13 @@ class TestSearch(unittest.TestCase):
                    dummy_repository_package_factory("dummy", "0.9.8", 1),
                    another_entry]
 
-        with mock.patch("enstaller.main.subscription_message") as mocked_subscription_message:
-            mocked_subscription_message.return_value = ""
-            with mkdtemp() as d:
-                with mock_print() as m:
-                    enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
-                    search(enpkg, enpkg._repository, enpkg._installed_repository)
+        with mkdtemp() as d:
+            with mock_print() as m:
+                enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
+                search(enpkg, enpkg._remote_repository,
+                       enpkg._installed_repository, config, UserInfo(True))
 
-                    self.assertMultiLineEqual(m.value, r_output)
-                    self.assertTrue(mocked_subscription_message.called)
+                self.assertMultiLineEqual(m.value, r_output)
 
 class TestUpdatesCheck(unittest.TestCase):
     def test_update_check_new_available(self):
