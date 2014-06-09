@@ -1,5 +1,7 @@
 import errno
+import json
 import ntpath
+import os.path
 import posixpath
 import re
 import shutil
@@ -19,24 +21,35 @@ else:
         return ctx.exception.code
 
 import mock
+import responses
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
+
 
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.main import check_prefixes, disp_store_info, \
-    epd_install_confirm, get_package_path, imports_option, info_option, \
-    install_req, install_time_string, name_egg, print_installed, search, \
-    update_all, updates_check, update_enstaller, whats_new
+from enstaller.main import (check_prefixes, disp_store_info,
+                            epd_install_confirm, env_option,
+                            get_config_filename, get_package_path,
+                            imports_option, info_option,
+                            install_from_requirements, install_req,
+                            install_time_string, needs_to_downgrade_enstaller,
+                            name_egg, print_installed, repository_factory,
+                            search, update_all, updates_check,
+                            update_enstaller, whats_new)
+from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
+from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
+from enstaller.resolve import Req
 from enstaller.utils import PY_VER
 
+import enstaller.tests.common
 from .common import (dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     repository_factory, fake_keyring, is_authenticated,
+                     fake_keyring, is_authenticated,
                      FAKE_MD5, FAKE_SIZE)
 
 class TestEnstallerUpdate(unittest.TestCase):
@@ -53,7 +66,7 @@ class TestEnstallerUpdate(unittest.TestCase):
             dummy_repository_package_factory("enstaller", low_version, 1),
             dummy_repository_package_factory("enstaller", high_version, 1),
         ]
-        repository = repository_factory(enstaller_eggs)
+        repository = enstaller.tests.common.repository_factory(enstaller_eggs)
 
         with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
@@ -211,6 +224,154 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
+    def test_env_options_linux_simple(self):
+        # Given
+        prefix = sys.prefix
+        bindir = "{0}/bin".format(prefix)
+        libdir = "{0}/lib".format(prefix)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0} (sys)
+
+            export PATH={1}
+            export LD_LIBRARY_PATH={2}
+        """.format(prefix, bindir, libdir))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "linux2"):
+            with mock_print() as m:
+                env_option([sys.prefix])
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
+    def test_env_options_darwin_simple(self):
+        # Given
+        prefix = sys.prefix
+        bindir = "{0}/bin".format(prefix)
+        libdir = "{0}/lib".format(prefix)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0} (sys)
+
+            export PATH={1}
+            export DYLD_LIBRARY_PATH={2}
+        """.format(prefix, bindir, libdir))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "darwin"):
+            with mock_print() as m:
+                env_option([sys.prefix])
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
+    def test_env_options_multiple_prefixes(self):
+        # Given
+        prefixes = ["/opt", sys.prefix]
+        env_path = ":".join("{0}/bin".format(prefix) for prefix in prefixes)
+        library_path = ":".join("{0}/lib".format(prefix) for prefix in prefixes)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0}
+                {1} (sys)
+
+            export PATH={2}
+            export LD_LIBRARY_PATH={3}
+        """.format(prefixes[0], prefixes[1], env_path, library_path))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "linux2"):
+            with mock_print() as m:
+                env_option(prefixes)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
+    def test_needs_to_downgrade(self):
+        # Given
+        reqs = []
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("numpy"), Req.from_anything("scipy")]
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("enstaller"), Req.from_anything("scipy")]
+
+        # When/Then
+        self.assertFalse(needs_to_downgrade_enstaller(reqs))
+
+        # Given
+        reqs = [Req.from_anything("enstaller 4.5.1")]
+
+        # When/Then
+        self.assertTrue(needs_to_downgrade_enstaller(reqs))
+
+    def test_get_config_filename_sys_config(self):
+        # Given
+        use_sys_config = True
+
+        # When/Then
+        self.assertEqual(get_config_filename(use_sys_config), SYS_PREFIX_ENSTALLER4RC)
+
+    def test_get_config_filename_no_sys_config_default(self):
+        # Given
+        use_sys_config = False
+
+        # When/Then
+        self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
+
+    def test_get_config_filename_no_sys_config_with_single_prefix(self):
+        # Given
+        use_sys_config = False
+
+        # When/Then
+        with mock.patch("enstaller.main.configuration_read_search_order",
+                        return_value=[self.tempdir]):
+            self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
+
+        # When/Then
+        with mock.patch("enstaller.main.configuration_read_search_order",
+                        return_value=[self.tempdir]):
+            path = os.path.join(self.tempdir, ".enstaller4rc")
+            with open(path, "w") as fp:
+                fp.write("")
+            self.assertEqual(get_config_filename(use_sys_config), path)
+
+    def _mock_index(self, entries):
+        index = dict((entry.key, entry.s3index_data) for entry in entries)
+
+        responses.add(responses.GET,
+                      "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
+                      body=json.dumps(index), status=200,
+                      content_type='application/json')
+
+    @responses.activate
+    def test_repository_factory(self):
+        # Given
+        config = Configuration()
+        entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 1),
+            dummy_repository_package_factory("scipy", "0.13.3", 1),
+        ]
+        self._mock_index(entries)
+
+        # When
+        repository = repository_factory(config)
+
+        # Then
+        repository.find_package("numpy", "1.8.0-1")
+        repository.find_package("scipy", "0.13.3-1")
+
+        self.assertEqual(repository.find_packages("nose"), [])
+
+
 def _create_repositories(remote_entries=None, installed_entries=None):
     if remote_entries is None:
         remote_entries = []
@@ -232,7 +393,7 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
     if installed_entries is None:
         installed_entries = []
 
-    repository = repository_factory(remote_entries)
+    repository = enstaller.tests.common.repository_factory(remote_entries)
 
     enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix])
     for package in installed_entries:
@@ -399,10 +560,8 @@ class TestSearch(unittest.TestCase):
                        UserInfo(True), pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
-    @unittest.expectedFailure
     def test_not_available(self):
         config = Configuration()
-        config.use_webservice = False
 
         r_output = textwrap.dedent("""\
             Name                   Versions           Product              Note
@@ -410,6 +569,8 @@ class TestSearch(unittest.TestCase):
             another_package        2.0.0-1            commercial           not subscribed to
             dummy                  0.9.8-1            commercial           {0}
                                    1.0.1-1            commercial           {0}
+            Note: some of those packages are not available at your current
+            subscription level ('Canopy / EPD Free').
             """.format(""))
         another_entry = dummy_repository_package_factory("another_package", "2.0.0", 1)
         another_entry.available = False
@@ -418,15 +579,13 @@ class TestSearch(unittest.TestCase):
                    dummy_repository_package_factory("dummy", "0.9.8", 1),
                    another_entry]
 
-        with mock.patch("enstaller.main.subscription_message") as mocked_subscription_message:
-            mocked_subscription_message.return_value = ""
-            with mkdtemp() as d:
-                with mock_print() as m:
-                    enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
-                    search(enpkg, enpkg._repository, enpkg._installed_repository)
+        with mkdtemp() as d:
+            with mock_print() as m:
+                enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
+                search(enpkg, enpkg._remote_repository,
+                       enpkg._installed_repository, config, UserInfo(True))
 
-                    self.assertMultiLineEqual(m.value, r_output)
-                    self.assertTrue(mocked_subscription_message.called)
+                self.assertMultiLineEqual(m.value, r_output)
 
 class TestUpdatesCheck(unittest.TestCase):
     def test_update_check_new_available(self):
@@ -659,6 +818,42 @@ class FakeOptions(object):
         self.force = False
         self.forceall = False
         self.no_deps = False
+
+
+class TestInstallFromRequirements(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_install_from_requirements(self):
+        # Given
+        remote_entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("nose", "1.2.1", 2),
+            dummy_repository_package_factory("nose", "1.3.0", 1)
+        ]
+
+        requirements_file = os.path.join(self.prefix, "requirements.txt")
+        with open(requirements_file, "w") as fp:
+            fp.write("numpy 1.8.0-1\nnose 1.2.1-1")
+
+        config = Configuration()
+        enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+        args = FakeOptions()
+        args.requirements = requirements_file
+
+        # When
+        with mock.patch("enstaller.main.install_req") as mocked_install_req:
+            install_from_requirements(enpkg, config, args)
+
+        # Then
+        mocked_install_req.assert_has_calls(
+            [mock.call(enpkg, config, "numpy 1.8.0-1", args),
+             mock.call(enpkg, config, "nose 1.2.1-1", args)])
+
 
 @fake_keyring
 class TestInstallReq(unittest.TestCase):

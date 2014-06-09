@@ -24,11 +24,11 @@ from argparse import ArgumentParser
 from os.path import isfile, join
 
 from enstaller._version import is_released as IS_RELEASED
-from egginst.utils import bin_dir_name, rel_site_packages
+from egginst.utils import bin_dir_name
 
 import enstaller
 
-from enstaller.auth import (authenticate, subscription_message)
+from enstaller.auth import authenticate
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
@@ -36,19 +36,18 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
+from enstaller.egg_meta import split_eggname
+from enstaller.errors import AuthFailedError
+from enstaller.enpkg import Enpkg
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
+from enstaller.history import History
 from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
-
-from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
-from enstaller.egg_meta import split_eggname
-from enstaller.errors import AuthFailedError
-from enstaller.history import History
+from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
 
 
 logger = logging.getLogger(__name__)
@@ -70,9 +69,6 @@ def env_option(prefixes):
     cmd = ('export', 'set')[sys.platform == 'win32']
     print("%s PATH=%s" % (cmd, os.pathsep.join(
                                  join(p, bin_dir_name) for p in prefixes)))
-    if len(prefixes) > 1:
-        print("%s PYTHONPATH=%s" % (cmd, os.pathsep.join(
-                            join(p, rel_site_packages) for p in prefixes)))
 
     if sys.platform != 'win32':
         if sys.platform == 'darwin':
@@ -138,14 +134,12 @@ def list_option(prefixes, pat=None):
         print()
 
 
-def imports_option(repository, pat=None):
+def imports_option(repository):
     print(FMT % ('Name', 'Version', 'Location'))
     print(60 * "=")
 
     names = set(package.name for package in repository.iter_packages())
     for name in sorted(names, key=string.lower):
-        if pat and not pat.search(name):
-            continue
         packages = repository.find_packages(name)
         info = packages[0]._compat_dict
         loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
@@ -183,15 +177,12 @@ def search(enpkg, remote_repository, installed_repository, config, user,
                         version)
             available = metadata.available
             product = metadata.product
-            if not(available):
+            if not available:
                 subscribed = False
             print(FMT4 % (disp_name, disp_ver, product,
                    '' if available else 'not subscribed to'))
             disp_name = ''
 
-    # if the user's search returns any packages that are not available
-    # to them, attempt to authenticate and print out their subscriber
-    # level
     if config.use_webservice and not subscribed:
         msg = textwrap.dedent("""\
             Note: some of those packages are not available at your current
@@ -369,7 +360,7 @@ def check_prefixes(prefixes):
             raise InvalidPythonPathConfiguration("Order of path prefixes doesn't match PYTHONPATH")
 
 
-def needs_to_downgrade_enstaller(enpkg, reqs):
+def needs_to_downgrade_enstaller(reqs):
     """
     Returns True if the running enstaller would be downgraded by satisfying the
     list of requirements.
@@ -423,7 +414,7 @@ def install_from_requirements(enpkg, config, args):
     with open(args.requirements, "r") as fp:
         for req in fp:
             args.no_deps = True
-            install_req(enpkg, config, req, args)
+            install_req(enpkg, config, req.rstrip(), args)
 
 
 def main(argv=None):
@@ -647,7 +638,7 @@ def main(argv=None):
 
     if args.imports:                              # --imports
         repository = Repository._from_prefixes(enpkg.prefixes)
-        imports_option(repository, pat)
+        imports_option(repository)
         return
 
     if args.revert:                               # --revert
@@ -704,7 +695,7 @@ def main(argv=None):
             reqs.append(Req(arg))
 
     # This code assumes we have already upgraded enstaller if needed
-    if needs_to_downgrade_enstaller(enpkg, reqs):
+    if needs_to_downgrade_enstaller(reqs):
         warnings.warn("Enstaller in requirement list: enstaller will be downgraded !")
     else:
         print("Enstaller is already up to date, not upgrading.")
