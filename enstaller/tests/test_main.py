@@ -256,6 +256,28 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
+    def test_env_options_multiple_prefixes(self):
+        # Given
+        prefixes = ["/opt", sys.prefix]
+        env_path = ":".join("{0}/bin".format(prefix) for prefix in prefixes)
+        library_path = ":".join("{0}/lib".format(prefix) for prefix in prefixes)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0}
+                {1} (sys)
+
+            export PATH={2}
+            export LD_LIBRARY_PATH={3}
+        """.format(prefixes[0], prefixes[1], env_path, library_path))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "linux2"):
+            with mock_print() as m:
+                env_option(prefixes)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
     def test_needs_to_downgrade(self):
         # Given
         reqs = []

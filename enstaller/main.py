@@ -70,9 +70,6 @@ def env_option(prefixes):
     cmd = ('export', 'set')[sys.platform == 'win32']
     print("%s PATH=%s" % (cmd, os.pathsep.join(
                                  join(p, bin_dir_name) for p in prefixes)))
-    if len(prefixes) > 1:
-        print("%s PYTHONPATH=%s" % (cmd, os.pathsep.join(
-                            join(p, rel_site_packages) for p in prefixes)))
 
     if sys.platform != 'win32':
         if sys.platform == 'darwin':
