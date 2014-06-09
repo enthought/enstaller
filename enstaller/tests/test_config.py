@@ -25,11 +25,12 @@ from enstaller import __version__
 from enstaller.config import (abs_expanduser,
     configuration_read_search_order, get_auth, get_path,
     input_auth, prepend_url, print_config, _is_using_epd_username,
-    convert_auth_if_required, _keyring_backend_name)
+    convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url)
-from enstaller.errors import InvalidConfiguration
+from enstaller.errors import (EnstallerException,
+                              InvalidConfiguration)
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
@@ -167,6 +168,12 @@ class TestWriteConfig(unittest.TestCase):
                          "https://acme.com/accounts/user/info/")
 
 class TestConfigKeyringConversion(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_use_epd_username(self):
         data = "EPD_auth = '{0}'".format(FAKE_CREDS)
 
@@ -186,13 +193,13 @@ class TestConfigKeyringConversion(unittest.TestCase):
         """
         Ensure we don't convert EPD_auth to using keyring.
         """
+        path = os.path.join(self.prefix, "some_config_file")
         old_config = "EPD_auth = '{0}'".format(FAKE_CREDS)
 
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with open(path, "w") as fp:
             fp.write(old_config)
-            filename = fp.name
 
-        self.assertFalse(convert_auth_if_required(filename))
+        self.assertFalse(convert_auth_if_required(path))
 
     @fake_keyring
     def test_username_to_auth_conversion(self):
@@ -200,21 +207,36 @@ class TestConfigKeyringConversion(unittest.TestCase):
         Ensure we don't convert EPD_auth to using keyring.
         """
         # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+
         old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with open(path, "w") as fp:
             fp.write(old_config)
-            filename = fp.name
+
         with fake_keyring_context() as mocked_keyring:
             mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER,
                                         FAKE_PASSWORD)
 
             # When
-            converted = convert_auth_if_required(filename)
+            converted = convert_auth_if_required(path)
 
             # Then
             self.assertTrue(converted)
-            with open(filename) as fp:
+            with open(path) as fp:
                 self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+
+    @fake_keyring
+    def test_auth_conversion_without_password_in_keyring(self):
+        # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+        old_config = "EPD_username = '{0}'".format(FAKE_USER)
+        with open(path, "w") as fp:
+            fp.write(old_config)
+
+        with fake_keyring_context():
+            # When/Then
+            with self.assertRaises(EnstallerException):
+                convert_auth_if_required(path)
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
@@ -576,10 +598,36 @@ class TestConfigurationPrint(unittest.TestCase):
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_parse_simple_unsupported_entry(self):
         # XXX: ideally, we would like to check for the warning, but doing so is
         # a bit too painful as it has not been backported to unittest2
         Configuration.from_file(StringIO("nono = 'le petit robot'"))
+
+    def test__get_default_config_simple(self):
+        # Given
+        default_config_file = os.path.join(self.prefix, ".enstaller4rc")
+        with open(default_config_file, "w") as fp:
+            fp.write("store_url = \"http://acme.com\"")
+
+        # When
+        with mock.patch("enstaller.config.get_path",
+                        return_value=default_config_file):
+            config = Configuration._get_default_config()
+
+        # Then
+        self.assertEqual(config.store_url, "http://acme.com")
+
+    def test__get_default_config_non_existing_path(self):
+        # When/Then
+        with mock.patch("enstaller.config.get_path", return_value=None):
+            with self.assertRaises(InvalidConfiguration):
+                Configuration._get_default_config()
 
     def test_reset_auth_with_keyring(self):
         with make_keyring_available_context() as m:
@@ -619,6 +667,26 @@ class TestConfiguration(unittest.TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.EPD_auth = FAKE_USER
+
+    def test_write_default_config_simple(self):
+        # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+
+        # When
+        write_default_config(path)
+
+        # Then
+        self.assertTrue(os.path.exists(path))
+
+    def test_write_default_config_already_exists(self):
+        # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+        with open(path, "w") as fp:
+            fp.write("")
+
+        # When/Then
+        with self.assertRaises(EnstallerException):
+            write_default_config(path)
 
 class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
