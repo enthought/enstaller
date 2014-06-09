@@ -29,7 +29,7 @@ from enstaller.config import (abs_expanduser,
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url)
-from enstaller.errors import InvalidConfiguration
+from enstaller.errors import EnpkgError, InvalidConfiguration
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
@@ -215,6 +215,19 @@ class TestConfigKeyringConversion(unittest.TestCase):
             self.assertTrue(converted)
             with open(filename) as fp:
                 self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+
+    @fake_keyring
+    def test_auth_conversion_without_password_in_keyring(self):
+        # Given
+        old_config = "EPD_username = '{0}'".format(FAKE_USER)
+        with tempfile.NamedTemporaryFile(delete=False) as fp:
+            fp.write(old_config)
+            filename = fp.name
+
+        with fake_keyring_context():
+            # When/Then
+            with self.assertRaises(EnpkgError):
+                convert_auth_if_required(filename)
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
