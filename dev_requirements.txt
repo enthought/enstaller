@@ -12,3 +12,5 @@ tox
 refactordoc
 sphinx
 sphinx-rtd-theme
+requests >= 2.2.0
+responses

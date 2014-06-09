@@ -152,6 +152,17 @@ class TestUri(unittest.TestCase):
         path = uri_to_path(uri)
         self.assertEqual(r_path, path)
 
+    def test_uri_to_path_simple_local(self):
+        if sys.platform == "win32":
+            r_path = "vagrant\\yo"
+            uri = "file://vagrant/yo"
+        else:
+            r_path = "vagrant/yo"
+            uri = "file://vagrant/yo"
+
+        path = uri_to_path(uri)
+        self.assertEqual(r_path, path)
+
 
 if __name__ == '__main__':
     unittest.main()

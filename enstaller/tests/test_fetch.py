@@ -10,6 +10,7 @@ else:
     import unittest
 
 import mock
+import responses
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
@@ -17,8 +18,6 @@ from enstaller.errors import EnstallerException
 from enstaller.fetch import DownloadManager
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
-
-from enstaller.tests.common import mock_url_fetcher
 
 
 class TestDownloadManager(unittest.TestCase):
@@ -40,13 +39,10 @@ class TestDownloadManager(unittest.TestCase):
     def test_fetch_simple(self):
         # Given
         filename = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, filename)
         repository = self._create_store_and_repository([filename])
 
-        # When
         downloader = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(filename)
+        downloader.fetch(filename)
 
         # Then
         target = os.path.join(self.tempdir, filename)
@@ -59,69 +55,42 @@ class TestDownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
-        repository = self._create_store_and_repository([filename])
+        repository = Repository()
+        package = RepositoryPackageMetadata.from_egg(path)
+        package.md5 = "a" * 32
+        repository.add_package(package)
 
-        mocked_metadata = mock.Mock()
-        mocked_metadata.md5 = "a" * 32
-        mocked_metadata.size = 1024
-        mocked_metadata.key = filename
-
-        with mock.patch.object(repository, "find_package", return_value=mocked_metadata):
-            downloader = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(downloader, open(path)):
-                # When/Then
-                with self.assertRaises(EnstallerException):
-                    downloader.fetch(filename)
+        downloader = DownloadManager(repository, self.tempdir)
+        with self.assertRaises(EnstallerException):
+            downloader.fetch(filename)
 
     def test_fetch_abort(self):
         # Given
         filename = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, filename)
         repository = self._create_store_and_repository([filename])
 
+        downloader = DownloadManager(repository, self.tempdir)
         target = os.path.join(self.tempdir, filename)
 
         # When
-        downloader = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(downloader, open(path)):
-            context = downloader.iter_fetch(filename)
-            for i, chunk in enumerate(context):
-                if i == 1:
-                    context.cancel()
-                    break
-
-            # Then
-            self.assertFalse(os.path.exists(target))
-
-    def test_fetch_egg_simple(self):
-        # Given
-        egg = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, egg)
-
-        repository = self._create_store_and_repository([egg])
-
-        # When
-        downloader = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(egg)
+        context = downloader.iter_fetch(filename)
+        for i, chunk in enumerate(context):
+            if i == 1:
+                context.cancel()
+                break
 
         # Then
-        target = os.path.join(self.tempdir, egg)
-        self.assertTrue(os.path.exists(target))
-        self.assertEqual(compute_md5(target),
-                         compute_md5(os.path.join(_EGGINST_COMMON_DATA, egg)))
+        self.assertFalse(os.path.exists(target))
 
     def test_fetch_egg_refetch(self):
         # Given
         egg = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
         repository = self._create_store_and_repository([egg])
 
         # When
         downloader = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(egg)
+        downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -140,8 +109,7 @@ class TestDownloadManager(unittest.TestCase):
 
         # When
         downloader = DownloadManager(repository, self.tempdir)
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(egg)
+        downloader.fetch(egg)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -154,8 +122,7 @@ class TestDownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(egg, force=True)
+        downloader.fetch(egg, force=True)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
@@ -163,8 +130,7 @@ class TestDownloadManager(unittest.TestCase):
         # When/Then
         # Ensure we deal correctly with force=False when the egg is already
         # there.
-        with mock_url_fetcher(downloader, open(path, "rb")):
-            downloader.fetch(egg, force=False)
+        downloader.fetch(egg, force=False)
 
     def test_progress_manager(self):
         """
@@ -173,14 +139,12 @@ class TestDownloadManager(unittest.TestCase):
         """
         # Given
         egg = "nose-1.3.0-1.egg"
-        path = os.path.join(_EGGINST_COMMON_DATA, egg)
         repository = self._create_store_and_repository([egg])
 
         with mock.patch("egginst.progress.ProgressManager") as m:
             # When
             downloader = DownloadManager(repository, self.tempdir)
-            with mock_url_fetcher(downloader, open(path, "rb")):
-                downloader.fetch(egg)
+            downloader.fetch(egg)
 
             # Then
             self.assertTrue(m.called)

@@ -5,7 +5,7 @@ from os.path import isfile, join
 from egginst.progress import FileProgressManager, console_progress_manager_factory
 from egginst.utils import compute_md5, makedirs
 
-from enstaller.fetch_utils import StoreResponse, checked_content
+from enstaller.fetch_utils import checked_content
 from enstaller.legacy_stores import URLFetcher
 from enstaller.repository import egg_name_to_name_version
 
@@ -49,12 +49,10 @@ class _CancelableResponse(object):
         with file_progress:
             self._progress_update = file_progress.update
             with checked_content(self._path, self._package_metadata.md5) as target:
-                response = StoreResponse(
-                    self._fetcher.open(self._package_metadata.source_url),
-                    self._package_metadata.size, self._package_metadata.md5,
-                    self._package_metadata.key)
+                url = self._package_metadata.source_url
+                response = self._fetcher.fetch(url)
 
-                for chunk in response.iter_content():
+                for chunk in response.iter_content(1024):
                     if self._canceled:
                         response.close()
                         target.abort = True
