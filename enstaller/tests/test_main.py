@@ -27,10 +27,12 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.main import check_prefixes, disp_store_info, \
-    epd_install_confirm, get_package_path, imports_option, info_option, \
-    install_req, install_time_string, name_egg, print_installed, search, \
-    update_all, updates_check, update_enstaller, whats_new
+from enstaller.main import (check_prefixes, disp_store_info,
+                            epd_install_confirm, env_option, get_package_path,
+                            imports_option, info_option, install_req,
+                            install_time_string, name_egg, print_installed,
+                            search, update_all, updates_check,
+                            update_enstaller, whats_new)
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.utils import PY_VER
 
@@ -207,6 +209,48 @@ class TestMisc(unittest.TestCase):
         # When
         with mock_print() as m:
             imports_option(repository)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
+    def test_env_options_linux_simple(self):
+        # Given
+        prefix = sys.prefix
+        bindir = "{0}/bin".format(prefix)
+        libdir = "{0}/lib".format(prefix)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0} (sys)
+
+            export PATH={1}
+            export LD_LIBRARY_PATH={2}
+        """.format(prefix, bindir, libdir))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "linux2"):
+            with mock_print() as m:
+                env_option([sys.prefix])
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
+    def test_env_options_darwin_simple(self):
+        # Given
+        prefix = sys.prefix
+        bindir = "{0}/bin".format(prefix)
+        libdir = "{0}/lib".format(prefix)
+        r_output = textwrap.dedent("""\
+            Prefixes:
+                {0} (sys)
+
+            export PATH={1}
+            export DYLD_LIBRARY_PATH={2}
+        """.format(prefix, bindir, libdir))
+
+        # When
+        with mock.patch("enstaller.main.sys.platform", "darwin"):
+            with mock_print() as m:
+                env_option([sys.prefix])
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)
