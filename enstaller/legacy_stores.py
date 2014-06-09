@@ -14,7 +14,7 @@ class URLFetcher(object):
         self._auth = auth
         self.cache_dir= cache_dir
 
-        session = requests.session()
+        session = requests.Session()
         session.mount("file://", LocalFileAdapter())
 
         self._session = session
