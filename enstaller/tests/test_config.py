@@ -576,10 +576,36 @@ class TestConfigurationPrint(unittest.TestCase):
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_parse_simple_unsupported_entry(self):
         # XXX: ideally, we would like to check for the warning, but doing so is
         # a bit too painful as it has not been backported to unittest2
         Configuration.from_file(StringIO("nono = 'le petit robot'"))
+
+    def test__get_default_config_simple(self):
+        # Given
+        default_config_file = os.path.join(self.prefix, ".enstaller4rc")
+        with open(default_config_file, "w") as fp:
+            fp.write("store_url = \"http://acme.com\"")
+
+        # When
+        with mock.patch("enstaller.config.get_path",
+                        return_value=default_config_file):
+            config = Configuration._get_default_config()
+
+        # Then
+        self.assertEqual(config.store_url, "http://acme.com")
+
+    def test__get_default_config_non_existing_path(self):
+        # When/Then
+        with mock.patch("enstaller.config.get_path", return_value=None):
+            with self.assertRaises(InvalidConfiguration):
+                Configuration._get_default_config()
 
     def test_reset_auth_with_keyring(self):
         with make_keyring_available_context() as m:
