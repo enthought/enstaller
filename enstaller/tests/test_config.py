@@ -168,6 +168,12 @@ class TestWriteConfig(unittest.TestCase):
                          "https://acme.com/accounts/user/info/")
 
 class TestConfigKeyringConversion(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_use_epd_username(self):
         data = "EPD_auth = '{0}'".format(FAKE_CREDS)
 
@@ -187,13 +193,13 @@ class TestConfigKeyringConversion(unittest.TestCase):
         """
         Ensure we don't convert EPD_auth to using keyring.
         """
+        path = os.path.join(self.prefix, "some_config_file")
         old_config = "EPD_auth = '{0}'".format(FAKE_CREDS)
 
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with open(path, "w") as fp:
             fp.write(old_config)
-            filename = fp.name
 
-        self.assertFalse(convert_auth_if_required(filename))
+        self.assertFalse(convert_auth_if_required(path))
 
     @fake_keyring
     def test_username_to_auth_conversion(self):
@@ -201,34 +207,36 @@ class TestConfigKeyringConversion(unittest.TestCase):
         Ensure we don't convert EPD_auth to using keyring.
         """
         # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
+
         old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with open(path, "w") as fp:
             fp.write(old_config)
-            filename = fp.name
+
         with fake_keyring_context() as mocked_keyring:
             mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER,
                                         FAKE_PASSWORD)
 
             # When
-            converted = convert_auth_if_required(filename)
+            converted = convert_auth_if_required(path)
 
             # Then
             self.assertTrue(converted)
-            with open(filename) as fp:
+            with open(path) as fp:
                 self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
 
     @fake_keyring
     def test_auth_conversion_without_password_in_keyring(self):
         # Given
+        path = os.path.join(self.prefix, ".enstaller4rc")
         old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with open(path, "w") as fp:
             fp.write(old_config)
-            filename = fp.name
 
         with fake_keyring_context():
             # When/Then
             with self.assertRaises(EnstallerException):
-                convert_auth_if_required(filename)
+                convert_auth_if_required(path)
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
