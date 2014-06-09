@@ -64,19 +64,6 @@ def env_option(prefixes):
     print("Prefixes:")
     for p in prefixes:
         print('    %s%s' % (p, ['', ' (sys)'][p == sys.prefix]))
-    print()
-
-    cmd = ('export', 'set')[sys.platform == 'win32']
-    print("%s PATH=%s" % (cmd, os.pathsep.join(
-                                 join(p, bin_dir_name) for p in prefixes)))
-
-    if sys.platform != 'win32':
-        if sys.platform == 'darwin':
-            name = 'DYLD_LIBRARY_PATH'
-        else:
-            name = 'LD_LIBRARY_PATH'
-        print("%s %s=%s" % (cmd, name, os.pathsep.join(
-                                 join(p, 'lib') for p in prefixes)))
 
 
 def disp_store_info(info):

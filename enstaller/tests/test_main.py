@@ -224,66 +224,36 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
-    def test_env_options_linux_simple(self):
+    def test_env_options(self):
         # Given
         prefix = sys.prefix
-        bindir = "{0}/bin".format(prefix)
-        libdir = "{0}/lib".format(prefix)
         r_output = textwrap.dedent("""\
             Prefixes:
                 {0} (sys)
-
-            export PATH={1}
-            export LD_LIBRARY_PATH={2}
-        """.format(prefix, bindir, libdir))
+        """.format(prefix))
 
         # When
-        with mock.patch("enstaller.main.sys.platform", "linux2"):
-            with mock_print() as m:
-                env_option([sys.prefix])
-
-        # Then
-        self.assertMultiLineEqual(m.value, r_output)
-
-    def test_env_options_darwin_simple(self):
-        # Given
-        prefix = sys.prefix
-        bindir = "{0}/bin".format(prefix)
-        libdir = "{0}/lib".format(prefix)
-        r_output = textwrap.dedent("""\
-            Prefixes:
-                {0} (sys)
-
-            export PATH={1}
-            export DYLD_LIBRARY_PATH={2}
-        """.format(prefix, bindir, libdir))
-
-        # When
-        with mock.patch("enstaller.main.sys.platform", "darwin"):
-            with mock_print() as m:
-                env_option([sys.prefix])
+        with mock_print() as m:
+            env_option([sys.prefix])
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
     def test_env_options_multiple_prefixes(self):
         # Given
-        prefixes = ["/opt", sys.prefix]
-        env_path = ":".join("{0}/bin".format(prefix) for prefix in prefixes)
-        library_path = ":".join("{0}/lib".format(prefix) for prefix in prefixes)
+        if sys.platform == "win32":
+            prefixes = ["C:/opt", sys.prefix]
+        else:
+            prefixes = ["/opt", sys.prefix]
         r_output = textwrap.dedent("""\
             Prefixes:
                 {0}
                 {1} (sys)
-
-            export PATH={2}
-            export LD_LIBRARY_PATH={3}
-        """.format(prefixes[0], prefixes[1], env_path, library_path))
+        """.format(prefixes[0], prefixes[1]))
 
         # When
-        with mock.patch("enstaller.main.sys.platform", "linux2"):
-            with mock_print() as m:
-                env_option(prefixes)
+        with mock_print() as m:
+            env_option(prefixes)
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)
