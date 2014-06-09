@@ -22,7 +22,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
 from enstaller.auth import DUMMY_USER, authenticate, subscription_message
-from enstaller.errors import (EnpkgError, EnstallerException,
+from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import real_prefix
 from enstaller import plat
@@ -207,8 +207,8 @@ def convert_auth_if_required(filename):
         username = config.EPD_username
         password = _get_keyring_password(username)
         if password is None:
-            raise EnpkgError("Cannot convert password: no password found "
-                             "in keyring")
+            raise EnstallerException("Cannot convert password: no password "
+                                     "found in keyring")
         else:
             config.set_auth(username, password)
             config._change_auth(filename)

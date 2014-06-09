@@ -29,7 +29,7 @@ from enstaller.config import (abs_expanduser,
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url)
-from enstaller.errors import (EnpkgError, EnstallerException,
+from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
 
@@ -227,7 +227,7 @@ class TestConfigKeyringConversion(unittest.TestCase):
 
         with fake_keyring_context():
             # When/Then
-            with self.assertRaises(EnpkgError):
+            with self.assertRaises(EnstallerException):
                 convert_auth_if_required(filename)
 
 class TestGetAuth(unittest.TestCase):
