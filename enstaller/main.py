@@ -24,11 +24,11 @@ from argparse import ArgumentParser
 from os.path import isfile, join
 
 from enstaller._version import is_released as IS_RELEASED
-from egginst.utils import bin_dir_name, rel_site_packages
+from egginst.utils import bin_dir_name
 
 import enstaller
 
-from enstaller.auth import (authenticate, subscription_message)
+from enstaller.auth import (authenticate)
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
@@ -36,19 +36,18 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
+from enstaller.egg_meta import split_eggname
+from enstaller.errors import AuthFailedError
+from enstaller.enpkg import Enpkg
 from enstaller.fetch import DownloadManager
 from enstaller.freeze import get_freeze_list
+from enstaller.history import History
 from enstaller.legacy_stores import legacy_index_parser
 from enstaller.proxy.api import setup_proxy
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
-
-from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
-from enstaller.egg_meta import split_eggname
-from enstaller.errors import AuthFailedError
-from enstaller.history import History
+from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
 
 
 logger = logging.getLogger(__name__)
