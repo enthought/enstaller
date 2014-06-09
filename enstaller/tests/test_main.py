@@ -31,7 +31,8 @@ from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import (check_prefixes, disp_store_info,
                             epd_install_confirm, env_option,
                             get_config_filename, get_package_path,
-                            imports_option, info_option, install_req,
+                            imports_option, info_option,
+                            install_from_requirements, install_req,
                             install_time_string, needs_to_downgrade_enstaller,
                             name_egg, print_installed, search, update_all,
                             updates_check, update_enstaller, whats_new)
@@ -783,6 +784,42 @@ class FakeOptions(object):
         self.force = False
         self.forceall = False
         self.no_deps = False
+
+
+class TestInstallFromRequirements(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_install_from_requirements(self):
+        # Given
+        remote_entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("nose", "1.2.1", 2),
+            dummy_repository_package_factory("nose", "1.3.0", 1)
+        ]
+
+        requirements_file = os.path.join(self.prefix, "requirements.txt")
+        with open(requirements_file, "w") as fp:
+            fp.write("numpy 1.8.0-1\nnose 1.2.1-1")
+
+        config = Configuration()
+        enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+        args = FakeOptions()
+        args.requirements = requirements_file
+
+        # When
+        with mock.patch("enstaller.main.install_req") as mocked_install_req:
+            install_from_requirements(enpkg, config, args)
+
+        # Then
+        mocked_install_req.assert_has_calls(
+            [mock.call(enpkg, config, "numpy 1.8.0-1", args),
+             mock.call(enpkg, config, "nose 1.2.1-1", args)])
+
 
 @fake_keyring
 class TestInstallReq(unittest.TestCase):

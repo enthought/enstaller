@@ -414,7 +414,7 @@ def install_from_requirements(enpkg, config, args):
     with open(args.requirements, "r") as fp:
         for req in fp:
             args.no_deps = True
-            install_req(enpkg, config, req, args)
+            install_req(enpkg, config, req.rstrip(), args)
 
 
 def main(argv=None):
