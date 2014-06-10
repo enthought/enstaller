@@ -14,6 +14,7 @@ import requests
 import sqlite_cache
 
 from cachecontrol.cache import BaseCache
+from cachecontrol.controller import CacheController
 
 from enstaller.utils import uri_to_path
 
@@ -159,3 +160,14 @@ class DBCache(BaseCache):
             self._cache.delete(self._encode_key(key))
         except sqlite3.Error as e:
             logger.warn("Could not fetch data from cache: %r", e)
+
+
+class QueryPathOnlyCacheController(CacheController):
+    """
+    A cache controller that caches entries based solely on scheme, hostname and
+    path.
+    """
+    def cache_url(self, uri):
+        url = super(QueryPathOnlyCacheController, self).cache_url(uri)
+        p = urlparse.urlparse(url)
+        return urlparse.urlunparse((p.scheme, p.hostname, p.path, "", "", ""))
