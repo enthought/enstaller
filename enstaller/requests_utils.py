@@ -1,6 +1,8 @@
 """
 A few utilities for python requests.
 """
+import os
+
 from io import FileIO
 
 import requests
@@ -47,9 +49,11 @@ class LocalFileAdapter(requests.adapters.HTTPAdapter):
     """
     def build_response_from_file(self, request, stream):
         path = uri_to_path(request.url)
+        stat_info = os.stat(path)
 
-        from enstaller.requests_utils import FileResponse
-        return self.build_response(request, FileResponse(path, "rb"))
+        response = self.build_response(request, FileResponse(path, "rb"))
+        response.headers["content-length"] = str(stat_info.st_size)
+        return response
 
     def send(self, request, stream=False, timeout=None,
              verify=True, cert=None, proxies=None):

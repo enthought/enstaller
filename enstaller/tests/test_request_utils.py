@@ -66,3 +66,4 @@ class TestLocalFileAdapter(unittest.TestCase):
 
         # Then
         self.assertEqual(data, r_data)
+        self.assertEqual(resp.headers["content-length"], str(os.stat(__file__).st_size))
