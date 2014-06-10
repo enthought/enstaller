@@ -1,13 +1,24 @@
 """
 A few utilities for python requests.
 """
+import base64
+import logging
 import os
+import sqlite3
+import urlparse
 
 from io import FileIO
+from cPickle import loads, dumps, HIGHEST_PROTOCOL
 
 import requests
+import sqlite_cache
+
+from cachecontrol.cache import BaseCache
 
 from enstaller.utils import uri_to_path
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileResponse(FileIO):
@@ -88,3 +99,63 @@ class _ResponseIterator(object):
 
     def __len__(self):
         return int(self._size / self._chunk_size + 1)
+
+
+class _NullCache(object):
+    def get(self, key):
+        return None
+
+    def set(self, key, value):
+        pass
+
+    def delete(self, key):
+        pass
+
+
+class DBCache(BaseCache):
+    """
+    A Sqlite-backed cache.
+
+    Using sqlite guarantees data consistency without much overhead and without the need
+    of usually brittle file locks, or external services (impractical in many cases)
+    """
+    def __init__(self, uri=":memory:", capacity=10):
+        try:
+            self._cache = sqlite_cache.SQLiteCache(uri, capacity)
+        except sqlite3.Error as e:
+            logger.warn("Could not create sqlite cache: %r", e)
+            self._cache = _NullCache()
+
+    def _encode_key(self, key):
+        return base64.b64encode(key)
+
+    def _encode_value(self, value):
+        data = dumps(value, protocol=HIGHEST_PROTOCOL)
+        return buffer(data)
+
+    def _decode_value(self, encoded_value):
+        return loads(str(encoded_value))
+
+    def get(self, key):
+        try:
+            encoded_value = self._cache.get(self._encode_key(key))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
+            return None
+        else:
+            if encoded_value is not None:
+                return self._decode_value(encoded_value)
+            else:
+                return None
+
+    def set(self, key, value):
+        try:
+            self._cache.set(self._encode_key(key), self._encode_value(value))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
+
+    def delete(self, key):
+        try:
+            self._cache.delete(self._encode_key(key))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
