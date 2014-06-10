@@ -1,8 +1,14 @@
+import os.path
+
 import requests
 
+from cachecontrol.adapter import CacheControlAdapter
+
+from egginst.utils import ensure_dir
 from enstaller.auth import _INDEX_NAME
 from enstaller.repository import RepositoryPackageMetadata
-from enstaller.requests_utils import LocalFileAdapter
+from enstaller.requests_utils import (DBCache, LocalFileAdapter,
+                                      QueryPathOnlyCacheController)
 from enstaller.utils import PY_VER
 
 
@@ -18,6 +24,21 @@ class URLFetcher(object):
 
     def fetch(self, url):
         return self._session.get(url, stream=True, auth=self._auth)
+
+
+class IndexFetcher(URLFetcher):
+    """An URLFetcher subclass that caches the index using http etag."""
+    def __init__(self, cache_dir, auth=None):
+        super(IndexFetcher, self).__init__(cache_dir, auth)
+
+        uri = os.path.join(self.cache_dir, "index_cache", "index.db")
+        ensure_dir(uri)
+        cache = DBCache(uri)
+
+        adapter = CacheControlAdapter(
+            cache, controller_class=QueryPathOnlyCacheController)
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
 
 
 def _parse_index(json_dict, store_location):
@@ -55,12 +76,11 @@ def _old_legacy_index_parser(repository_urls, fetcher):
         for package in _parse_index(json_dict, url):
             yield package
 
-
 def legacy_index_parser(config):
     """
     Yield RepositoryPackageMetadata instances from the configured stores.
     """
-    fetcher = URLFetcher(config.repository_cache, config.get_auth())
+    fetcher = IndexFetcher(config.repository_cache, config.get_auth())
     if config.use_webservice:
         return _webservice_index_parser(config.webservice_entry_point, fetcher,
                                         config.use_pypi)
