@@ -12,6 +12,12 @@ def _parse_index(json_dict, store_location):
         yield RepositoryPackageMetadata.from_json_dict(key, info)
 
 
+def _fetch_index_as_json_dict(fetcher, url):
+    resp = fetcher.fetch(url)
+    resp.raise_for_status()
+    return resp.json()
+
+
 def _webservice_index_parser(webservice_entry_point, fetcher, use_pypi):
     url = webservice_entry_point + _INDEX_NAME
     if use_pypi:
@@ -19,24 +25,18 @@ def _webservice_index_parser(webservice_entry_point, fetcher, use_pypi):
     else:
         url +=  "?pypi=false"
 
-    store_location = webservice_entry_point
-
-    resp = fetcher.fetch(url)
-    resp.raise_for_status()
-
-    return _parse_index(resp.json(), store_location)
+    return _parse_index(_fetch_index_as_json_dict(fetcher, url),
+                        webservice_entry_point)
 
 
 def _old_legacy_index_parser(repository_urls, fetcher):
     for url in repository_urls:
         index = url +  _INDEX_NAME
-        resp = fetcher.fetch(index)
-        resp.raise_for_status()
 
-        json_dict = resp.json()
-
+        json_dict = _fetch_index_as_json_dict(fetcher, index)
         for package in _parse_index(json_dict, url):
             yield package
+
 
 def legacy_index_parser(fetcher, config):
     """
