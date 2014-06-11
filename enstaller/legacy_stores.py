@@ -39,11 +39,10 @@ def _old_legacy_index_parser(repository_urls, fetcher):
         for package in _parse_index(json_dict, url):
             yield package
 
-def legacy_index_parser(config):
+def legacy_index_parser(fetcher, config):
     """
     Yield RepositoryPackageMetadata instances from the configured stores.
     """
-    fetcher = IndexFetcher(config.repository_cache, config.get_auth())
     if config.use_webservice:
         return _webservice_index_parser(config.webservice_entry_point, fetcher,
                                         config.use_pypi)

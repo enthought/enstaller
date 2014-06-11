@@ -39,7 +39,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg
-from enstaller.fetch import DownloadManager
+from enstaller.fetch import DownloadManager, IndexFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.legacy_stores import legacy_index_parser
@@ -387,9 +387,9 @@ def ensure_authenticated_config(config, config_filename):
         return user
 
 
-def repository_factory(config):
+def repository_factory(fetcher, config):
     repository = Repository()
-    for package in legacy_index_parser(config):
+    for package in legacy_index_parser(fetcher, config):
         repository.add_package(package)
     return repository
 
@@ -610,7 +610,8 @@ def main(argv=None):
 
     user = ensure_authenticated_config(config, config_filename)
 
-    repository = repository_factory(config)
+    fetcher = IndexFetcher(config.repository_cache, config.get_auth())
+    repository = repository_factory(fetcher, config)
 
     downloader = DownloadManager(repository, config.repository_cache,
                                  config.get_auth())
