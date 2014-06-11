@@ -1,4 +1,3 @@
-cachecontrol
 coverage
 detox
 encore >= 0.4.0
@@ -11,5 +10,3 @@ randomize
 six
 tox
 unittest2
-requests
-responses
