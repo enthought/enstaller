@@ -31,10 +31,10 @@ else:
 
 from collections import namedtuple, Sequence, Sized
 from functools import wraps
-from requests.adapters import HTTPAdapter
-from requests.exceptions import ConnectionError
+from enstaller.vendor.requests.adapters import HTTPAdapter
+from enstaller.vendor.requests.exceptions import ConnectionError
 try:
-    from requests.packages.urllib3.response import HTTPResponse
+    from enstaller.vendor.requests.packages.urllib3.response import HTTPResponse
 except ImportError:
     from urllib3.response import HTTPResponse
 if six.PY2:
@@ -187,7 +187,7 @@ class RequestsMock(object):
 
     def start(self):
         import mock
-        self._patcher = mock.patch('requests.Session.send', self._on_request)
+        self._patcher = mock.patch('enstaller.vendor.requests.Session.send', self._on_request)
         self._patcher.start()
 
     def stop(self):
