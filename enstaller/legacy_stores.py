@@ -1,15 +1,13 @@
 import os.path
 
-import requests
-
-from cachecontrol.adapter import CacheControlAdapter
-
 from egginst.utils import ensure_dir
 from enstaller.auth import _INDEX_NAME
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)
 from enstaller.utils import PY_VER
+from enstaller.vendor import requests
+from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
 
 class URLFetcher(object):

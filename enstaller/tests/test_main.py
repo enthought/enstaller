@@ -21,7 +21,6 @@ else:
         return ctx.exception.code
 
 import mock
-import responses
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
@@ -45,6 +44,7 @@ from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.resolve import Req
 from enstaller.utils import PY_VER
+from enstaller.vendor import responses
 
 import enstaller.tests.common
 from .common import (dummy_installed_package_factory,

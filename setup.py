@@ -84,6 +84,56 @@ f = open('README.rst')
 kwds['long_description'] = f.read()
 f.close()
 
+include_testing = True
+
+packages = [
+    'egginst',
+    'egginst.macho',
+    'enstaller',
+    'enstaller.indexed_repo',
+    'enstaller.proxy',
+    'enstaller.vendor',
+    'enstaller.vendor.cachecontrol',
+    'enstaller.vendor.cachecontrol.caches',
+    'enstaller.vendor.keyring',
+    'enstaller.vendor.keyring.backends',
+    'enstaller.vendor.keyring.util',
+    'enstaller.vendor.requests',
+    'enstaller.vendor.requests.packages',
+    'enstaller.vendor.requests.packages.chardet',
+    'enstaller.vendor.requests.packages.urllib3',
+    'enstaller.vendor.requests.packages.urllib3.contrib',
+    'enstaller.vendor.requests.packages.urllib3.packages',
+    'enstaller.vendor.requests.packages.urllib3.packages.ssl_match_hostname',
+    'enstaller.vendor.requests.packages.urllib3.util',
+    'enstaller.vendor.sqlite_cache',
+    'enstaller.vendor.win32ctypes',
+    'enstaller.vendor.yaml',
+]
+
+package_data = {}
+
+if include_testing:
+    packages += [
+        'egginst.tests',
+        'enstaller.indexed_repo.tests',
+        'enstaller.proxy.tests',
+        'enstaller.tests',
+    ]
+    macho_binaries = """dummy_with_target_dat-1.0.0-1.egg  foo_amd64
+    foo_legacy_placehold.dylib  foo_rpath.dylib  foo.so  foo_x86
+    libfoo.dylib""".split()
+
+    package_data["egginst.tests"] = ["data/*egg", "data/zip_with_softlink.zip"]
+    package_data["egginst.tests"] += [os.path.join("data", "macho", p)
+                                      for p in macho_binaries]
+
+    package_data["enstaller.indexed_repo.tests"] = [
+        "*.txt",
+        "epd/*.txt", "gpl/*.txt",
+        "open/*.txt",
+        "runner/*.txt",
+    ]
 
 setup(
     name="enstaller",
@@ -92,19 +142,8 @@ setup(
     url = "https://github.com/enthought/enstaller",
     license="BSD",
     description = "Install and managing tool for egg-based packages",
-    packages = [
-        'egginst',
-        'egginst/macho',
-        'enstaller',
-        'enstaller/indexed_repo',
-        'enstaller/proxy',
-        'enstaller/vendor',
-        'enstaller/vendor/keyring',
-        'enstaller/vendor/keyring/backends',
-        'enstaller/vendor/keyring/util',
-        'enstaller/vendor/win32ctypes',
-        'enstaller/vendor/yaml',
-    ],
+    packages = packages,
+    package_data=package_data,
     entry_points = {
         "console_scripts": [
              "enpkg = enstaller.main:main_noexc",

@@ -10,7 +10,6 @@ else:
     import unittest
 
 import mock
-import responses
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 

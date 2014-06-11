@@ -4,13 +4,13 @@ import os
 import tempfile
 
 import mock
-import responses
 
 from enstaller.config import Configuration
 from enstaller.repository import Repository
 from enstaller.plat import custom_plat
 from enstaller.tests.common import (fake_keyring,
                                     dummy_repository_package_factory)
+from enstaller.vendor import responses
 
 
 def _dont_write_default_configuration(f):
