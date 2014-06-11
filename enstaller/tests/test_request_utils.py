@@ -1,5 +1,4 @@
 import os.path
-import shutil
 import sqlite3
 import sys
 import tempfile
@@ -10,6 +9,8 @@ else:
     import unittest
 
 import requests
+
+from egginst.utils import rm_rf
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
@@ -79,7 +80,7 @@ class TestResponseIterator(unittest.TestCase):
         self.prefix = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.prefix)
+        rm_rf(self.prefix)
 
     def _create_file_session(self):
         session = requests.session()
@@ -124,7 +125,7 @@ class TestDBCache(unittest.TestCase):
         self.prefix = tempfile.mkdtemp()
 
     def tearDown(self):
-        shutil.rmtree(self.prefix)
+        rm_rf(self.prefix)
 
     def test_simple(self):
         # Given
