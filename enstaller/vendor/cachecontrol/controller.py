@@ -5,7 +5,7 @@ import re
 import calendar
 import time
 
-from requests.structures import CaseInsensitiveDict
+from enstaller.vendor.requests.structures import CaseInsensitiveDict
 
 from .cache import DictCache
 from .compat import parsedate_tz

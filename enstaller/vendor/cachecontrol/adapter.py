@@ -1,6 +1,6 @@
 import functools
 
-from requests.adapters import HTTPAdapter
+from enstaller.vendor.requests.adapters import HTTPAdapter
 
 from .controller import CacheController
 from .cache import DictCache
