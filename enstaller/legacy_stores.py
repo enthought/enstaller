@@ -1,42 +1,7 @@
-import os.path
-
-from egginst.utils import ensure_dir
 from enstaller.auth import _INDEX_NAME
+from enstaller.fetch import IndexFetcher
 from enstaller.repository import RepositoryPackageMetadata
-from enstaller.requests_utils import (DBCache, LocalFileAdapter,
-                                      QueryPathOnlyCacheController)
 from enstaller.utils import PY_VER
-from enstaller.vendor import requests
-from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
-
-
-class URLFetcher(object):
-    def __init__(self, cache_dir, auth=None):
-        self._auth = auth
-        self.cache_dir= cache_dir
-
-        session = requests.Session()
-        session.mount("file://", LocalFileAdapter())
-
-        self._session = session
-
-    def fetch(self, url):
-        return self._session.get(url, stream=True, auth=self._auth)
-
-
-class IndexFetcher(URLFetcher):
-    """An URLFetcher subclass that caches the index using http etag."""
-    def __init__(self, cache_dir, auth=None):
-        super(IndexFetcher, self).__init__(cache_dir, auth)
-
-        uri = os.path.join(self.cache_dir, "index_cache", "index.db")
-        ensure_dir(uri)
-        cache = DBCache(uri)
-
-        adapter = CacheControlAdapter(
-            cache, controller_class=QueryPathOnlyCacheController)
-        self._session.mount("http://", adapter)
-        self._session.mount("https://", adapter)
 
 
 def _parse_index(json_dict, store_location):

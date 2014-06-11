@@ -1,13 +1,17 @@
+import os.path
 import logging
 
 from os.path import isfile, join
 
 from egginst.progress import FileProgressManager, console_progress_manager_factory
-from egginst.utils import compute_md5, makedirs
+from egginst.utils import compute_md5, ensure_dir, makedirs
 
 from enstaller.fetch_utils import checked_content
-from enstaller.legacy_stores import URLFetcher
 from enstaller.repository import egg_name_to_name_version
+from enstaller.requests_utils import (DBCache, LocalFileAdapter,
+                                      QueryPathOnlyCacheController)
+from enstaller.vendor import requests
+from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
 
 logger = logging.getLogger(__name__)
@@ -74,6 +78,36 @@ class _CancelableResponse(object):
                 needs_to_download = False
 
         return needs_to_download
+
+
+class URLFetcher(object):
+    def __init__(self, cache_dir, auth=None):
+        self._auth = auth
+        self.cache_dir= cache_dir
+
+        session = requests.Session()
+        session.mount("file://", LocalFileAdapter())
+
+        self._session = session
+
+    def fetch(self, url):
+        return self._session.get(url, stream=True, auth=self._auth)
+
+
+class IndexFetcher(URLFetcher):
+    """An URLFetcher subclass that caches the index using http etag."""
+    def __init__(self, cache_dir, auth=None):
+        super(IndexFetcher, self).__init__(cache_dir, auth)
+
+        uri = os.path.join(self.cache_dir, "index_cache", "index.db")
+        ensure_dir(uri)
+        cache = DBCache(uri)
+
+        adapter = CacheControlAdapter(
+            cache, controller_class=QueryPathOnlyCacheController)
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+
 
 
 class DownloadManager(object):
