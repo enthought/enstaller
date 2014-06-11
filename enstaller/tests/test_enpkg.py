@@ -9,7 +9,6 @@ else:
     import unittest
 
 import mock
-import responses
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
@@ -23,6 +22,7 @@ from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
 from enstaller.utils import PY_VER, path_to_uri
+from enstaller.vendor import responses
 
 from .common import (dummy_repository_package_factory,
                      mock_history_get_state_context, repository_factory)

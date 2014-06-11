@@ -10,7 +10,6 @@ else:
     import unittest
 
 #import mock
-import responses
 
 from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
@@ -22,6 +21,7 @@ from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_
 from enstaller.plat import custom_plat
 
 from enstaller.tests.common import dummy_repository_package_factory
+from enstaller.vendor import responses
 
 
 def _index_provider(store_location):
