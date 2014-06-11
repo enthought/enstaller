@@ -9,8 +9,6 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-#import mock
-
 from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
 
