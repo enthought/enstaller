@@ -13,4 +13,4 @@ tox
 unittest2
 requests
 responses
-git+http://github.com/cournape/sqlite_cache
+https://github.com/cournape/sqlite_cache/archive/v0.0.1.tar.gz
