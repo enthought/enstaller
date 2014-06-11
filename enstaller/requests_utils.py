@@ -10,11 +10,10 @@ import urlparse
 from io import FileIO
 from cPickle import loads, dumps, HIGHEST_PROTOCOL
 
-from cachecontrol.cache import BaseCache
-from cachecontrol.controller import CacheController
-
 from enstaller.utils import uri_to_path
 from enstaller.vendor import requests, sqlite_cache
+from enstaller.vendor.cachecontrol.cache import BaseCache
+from enstaller.vendor.cachecontrol.controller import CacheController
 
 
 logger = logging.getLogger(__name__)
