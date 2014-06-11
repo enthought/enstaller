@@ -3,10 +3,8 @@ from egginst.utils import human_bytes
 
 
 def console_progress_manager_factory(message, filename, size):
-    return ProgressManager(None, source=None, operation_id=None,
-                           message=message, steps=size, progress_type=message,
-                           filename=filename, disp_amount=human_bytes(size),
-                           super_id=None)
+    return ProgressManager(size, message, filename=filename,
+                           disp_amount=human_bytes(size))
 
 
 class FileProgressManager(object):
