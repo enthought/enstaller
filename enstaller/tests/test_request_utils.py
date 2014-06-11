@@ -8,13 +8,12 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import requests
-
 from egginst.utils import rm_rf
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
 from enstaller.utils import compute_md5
+from enstaller.vendor import requests
 
 
 class TestFileResponse(unittest.TestCase):

@@ -1,7 +1,5 @@
 import os.path
 
-import requests
-
 from cachecontrol.adapter import CacheControlAdapter
 
 from egginst.utils import ensure_dir
@@ -10,6 +8,7 @@ from enstaller.repository import RepositoryPackageMetadata
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)
 from enstaller.utils import PY_VER
+from enstaller.vendor import requests
 
 
 class URLFetcher(object):
