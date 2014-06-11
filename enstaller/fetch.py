@@ -90,15 +90,7 @@ class URLFetcher(object):
 
         self._session = session
 
-    def fetch(self, url):
-        return self._session.get(url, stream=True, auth=self._auth)
-
-
-class IndexFetcher(URLFetcher):
-    """An URLFetcher subclass that caches the index using http etag."""
-    def __init__(self, cache_dir, auth=None):
-        super(IndexFetcher, self).__init__(cache_dir, auth)
-
+    def _enable_etag_support(self):
         uri = os.path.join(self.cache_dir, "index_cache", "index.db")
         ensure_dir(uri)
         cache = DBCache(uri)
@@ -108,6 +100,8 @@ class IndexFetcher(URLFetcher):
         self._session.mount("http://", adapter)
         self._session.mount("https://", adapter)
 
+    def fetch(self, url):
+        return self._session.get(url, stream=True, auth=self._auth)
 
 
 class DownloadManager(object):

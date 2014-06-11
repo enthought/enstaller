@@ -1,5 +1,4 @@
 from enstaller.auth import _INDEX_NAME
-from enstaller.fetch import IndexFetcher
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.utils import PY_VER
 
