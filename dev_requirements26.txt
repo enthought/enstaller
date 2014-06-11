@@ -1,3 +1,4 @@
+cachecontrol
 coverage
 detox
 encore >= 0.4.0
@@ -12,3 +13,4 @@ tox
 unittest2
 requests
 responses
+https://github.com/cournape/sqlite_cache/archive/v0.0.1.tar.gz

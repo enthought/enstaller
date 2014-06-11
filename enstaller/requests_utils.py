@@ -1,11 +1,25 @@
 """
 A few utilities for python requests.
 """
+import base64
+import logging
+import os
+import sqlite3
+import urlparse
+
 from io import FileIO
+from cPickle import loads, dumps, HIGHEST_PROTOCOL
 
 import requests
+import sqlite_cache
+
+from cachecontrol.cache import BaseCache
+from cachecontrol.controller import CacheController
 
 from enstaller.utils import uri_to_path
+
+
+logger = logging.getLogger(__name__)
 
 
 class FileResponse(FileIO):
@@ -47,11 +61,113 @@ class LocalFileAdapter(requests.adapters.HTTPAdapter):
     """
     def build_response_from_file(self, request, stream):
         path = uri_to_path(request.url)
+        stat_info = os.stat(path)
 
-        from enstaller.requests_utils import FileResponse
-        return self.build_response(request, FileResponse(path, "rb"))
+        response = self.build_response(request, FileResponse(path, "rb"))
+        response.headers["content-length"] = str(stat_info.st_size)
+        return response
 
     def send(self, request, stream=False, timeout=None,
              verify=True, cert=None, proxies=None):
 
         return self.build_response_from_file(request, stream)
+
+
+class _ResponseIterator(object):
+    """
+    A simple iterator on top of a requests response
+
+    It supports the `len` protocol so that packages such as click can show an
+    ETA when fetching by chunk.
+
+    Example
+    -------
+    >>> resp = requests.get("http://acme.com", stream=True)
+    >>> for chunk in _ResponseIterator(resp):
+        print len(chunk)
+    """
+    def __init__(self, response):
+        self._response = response
+        self._size = int(self._response.headers.get("content-length", 0))
+        self._chunk_size = 1024
+
+    def __iter__(self):
+        self._iter = self._response.iter_content(self._chunk_size)
+        return self
+
+    def next(self):
+        return self._iter.next()
+
+    def __len__(self):
+        return int(self._size / self._chunk_size + 1)
+
+
+class _NullCache(object):
+    def get(self, key):
+        return None
+
+    def set(self, key, value):
+        pass
+
+    def delete(self, key):
+        pass
+
+
+class DBCache(BaseCache):
+    """
+    A Sqlite-backed cache.
+
+    Using sqlite guarantees data consistency without much overhead and without the need
+    of usually brittle file locks, or external services (impractical in many cases)
+    """
+    def __init__(self, uri=":memory:", capacity=10):
+        try:
+            self._cache = sqlite_cache.SQLiteCache(uri, capacity)
+        except sqlite3.Error as e:
+            logger.warn("Could not create sqlite cache: %r", e)
+            self._cache = _NullCache()
+
+    def _encode_key(self, key):
+        return base64.b64encode(key)
+
+    def _encode_value(self, value):
+        data = dumps(value, protocol=HIGHEST_PROTOCOL)
+        return buffer(data)
+
+    def _decode_value(self, encoded_value):
+        return loads(str(encoded_value))
+
+    def get(self, key):
+        try:
+            encoded_value = self._cache.get(self._encode_key(key))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
+            return None
+        else:
+            if encoded_value is not None:
+                return self._decode_value(encoded_value)
+            else:
+                return None
+
+    def set(self, key, value):
+        try:
+            self._cache.set(self._encode_key(key), self._encode_value(value))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
+
+    def delete(self, key):
+        try:
+            self._cache.delete(self._encode_key(key))
+        except sqlite3.Error as e:
+            logger.warn("Could not fetch data from cache: %r", e)
+
+
+class QueryPathOnlyCacheController(CacheController):
+    """
+    A cache controller that caches entries based solely on scheme, hostname and
+    path.
+    """
+    def cache_url(self, uri):
+        url = super(QueryPathOnlyCacheController, self).cache_url(uri)
+        p = urlparse.urlparse(url)
+        return urlparse.urlunparse((p.scheme, p.hostname, p.path, "", "", ""))
