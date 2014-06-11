@@ -18,32 +18,24 @@ def _fetch_index_as_json_dict(fetcher, url):
     return resp.json()
 
 
-def _webservice_index_parser(webservice_entry_point, fetcher, use_pypi):
-    url = webservice_entry_point + _INDEX_NAME
-    if use_pypi:
-        url +=  "?pypi=true"
+def _get_indices(config):
+    if config.use_webservice:
+        index_url = store_url = config.webservice_entry_point + _INDEX_NAME
+        if config.use_pypi:
+            index_url +=  "?pypi=true"
+        else:
+            index_url +=  "?pypi=false"
+        return [(store_url, index_url)]
     else:
-        url +=  "?pypi=false"
-
-    return _parse_index(_fetch_index_as_json_dict(fetcher, url),
-                        webservice_entry_point)
-
-
-def _old_legacy_index_parser(repository_urls, fetcher):
-    for url in repository_urls:
-        index = url +  _INDEX_NAME
-
-        json_dict = _fetch_index_as_json_dict(fetcher, index)
-        for package in _parse_index(json_dict, url):
-            yield package
+        return [(url + _INDEX_NAME, url + _INDEX_NAME)
+                for url in config.IndexedRepos]
 
 
 def legacy_index_parser(fetcher, config):
     """
     Yield RepositoryPackageMetadata instances from the configured stores.
     """
-    if config.use_webservice:
-        return _webservice_index_parser(config.webservice_entry_point, fetcher,
-                                        config.use_pypi)
-    else:
-        return _old_legacy_index_parser(config.IndexedRepos, fetcher)
+    for store_location, index_url in _get_indices(config):
+        json_dict = _fetch_index_as_json_dict(fetcher, index_url)
+        for package in _parse_index(json_dict, store_location):
+            yield package
