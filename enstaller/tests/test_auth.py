@@ -216,7 +216,7 @@ class TestWebAuth(unittest.TestCase):
         # When/Given
         with patch("enstaller.auth.urllib2.urlopen",
                    side_effect=self._httperror_factory(404)):
-            with self.assertRaises(InvalidConfiguration):
+            with self.assertRaises(AuthFailedError):
                 authenticate(config)
 
     def test_auth_failure_50x(self):
