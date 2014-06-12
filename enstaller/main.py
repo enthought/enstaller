@@ -468,10 +468,7 @@ def main(argv=None):
     if argv is None: # pragma: no cover
         argv = sys.argv[1:]
 
-    try:
-        user_base = site.USER_BASE
-    except AttributeError:
-        user_base = abs_expanduser('~/.local')
+    user_base = getattr(site, "USER_BASE", abs_expanduser('~/.local'))
 
     p = ArgumentParser(description=__doc__)
     p.add_argument('cnames', metavar='NAME', nargs='*',
