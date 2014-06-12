@@ -241,12 +241,13 @@ def update_all(enpkg, config, args):
             for update in updates:
                 install_req(enpkg, config, update['current']['name'], args)
 
-def epd_install_confirm():
+def epd_install_confirm(force_yes=False):
     print("Warning: 'enpkg epd' will downgrade any packages that are currently")
     print("at a higher version than in the specified EPD release.")
     print("Usually it is preferable to update all installed packages with:")
     print("    enpkg --update-all")
-    return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ")
+    return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
+                         force_yes)
 
 def install_req(enpkg, config, req, opts):
     """
@@ -292,7 +293,8 @@ def install_req(enpkg, config, req, opts):
             """.format(package_list_string))
             print(msg)
 
-            return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ")
+            return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
+                                opts.yes)
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
@@ -345,7 +347,8 @@ def update_enstaller(enpkg, config, autoupdate, opts):
         enpkg._remote_repository, enstaller.__version__)
     solver = Solver(new_repository, enpkg._top_installed_repository)
     if len(solver._install_actions_enstaller()) > 0:
-        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) "):
+        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
+                         opts.yes):
             install_req(enpkg, config, 'enstaller', opts)
             updated = True
     return updated
@@ -529,6 +532,8 @@ def main(argv=None):
                    version='enstaller version: ' + enstaller.__version__)
     p.add_argument("--whats-new", action="store_true",
                    help="display available updates for installed packages")
+    p.add_argument("-y", "--yes", action="store_true",
+                   help="Assume 'yes' to all queries and do not prompt.")
 
     args = p.parse_args(argv)
 
@@ -761,7 +766,7 @@ def main(argv=None):
 
     if args.remove_enstaller:
         print(REMOVE_ENSTALLER_WARNING)
-        if prompt_yes_no("Really remove enstaller? (y/[n]) "):
+        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
             args.remove = True
             reqs = [Req('enstaller')]
 
@@ -770,7 +775,7 @@ def main(argv=None):
             p.error("Can't remove 'epd'")
         elif len(reqs) > 1:
             p.error("Can't combine 'enpkg epd' with other packages.")
-        elif not epd_install_confirm():
+        elif not epd_install_confirm(args.yes):
             return
 
     for req in reqs:
