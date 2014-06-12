@@ -21,7 +21,7 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import DUMMY_USER, authenticate, subscription_message
+from enstaller.auth import _INDEX_NAME, DUMMY_USER, authenticate, subscription_message
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import real_prefix
@@ -456,6 +456,25 @@ class Configuration(object):
         else:
             self._username = username
             self._password = password
+
+    @property
+    def indices(self):
+        """
+        Returns a list of pair (store_location, index_url) for this given
+        configuration.
+
+        Takes into account webservice/no webservice and pypi True/False
+        """
+        if self.use_webservice:
+            index_url = store_url = self.webservice_entry_point + _INDEX_NAME
+            if self.use_pypi:
+                index_url +=  "?pypi=true"
+            else:
+                index_url +=  "?pypi=false"
+            return [(store_url, index_url)]
+        else:
+            return [(url + _INDEX_NAME, url + _INDEX_NAME)
+                    for url in self.IndexedRepos]
 
 
 def get_auth():

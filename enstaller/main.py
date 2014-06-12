@@ -9,6 +9,8 @@ from __future__ import print_function
 
 import argparse
 import errno
+import io
+import json
 import logging
 import ntpath
 import os
@@ -39,12 +41,13 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg
-from enstaller.fetch import DownloadManager
+from enstaller.fetch import DownloadManager, URLFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
-from enstaller.legacy_stores import legacy_index_parser
+from enstaller.legacy_stores import parse_index
 from enstaller.proxy.api import setup_proxy
 from enstaller.repository import Repository
+from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
@@ -387,10 +390,31 @@ def ensure_authenticated_config(config, config_filename):
         return user
 
 
-def repository_factory(config):
+def _fetch_json_with_progress(resp, store_location):
+    from egginst.progress import FileProgressManager, console_progress_manager_factory
+    data = io.BytesIO()
+
+    length = int(resp.headers.get("content-length", 0))
+    progress = console_progress_manager_factory("Fetching index", store_location,
+                                                size=length)
+    progress = FileProgressManager(progress)
+    with progress:
+        for chunk in _ResponseIterator(resp):
+            data.write(chunk)
+            progress.update(len(chunk))
+
+    return json.loads(data.getvalue().decode("utf-8"))
+
+
+def repository_factory(fetcher, config):
     repository = Repository()
-    for package in legacy_index_parser(config):
-        repository.add_package(package)
+    for store_location, url in config.indices:
+        resp = fetcher.fetch(url)
+        resp.raise_for_status()
+
+        for package in parse_index(_fetch_json_with_progress(resp, store_location),
+                                   store_location):
+            repository.add_package(package)
     return repository
 
 
@@ -610,7 +634,9 @@ def main(argv=None):
 
     user = ensure_authenticated_config(config, config_filename)
 
-    repository = repository_factory(config)
+    index_fetcher = URLFetcher(config.repository_cache, config.get_auth())
+    index_fetcher._enable_etag_support()
+    repository = repository_factory(index_fetcher, config)
 
     downloader = DownloadManager(repository, config.repository_cache,
                                  config.get_auth())

@@ -688,6 +688,45 @@ class TestConfiguration(unittest.TestCase):
         with self.assertRaises(EnstallerException):
             write_default_config(path)
 
+    def test_indices_property(self):
+        # Given
+        r_indices = [
+            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
+             "https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
+                format(custom_plat)),
+        ]
+        config = Configuration()
+
+        # When/Then
+        self.assertEqual(config.indices, r_indices)
+
+    def test_indices_property_no_pypi(self):
+        # Given
+        r_indices = [
+            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
+             "https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
+                format(custom_plat)),
+        ]
+        config = Configuration()
+        config.use_pypi = False
+
+        # When/Then
+        self.assertEqual(config.indices, r_indices)
+
+    def test_indices_property_no_webservice(self):
+        # Given
+        r_indices = [
+            ("https://acme.com/{0}/index.json".format(custom_plat),
+             "https://acme.com/{0}/index.json".format(custom_plat)),
+        ]
+        config = Configuration()
+        config.use_webservice = False
+        config.IndexedRepos = ["https://acme.com/{PLATFORM}/"]
+
+        # When/Then
+        self.assertEqual(config.indices, r_indices)
+
+
 class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
         config = Configuration()

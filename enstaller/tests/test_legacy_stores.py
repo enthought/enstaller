@@ -9,15 +9,13 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-#import mock
-
 from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
 
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
-from enstaller.legacy_stores import URLFetcher
-from enstaller.legacy_stores import _old_legacy_index_parser, _webservice_index_parser
+from enstaller.fetch import URLFetcher
+from enstaller.legacy_stores import legacy_index_parser
 from enstaller.plat import custom_plat
 
 from enstaller.tests.common import dummy_repository_package_factory
@@ -75,9 +73,7 @@ class TestLegacyStores(unittest.TestCase):
                       content_type='application/json')
 
         fetcher = URLFetcher(config.repository_cache, config.get_auth())
-        packages = list(
-            _webservice_index_parser(config.webservice_entry_point,
-                                     fetcher, config.use_pypi))
+        packages = list(legacy_index_parser(fetcher, config))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -92,6 +88,7 @@ class TestLegacyStores(unittest.TestCase):
         config.IndexedRepos = [
             'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
         ]
+        config.use_webservice = False
 
         responses.add(responses.GET, config.IndexedRepos[0] + "index.json",
                       body=_index_provider(""), status=200,
@@ -99,7 +96,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.get_auth())
-        packages = list(_old_legacy_index_parser(config.IndexedRepos, fetcher))
+        packages = list(legacy_index_parser(fetcher, config))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -130,14 +127,11 @@ class TestLegacyStores(unittest.TestCase):
 
         config = Configuration()
         config.IndexedRepos = ["{0}/".format(path_to_uri(self.tempdir))]
-
-        responses.add(responses.GET, config.IndexedRepos[0] + "index.json",
-                      body=_index_provider(""), status=200,
-                      content_type='application/json')
+        config.use_webservice = False
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.get_auth())
-        packages = list(_old_legacy_index_parser(config.IndexedRepos, fetcher))
+        packages = list(legacy_index_parser(fetcher, config))
 
         # Then
         self.assertEqual(len(packages), 1)
