@@ -12,6 +12,8 @@ Main highlights:
     access (True by default)
   * add enpkg-repair script to fix .egg-info directories
   * egginst and enstaller now use logging instead of print statements
+  * add the -y option to automatically answer yes everytime enpkg prompt the
+    user for confirmation
 
 Bug fixes:
 
