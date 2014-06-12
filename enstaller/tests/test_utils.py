@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os.path
 import random
 import sys
@@ -15,7 +17,9 @@ from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
     DUMMY_EGG_MTIME, DUMMY_EGG_MD5
 
 from enstaller.utils import canonical, comparable_version, path_to_uri, \
-    uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv
+    uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv, prompt_yes_no
+from .common import mock_print, mock_raw_input
+
 
 class TestUtils(unittest.TestCase):
 
@@ -162,6 +166,35 @@ class TestUri(unittest.TestCase):
 
         path = uri_to_path(uri)
         self.assertEqual(r_path, path)
+
+
+class TestPromptYesNo(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        message = "Do you want to do it ?"
+
+        # When
+        with mock_print() as m:
+            with mock_raw_input(message, "yes"):
+                res = prompt_yes_no(message)
+
+        # Then
+        self.assertEqual(m.value.rstrip(), message)
+        self.assertTrue(res)
+
+    def test_simple_force_yes(self):
+        # Given
+        message = "Do you want to do it ?"
+
+        # When
+        with mock_print() as m:
+            with mock_raw_input(message, "yes") as mocked_input:
+                res = prompt_yes_no(message, True)
+
+        # Then
+        self.assertEqual(m.value.rstrip(), message)
+        self.assertTrue(res)
+        mocked_input.assert_called()
 
 
 if __name__ == '__main__':

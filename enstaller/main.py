@@ -23,10 +23,9 @@ import textwrap
 import warnings
 
 from argparse import ArgumentParser
-from os.path import isfile, join
+from os.path import isfile
 
 from enstaller._version import is_released as IS_RELEASED
-from egginst.utils import bin_dir_name
 
 import enstaller
 
@@ -47,11 +46,11 @@ from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.legacy_stores import parse_index
 from enstaller.proxy.api import setup_proxy
-from enstaller.repository import Repository
+from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
+from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 
 logger = logging.getLogger(__name__)
@@ -243,13 +242,13 @@ def update_all(enpkg, config, args):
             for update in updates:
                 install_req(enpkg, config, update['current']['name'], args)
 
-def epd_install_confirm():
+def epd_install_confirm(force_yes=False):
     print("Warning: 'enpkg epd' will downgrade any packages that are currently")
     print("at a higher version than in the specified EPD release.")
     print("Usually it is preferable to update all installed packages with:")
     print("    enpkg --update-all")
-    yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
-    return yn.lower() in set(['y', 'yes'])
+    return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
+                         force_yes)
 
 def install_req(enpkg, config, req, opts):
     """
@@ -262,12 +261,49 @@ def install_req(enpkg, config, req, opts):
     def _done(exit_status):
         sys.exit(exit_status)
 
+    def _get_unsupported_packages(actions):
+        ret = []
+        for opcode, egg in actions:
+            if opcode == "install":
+                name, version = egg_name_to_name_version(egg)
+                package = enpkg._remote_repository.find_package(name, version)
+                if package.product == "pypi":
+                    ret.append(package)
+        return ret
+
+    def _ask_pypi_confirmation(actions):
+        unsupported_packages = _get_unsupported_packages(actions)
+        if len(unsupported_packages) > 0:
+            package_list = sorted("'{0}-{1}'".format(p.name, p.full_version)
+                                  for p in unsupported_packages)
+            package_list_string = "\n".join(package_list)
+
+            msg = textwrap.dedent("""\
+            The following packages are coming from the PyPi repo:
+
+            {0}
+
+            The PyPi repository which contains >10,000 untested ("as is")
+            packages. Some packages are licensed under GPL or other licenses
+            which are prohibited for some users. Dependencies may not be
+            provided. If you need an updated version or if the installation
+            fails due to unmet dependencies, the Knowledge Base article
+            Installing external packages into Canopy Python
+            (https://support.enthought.com/entries/23389761) may help you with
+            installing it.
+            """.format(package_list_string))
+            print(msg)
+
+            return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
+                                opts.yes)
+
     try:
         mode = 'root' if opts.no_deps else 'recur'
         actions = enpkg._solver.install_actions(
                 req,
                 mode=mode,
                 force=opts.force, forceall=opts.forceall)
+        _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
             print("No update necessary, %r is up-to-date." % req.name)
@@ -312,8 +348,8 @@ def update_enstaller(enpkg, config, autoupdate, opts):
         enpkg._remote_repository, enstaller.__version__)
     solver = Solver(new_repository, enpkg._top_installed_repository)
     if len(solver._install_actions_enstaller()) > 0:
-        yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
-        if yn in set(['y', 'Y', '', None]):
+        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
+                         opts.yes):
             install_req(enpkg, config, 'enstaller', opts)
             updated = True
     return updated
@@ -437,13 +473,10 @@ def install_from_requirements(enpkg, config, args):
 
 
 def main(argv=None):
-    if argv is None:
+    if argv is None: # pragma: no cover
         argv = sys.argv[1:]
 
-    try:
-        user_base = site.USER_BASE
-    except AttributeError:
-        user_base = abs_expanduser('~/.local')
+    user_base = getattr(site, "USER_BASE", abs_expanduser('~/.local'))
 
     p = ArgumentParser(description=__doc__)
     p.add_argument('cnames', metavar='NAME', nargs='*',
@@ -507,6 +540,8 @@ def main(argv=None):
                    version='enstaller version: ' + enstaller.__version__)
     p.add_argument("--whats-new", action="store_true",
                    help="display available updates for installed packages")
+    p.add_argument("-y", "--yes", action="store_true",
+                   help="Assume 'yes' to all queries and do not prompt.")
 
     args = p.parse_args(argv)
 
@@ -744,8 +779,7 @@ def main(argv=None):
 
     if args.remove_enstaller:
         print(REMOVE_ENSTALLER_WARNING)
-        yn = raw_input("Really remove enstaller? (y/[n]) ")
-        if yn.lower() in set(['y', 'yes']):
+        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
             args.remove = True
             reqs = [Req('enstaller')]
 
@@ -754,7 +788,7 @@ def main(argv=None):
             p.error("Can't remove 'epd'")
         elif len(reqs) > 1:
             p.error("Can't combine 'enpkg epd' with other packages.")
-        elif not epd_install_confirm():
+        elif not epd_install_confirm(args.yes):
             return
 
     for req in reqs:

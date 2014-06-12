@@ -790,6 +790,7 @@ class FakeOptions(object):
         self.force = False
         self.forceall = False
         self.no_deps = False
+        self.yes = False
 
 
 class TestInstallFromRequirements(unittest.TestCase):
@@ -953,3 +954,37 @@ class TestInstallReq(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(OSError):
                 install_req(enpkg, config, "nose", FakeOptions())
+
+    def test_simple_install_pypi(self):
+        # Given
+        entry = dummy_repository_package_factory("nose", "1.3.0", 1)
+        entry.product = "pypi"
+        remote_entries = [entry]
+        r_message = textwrap.dedent("""\
+        The following packages are coming from the PyPi repo:
+
+        'nose-1.3.0-1'
+
+        The PyPi repository which contains >10,000 untested ("as is")
+        packages. Some packages are licensed under GPL or other licenses
+        which are prohibited for some users. Dependencies may not be
+        provided. If you need an updated version or if the installation
+        fails due to unmet dependencies, the Knowledge Base article
+        Installing external packages into Canopy Python
+        (https://support.enthought.com/entries/23389761) may help you with
+        installing it.
+
+        """)
+
+        # When
+        with mock.patch("__builtin__.raw_input", return_value="y"):
+            with mock_print() as mocked_print:
+                with mock.patch("enstaller.main.Enpkg.execute") as m:
+                    enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                                                     remote_entries)
+                    install_req(enpkg, Configuration(), "nose", FakeOptions())
+
+        # Then
+        self.assertMultiLineEqual(mocked_print.value, r_message)
+        m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
+                              ('install', 'nose-1.3.0-1.egg')])
