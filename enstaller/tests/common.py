@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import collections
 import contextlib
 
@@ -146,4 +148,14 @@ def mock_history_get_state_context(state=None):
         state = set()
     with mock.patch("enstaller.enpkg.History") as context:
         context.return_value.get_state.return_value = set(state)
+        yield context
+
+@contextlib.contextmanager
+def mock_raw_input(message, return_value):
+    def _function(message):
+        print(message)
+        return return_value
+
+    with mock.patch("__builtin__.raw_input",
+                    side_effect=_function) as context:
         yield context

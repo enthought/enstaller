@@ -49,7 +49,7 @@ from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv
+from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 
 logger = logging.getLogger(__name__)
@@ -246,8 +246,7 @@ def epd_install_confirm():
     print("at a higher version than in the specified EPD release.")
     print("Usually it is preferable to update all installed packages with:")
     print("    enpkg --update-all")
-    yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
-    return yn.lower() in set(['y', 'yes'])
+    return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ")
 
 def install_req(enpkg, config, req, opts):
     """
@@ -293,8 +292,7 @@ def install_req(enpkg, config, req, opts):
             """.format(package_list_string))
             print(msg)
 
-            yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
-            return yn.lower() in set(['y', 'yes'])
+            return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ")
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
@@ -347,8 +345,7 @@ def update_enstaller(enpkg, config, autoupdate, opts):
         enpkg._remote_repository, enstaller.__version__)
     solver = Solver(new_repository, enpkg._top_installed_repository)
     if len(solver._install_actions_enstaller()) > 0:
-        yn = raw_input("Enstaller is out of date.  Update? ([y]/n) ")
-        if yn in set(['y', 'Y', '', None]):
+        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) "):
             install_req(enpkg, config, 'enstaller', opts)
             updated = True
     return updated
@@ -764,8 +761,7 @@ def main(argv=None):
 
     if args.remove_enstaller:
         print(REMOVE_ENSTALLER_WARNING)
-        yn = raw_input("Really remove enstaller? (y/[n]) ")
-        if yn.lower() in set(['y', 'yes']):
+        if prompt_yes_no("Really remove enstaller? (y/[n]) "):
             args.remove = True
             reqs = [Req('enstaller')]
 

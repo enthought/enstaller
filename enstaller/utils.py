@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import sys
 
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
@@ -184,3 +186,25 @@ def real_prefix():
         return sys.real_prefix
     else:
         return sys.prefix
+
+
+def prompt_yes_no(message, force_yes=False):
+    """
+    Prompt for a yes/no answer for the given message. Returns True if the
+    answer is yes.
+
+    Parameters
+    ----------
+    message : str
+        The message to prompt the user with
+    force_yes: boolean
+        If True, then the message is only displayed, and the answer is assumed
+        to be yes.
+
+    """
+    if force_yes:
+        print(message)
+        return True
+    else:
+        yn = raw_input(message)
+        return yn.lower() in set(['y', 'yes'])
