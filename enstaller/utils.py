@@ -1,6 +1,5 @@
-import os.path
 import sys
-import hashlib
+
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 
 import urllib
