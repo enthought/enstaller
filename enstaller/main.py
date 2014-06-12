@@ -45,7 +45,7 @@ from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.legacy_stores import parse_index
 from enstaller.proxy.api import setup_proxy
-from enstaller.repository import Repository
+from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
@@ -260,12 +260,49 @@ def install_req(enpkg, config, req, opts):
     def _done(exit_status):
         sys.exit(exit_status)
 
+    def _get_unsupported_packages(actions):
+        ret = []
+        for opcode, egg in actions:
+            if opcode == "install":
+                name, version = egg_name_to_name_version(egg)
+                package = enpkg._remote_repository.find_package(name, version)
+                if package.product == "pypi":
+                    ret.append(package)
+        return ret
+
+    def _ask_pypi_confirmation(actions):
+        unsupported_packages = _get_unsupported_packages(actions)
+        if len(unsupported_packages) > 0:
+            package_list = sorted("'{0}-{1}'".format(p.name, p.full_version)
+                                  for p in unsupported_packages)
+            package_list_string = "\n".join(package_list)
+
+            msg = textwrap.dedent("""\
+            The following packages are coming from the PyPi repo:
+
+            {0}
+
+            The PyPi repository which contains >10,000 untested (\"as is\")
+            packages. Some packages are licensed under GPL or other licenses
+            which are prohibited for some users. Dependencies may not be
+            provided. If you need an updated version or if the installation
+            fails due to unmet dependencies, the Knowledge Base article
+            Installing external packages into Canopy Python
+            (https://support.enthought.com/entries/23389761) may help you with
+            installing it.
+            """.format(package_list_string))
+            print(msg)
+
+            yn = raw_input("Are you sure that you wish to proceed? (y/[n]) ")
+            return yn.lower() in set(['y', 'yes'])
+
     try:
         mode = 'root' if opts.no_deps else 'recur'
         actions = enpkg._solver.install_actions(
                 req,
                 mode=mode,
                 force=opts.force, forceall=opts.forceall)
+        _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
             print("No update necessary, %r is up-to-date." % req.name)
