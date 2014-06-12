@@ -23,10 +23,9 @@ import textwrap
 import warnings
 
 from argparse import ArgumentParser
-from os.path import isfile, join
+from os.path import isfile
 
 from enstaller._version import is_released as IS_RELEASED
-from egginst.utils import bin_dir_name
 
 import enstaller
 
