@@ -2,7 +2,7 @@ from enstaller.repository import RepositoryPackageMetadata
 from enstaller.utils import PY_VER
 
 
-def _parse_index(json_dict, store_location):
+def parse_index(json_dict, store_location):
     for key, info in json_dict.items():
         info.setdefault('type', 'egg')
         info.setdefault('python', PY_VER)
@@ -23,5 +23,5 @@ def legacy_index_parser(fetcher, config):
     """
     for store_location, index_url in config.indices:
         json_dict = _fetch_index_as_json_dict(fetcher, index_url)
-        for package in _parse_index(json_dict, store_location):
+        for package in parse_index(json_dict, store_location):
             yield package

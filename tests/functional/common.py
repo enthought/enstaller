@@ -58,7 +58,8 @@ def fake_empty_install_actions(f):
 def empty_index(f):
     @functools.wraps(f)
     def wrapper(*a, **kw):
-        with mock.patch("enstaller.main.legacy_index_parser", return_value=[]):
+        with mock.patch("enstaller.main.repository_factory",
+                        return_value=Repository()):
             return f(*a, **kw)
     return wrapper
 
@@ -139,9 +140,7 @@ def remote_enstaller_available(versions):
         def wrapper(*a, **kw):
             with mock.patch("enstaller.main.repository_factory",
                             return_value=repository):
-                with mock.patch("enstaller.main.legacy_index_parser",
-                                return_value=[]):
-                    return f(*a, **kw)
+                return f(*a, **kw)
         return wrapper
     return dec
 
