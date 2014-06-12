@@ -78,8 +78,14 @@ class TestAuth(unittest.TestCase):
         """
         Ensure enpkg --userpass doesn't crash when creds are invalid
         """
-        r_output = ("Could not authenticate. Please check your credentials "
-                    "and try again.\nNo modification was written.\n")
+        r_output = textwrap.dedent("""\
+        Could not authenticate. Please check your
+        credentials/configuration and try again. Original error is:
+
+            'Dummy auth error'.
+
+        No modification was written.
+        """)
 
         with use_given_config_context(self.config):
             with mock_print() as m:
@@ -95,9 +101,14 @@ class TestAuth(unittest.TestCase):
         Ensure 'enpkg req' doesn't crash when creds are invalid
         """
         r_output = textwrap.dedent("""\
-            Could not authenticate with user 'nono'.
-            You can change your authentication details with 'enpkg --userpass'
-            """)
+        Could not authenticate with user 'nono'. Please check your
+        credentials/configuration and try again. Original error is:
+
+            'Dummy auth error'.
+
+        You can change your authentication details with 'enpkg --userpass'
+
+        """)
 
         with open(self.config, "w") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))

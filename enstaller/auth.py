@@ -107,7 +107,7 @@ def authenticate(configuration):
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
                               format(index, e.msg)
-                        raise InvalidConfiguration(msg)
+                        raise AuthFailedError(msg)
                     else:
                         raise
         user = UserInfo(is_authenticated=True)

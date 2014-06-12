@@ -32,7 +32,8 @@ import enstaller
 
 from enstaller.auth import authenticate
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
-                              NoPackageFound, UnavailablePackage, EXIT_ABORTED)
+                              InvalidConfiguration, NoPackageFound,
+                              UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
                               configuration_read_search_order,
@@ -380,10 +381,17 @@ def get_config_filename(use_sys_config):
 def ensure_authenticated_config(config, config_filename):
     try:
         user = authenticate(config)
-    except AuthFailedError:
+    except AuthFailedError as e:
         login, _ = config.get_auth()
-        print("Could not authenticate with user '{0}'.".format(login))
-        print("You can change your authentication details with 'enpkg --userpass'")
+        msg = textwrap.dedent("""\
+            Could not authenticate with user {0!r}. Please check your
+            credentials/configuration and try again. Original error is:
+
+                {1!r}.
+
+            You can change your authentication details with 'enpkg --userpass'
+            """.format(login, str(e)))
+        print(msg)
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
@@ -621,9 +629,14 @@ def main(argv=None):
         config.set_auth(username, password)
         try:
             config._checked_change_auth(config_filename)
-        except AuthFailedError:
-            msg = ("Could not authenticate. Please check your credentials "
-                   "and try again.\nNo modification was written.")
+        except AuthFailedError as e:
+            msg = textwrap.dedent("""\
+                Could not authenticate. Please check your
+                credentials/configuration and try again. Original error is:
+
+                    {0!r}.
+
+                No modification was written.""".format(str(e)))
             print(msg)
             sys.exit(-1)
         return

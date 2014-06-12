@@ -70,7 +70,7 @@ def make_keyring_unavailable(f):
     return mock.patch("enstaller.config.keyring", None)(f)
 
 def fail_authenticate(f):
-    m = mock.Mock(side_effect=AuthFailedError())
+    m = mock.Mock(side_effect=AuthFailedError("Dummy auth error"))
     main = mock.patch("enstaller.main.authenticate", m)
     config = mock.patch("enstaller.config.authenticate", m)
     return main(config(f))
