@@ -790,6 +790,7 @@ class FakeOptions(object):
         self.force = False
         self.forceall = False
         self.no_deps = False
+        self.yes = False
 
 
 class TestInstallFromRequirements(unittest.TestCase):
