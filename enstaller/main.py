@@ -465,7 +465,7 @@ def install_from_requirements(enpkg, config, args):
 
 
 def main(argv=None):
-    if argv is None:
+    if argv is None: # pragma: no cover
         argv = sys.argv[1:]
 
     try:
