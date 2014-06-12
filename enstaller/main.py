@@ -282,7 +282,7 @@ def install_req(enpkg, config, req, opts):
 
             {0}
 
-            The PyPi repository which contains >10,000 untested (\"as is\")
+            The PyPi repository which contains >10,000 untested ("as is")
             packages. Some packages are licensed under GPL or other licenses
             which are prohibited for some users. Dependencies may not be
             provided. If you need an updated version or if the installation
