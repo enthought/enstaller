@@ -14,9 +14,40 @@ import mock
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import EnstallerException
-from enstaller.fetch import DownloadManager
+from enstaller.fetch import DownloadManager, URLFetcher
+from enstaller.proxy.util import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
+
+
+class TestURLFetcher(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_proxy_simple(self):
+        # Given
+        proxies = [ProxyInfo.from_string("http://acme.com")]
+
+        # When
+        fetcher = URLFetcher(self.prefix, proxies=proxies)
+
+        # Then
+        self.assertEqual(fetcher._proxies, {"http": "http://acme.com:3128"})
+
+    def test_proxies(self):
+        # Given
+        proxies = [ProxyInfo.from_string("http://acme.com"),
+                   ProxyInfo.from_string("https://acme.com:3129")]
+
+        # When
+        fetcher = URLFetcher(self.prefix, proxies=proxies)
+
+        # Then
+        self.assertEqual(fetcher._proxies, {"http": "http://acme.com:3128",
+                                            "https": "https://acme.com:3129"})
 
 
 class TestDownloadManager(unittest.TestCase):

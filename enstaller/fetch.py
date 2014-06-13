@@ -81,9 +81,15 @@ class _CancelableResponse(object):
 
 
 class URLFetcher(object):
-    def __init__(self, cache_dir, auth=None):
+    def __init__(self, cache_dir, auth=None, proxies=None):
         self._auth = auth
         self.cache_dir= cache_dir
+
+        if proxies:
+            self._proxies = dict((proxy_info.scheme, str(proxy_info)) for
+                                 proxy_info in proxies)
+        else:
+            self._proxies = {}
 
         session = requests.Session()
         session.mount("file://", LocalFileAdapter())
@@ -101,7 +107,8 @@ class URLFetcher(object):
         self._session.mount("https://", adapter)
 
     def fetch(self, url):
-        return self._session.get(url, stream=True, auth=self._auth)
+        return self._session.get(url, stream=True, auth=self._auth,
+                                 proxies=self._proxies)
 
 
 class DownloadManager(object):
