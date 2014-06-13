@@ -126,11 +126,11 @@ class TestWriteConfig(unittest.TestCase):
         proxystr = "http://acme.com:3128"
 
         config = Configuration()
-        config.proxy = proxystr
+        config.set_proxy_from_string(proxystr)
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
-        self.assertEqual(config.proxy, proxystr)
+        self.assertEqual(str(config.proxy), proxystr)
 
     def test_add_url(self):
         # Given
@@ -603,6 +603,17 @@ class TestConfiguration(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
+
+    def test_proxy_setup(self):
+        # Given
+        proxy_string = "http://acme.com"
+
+        # When
+        config = Configuration()
+        config.set_proxy_from_string(proxy_string)
+
+        # Then
+        self.assertEqual(str(config.proxy), "http://acme.com:3128")
 
     def test_parse_simple_unsupported_entry(self):
         # XXX: ideally, we would like to check for the warning, but doing so is

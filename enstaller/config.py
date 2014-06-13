@@ -24,6 +24,7 @@ from enstaller import __version__
 from enstaller.auth import _INDEX_NAME, DUMMY_USER, authenticate, subscription_message
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
+from enstaller.proxy.util import ProxyInfo
 from enstaller.utils import real_prefix
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
@@ -246,7 +247,7 @@ class Configuration(object):
             file-like object otherwise.
         """
         accepted_keys_as_is = set([
-            "proxy", "noapp", "use_webservice", "autoupdate",
+            "noapp", "use_webservice", "autoupdate",
             "prefix", "IndexedRepos", "repository_cache", "use_pypi",
             "store_url",
         ])
@@ -256,6 +257,8 @@ class Configuration(object):
             for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
+                elif k == "proxy":
+                    ret.set_proxy_from_string(v)
                 elif k == "EPD_auth":
                     username, password = _decode_auth(v)
                     ret._username = username
@@ -280,7 +283,7 @@ class Configuration(object):
             return _create(filename)
 
     def __init__(self):
-        self.proxy = None
+        self._proxy = None
         self.noapp = False
         self.use_webservice = True
         self.autoupdate = True
@@ -315,6 +318,16 @@ class Configuration(object):
         """
         return self._filename
 
+    def set_proxy_from_string(self, s):
+        self._proxy = ProxyInfo.from_string(s)
+
+    @property
+    def proxy(self):
+        """
+        A ProxyInfo instance or None if no proxy is configured.
+        """
+        return self._proxy
+
     def set_auth(self, username, password):
         if username is None or password is None:
             raise InvalidConfiguration(
@@ -346,7 +359,7 @@ class Configuration(object):
             auth_section = ''
 
         if self.proxy:
-            proxy_line = 'proxy = %r' % self.proxy
+            proxy_line = 'proxy = %r' % str(self.proxy)
         else:
             proxy_line = ('#proxy = <proxy string>  '
                           '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
