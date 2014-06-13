@@ -2,6 +2,13 @@
 API documentation
 =================
 
+Configuration
+=============
+
+.. py:module:: enstaller.config
+.. autoclass:: Configuration
+    :members:
+
 Repository
 ==========
 

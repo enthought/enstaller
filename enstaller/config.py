@@ -409,13 +409,12 @@ class Configuration(object):
 
     @property
     def is_auth_configured(self):
-        """
-        Returns True if authentication is set up for this configuration object.
+        """ Returns True if authentication is set up for this configuration
+        object.
 
-        Note
-        ----
-        This only checks whether the auth is configured, not whether the
+        Note: this only checks whether the auth is configured, not whether the
         authentication information is correct.
+
         """
         if self._username and self._password:
             return True
