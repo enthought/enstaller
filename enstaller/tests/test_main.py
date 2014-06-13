@@ -332,7 +332,7 @@ class TestMisc(unittest.TestCase):
             dummy_repository_package_factory("scipy", "0.13.3", 1),
         ]
         self._mock_index(entries)
-        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        fetcher = URLFetcher(config.repository_cache, config.auth)
 
         # When
         repository = repository_factory(fetcher, config)

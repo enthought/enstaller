@@ -309,7 +309,7 @@ def install_req(enpkg, config, req, opts):
             print(install_time_string(enpkg._installed_repository,
                                       req.name))
     except UnavailablePackage as e:
-        username = config.get_auth()[0]
+        username, __ = config.auth
         user_info = authenticate(config)
         subscription = user_info.subscription_level
         msg = textwrap.dedent("""\
@@ -417,7 +417,7 @@ def ensure_authenticated_config(config, config_filename):
     try:
         user = authenticate(config)
     except AuthFailedError as e:
-        login, _ = config.get_auth()
+        username, _ = config.auth
         msg = textwrap.dedent("""\
             Could not authenticate with user {0!r}. Please check your
             credentials/configuration and try again. Original error is:
@@ -425,7 +425,7 @@ def ensure_authenticated_config(config, config_filename):
                 {1!r}.
 
             You can change your authentication details with 'enpkg --userpass'
-            """.format(login, str(e)))
+            """.format(username, str(e)))
         print(msg)
         sys.exit(-1)
     else:
@@ -451,7 +451,7 @@ def _fetch_json_with_progress(resp, store_location):
 
 def repository_factory(fetcher, config):
     repository = Repository()
-    for store_location, url in config.indices:
+    for url, store_location in config.indices:
         resp = fetcher.fetch(url)
         resp.raise_for_status()
 
@@ -683,12 +683,12 @@ def main(argv=None):
 
     proxies = [config.proxy] if config.proxy else []
 
-    index_fetcher = URLFetcher(config.repository_cache, config.get_auth(),
+    index_fetcher = URLFetcher(config.repository_cache, config.auth,
                                proxies)
     index_fetcher._enable_etag_support()
     repository = repository_factory(index_fetcher, config)
 
-    fetcher = URLFetcher(config.repository_cache, config.get_auth(), proxies)
+    fetcher = URLFetcher(config.repository_cache, config.auth, proxies)
     downloader = DownloadManager(fetcher, repository)
 
     enpkg = Enpkg(repository, downloader, prefixes=prefixes)

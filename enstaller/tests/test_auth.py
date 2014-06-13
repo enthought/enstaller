@@ -78,7 +78,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
     def test_no_acct(self):
         def mocked_authenticate(configuration, remote=None):
-            if configuration.get_auth() != ("valid_user", "valid_password"):
+            if configuration.auth != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
                 return UserInfo(is_authenticated=True)
@@ -191,7 +191,7 @@ class TestWebAuth(unittest.TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
         config.use_webservice = False
-        config.IndexedRepos = ["http://acme.com"]
+        config.set_indexed_repositories(["http://acme.com"])
 
         return config
 
@@ -285,9 +285,7 @@ class TestAuthenticate(unittest.TestCase):
         config = Configuration()
         config.use_webservice = False
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
-        config.IndexedRepos = [
-            "http://api.enthought.com/dummy/repo",
-        ]
+        config.set_indexed_repositories(["http://api.enthought.com/dummy/repo"])
 
         with self.assertRaises(EnstallerException):
             authenticate(config)

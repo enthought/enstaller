@@ -112,7 +112,7 @@ class TestWriteConfig(unittest.TestCase):
 
         config = Configuration.from_file(self.f)
 
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
@@ -158,7 +158,7 @@ class TestWriteConfig(unittest.TestCase):
         config = Configuration.from_file(self.f)
         config.store_url = "https://acme.com"
 
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
@@ -251,7 +251,7 @@ class TestGetAuth(unittest.TestCase):
             config = Configuration()
             config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-            self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+            self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
             self.assertFalse(mocked_keyring.set_password.called)
 
     @make_keyring_unavailable
@@ -259,7 +259,7 @@ class TestGetAuth(unittest.TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     def test_with_auth_and_keyring(self):
         with open(self.f, "w") as fp:
@@ -269,15 +269,15 @@ class TestGetAuth(unittest.TestCase):
         attrs = {"get_password.return_value": FAKE_PASSWORD}
         mocked_keyring = mock.Mock(**attrs)
         with mock.patch("enstaller.config.keyring", mocked_keyring):
-            config.EPD_username = FAKE_USER
+            config.set_username(FAKE_USER)
 
             self.assertFalse(mocked_keyring.get_password.called)
-            self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+            self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_without_auth_or_keyring(self):
         config = Configuration()
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
     @make_keyring_unavailable
     def test_deprecated_get_auth(self):
@@ -303,13 +303,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
         config.set_auth(FAKE_USER, r_new_password)
         config._change_auth(fp.name)
         new_config = Configuration.from_file(fp.name)
 
-        self.assertEqual(new_config.get_auth(), (FAKE_USER, r_new_password))
+        self.assertEqual(new_config.auth, (FAKE_USER, r_new_password))
 
     @make_keyring_unavailable
     def test_change_existing_config_file_empty_username(self):
@@ -317,13 +317,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
         config.reset_auth()
         config._change_auth(fp.name)
 
         new_config = Configuration.from_file(fp.name)
-        self.assertEqual(new_config.get_auth(), (None, None))
+        self.assertEqual(new_config.auth, (None, None))
 
     def test_change_existing_config_file_without_keyring(self):
         # Given
@@ -341,7 +341,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             self.assertNotRegexpMatches(content, "EPD_username")
             self.assertRegexpMatches(content, "EPD_auth")
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), ("user", "dummy"))
+        self.assertEqual(config.auth, ("user", "dummy"))
 
     @make_keyring_unavailable
     def test_change_empty_config_file_empty_username(self):
@@ -349,10 +349,10 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_no_config_file(self):
@@ -360,13 +360,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration()
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
         config.write(fp.name)
 
         new_config = Configuration.from_file(fp.name)
-        self.assertEqual(new_config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(new_config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_change_auth_wo_existing_auth(self):
@@ -448,8 +448,8 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(s)
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
-        self.assertEqual(config.EPD_username, FAKE_USER)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
+        self.assertEqual(config.username, FAKE_USER)
 
     @make_keyring_unavailable
     def test_epd_invalid_auth(self):
@@ -469,7 +469,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration.from_file(s)
         self.assertFalse(config.is_auth_configured)
         with self.assertRaises(InvalidConfiguration):
-            config.EPD_auth
+            config.encoded_auth
 
     def test_epd_username(self):
         with fake_keyring_context() as mocked_keyring:
@@ -478,8 +478,8 @@ class TestConfigurationParsing(unittest.TestCase):
             s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
             config = Configuration.from_file(s)
 
-            self.assertEqual(config.EPD_username, FAKE_USER)
-            self.assertEqual(config.EPD_auth, FAKE_CREDS)
+            self.assertEqual(config.username, FAKE_USER)
+            self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
     def test_epd_auth(self):
         """
@@ -488,8 +488,8 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
         config = Configuration.from_file(s)
 
-        self.assertEqual(config.EPD_username, FAKE_USER)
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
@@ -590,7 +590,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         config = Configuration()
-        config.IndexedRepos = ["http://acme.com"]
+        config.set_indexed_repositories(["http://acme.com"])
         config.use_webservice = False
 
         with mock_print() as m:
@@ -620,7 +620,7 @@ class TestConfiguration(unittest.TestCase):
         # a bit too painful as it has not been backported to unittest2
         Configuration.from_file(StringIO("nono = 'le petit robot'"))
 
-    def test__get_default_config_simple(self):
+    def test__from_legacy_locations_simple(self):
         # Given
         default_config_file = os.path.join(self.prefix, ".enstaller4rc")
         with open(default_config_file, "w") as fp:
@@ -629,16 +629,16 @@ class TestConfiguration(unittest.TestCase):
         # When
         with mock.patch("enstaller.config.get_path",
                         return_value=default_config_file):
-            config = Configuration._get_default_config()
+            config = Configuration._from_legacy_locations()
 
         # Then
         self.assertEqual(config.store_url, "http://acme.com")
 
-    def test__get_default_config_non_existing_path(self):
+    def test__from_legacy_locations_non_existing_path(self):
         # When/Then
         with mock.patch("enstaller.config.get_path", return_value=None):
             with self.assertRaises(InvalidConfiguration):
-                Configuration._get_default_config()
+                Configuration._from_legacy_locations()
 
     def test_reset_auth_with_keyring(self):
         with make_keyring_available_context() as m:
@@ -655,7 +655,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.prefix = os.path.normpath("~/.env")
+        config.set_prefix(os.path.normpath("~/.env"))
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
@@ -663,12 +663,12 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.repository_cache = "~/.env/LOCAL-REPO"
+        config.set_repository_cache("~/.env/LOCAL-REPO")
         self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
 
     def test_set_epd_auth(self):
         config = Configuration()
-        config.EPD_auth = FAKE_CREDS
+        config.set_auth_from_encoded(FAKE_CREDS)
 
         self.assertEqual(config._username, FAKE_USER)
         self.assertEqual(config._password, FAKE_PASSWORD)
@@ -677,7 +677,7 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration()
 
         with self.assertRaises(InvalidConfiguration):
-            config.EPD_auth = FAKE_USER
+            config.set_auth_from_encoded(FAKE_USER)
 
     def test_write_default_config_simple(self):
         # Given
@@ -702,9 +702,9 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property(self):
         # Given
         r_indices = [
-            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
-                format(custom_plat)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
+                format(custom_plat),
+            "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
 
@@ -714,9 +714,9 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property_no_pypi(self):
         # Given
         r_indices = [
-            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
-                format(custom_plat)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
+                format(custom_plat),
+             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
         config.use_pypi = False
@@ -732,7 +732,7 @@ class TestConfiguration(unittest.TestCase):
         ]
         config = Configuration()
         config.use_webservice = False
-        config.IndexedRepos = ["https://acme.com/{PLATFORM}/"]
+        config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
@@ -742,7 +742,7 @@ class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
         config = Configuration()
         with mkdtemp() as d:
-            config.repository_cache = d
+            config.set_repository_cache(d)
             self.assertEqual(config.repository_cache, d)
 
     def test_non_writable_repository_cache(self):
@@ -752,7 +752,7 @@ class TestMisc(unittest.TestCase):
         def mocked_makedirs(d):
             raise OSError("mocked makedirs")
         with mock.patch("os.makedirs", mocked_makedirs):
-            config.repository_cache = fake_dir
+            config.set_repository_cache(fake_dir)
             self.assertNotEqual(config.repository_cache, fake_dir)
 
 

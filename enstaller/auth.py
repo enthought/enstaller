@@ -75,7 +75,8 @@ def authenticate(configuration):
     If the 'use_webservice' mode is enabled in the configuration, authenticate
     with the web API and return the corresponding information.
 
-    Else, authenticate with the configured repositories in config.IndexedRepos
+    Else, authenticate with the configured repositories in
+    config.indexed_repositories
 
     If authentication fails, raise an exception.
     """
@@ -83,7 +84,7 @@ def authenticate(configuration):
         raise EnstallerException("No valid auth information in "
                                  "configuration, cannot authenticate.")
 
-    auth = configuration.get_auth()
+    auth = configuration.auth
 
     if configuration.use_webservice:
         # check credentials using web API
@@ -91,12 +92,11 @@ def authenticate(configuration):
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
-        for url in configuration.IndexedRepos:
-            parse = urlparse.urlparse(url)
+        for index_url, __ in configuration.indices:
+            parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                index = url + _INDEX_NAME
                 try:
-                    _head_request(index, auth)
+                    _head_request(index_url, auth)
                 except urllib2.HTTPError as e:
                     http_code = e.getcode()
                     # Python 2.6 compat: HTTPError.reason not available there
@@ -106,7 +106,7 @@ def authenticate(configuration):
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
-                              format(index, e.msg)
+                              format(index_url, e.msg)
                         raise AuthFailedError(msg)
                     else:
                         raise
@@ -133,7 +133,7 @@ def subscription_message(config, user):
     message = ""
 
     if user.is_authenticated:
-        username, password = config.get_auth()
+        username, password = config.auth
         login = "You are logged in as %s" % username
         subscription = "Subscription level: %s" % user.subscription_level
         name = user.first_name + ' ' + user.last_name

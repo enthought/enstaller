@@ -79,7 +79,7 @@ def configuration_read_search_order():
 
 def add_url(filename, config, url):
     url = fill_url(url)
-    if url in config.IndexedRepos:
+    if url in config.indexed_repositories:
         print("Already configured:", url)
         return
     prepend_url(filename, url)
@@ -205,13 +205,12 @@ def convert_auth_if_required(filename):
     did_convert = False
     if _is_using_epd_username(filename):
         config = Configuration.from_file(filename)
-        username = config.EPD_username
-        password = _get_keyring_password(username)
+        password = _get_keyring_password(config.username)
         if password is None:
             raise EnstallerException("Cannot convert password: no password "
                                      "found in keyring")
         else:
-            config.set_auth(username, password)
+            config.set_auth(config.username, password)
             config._change_auth(filename)
             did_convert = True
 
@@ -228,7 +227,7 @@ def _set_keyring_password(username, password):
 
 class Configuration(object):
     @classmethod
-    def _get_default_config(cls):
+    def _from_legacy_locations(cls):
         config_filename = get_path()
         if config_filename is None:
             raise InvalidConfiguration("No default configuration found.")
@@ -248,7 +247,7 @@ class Configuration(object):
         """
         accepted_keys_as_is = set([
             "noapp", "use_webservice", "autoupdate",
-            "prefix", "IndexedRepos", "repository_cache", "use_pypi",
+            "prefix", "repository_cache", "use_pypi",
             "store_url",
         ])
 
@@ -257,6 +256,8 @@ class Configuration(object):
             for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
+                elif k == "IndexedRepos":
+                    ret.set_indexed_repositories(v)
                 elif k == "proxy":
                     ret.set_proxy_from_string(v)
                 elif k == "EPD_auth":
@@ -264,7 +265,7 @@ class Configuration(object):
                     ret._username = username
                     ret._password = password
                 elif k == "EPD_username":
-                    ret._username = v
+                    ret.set_username(v)
                     if keyring is None:
                         ret._password = None
                     else:
@@ -290,7 +291,7 @@ class Configuration(object):
         self.use_pypi = True
 
         self._prefix = sys.prefix
-        self._IndexedRepos = []
+        self._indexed_repositories = []
         self.store_url = "https://api.enthought.com"
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
@@ -328,6 +329,10 @@ class Configuration(object):
         """
         return self._proxy
 
+    @property
+    def auth(self):
+        return (self._username, self._password)
+
     def set_auth(self, username, password):
         if username is None or password is None:
             raise InvalidConfiguration(
@@ -341,13 +346,10 @@ class Configuration(object):
         self._username = None
         self._password = None
 
-    def get_auth(self):
-        return (self._username, self._password)
-
     def write(self, filename):
-        username, password = self.get_auth()
+        username, password = self.auth
         if username and password:
-            authline = 'EPD_auth = %r' % self.EPD_auth
+            authline = 'EPD_auth = %r' % self.encoded_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
@@ -382,7 +384,7 @@ class Configuration(object):
                 fo.write(data)
             return
 
-        authline = 'EPD_auth = %r' % self.EPD_auth
+        authline = 'EPD_auth = %r' % self.encoded_auth
 
         if pat.search(data):
             data = pat.sub(authline, data)
@@ -424,56 +426,49 @@ class Configuration(object):
     def prefix(self):
         return self._prefix
 
-    @prefix.setter
-    def prefix(self, value):
+    def set_prefix(self, value):
         self._prefix = abs_expanduser(value)
 
     @property
     def repository_cache(self):
         return self._repository_cache
 
-    @repository_cache.setter
-    def repository_cache(self, value):
+    def set_repository_cache(self, value):
         self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
-        return self._repository_cache
 
     @property
-    def IndexedRepos(self):
-        return self._IndexedRepos
+    def indexed_repositories(self):
+        return self._indexed_repositories
 
-    @IndexedRepos.setter
-    def IndexedRepos(self, urls):
-        self._IndexedRepos = [fill_url(url) for url in urls]
+    def set_indexed_repositories(self, urls):
+        self._indexed_repositories = [fill_url(url) for url in urls]
 
     @property
-    def EPD_username(self):
+    def username(self):
         return self._username
 
-    @EPD_username.setter
-    def EPD_username(self, value):
+    def set_username(self, value):
         self._username = value
 
     @property
-    def EPD_auth(self):
+    def encoded_auth(self):
         if not self.is_auth_configured:
             raise InvalidConfiguration("EPD_auth is not available when "
                                        "auth has not been configured.")
         return _encode_auth(self._username, self._password)
 
-    @EPD_auth.setter
-    def EPD_auth(self, value):
+    def set_auth_from_encoded(self, value):
         try:
             username, password = _decode_auth(value)
         except Exception:
             raise InvalidConfiguration("Invalid EPD_auth value")
         else:
-            self._username = username
-            self._password = password
+            self.set_auth(username, password)
 
     @property
     def indices(self):
         """
-        Returns a list of pair (store_location, index_url) for this given
+        Returns a list of pair (index_url, store_location) for this given
         configuration.
 
         Takes into account webservice/no webservice and pypi True/False
@@ -484,10 +479,10 @@ class Configuration(object):
                 index_url +=  "?pypi=true"
             else:
                 index_url +=  "?pypi=false"
-            return [(store_url, index_url)]
+            return [(index_url, store_url)]
         else:
             return [(url + _INDEX_NAME, url + _INDEX_NAME)
-                    for url in self.IndexedRepos]
+                    for url in self.indexed_repositories]
 
 
 def get_auth():
@@ -497,7 +492,7 @@ def get_auth():
         raise InvalidConfiguration(
             "No enstaller configuration found, no "
             "authentication information available")
-    return Configuration._get_default_config().get_auth()
+    return Configuration._from_legacy_locations().auth
 
 
 def get_path():
@@ -555,7 +550,7 @@ def print_config(config, prefix):
     print("    %s = %r" % ("proxy", config.proxy))
     if not config.use_webservice:
         print("    IndexedRepos:")
-        for repo in config.IndexedRepos:
+        for repo in config.indexed_repositories:
             print('        %r' % repo)
 
     user = DUMMY_USER
