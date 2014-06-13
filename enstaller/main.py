@@ -451,7 +451,7 @@ def _fetch_json_with_progress(resp, store_location):
 
 def repository_factory(fetcher, config):
     repository = Repository()
-    for store_location, url in config.indices:
+    for url, store_location in config.indices:
         resp = fetcher.fetch(url)
         resp.raise_for_status()
 

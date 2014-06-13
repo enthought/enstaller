@@ -474,7 +474,7 @@ class Configuration(object):
     @property
     def indices(self):
         """
-        Returns a list of pair (store_location, index_url) for this given
+        Returns a list of pair (index_url, store_location) for this given
         configuration.
 
         Takes into account webservice/no webservice and pypi True/False
@@ -485,7 +485,7 @@ class Configuration(object):
                 index_url +=  "?pypi=true"
             else:
                 index_url +=  "?pypi=false"
-            return [(store_url, index_url)]
+            return [(index_url, store_url)]
         else:
             return [(url + _INDEX_NAME, url + _INDEX_NAME)
                     for url in self.IndexedRepos]

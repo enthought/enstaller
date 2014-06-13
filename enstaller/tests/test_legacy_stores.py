@@ -73,7 +73,7 @@ class TestLegacyStores(unittest.TestCase):
                       content_type='application/json')
 
         fetcher = URLFetcher(config.repository_cache, config.auth)
-        packages = list(legacy_index_parser(fetcher, config))
+        packages = list(legacy_index_parser(fetcher, config.indices))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -96,7 +96,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.auth)
-        packages = list(legacy_index_parser(fetcher, config))
+        packages = list(legacy_index_parser(fetcher, config.indices))
 
         # Then
         self.assertTrue(len(packages) > 0)
@@ -131,7 +131,7 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.auth)
-        packages = list(legacy_index_parser(fetcher, config))
+        packages = list(legacy_index_parser(fetcher, config.indices))
 
         # Then
         self.assertEqual(len(packages), 1)

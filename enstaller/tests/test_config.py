@@ -702,9 +702,9 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property(self):
         # Given
         r_indices = [
-            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
-                format(custom_plat)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
+                format(custom_plat),
+            "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
 
@@ -714,9 +714,9 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property_no_pypi(self):
         # Given
         r_indices = [
-            ("https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
-                format(custom_plat)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
+                format(custom_plat),
+             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
         config.use_pypi = False
