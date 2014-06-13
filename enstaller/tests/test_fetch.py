@@ -15,7 +15,7 @@ from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import EnstallerException
 from enstaller.fetch import DownloadManager, URLFetcher
-from enstaller.proxy.util import ProxyInfo
+from enstaller.proxy_info import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
 

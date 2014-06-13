@@ -24,7 +24,7 @@ from enstaller import __version__
 from enstaller.auth import _INDEX_NAME, DUMMY_USER, authenticate, subscription_message
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
-from enstaller.proxy.util import ProxyInfo
+from enstaller.proxy_info import ProxyInfo
 from enstaller.utils import real_prefix
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
