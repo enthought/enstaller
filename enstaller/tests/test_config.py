@@ -590,7 +590,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         config = Configuration()
-        config.IndexedRepos = ["http://acme.com"]
+        config.set_indexed_repositories(["http://acme.com"])
         config.use_webservice = False
 
         with mock_print() as m:
@@ -732,7 +732,7 @@ class TestConfiguration(unittest.TestCase):
         ]
         config = Configuration()
         config.use_webservice = False
-        config.IndexedRepos = ["https://acme.com/{PLATFORM}/"]
+        config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
 
         # When/Then
         self.assertEqual(config.indices, r_indices)

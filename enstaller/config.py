@@ -79,7 +79,7 @@ def configuration_read_search_order():
 
 def add_url(filename, config, url):
     url = fill_url(url)
-    if url in config.IndexedRepos:
+    if url in config.indexed_repositories:
         print("Already configured:", url)
         return
     prepend_url(filename, url)
@@ -248,7 +248,7 @@ class Configuration(object):
         """
         accepted_keys_as_is = set([
             "noapp", "use_webservice", "autoupdate",
-            "prefix", "IndexedRepos", "repository_cache", "use_pypi",
+            "prefix", "repository_cache", "use_pypi",
             "store_url",
         ])
 
@@ -257,6 +257,8 @@ class Configuration(object):
             for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
+                elif k == "IndexedRepos":
+                    ret.set_indexed_repositories(v)
                 elif k == "proxy":
                     ret.set_proxy_from_string(v)
                 elif k == "EPD_auth":
@@ -290,7 +292,7 @@ class Configuration(object):
         self.use_pypi = True
 
         self._prefix = sys.prefix
-        self._IndexedRepos = []
+        self._indexed_repositories = []
         self.store_url = "https://api.enthought.com"
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
@@ -439,12 +441,11 @@ class Configuration(object):
         return self._repository_cache
 
     @property
-    def IndexedRepos(self):
-        return self._IndexedRepos
+    def indexed_repositories(self):
+        return self._indexed_repositories
 
-    @IndexedRepos.setter
-    def IndexedRepos(self, urls):
-        self._IndexedRepos = [fill_url(url) for url in urls]
+    def set_indexed_repositories(self, urls):
+        self._indexed_repositories = [fill_url(url) for url in urls]
 
     @property
     def EPD_username(self):
@@ -488,7 +489,7 @@ class Configuration(object):
             return [(index_url, store_url)]
         else:
             return [(url + _INDEX_NAME, url + _INDEX_NAME)
-                    for url in self.IndexedRepos]
+                    for url in self.indexed_repositories]
 
 
 def get_auth():
@@ -556,7 +557,7 @@ def print_config(config, prefix):
     print("    %s = %r" % ("proxy", config.proxy))
     if not config.use_webservice:
         print("    IndexedRepos:")
-        for repo in config.IndexedRepos:
+        for repo in config.indexed_repositories:
             print('        %r' % repo)
 
     user = DUMMY_USER

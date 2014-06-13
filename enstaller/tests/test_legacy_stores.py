@@ -85,12 +85,13 @@ class TestLegacyStores(unittest.TestCase):
     def test_simple_no_webservice_https(self):
         # Given
         config = Configuration()
-        config.IndexedRepos = [
+        config.set_indexed_repositories([
             'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
-        ]
+        ])
         config.use_webservice = False
 
-        responses.add(responses.GET, config.IndexedRepos[0] + "index.json",
+        responses.add(responses.GET,
+                      config.indices[0][0],
                       body=_index_provider(""), status=200,
                       content_type='application/json')
 
@@ -126,7 +127,7 @@ class TestLegacyStores(unittest.TestCase):
             fp.write(json.dumps(fake_index))
 
         config = Configuration()
-        config.IndexedRepos = ["{0}/".format(path_to_uri(self.tempdir))]
+        config.set_indexed_repositories(["{0}/".format(path_to_uri(self.tempdir))])
         config.use_webservice = False
 
         # When
