@@ -329,6 +329,10 @@ class Configuration(object):
         """
         return self._proxy
 
+    @property
+    def auth(self):
+        return (self._username, self._password)
+
     def set_auth(self, username, password):
         if username is None or password is None:
             raise InvalidConfiguration(
@@ -342,14 +346,10 @@ class Configuration(object):
         self._username = None
         self._password = None
 
-    @property
-    def auth(self):
-        return (self._username, self._password)
-
     def write(self, filename):
         username, password = self.auth
         if username and password:
-            authline = 'EPD_auth = %r' % self.EPD_auth
+            authline = 'EPD_auth = %r' % self.encoded_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
@@ -384,7 +384,7 @@ class Configuration(object):
                 fo.write(data)
             return
 
-        authline = 'EPD_auth = %r' % self.EPD_auth
+        authline = 'EPD_auth = %r' % self.encoded_auth
 
         if pat.search(data):
             data = pat.sub(authline, data)
@@ -426,18 +426,15 @@ class Configuration(object):
     def prefix(self):
         return self._prefix
 
-    @prefix.setter
-    def prefix(self, value):
+    def set_prefix(self, value):
         self._prefix = abs_expanduser(value)
 
     @property
     def repository_cache(self):
         return self._repository_cache
 
-    @repository_cache.setter
-    def repository_cache(self, value):
+    def set_repository_cache(self, value):
         self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
-        return self._repository_cache
 
     @property
     def indexed_repositories(self):
@@ -454,21 +451,19 @@ class Configuration(object):
         self._username = value
 
     @property
-    def EPD_auth(self):
+    def encoded_auth(self):
         if not self.is_auth_configured:
             raise InvalidConfiguration("EPD_auth is not available when "
                                        "auth has not been configured.")
         return _encode_auth(self._username, self._password)
 
-    @EPD_auth.setter
-    def EPD_auth(self, value):
+    def set_auth_from_encoded(self, value):
         try:
             username, password = _decode_auth(value)
         except Exception:
             raise InvalidConfiguration("Invalid EPD_auth value")
         else:
-            self._username = username
-            self._password = password
+            self.set_auth(username, password)
 
     @property
     def indices(self):

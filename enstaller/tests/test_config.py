@@ -112,7 +112,7 @@ class TestWriteConfig(unittest.TestCase):
 
         config = Configuration.from_file(self.f)
 
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
@@ -158,7 +158,7 @@ class TestWriteConfig(unittest.TestCase):
         config = Configuration.from_file(self.f)
         config.store_url = "https://acme.com"
 
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
@@ -448,7 +448,7 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(s)
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.username, FAKE_USER)
 
     @make_keyring_unavailable
@@ -469,7 +469,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration.from_file(s)
         self.assertFalse(config.is_auth_configured)
         with self.assertRaises(InvalidConfiguration):
-            config.EPD_auth
+            config.encoded_auth
 
     def test_epd_username(self):
         with fake_keyring_context() as mocked_keyring:
@@ -479,7 +479,7 @@ class TestConfigurationParsing(unittest.TestCase):
             config = Configuration.from_file(s)
 
             self.assertEqual(config.username, FAKE_USER)
-            self.assertEqual(config.EPD_auth, FAKE_CREDS)
+            self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
     def test_epd_auth(self):
         """
@@ -489,7 +489,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration.from_file(s)
 
         self.assertEqual(config.username, FAKE_USER)
-        self.assertEqual(config.EPD_auth, FAKE_CREDS)
+        self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
@@ -655,7 +655,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.prefix = os.path.normpath("~/.env")
+        config.set_prefix(os.path.normpath("~/.env"))
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
@@ -663,12 +663,12 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.repository_cache = "~/.env/LOCAL-REPO"
+        config.set_repository_cache("~/.env/LOCAL-REPO")
         self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
 
     def test_set_epd_auth(self):
         config = Configuration()
-        config.EPD_auth = FAKE_CREDS
+        config.set_auth_from_encoded(FAKE_CREDS)
 
         self.assertEqual(config._username, FAKE_USER)
         self.assertEqual(config._password, FAKE_PASSWORD)
@@ -677,7 +677,7 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration()
 
         with self.assertRaises(InvalidConfiguration):
-            config.EPD_auth = FAKE_USER
+            config.set_auth_from_encoded(FAKE_USER)
 
     def test_write_default_config_simple(self):
         # Given
@@ -742,7 +742,7 @@ class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
         config = Configuration()
         with mkdtemp() as d:
-            config.repository_cache = d
+            config.set_repository_cache(d)
             self.assertEqual(config.repository_cache, d)
 
     def test_non_writable_repository_cache(self):
@@ -752,7 +752,7 @@ class TestMisc(unittest.TestCase):
         def mocked_makedirs(d):
             raise OSError("mocked makedirs")
         with mock.patch("os.makedirs", mocked_makedirs):
-            config.repository_cache = fake_dir
+            config.set_repository_cache(fake_dir)
             self.assertNotEqual(config.repository_cache, fake_dir)
 
 
