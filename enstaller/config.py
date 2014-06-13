@@ -205,13 +205,12 @@ def convert_auth_if_required(filename):
     did_convert = False
     if _is_using_epd_username(filename):
         config = Configuration.from_file(filename)
-        username = config.EPD_username
-        password = _get_keyring_password(username)
+        password = _get_keyring_password(config.username)
         if password is None:
             raise EnstallerException("Cannot convert password: no password "
                                      "found in keyring")
         else:
-            config.set_auth(username, password)
+            config.set_auth(config.username, password)
             config._change_auth(filename)
             did_convert = True
 
@@ -266,7 +265,7 @@ class Configuration(object):
                     ret._username = username
                     ret._password = password
                 elif k == "EPD_username":
-                    ret._username = v
+                    ret.set_username(v)
                     if keyring is None:
                         ret._password = None
                     else:
@@ -448,11 +447,10 @@ class Configuration(object):
         self._indexed_repositories = [fill_url(url) for url in urls]
 
     @property
-    def EPD_username(self):
+    def username(self):
         return self._username
 
-    @EPD_username.setter
-    def EPD_username(self, value):
+    def set_username(self, value):
         self._username = value
 
     @property
