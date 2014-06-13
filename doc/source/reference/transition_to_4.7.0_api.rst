@@ -28,7 +28,7 @@ configuration file::
 
 One can also create a configuration from the default location::
 
-    config = Configuration._from_default_location()
+    config = Configuration._from_legacy_locations()
 
 This API may be revised as we change the location logic (the current logic made
 sense for an EPD-like setup, but does not anymore with virtualenvs).
@@ -54,16 +54,16 @@ removed. Instead of::
 
 you should use::
 
-    config = Configuration._from_default_location()
-    print(config.get_auth())
+    config = Configuration._from_legacy_locations()
+    print(config.auth)
 
 Note that the authentication may not be setup, in which case config.get_auth
 may return an invalid configration. To check whether the authentication is
 valid, use the is_auth_configured property::
 
-    config = Configuration._from_default_location()
+    config = Configuration._from_legacy_locations()
     if config.is_auth_configured:
-        print(config.get_auth())
+        print(config.auth)
 
 Changing authentication
 -----------------------

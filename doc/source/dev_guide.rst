@@ -51,11 +51,12 @@ helper ``legacy_index_parser`` which generates ``RepositoryPackageMetadata``
 instances::
 
     # Create a configuration from an existing '~/.enstaller4rc'
-    config = Configuration._get_default_config()
+    config = Configuration._from_legacy_locations()
+    index_fetcher = URLFetcher(config.repository_cache)
 
     repository = Repository()
-    for store_location, index_url in config.indices:
-        for package in fetch_index(index_url, store_location):
+    for index_url, store_location in config.indices:
+        for package in legacy_index_parser(fetcher, (index_url, store_location)):
             repository.add_package(package)
 
 Note: the package metadata returned by repositories are not always consistent.
@@ -95,7 +96,7 @@ main one is checked_content context manager::
     numpy = repository.find_sorted_packages("numpy")[-1]
 
     with checked_content("some_file.egg", numpy.md5) as target:
-        response = requests.get(numpy.source_url, auth=config.get_auth(),
+        response = requests.get(numpy.source_url, auth=config.auth,
                                 stream=True)
         response.raise_for_status()
         for chunk in response.iter_content(1024):
