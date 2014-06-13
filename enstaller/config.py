@@ -341,11 +341,12 @@ class Configuration(object):
         self._username = None
         self._password = None
 
-    def get_auth(self):
+    @property
+    def auth(self):
         return (self._username, self._password)
 
     def write(self, filename):
-        username, password = self.get_auth()
+        username, password = self.auth
         if username and password:
             authline = 'EPD_auth = %r' % self.EPD_auth
             auth_section = textwrap.dedent("""
@@ -497,7 +498,7 @@ def get_auth():
         raise InvalidConfiguration(
             "No enstaller configuration found, no "
             "authentication information available")
-    return Configuration._get_default_config().get_auth()
+    return Configuration._get_default_config().auth
 
 
 def get_path():

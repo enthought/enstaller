@@ -83,7 +83,7 @@ def authenticate(configuration):
         raise EnstallerException("No valid auth information in "
                                  "configuration, cannot authenticate.")
 
-    auth = configuration.get_auth()
+    auth = configuration.auth
 
     if configuration.use_webservice:
         # check credentials using web API
@@ -133,7 +133,7 @@ def subscription_message(config, user):
     message = ""
 
     if user.is_authenticated:
-        username, password = config.get_auth()
+        username, password = config.auth
         login = "You are logged in as %s" % username
         subscription = "Subscription level: %s" % user.subscription_level
         name = user.first_name + ' ' + user.last_name

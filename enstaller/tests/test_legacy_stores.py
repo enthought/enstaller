@@ -72,7 +72,7 @@ class TestLegacyStores(unittest.TestCase):
                       body=_index_provider(""), status=200,
                       content_type='application/json')
 
-        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        fetcher = URLFetcher(config.repository_cache, config.auth)
         packages = list(legacy_index_parser(fetcher, config))
 
         # Then
@@ -95,7 +95,7 @@ class TestLegacyStores(unittest.TestCase):
                       content_type='application/json')
 
         # When
-        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        fetcher = URLFetcher(config.repository_cache, config.auth)
         packages = list(legacy_index_parser(fetcher, config))
 
         # Then
@@ -130,7 +130,7 @@ class TestLegacyStores(unittest.TestCase):
         config.use_webservice = False
 
         # When
-        fetcher = URLFetcher(config.repository_cache, config.get_auth())
+        fetcher = URLFetcher(config.repository_cache, config.auth)
         packages = list(legacy_index_parser(fetcher, config))
 
         # Then

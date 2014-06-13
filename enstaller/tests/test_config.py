@@ -251,7 +251,7 @@ class TestGetAuth(unittest.TestCase):
             config = Configuration()
             config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-            self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+            self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
             self.assertFalse(mocked_keyring.set_password.called)
 
     @make_keyring_unavailable
@@ -259,7 +259,7 @@ class TestGetAuth(unittest.TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     def test_with_auth_and_keyring(self):
         with open(self.f, "w") as fp:
@@ -272,12 +272,12 @@ class TestGetAuth(unittest.TestCase):
             config.EPD_username = FAKE_USER
 
             self.assertFalse(mocked_keyring.get_password.called)
-            self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+            self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_without_auth_or_keyring(self):
         config = Configuration()
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
     @make_keyring_unavailable
     def test_deprecated_get_auth(self):
@@ -303,13 +303,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
         config.set_auth(FAKE_USER, r_new_password)
         config._change_auth(fp.name)
         new_config = Configuration.from_file(fp.name)
 
-        self.assertEqual(new_config.get_auth(), (FAKE_USER, r_new_password))
+        self.assertEqual(new_config.auth, (FAKE_USER, r_new_password))
 
     @make_keyring_unavailable
     def test_change_existing_config_file_empty_username(self):
@@ -317,13 +317,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
         config.reset_auth()
         config._change_auth(fp.name)
 
         new_config = Configuration.from_file(fp.name)
-        self.assertEqual(new_config.get_auth(), (None, None))
+        self.assertEqual(new_config.auth, (None, None))
 
     def test_change_existing_config_file_without_keyring(self):
         # Given
@@ -341,7 +341,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             self.assertNotRegexpMatches(content, "EPD_username")
             self.assertRegexpMatches(content, "EPD_auth")
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), ("user", "dummy"))
+        self.assertEqual(config.auth, ("user", "dummy"))
 
     @make_keyring_unavailable
     def test_change_empty_config_file_empty_username(self):
@@ -349,10 +349,10 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
-        self.assertEqual(config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_no_config_file(self):
@@ -360,13 +360,13 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration()
-        self.assertEqual(config.get_auth(), (None, None))
+        self.assertEqual(config.auth, (None, None))
 
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
         config.write(fp.name)
 
         new_config = Configuration.from_file(fp.name)
-        self.assertEqual(new_config.get_auth(), (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(new_config.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @make_keyring_unavailable
     def test_change_auth_wo_existing_auth(self):

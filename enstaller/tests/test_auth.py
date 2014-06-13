@@ -78,7 +78,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
     def test_no_acct(self):
         def mocked_authenticate(configuration, remote=None):
-            if configuration.get_auth() != ("valid_user", "valid_password"):
+            if configuration.auth != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
                 return UserInfo(is_authenticated=True)
