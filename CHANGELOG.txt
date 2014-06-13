@@ -5,8 +5,8 @@ Main highlights:
 
   * authentication handling has been streamlined. When credentials are missing
     and/or invalid, enpkg displays an error message instead of crashing (#144).
-  * keyring is now bundled, so that enpkg always uses the same authentication
-    method
+  * enpkg always uses the same authentication method, whether keyring is
+    installed or not.
   * support for python 2.5 has ben dropped
   * add use_pypi = True/False configuration entry to enable/disable pypi repo
     access (True by default)
@@ -14,6 +14,7 @@ Main highlights:
   * egginst and enstaller now use logging instead of print statements
   * add the -y option to automatically answer yes everytime enpkg prompt the
     user for confirmation
+  * ask for confirmation when installing unsupported pypi eggs
 
 Bug fixes:
 
@@ -25,8 +26,12 @@ Bug fixes:
 
 Internals:
 
-  * enstaller internal configuration is not a singleton anymore. Enpkg class
-    may be passed a configuration object.
+  * enstaller internal configuration is not a singleton anymore.
+  * Store classes are gone, and Repository instances are used instead
+  * Enpkg class is now only concerned with execution: dependency resolution is
+    done through a separate Solver class. It also allows for iterator-based
+    execution for integration with 3rd party packages.
+  * urllib* has been replaced by requests
   * configuration is properly parsed instead of being exec'd.
   * remove undocumented and unused 'enpkg --revert file' feature.
   * remove undocumended hook feature
