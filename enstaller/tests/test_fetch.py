@@ -71,7 +71,7 @@ class TestDownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(filename)
 
         # Then
@@ -90,7 +90,7 @@ class TestDownloadManager(unittest.TestCase):
         package.md5 = "a" * 32
         repository.add_package(package)
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         with self.assertRaises(EnstallerException):
             downloader.fetch(filename)
 
@@ -99,7 +99,7 @@ class TestDownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         target = os.path.join(self.tempdir, filename)
 
         # When
@@ -119,7 +119,7 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(egg)
 
         # Then
@@ -138,7 +138,7 @@ class TestDownloadManager(unittest.TestCase):
                 fo.write("")
 
         # When
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(egg)
 
         # Then
@@ -173,7 +173,7 @@ class TestDownloadManager(unittest.TestCase):
 
         with mock.patch("egginst.progress.ProgressManager") as m:
             # When
-            downloader = DownloadManager(repository, self.tempdir)
+            downloader = DownloadManager(URLFetcher(self.tempdir), repository)
             downloader.fetch(egg)
 
             # Then

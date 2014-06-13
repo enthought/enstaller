@@ -45,7 +45,6 @@ from enstaller.fetch import DownloadManager, URLFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.legacy_stores import parse_index
-from enstaller.proxy.api import setup_proxy
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
@@ -634,11 +633,11 @@ def main(argv=None):
         return
 
     if args.proxy:                                # --proxy
-        setup_proxy(args.proxy)
-    elif config.proxy:
-        setup_proxy(config.proxy)
-    else:
-        setup_proxy()
+        try:
+            config.set_proxy_from_string(args.proxy)
+        except InvalidConfiguration as e:
+            print("Error: invalid proxy setting {0!r}".format(e))
+            sys.exit(1)
 
     if args.config:                               # --config
         print_config(config, prefixes[0])
@@ -682,12 +681,15 @@ def main(argv=None):
 
     user = ensure_authenticated_config(config, config_filename)
 
-    index_fetcher = URLFetcher(config.repository_cache, config.get_auth())
+    proxies = [config.proxy] if config.proxy else []
+
+    index_fetcher = URLFetcher(config.repository_cache, config.get_auth(),
+                               proxies)
     index_fetcher._enable_etag_support()
     repository = repository_factory(index_fetcher, config)
 
-    downloader = DownloadManager(repository, config.repository_cache,
-                                 config.get_auth())
+    fetcher = URLFetcher(config.repository_cache, config.get_auth(), proxies)
+    downloader = DownloadManager(fetcher, repository)
 
     enpkg = Enpkg(repository, downloader, prefixes=prefixes)
 

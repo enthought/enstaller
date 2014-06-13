@@ -112,14 +112,14 @@ class URLFetcher(object):
 
 
 class DownloadManager(object):
-    def __init__(self, repository, cache_directory, auth=None):
+    def __init__(self, url_fetcher, repository, auth=None):
         """
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         self._repository = repository
-        self._fetcher = URLFetcher(cache_directory, auth)
-        self.cache_directory = cache_directory
+        self._fetcher = url_fetcher
+        self.cache_directory = url_fetcher.cache_dir
 
         makedirs(self.cache_directory)
 
