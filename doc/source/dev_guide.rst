@@ -18,6 +18,8 @@ file) into its installed form: it extract files, apply pre/post install
 scripts, etc... There is currently only one installer in enpkg, the egginst
 installer.
 
+.. _repository-guide-label:
+
 Repository
 ==========
 
@@ -52,8 +54,9 @@ instances::
     config = Configuration._get_default_config()
 
     repository = Repository()
-    for package in legacy_index_parser(config):
-        repository.add_package(package)
+    for store_location, index_url in config.indices:
+        for package in fetch_index(index_url, store_location):
+            repository.add_package(package)
 
 Note: the package metadata returned by repositories are not always consistent.
 For example, if you create a repository with _from_prefixes, the repository
