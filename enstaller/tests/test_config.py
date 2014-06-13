@@ -620,7 +620,7 @@ class TestConfiguration(unittest.TestCase):
         # a bit too painful as it has not been backported to unittest2
         Configuration.from_file(StringIO("nono = 'le petit robot'"))
 
-    def test__get_default_config_simple(self):
+    def test__from_legacy_locations_simple(self):
         # Given
         default_config_file = os.path.join(self.prefix, ".enstaller4rc")
         with open(default_config_file, "w") as fp:
@@ -629,16 +629,16 @@ class TestConfiguration(unittest.TestCase):
         # When
         with mock.patch("enstaller.config.get_path",
                         return_value=default_config_file):
-            config = Configuration._get_default_config()
+            config = Configuration._from_legacy_locations()
 
         # Then
         self.assertEqual(config.store_url, "http://acme.com")
 
-    def test__get_default_config_non_existing_path(self):
+    def test__from_legacy_locations_non_existing_path(self):
         # When/Then
         with mock.patch("enstaller.config.get_path", return_value=None):
             with self.assertRaises(InvalidConfiguration):
-                Configuration._get_default_config()
+                Configuration._from_legacy_locations()
 
     def test_reset_auth_with_keyring(self):
         with make_keyring_available_context() as m:

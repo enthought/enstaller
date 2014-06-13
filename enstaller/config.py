@@ -227,7 +227,7 @@ def _set_keyring_password(username, password):
 
 class Configuration(object):
     @classmethod
-    def _get_default_config(cls):
+    def _from_legacy_locations(cls):
         config_filename = get_path()
         if config_filename is None:
             raise InvalidConfiguration("No default configuration found.")
@@ -492,7 +492,7 @@ def get_auth():
         raise InvalidConfiguration(
             "No enstaller configuration found, no "
             "authentication information available")
-    return Configuration._get_default_config().auth
+    return Configuration._from_legacy_locations().auth
 
 
 def get_path():
