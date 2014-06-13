@@ -57,9 +57,9 @@ you should use::
     config = Configuration._from_legacy_locations()
     print(config.auth)
 
-Note that the authentication may not be setup, in which case config.get_auth
-may return an invalid configration. To check whether the authentication is
-valid, use the is_auth_configured property::
+Note that the authentication may not be setup, in which case config.auth may
+return an invalid configration. To check whether the authentication is valid,
+use the is_auth_configured property::
 
     config = Configuration._from_legacy_locations()
     if config.is_auth_configured:
