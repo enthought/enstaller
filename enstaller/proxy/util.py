@@ -46,6 +46,19 @@ class ProxyInfo(object):
         self.user = user or ""
         self.password = password or ""
 
+        if self.password and not self.user:
+            msg = "One cannot create a proxy setting with a password but " \
+                  "without a user "
+            raise InvalidConfiguration(msg)
+
+    def __str__(self):
+        netloc = "{0}:{1}".format(self.host, self.port)
+
+        if self.user:
+            netloc = "{0}:{1}@{2}".format(self.user, self.password, netloc)
+
+        return urlparse.urlunparse((self.scheme, netloc, "", "", "", ""))
+
 
 def get_proxystr(pinfo):
     """ Get proxystr from a dictionary of proxy info.
