@@ -14,9 +14,40 @@ import mock
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import EnstallerException
-from enstaller.fetch import DownloadManager
+from enstaller.fetch import DownloadManager, URLFetcher
+from enstaller.proxy_info import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import compute_md5
+
+
+class TestURLFetcher(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_proxy_simple(self):
+        # Given
+        proxies = [ProxyInfo.from_string("http://acme.com")]
+
+        # When
+        fetcher = URLFetcher(self.prefix, proxies=proxies)
+
+        # Then
+        self.assertEqual(fetcher._proxies, {"http": "http://acme.com:3128"})
+
+    def test_proxies(self):
+        # Given
+        proxies = [ProxyInfo.from_string("http://acme.com"),
+                   ProxyInfo.from_string("https://acme.com:3129")]
+
+        # When
+        fetcher = URLFetcher(self.prefix, proxies=proxies)
+
+        # Then
+        self.assertEqual(fetcher._proxies, {"http": "http://acme.com:3128",
+                                            "https": "https://acme.com:3129"})
 
 
 class TestDownloadManager(unittest.TestCase):
@@ -40,7 +71,7 @@ class TestDownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(filename)
 
         # Then
@@ -59,7 +90,7 @@ class TestDownloadManager(unittest.TestCase):
         package.md5 = "a" * 32
         repository.add_package(package)
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         with self.assertRaises(EnstallerException):
             downloader.fetch(filename)
 
@@ -68,7 +99,7 @@ class TestDownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         target = os.path.join(self.tempdir, filename)
 
         # When
@@ -88,7 +119,7 @@ class TestDownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(egg)
 
         # Then
@@ -107,7 +138,7 @@ class TestDownloadManager(unittest.TestCase):
                 fo.write("")
 
         # When
-        downloader = DownloadManager(repository, self.tempdir)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
         downloader.fetch(egg)
 
         # Then
@@ -142,7 +173,7 @@ class TestDownloadManager(unittest.TestCase):
 
         with mock.patch("egginst.progress.ProgressManager") as m:
             # When
-            downloader = DownloadManager(repository, self.tempdir)
+            downloader = DownloadManager(URLFetcher(self.tempdir), repository)
             downloader.fetch(egg)
 
             # Then

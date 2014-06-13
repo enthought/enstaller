@@ -81,9 +81,15 @@ class _CancelableResponse(object):
 
 
 class URLFetcher(object):
-    def __init__(self, cache_dir, auth=None):
+    def __init__(self, cache_dir, auth=None, proxies=None):
         self._auth = auth
         self.cache_dir= cache_dir
+
+        if proxies:
+            self._proxies = dict((proxy_info.scheme, str(proxy_info)) for
+                                 proxy_info in proxies)
+        else:
+            self._proxies = {}
 
         session = requests.Session()
         session.mount("file://", LocalFileAdapter())
@@ -101,18 +107,19 @@ class URLFetcher(object):
         self._session.mount("https://", adapter)
 
     def fetch(self, url):
-        return self._session.get(url, stream=True, auth=self._auth)
+        return self._session.get(url, stream=True, auth=self._auth,
+                                 proxies=self._proxies)
 
 
 class DownloadManager(object):
-    def __init__(self, repository, cache_directory, auth=None):
+    def __init__(self, url_fetcher, repository, auth=None):
         """
         execution_aborted: a threading.Event object which signals when the execution
             needs to be aborted, or None, if we don't want to abort the fetching at all.
         """
         self._repository = repository
-        self._fetcher = URLFetcher(cache_directory, auth)
-        self.cache_directory = cache_directory
+        self._fetcher = url_fetcher
+        self.cache_directory = url_fetcher.cache_dir
 
         makedirs(self.cache_directory)
 

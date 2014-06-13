@@ -17,7 +17,7 @@ from egginst.utils import compute_md5, makedirs
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError
-from enstaller.fetch import DownloadManager
+from enstaller.fetch import DownloadManager, URLFetcher
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -155,7 +155,7 @@ class TestEnpkgRevert(unittest.TestCase):
                          body=fp.read(), status=200,
                          content_type='application/json')
 
-        downloader = DownloadManager(repository, config.repository_cache)
+        downloader = DownloadManager(URLFetcher(config.repository_cache), repository)
 
         enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
         actions = enpkg._solver.install_actions("dummy")
@@ -226,7 +226,7 @@ class TestFetchAction(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             repository.add_package(package)
 
-        return DownloadManager(repository, self.tempdir)
+        return DownloadManager(URLFetcher(self.tempdir), repository)
 
     def _add_response_for_path(self, path):
         with open(path, "rb") as fp:

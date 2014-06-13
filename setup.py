@@ -91,7 +91,6 @@ packages = [
     'egginst.macho',
     'enstaller',
     'enstaller.indexed_repo',
-    'enstaller.proxy',
     'enstaller.vendor',
     'enstaller.vendor.cachecontrol',
     'enstaller.vendor.cachecontrol.caches',
@@ -117,7 +116,6 @@ if include_testing:
     packages += [
         'egginst.tests',
         'enstaller.indexed_repo.tests',
-        'enstaller.proxy.tests',
         'enstaller.tests',
     ]
     macho_binaries = """dummy_with_target_dat-1.0.0-1.egg  foo_amd64
