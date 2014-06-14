@@ -9,6 +9,8 @@ to transition to the new API.
 Configuration
 =============
 
+.. module:: enstaller.config
+
 The enstaller.config module has been completely revamped:
 
 * The main API is now the :py:class:`~enstaller.config.Configuration` class.
@@ -34,7 +36,7 @@ This API may be revised as we change the location logic (the current logic made
 sense for an EPD-like setup, but does not anymore with virtualenvs).
 
 Note: this will fail if no .enstaller4rc is found. To create a default
-enstaller4rc, you should instead use the write_default_config function::
+enstaller4rc, you should instead use the :func:`write_default_config` function::
 
     filename = ...
     if not os.path.exists(filename):
@@ -52,7 +54,7 @@ removed. Instead of::
     from enstaller.config import get_auth
     print(get_auth())
 
-you should use::
+one should use::
 
     config = Configuration._from_legacy_locations()
     print(config.auth)
@@ -79,7 +81,8 @@ bundled inside enstaller.
 We advise *not* to change authentication directly in .enstaller4rc, as changing
 configuration file is user-hostile. Instead, applications using enstaller
 library should store the authentication themselves, and set it up inside the
-Configuration object through the Configuration.set_auth method.
+Configuration object through the
+:py:meth:`~enstaller.config.Configuration.set_auth` method.
 
 The private methods Configuration._change_auth and
 Configuration._checked_change_auth are there for convenience, but their usage
@@ -99,12 +102,12 @@ The following functions have been removed:
 
 * clear_auth: obsolete with keyring removal
 * clear_cache: there is no configuration state anymore, juse use a new
-  Configuration instance.
-* get_repository_cache use Configuration repository_cache attribute
-* get: use correponding Configuration attributes instead
-* read: use Configuration instance and its attributes
-* web_auth: use authenticate instead
-* write: use the write method from Configuration instead
+  :class:`Configuration` instance.
+* get_repository_cache: use :data:`Configuration.repository_cache` attribute
+* get: use correponding :class:`Configuration` attributes instead
+* read: use :class:`Configuration` instance and its attributes
+* web_auth: use :func:`authenticate` instead
+* write: use the :meth:`~Configuration.write` method instead
 
 
 Repositories and package metadata

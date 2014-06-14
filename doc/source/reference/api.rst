@@ -8,6 +8,8 @@ Configuration
 .. py:module:: enstaller.config
 .. autoclass:: Configuration
     :members:
+.. authfunction:: write_default_config
+.. autofunction:: authenticate
 
 Repository
 ==========
