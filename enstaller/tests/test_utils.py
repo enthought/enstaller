@@ -182,6 +182,19 @@ class TestPromptYesNo(unittest.TestCase):
         self.assertEqual(m.value.rstrip(), message)
         self.assertTrue(res)
 
+    def test_simple_no(self):
+        # Given
+        message = "Do you want to do it ?"
+
+        # When
+        with mock_print() as m:
+            with mock_raw_input(message, "no"):
+                res = prompt_yes_no(message)
+
+        # Then
+        self.assertEqual(m.value.rstrip(), message)
+        self.assertFalse(res)
+
     def test_simple_force_yes(self):
         # Given
         message = "Do you want to do it ?"
