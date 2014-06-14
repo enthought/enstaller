@@ -35,14 +35,15 @@ One can also create a configuration from the default location::
 This API may be revised as we change the location logic (the current logic made
 sense for an EPD-like setup, but does not anymore with virtualenvs).
 
-Note: this will fail if no .enstaller4rc is found. To create a default
-enstaller4rc, you should instead use the :func:`write_default_config` function::
+.. note:: this method will fail if no .enstaller4rc is found. To create a default
+    enstaller4rc, you should use the :func:`write_default_config` function
+    first::
 
-    filename = ...
-    if not os.path.exists(filename):
-        write_default_config(filename)
+        filename = ...
+        if not os.path.exists(filename):
+            write_default_config(filename)
 
-    config = Configuration.from_file(filename)
+        config = Configuration.from_file(filename)
 
 Replacing get_auth
 ------------------
