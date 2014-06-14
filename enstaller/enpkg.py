@@ -179,6 +179,39 @@ class RemoveAction(_BaseAction):
             self.progress_update(n)
 
 
+class _ExecuteContext(object):
+    def __init__(self, actions, enpkg):
+        self._top_prefix = enpkg.top_prefix
+        self._actions = actions
+        self._remote_repository = enpkg._remote_repository
+        self._enpkg = enpkg
+
+    def _action_factory(self, action):
+        opcode, egg = action
+
+        if opcode.startswith('fetch_'):
+            force = int(opcode[-1])
+            return FetchAction(egg, self._enpkg._downloader, force)
+        elif opcode.startswith("install"):
+            return InstallAction(egg, self._enpkg.top_prefix,
+                                 self._enpkg._remote_repository,
+                                 self._enpkg._top_installed_repository,
+                                 self._enpkg._installed_repository,
+                                 self._enpkg._downloader.cache_directory)
+        elif opcode.startswith("remove"):
+            return RemoveAction(egg, self._enpkg.top_prefix,
+                                self._enpkg._top_installed_repository,
+                                self._enpkg._installed_repository,)
+        else:
+            raise ValueError("Unknown opcode: {0!r}".format(opcode))
+
+    def __iter__(self):
+        with History(self._top_prefix):
+            for action in self._actions:
+                logger.info('\t' + str(action))
+                yield self._action_factory(action)
+
+
 class Enpkg(object):
     """ This is main interface for using enpkg, it is used by the CLI.
     Arguments for object creation:
@@ -210,40 +243,8 @@ class Enpkg(object):
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
 
-    class _ExecuteContext(object):
-        def __init__(self, actions, enpkg):
-            self._top_prefix = enpkg.top_prefix
-            self._actions = actions
-            self._remote_repository = enpkg._remote_repository
-            self._enpkg = enpkg
-
-        def _action_factory(self, action):
-            opcode, egg = action
-
-            if opcode.startswith('fetch_'):
-                force = int(opcode[-1])
-                return FetchAction(egg, self._enpkg._downloader, force)
-            elif opcode.startswith("install"):
-                return InstallAction(egg, self._enpkg.top_prefix,
-                                     self._enpkg._remote_repository,
-                                     self._enpkg._top_installed_repository,
-                                     self._enpkg._installed_repository,
-                                     self._enpkg._downloader.cache_directory)
-            elif opcode.startswith("remove"):
-                return RemoveAction(egg, self._enpkg.top_prefix,
-                                    self._enpkg._top_installed_repository,
-                                    self._enpkg._installed_repository,)
-            else:
-                raise ValueError("Unknown opcode: {0!r}".format(opcode))
-
-        def __iter__(self):
-            with History(self._top_prefix):
-                for action in self._actions:
-                    logger.info('\t' + str(action))
-                    yield self._action_factory(action)
-
     def execute_context(self, actions):
-        return self._ExecuteContext(actions, self)
+        return _ExecuteContext(actions, self)
 
     def execute(self, actions):
         """
