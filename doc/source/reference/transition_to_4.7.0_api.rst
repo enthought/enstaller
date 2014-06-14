@@ -57,13 +57,13 @@ you should use::
     config = Configuration._from_legacy_locations()
     print(config.auth)
 
-Note that the authentication may not be setup, in which case config.auth may
-return an invalid configration. To check whether the authentication is valid,
-use the is_auth_configured property::
+.. note:: the authentication may not be setup, in which case config.auth may
+    return an invalid configration. To check whether the authentication is valid,
+    use the is_auth_configured property::
 
-    config = Configuration._from_legacy_locations()
-    if config.is_auth_configured:
-        print(config.auth)
+        config = Configuration._from_legacy_locations()
+        if config.is_auth_configured:
+            print(config.auth)
 
 Changing authentication
 -----------------------
@@ -85,11 +85,12 @@ The private methods Configuration._change_auth and
 Configuration._checked_change_auth are there for convenience, but their usage
 is discouraged.
 
-Note on security: this is actually more secure as enstaller would before
-implicitely change from clear to secure and vice et versa depending on whether
-keyring was available to enstaller. The midterm solution is to use token-based
-authentication and never store password, but this will need some support
-server-side before being deployed.
+.. note:: while keeping the password in clear in insecure, this is actually
+    more secure as enstaller would before implicitely change from clear to
+    secure and vice et versa depending on whether keyring was available to
+    enstaller. The midterm solution is to use token-based authentication and
+    never store password, but this will need some support server-side before
+    being deployed.
 
 Repositories and package metadata
 =================================
