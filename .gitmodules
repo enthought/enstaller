@@ -1,3 +1,0 @@
-[submodule "doc/source/.themes"]
-	path = doc/source/.themes
-	url = https://github.com/kennethreitz/kr-sphinx-themes
