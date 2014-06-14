@@ -11,10 +11,10 @@ Configuration
 
 The enstaller.config module has been completely revamped:
 
-* the main API is now the :py:class:`~enstaller.config.Configuration` class.
+* The main API is now the :py:class:`~enstaller.config.Configuration` class.
   Multiple instances of this class can coexist in the same process (though one
-  may need to be careful about keyring-related interactions)
-* most individual methods of the module have been removed, and the information
+  may need to be careful about keyring-related interactions).
+* Most individual methods of the module have been removed, and the information
   need to be accessed through the configuration object instead.
 
 Creating configuration instances
@@ -42,7 +42,7 @@ enstaller4rc, you should instead use the write_default_config function::
 
     config = Configuration.from_file(filename)
 
-replacing get_auth
+Replacing get_auth
 ------------------
 
 As the get_auth function was implicitely sharing global state, it has been
