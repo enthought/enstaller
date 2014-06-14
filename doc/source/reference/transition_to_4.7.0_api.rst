@@ -92,6 +92,21 @@ is discouraged.
     never store password, but this will need some support server-side before
     being deployed.
 
+Removed config module functions
+-------------------------------
+
+The following functions have been removed:
+
+* clear_auth: obsolete with keyring removal
+* clear_cache: there is no configuration state anymore, juse use a new
+  Configuration instance.
+* get_repository_cache use Configuration repository_cache attribute
+* get: use correponding Configuration attributes instead
+* read: use Configuration instance and its attributes
+* web_auth: use authenticate instead
+* write: use the write method from Configuration instead
+
+
 Repositories and package metadata
 =================================
 
