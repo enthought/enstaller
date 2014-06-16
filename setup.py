@@ -110,7 +110,7 @@ packages = [
     'enstaller.vendor.yaml',
 ]
 
-package_data = {}
+package_data = {"enstaller.vendor.requests": ["cacert.pem"]}
 
 if include_testing:
     packages += [
