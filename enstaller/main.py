@@ -293,8 +293,9 @@ def install_req(enpkg, config, req, opts):
             """.format(package_list_string))
             print(msg)
 
-            return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
-                                opts.yes)
+            msg = "Are you sure that you wish to proceed?  (y/[n]) "
+            if not prompt_yes_no(msg, opts.yes):
+                sys.exit(0)
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
