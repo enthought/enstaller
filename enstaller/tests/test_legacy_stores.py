@@ -64,8 +64,8 @@ class TestLegacyStores(unittest.TestCase):
     def test_simple_webservice(self):
         # Given
         config = Configuration()
-        config.use_webservice = True
-        config.use_pypi = False
+        config.enable_webservice()
+        config.disable_pypi()
 
         responses.add(responses.GET,
                       "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
@@ -88,7 +88,7 @@ class TestLegacyStores(unittest.TestCase):
         config.set_indexed_repositories([
             'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
         ])
-        config.use_webservice = False
+        config.disable_webservice()
 
         responses.add(responses.GET,
                       config.indices[0][0],
@@ -128,7 +128,7 @@ class TestLegacyStores(unittest.TestCase):
 
         config = Configuration()
         config.set_indexed_repositories(["{0}/".format(path_to_uri(self.tempdir))])
-        config.use_webservice = False
+        config.disable_webservice()
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.auth)

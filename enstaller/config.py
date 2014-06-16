@@ -245,31 +245,60 @@ class Configuration(object):
             If a string, is understood as a filename to open. Understood as a
             file-like object otherwise.
         """
-        accepted_keys_as_is = set([
-            "noapp", "use_webservice", "autoupdate",
-            "prefix", "repository_cache", "use_pypi",
-            "store_url",
-        ])
-
         def _create(fp):
             ret = cls()
+            def epd_auth_to_auth(epd_auth):
+                username, password = _decode_auth(epd_auth)
+                ret._username = username
+                ret._password = password
+
+            def epd_username_to_auth(username):
+                ret.set_username(username)
+                if keyring is None:
+                    ret._password = None
+                else:
+                    ret._password = _get_keyring_password(username)
+
+            def setup_autoupdate(use_autoupdate):
+                if use_autoupdate:
+                    ret.enable_autoupdate()
+                else:
+                    ret.disable_autoupdate()
+
+            def setup_noapp(use_noapp):
+                if use_noapp:
+                    ret.disable_appinst()
+                else:
+                    ret.enable_appinst()
+
+            def setup_pypi(use_pypi):
+                if use_pypi:
+                    ret.enable_pypi()
+                else:
+                    ret.disable_pypi()
+
+            def setup_webservice(use_webservice):
+                if use_webservice:
+                    ret.enable_webservice()
+                else:
+                    ret.disable_webservice()
+
+            translator = {
+                "autoupdate": setup_autoupdate,
+                "noapp": setup_noapp,
+                "prefix": ret.set_prefix,
+                "proxy": ret.set_proxy_from_string,
+                "repository_cache": ret.set_repository_cache,
+                "store_url": ret.set_store_url,
+                "IndexedRepos": ret.set_indexed_repositories,
+                "EPD_auth": epd_auth_to_auth,
+                "EPD_username": epd_username_to_auth,
+                "use_webservice": setup_webservice,
+                "use_pypi": setup_pypi,
+            }
             for k, v in parse_assignments(fp).iteritems():
-                if k in accepted_keys_as_is:
-                    setattr(ret, k, v)
-                elif k == "IndexedRepos":
-                    ret.set_indexed_repositories(v)
-                elif k == "proxy":
-                    ret.set_proxy_from_string(v)
-                elif k == "EPD_auth":
-                    username, password = _decode_auth(v)
-                    ret._username = username
-                    ret._password = password
-                elif k == "EPD_username":
-                    ret.set_username(v)
-                    if keyring is None:
-                        ret._password = None
-                    else:
-                        ret._password = _get_keyring_password(v)
+                if k in translator:
+                    translator[k](v)
                 else:
                     warnings.warn("Unsupported configuration setting {0}, "
                                   "ignored".format(k))
@@ -284,15 +313,15 @@ class Configuration(object):
             return _create(filename)
 
     def __init__(self):
+        self._autoupdate = True
+        self._noapp = False
         self._proxy = None
-        self.noapp = False
-        self.use_webservice = True
-        self.autoupdate = True
-        self.use_pypi = True
+        self._use_pypi = True
+        self._use_webservice = True
 
         self._prefix = sys.prefix
         self._indexed_repositories = []
-        self.store_url = "https://api.enthought.com"
+        self._store_url = "https://api.enthought.com"
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
 
@@ -300,6 +329,53 @@ class Configuration(object):
         self._password = None
 
         self._filename = None
+
+    @property
+    def store_url(self):
+        return self._store_url
+
+    def set_store_url(self, url):
+        self._store_url = url
+
+    @property
+    def autoupdate(self):
+        return self._autoupdate
+
+    def enable_autoupdate(self):
+        self._autoupdate = True
+
+    def disable_autoupdate(self):
+        self._autoupdate = False
+
+    @property
+    def noapp(self):
+        return self._noapp
+
+    def enable_appinst(self):
+        self._noapp = False
+
+    def disable_appinst(self):
+        self._noapp = True
+
+    @property
+    def use_pypi(self):
+        return self._use_pypi
+
+    def enable_pypi(self):
+        self._use_pypi = True
+
+    def disable_pypi(self):
+        self._use_pypi = False
+
+    @property
+    def use_webservice(self):
+        return self._use_webservice
+
+    def enable_webservice(self):
+        self._use_webservice = True
+
+    def disable_webservice(self):
+        self._use_webservice = False
 
     @property
     def webservice_entry_point(self):

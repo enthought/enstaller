@@ -156,7 +156,7 @@ class TestWriteConfig(unittest.TestCase):
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
-        config.store_url = "https://acme.com"
+        config.set_store_url("https://acme.com")
 
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
@@ -591,7 +591,7 @@ class TestConfigurationPrint(unittest.TestCase):
 
         config = Configuration()
         config.set_indexed_repositories(["http://acme.com"])
-        config.use_webservice = False
+        config.disable_webservice()
 
         with mock_print() as m:
             print_config(config, config.prefix)
@@ -719,7 +719,7 @@ class TestConfiguration(unittest.TestCase):
              "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
-        config.use_pypi = False
+        config.disable_pypi()
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
@@ -731,11 +731,69 @@ class TestConfiguration(unittest.TestCase):
              "https://acme.com/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
-        config.use_webservice = False
+        config.disable_webservice()
         config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
+
+    def test_from_file_complete_combination1(self):
+        # Given
+        fp = StringIO(textwrap.dedent("""\
+        EPD_auth = "{0}"
+
+        repository_cache = "/tmp"
+        prefix = "/tmp"
+        use_webservice = True
+
+        store_url = "http://acme.com"
+        use_pypi = False
+        autoupdate = False
+        noapp = False
+        """.format(FAKE_CREDS)))
+
+        # When
+        config = Configuration.from_file(fp)
+
+        # Then
+        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.repository_cache, "/tmp")
+        self.assertEqual(config.prefix, "/tmp")
+        self.assertEqual(config.use_webservice, True)
+        self.assertEqual(config.store_url, "http://acme.com")
+        self.assertEqual(config.use_pypi, False)
+        self.assertEqual(config.autoupdate, False)
+        self.assertEqual(config.noapp, False)
+
+    def test_from_file_complete_combination2(self):
+        # Given
+        fp = StringIO(textwrap.dedent("""\
+        EPD_auth = "{0}"
+
+        repository_cache = "/tmp"
+        prefix = "/tmp"
+        use_webservice = False
+
+        store_url = "http://acme.com"
+        use_pypi = True
+        autoupdate = True
+        noapp = True
+        """.format(FAKE_CREDS)))
+
+        # When
+        config = Configuration.from_file(fp)
+
+        # Then
+        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.repository_cache, "/tmp")
+        self.assertEqual(config.prefix, "/tmp")
+        self.assertEqual(config.use_webservice, False)
+        self.assertEqual(config.store_url, "http://acme.com")
+        self.assertEqual(config.use_pypi, True)
+        self.assertEqual(config.autoupdate, True)
+        self.assertEqual(config.noapp, True)
 
 
 class TestMisc(unittest.TestCase):
