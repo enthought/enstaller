@@ -65,7 +65,7 @@ class TestLegacyStores(unittest.TestCase):
         # Given
         config = Configuration()
         config.enable_webservice()
-        config.use_pypi = False
+        config.disable_pypi()
 
         responses.add(responses.GET,
                       "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat),
