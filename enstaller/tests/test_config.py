@@ -737,6 +737,27 @@ class TestConfiguration(unittest.TestCase):
         # When/Then
         self.assertEqual(config.indices, r_indices)
 
+    def test_from_file_complete(self):
+        """
+        Ensure config auth information is properly set-up when using EPD_auth
+        """
+        # Given
+        fp = StringIO(textwrap.dedent("""\
+        EPD_auth = "{0}"
+
+        repository_cache = "/tmp"
+        prefix = "/tmp"
+        """.format(FAKE_CREDS)))
+
+        # When
+        config = Configuration.from_file(fp)
+
+        # Then
+        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
+        self.assertEqual(config.repository_cache, "/tmp")
+        self.assertEqual(config.prefix, "/tmp")
+
 
 class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):

@@ -247,32 +247,40 @@ class Configuration(object):
         """
         accepted_keys_as_is = set([
             "noapp", "use_webservice", "autoupdate",
-            "prefix", "repository_cache", "use_pypi",
-            "store_url",
+            "use_pypi", "store_url",
         ])
 
         def _create(fp):
             ret = cls()
+            def epd_auth_to_auth(epd_auth):
+                username, password = _decode_auth(epd_auth)
+                ret._username = username
+                ret._password = password
+
+            def epd_username_to_auth(username):
+                ret.set_username(username)
+                if keyring is None:
+                    ret._password = None
+                else:
+                    ret._password = _get_keyring_password(username)
+
+            translator = {
+                "prefix": ret.set_prefix,
+                "proxy": ret.set_proxy_from_string,
+                "repository_cache": ret.set_repository_cache,
+                "IndexedRepos": ret.set_indexed_repositories,
+                "EPD_auth": epd_auth_to_auth,
+                "EPD_username": epd_username_to_auth,
+            }
             for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
                     setattr(ret, k, v)
-                elif k == "IndexedRepos":
-                    ret.set_indexed_repositories(v)
-                elif k == "proxy":
-                    ret.set_proxy_from_string(v)
-                elif k == "EPD_auth":
-                    username, password = _decode_auth(v)
-                    ret._username = username
-                    ret._password = password
-                elif k == "EPD_username":
-                    ret.set_username(v)
-                    if keyring is None:
-                        ret._password = None
-                    else:
-                        ret._password = _get_keyring_password(v)
                 else:
-                    warnings.warn("Unsupported configuration setting {0}, "
-                                  "ignored".format(k))
+                    if k in translator:
+                        translator[k](v)
+                    else:
+                        warnings.warn("Unsupported configuration setting {0}, "
+                                      "ignored".format(k))
             return ret
 
         if isinstance(filename, basestring):
