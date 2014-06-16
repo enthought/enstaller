@@ -190,7 +190,7 @@ class TestWebAuth(unittest.TestCase):
     def _no_webservice_config(self):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
-        config.use_webservice = False
+        config.disable_webservice()
         config.set_indexed_repositories(["http://acme.com"])
 
         return config
@@ -272,7 +272,7 @@ class TestAuthenticate(unittest.TestCase):
     @fake_keyring
     def test_use_remote(self):
         config = Configuration()
-        config.use_webservice = False
+        config.disable_webservice()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
         with patch("enstaller.auth._head_request"):
@@ -283,7 +283,7 @@ class TestAuthenticate(unittest.TestCase):
     @fake_keyring
     def test_non_existing_remote(self):
         config = Configuration()
-        config.use_webservice = False
+        config.disable_webservice()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
         config.set_indexed_repositories(["http://api.enthought.com/dummy/repo"])
 

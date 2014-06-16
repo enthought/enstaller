@@ -246,8 +246,7 @@ class Configuration(object):
             file-like object otherwise.
         """
         accepted_keys_as_is = set([
-            "noapp", "use_webservice", "autoupdate",
-            "use_pypi", "store_url",
+            "noapp", "autoupdate", "use_pypi", "store_url",
         ])
 
         def _create(fp):
@@ -264,6 +263,12 @@ class Configuration(object):
                 else:
                     ret._password = _get_keyring_password(username)
 
+            def setup_webservice(use_webservice):
+                if use_webservice:
+                    ret.enable_webservice()
+                else:
+                    ret.disable_webservice()
+
             translator = {
                 "prefix": ret.set_prefix,
                 "proxy": ret.set_proxy_from_string,
@@ -271,6 +276,7 @@ class Configuration(object):
                 "IndexedRepos": ret.set_indexed_repositories,
                 "EPD_auth": epd_auth_to_auth,
                 "EPD_username": epd_username_to_auth,
+                "use_webservice": setup_webservice,
             }
             for k, v in parse_assignments(fp).iteritems():
                 if k in accepted_keys_as_is:
@@ -294,7 +300,7 @@ class Configuration(object):
     def __init__(self):
         self._proxy = None
         self.noapp = False
-        self.use_webservice = True
+        self._use_webservice = True
         self.autoupdate = True
         self.use_pypi = True
 
@@ -308,6 +314,16 @@ class Configuration(object):
         self._password = None
 
         self._filename = None
+
+    @property
+    def use_webservice(self):
+        return self._use_webservice
+
+    def enable_webservice(self):
+        self._use_webservice = True
+
+    def disable_webservice(self):
+        self._use_webservice = False
 
     @property
     def webservice_entry_point(self):

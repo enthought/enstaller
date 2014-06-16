@@ -591,7 +591,7 @@ class TestConfigurationPrint(unittest.TestCase):
 
         config = Configuration()
         config.set_indexed_repositories(["http://acme.com"])
-        config.use_webservice = False
+        config.disable_webservice()
 
         with mock_print() as m:
             print_config(config, config.prefix)
@@ -731,7 +731,7 @@ class TestConfiguration(unittest.TestCase):
              "https://acme.com/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
-        config.use_webservice = False
+        config.disable_webservice()
         config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
 
         # When/Then
@@ -747,6 +747,7 @@ class TestConfiguration(unittest.TestCase):
 
         repository_cache = "/tmp"
         prefix = "/tmp"
+        use_webservice = True
         """.format(FAKE_CREDS)))
 
         # When
@@ -757,6 +758,7 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
         self.assertEqual(config.repository_cache, "/tmp")
         self.assertEqual(config.prefix, "/tmp")
+        self.assertEqual(config.use_webservice, True)
 
 
 class TestMisc(unittest.TestCase):
