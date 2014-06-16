@@ -40,15 +40,15 @@ def checked_content(filename, expected_md5):
 
     Parameters
     ----------
-    filename: str
+    filename : str
         The path to write to
-    expected_checksum: str
+    expected_checksum : str
         The expected checksum
 
     Returns
     -------
-    fp: MD5File instance
-        A file-like object.
+    fp : MD5File
+        A file-like MD5File instance.
 
     Example
     -------

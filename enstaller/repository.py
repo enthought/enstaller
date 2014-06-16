@@ -377,8 +377,8 @@ class Repository(object):
 
         Returns
         -------
-        packages : seq of RepositoryPackageMetadata
-            The corresponding metadata
+        packages : iterable
+            Iterable of RepositoryPackageMetadata.
         """
         packages = self.find_packages(name)
         try:
@@ -390,7 +390,7 @@ class Repository(object):
             return packages
 
     def find_packages(self, name, version=None):
-        """Returns a list of package metadata with the given name and version
+        """ Returns a list of package metadata with the given name and version
 
         Parameters
         ----------
@@ -401,8 +401,8 @@ class Repository(object):
 
         Returns
         -------
-        packages : seq of RepositoryPackageMetadata-like
-            The corresponding metadata (order is unspecified)
+        packages : iterable
+            Iterable of RepositoryPackageMetadata-like (order is unspecified)
         """
         candidates = self._name_to_packages.get(name, [])
         if version is None:
@@ -415,8 +415,8 @@ class Repository(object):
 
         Returns
         -------
-        packages : iterable of RepositoryPackageMetadata-like
-            The corresponding metadata
+        packages : iterable
+            Iterable of RepositoryPackageMetadata-like.
         """
         for packages_set in self._name_to_packages.itervalues():
             for package in packages_set:
@@ -428,8 +428,9 @@ class Repository(object):
 
         Returns
         -------
-        packages : iterable of RepositoryPackageMetadata-like
-            The corresponding metadata
+        packages : iterable
+            Iterable of the corresponding RepositoryPackageMetadata-like
+            instances.
         """
         for name, packages in self._name_to_packages.items():
             sorted_by_version = sorted(packages,

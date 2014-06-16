@@ -179,6 +179,16 @@ def _encode_auth(username, password):
 
 
 def write_default_config(filename):
+    """
+    Write a default configuration file at the given location.
+
+    Will raise an exception if a file already exists.
+
+    Parameters
+    ----------
+    filename : str
+        The location to write to.
+    """
     if os.path.isfile(filename):
         msg = "File '{0}' already exists, not overwriting."
         raise EnstallerException(msg.format(filename))
@@ -410,6 +420,16 @@ class Configuration(object):
         return (self._username, self._password)
 
     def set_auth(self, username, password):
+        """ Set the internal authentication information.
+
+        Parameters
+        ----------
+        username : str
+            The username/email
+        password : str
+            The password
+        """
+
         if username is None or password is None:
             raise InvalidConfiguration(
                 "invalid authentication arguments: "
@@ -423,6 +443,13 @@ class Configuration(object):
         self._password = None
 
     def write(self, filename):
+        """ Write this configuration to the given filename.
+
+        Parameters
+        ----------
+        filename : str
+            The path of the written file.
+        """
         username, password = self.auth
         if username and password:
             authline = 'EPD_auth = %r' % self.encoded_auth
@@ -485,13 +512,12 @@ class Configuration(object):
 
     @property
     def is_auth_configured(self):
-        """
-        Returns True if authentication is set up for this configuration object.
+        """ Returns True if authentication is set up for this configuration
+        object.
 
-        Note
-        ----
-        This only checks whether the auth is configured, not whether the
+        Note: this only checks whether the auth is configured, not whether the
         authentication information is correct.
+
         """
         if self._username and self._password:
             return True
@@ -507,9 +533,11 @@ class Configuration(object):
 
     @property
     def repository_cache(self):
+        """ Absolute path where eggs will be cached."""
         return self._repository_cache
 
     def set_repository_cache(self, value):
+        """ Change the value of repository_cache."""
         self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
 
     @property
