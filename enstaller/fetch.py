@@ -97,10 +97,6 @@ class URLFetcher(object):
 
 class DownloadManager(object):
     def __init__(self, url_fetcher, repository, auth=None):
-        """
-        execution_aborted: a threading.Event object which signals when the execution
-            needs to be aborted, or None, if we don't want to abort the fetching at all.
-        """
         self._repository = repository
         self._fetcher = url_fetcher
         self.cache_directory = url_fetcher.cache_dir
@@ -111,6 +107,31 @@ class DownloadManager(object):
         return join(self.cache_directory, fn)
 
     def iter_fetch(self, egg, force=False):
+        """ Fetch the given egg using streaming.
+
+        Parameters
+        ----------
+        egg : str
+            An egg filename (e.g. 'numpy-1.8.0-1.egg')
+        force : bool
+            If force is True, will download even if the file is already in the
+            download cache.
+
+        Example
+        -------
+        Simple usage::
+
+            downloader = DownloadManager(...)
+            response = downloader.iter_fetch(egg)
+            for chunk in response:
+                pass
+
+        Note
+        ----
+        Iterating over the response already writes the file at the usual
+        location. This is mostly useful when you want to control cancellation
+        and/or follow download progress.
+        """
         name, version = egg_name_to_name_version(egg)
         package_metadata = self._repository.find_package(name, version)
 
