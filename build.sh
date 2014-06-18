@@ -6,7 +6,7 @@
 # Build notes:
 #   * setuptools needs to be installed to run this script
 
-VER=4.6.1
+VER=4.7.0.dev1
 
 SPEC=enstaller.egg-info/spec
 mkdir -p $SPEC
@@ -43,5 +43,5 @@ cat tmp.sh dist/enstaller-*-py*.egg >$EGG
 rm -f tmp.sh dist/enstaller-*-py*.egg
 chmod +x $EGG
 
-egginfo --sd $EGG
+#egginfo --sd $EGG
 #repo-upload --force --no-confirm $EGG

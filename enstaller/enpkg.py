@@ -7,7 +7,7 @@ import sys
 from os.path import isfile, join
 
 from egginst.main import EggInst
-from egginst.progress import console_progress_manager_factory
+from egginst.progress import FileProgressManager, console_progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -65,6 +65,9 @@ class FetchAction(_BaseAction):
     def cancel(self):
         super(FetchAction, self).cancel()
         self._current_context.cancel()
+        # XXX: hack to not display the remaining progress bar, as the egginst
+        # progress bar API does not allow for cancellation yet.
+        self._progress.silent = True
 
     def progress_update(self, step):
         self._progress(step)
@@ -72,13 +75,27 @@ class FetchAction(_BaseAction):
     def iter_execute(self):
         context = self._downloader.iter_fetch(self._egg, self._force)
         self._current_context = context
-        self._progress = context.progress_update
-        for chunk_size in context.iter_content():
-            yield chunk_size
+        progress = self._progress_bar_factory(self._egg)
+        self._progress = progress
+
+        file_progress = FileProgressManager(progress)
+        with file_progress:
+            for chunk_size in context.iter_content():
+                file_progress.update(len(chunk_size))
+                yield chunk_size
 
     def execute(self):
         for chunk_size in self.iter_execute():
             self.progress_update(chunk_size)
+
+    def _progress_bar_factory(self, egg):
+        name, version = egg_name_to_name_version(egg)
+        package_metadata = self._downloader._repository.find_package(name,
+                                                                     version)
+
+        return console_progress_manager_factory("fetching",
+                                                package_metadata.key,
+                                                package_metadata.size)
 
 
 class InstallAction(_BaseAction):
