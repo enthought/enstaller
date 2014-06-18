@@ -297,14 +297,21 @@ class TestFetchAction(unittest.TestCase):
         downloader = self._downloader_factory([path])
         self._add_response_for_path(path)
 
-        with mock.patch("egginst.progress.ProgressManager.__call__") as m:
-            # When
-            action = FetchAction(path, downloader)
-            for step in action:
+        # When/Then
+        class MyDummyProgressBar(object):
+            def __call__(self, n):
+                self.fail("progress bar called")
+            def __enter__(self):
+                return self
+            def __exit__(self, *a, **kw):
                 pass
 
-        # Then
-        self.assertFalse(m.called)
+        progress = MyDummyProgressBar()
+        action = FetchAction(path, downloader,
+                             progress_bar_factory=lambda *a, **kw: progress)
+        for step in action:
+            pass
+
 
     @responses.activate
     def test_progress_manager(self):
@@ -314,13 +321,23 @@ class TestFetchAction(unittest.TestCase):
         downloader = self._downloader_factory([path])
         self._add_response_for_path(path)
 
-        with mock.patch("egginst.progress.ProgressManager.__call__") as m:
-            # When
-            action = FetchAction(path, downloader)
-            action.execute()
+        class MyDummyProgressBar(object):
+            def __init__(self):
+                self.called = False
+            def __call__(self, n):
+                self.called = True
+            def __enter__(self):
+                return self
+            def __exit__(self, *a, **kw):
+                pass
+
+        progress = MyDummyProgressBar()
+        action = FetchAction(path, downloader,
+                             progress_bar_factory=lambda *a, **kw: progress)
+        action.execute()
 
         # Then
-        self.assertTrue(m.called)
+        self.assertTrue(progress.called)
 
 
 class TestRemoveAction(unittest.TestCase):
