@@ -290,7 +290,7 @@ class TestFetchAction(unittest.TestCase):
         self.assertTrue(action.is_canceled)
 
     @responses.activate
-    def test_progress_manager(self):
+    def test_progress_manager_iter(self):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
@@ -302,6 +302,22 @@ class TestFetchAction(unittest.TestCase):
             action = FetchAction(path, downloader)
             for step in action:
                 pass
+
+        # Then
+        self.assertFalse(m.called)
+
+    @responses.activate
+    def test_progress_manager(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader = self._downloader_factory([path])
+        self._add_response_for_path(path)
+
+        with mock.patch("egginst.progress.ProgressManager.__call__") as m:
+            # When
+            action = FetchAction(path, downloader)
+            action.execute()
 
         # Then
         self.assertTrue(m.called)

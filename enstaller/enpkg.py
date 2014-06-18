@@ -81,7 +81,6 @@ class FetchAction(_BaseAction):
         file_progress = FileProgressManager(progress)
         with file_progress:
             for chunk_size in context.iter_content():
-                file_progress.update(len(chunk_size))
                 yield chunk_size
 
     def execute(self):
