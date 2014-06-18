@@ -22,7 +22,7 @@ def main(prefix=sys.prefix, hook=False, pkgs_dir=None, verbose=False):
 
     print("Bootstrapping:", egg_path)
     ei = egginst.EggInst(egg_path, prefix,
-                         hook=hook, pkgs_dir=pkgs_dir, verbose=verbose)
+                         hook=hook, pkgs_dir=pkgs_dir)
     ei.install()
 
 
