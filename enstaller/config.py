@@ -364,6 +364,7 @@ class Configuration(object):
         self._password = None
 
         self._filename = None
+        self._platform = plat.custom_plat
 
     @property
     def store_url(self):
@@ -415,7 +416,7 @@ class Configuration(object):
     @property
     def webservice_entry_point(self):
         return fill_url("{0}/eggs/{1}/".
-                        format(self.store_url, plat.custom_plat))
+                        format(self.store_url, self._platform))
 
     @property
     def api_url(self):
