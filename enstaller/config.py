@@ -22,8 +22,8 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
 from enstaller.auth import _INDEX_NAME, DUMMY_USER, authenticate, subscription_message
-from enstaller.errors import (EnstallerException,
-                              InvalidConfiguration)
+from enstaller.errors import (EnstallerException, InvalidConfiguration,
+                              InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
 from enstaller.utils import real_prefix
 from enstaller import plat
@@ -235,6 +235,25 @@ def _set_keyring_password(username, password):
     return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
 
 
+def _create_error_message(fp, exc):
+    pos = fp.tell()
+    try:
+        fp.seek(0)
+        lines = fp.readlines()
+        line = lines[exc.lineno-1].rstrip()
+        if isinstance(exc, SyntaxError):
+            msg = "Could not parse configuration file " \
+                  "(invalid python syntax at line {0!r}: expression {1!r})".\
+                    format(exc.lineno, line)
+        else:
+            msg = "Could not parse configuration file " \
+                  "(error at line {0!r}: expression {1!r} not " \
+                  "supported)".format(exc.lineno, line)
+        return msg
+    finally:
+        fp.seek(pos)
+
+
 class Configuration(object):
     @classmethod
     def _from_legacy_locations(cls):
@@ -306,7 +325,13 @@ class Configuration(object):
                 "use_webservice": setup_webservice,
                 "use_pypi": setup_pypi,
             }
-            for k, v in parse_assignments(fp).iteritems():
+            try:
+                parsed = parse_assignments(fp)
+            except (InvalidFormat, SyntaxError) as e:
+                msg = _create_error_message(fp, e)
+                raise InvalidConfiguration(msg)
+
+            for k, v in parsed.iteritems():
                 if k in translator:
                     translator[k](v)
                 else:
