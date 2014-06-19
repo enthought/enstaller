@@ -64,8 +64,9 @@ Also enapp-related metadata (also optional):
     - app_icon_data: ?
     - app_icon_data: string. The filename of the icon (the icon is expected to be in $METADIR)
 
-Note: if both this file and EGG-INFO/spec/depend are present, then info.json
-overrides the attributes set in spec/depend (see egginst.eggmeta.info_from_z).
+.. note:: if both this file and EGG-INFO/spec/depend are present, then
+          info.json overrides the attributes set in spec/depend (see
+          egginst.eggmeta.info_from_z).
 
 inst subdirectory
 -----------------
@@ -198,10 +199,12 @@ Regarding the content:
     - version: the upstream version
     - build: the build #, as defined in the recipe.
     - arch/platform/osdist: should be one of the value in the corresponding
-      attributes of epd_repo.platforms.Platform instances.  Note: those are
-      guessed from the egg content.  (See the code in
-      workbench.spec.update_egg).  I don't know what osdist is used for, and it
-      can be None.
+      attributes of epd_repo.platforms.Platform instances.
+
+      .. note:: those metadata are guessed from the egg content (See the code
+                in workbench.spec.update_egg). I don't know what osdist is
+                used for, and it can be None.
+
     - python: the python version, or None. As for arch/platform/osdist, this is
       not set directly, but guessed by looking into the .pyc code inside the
       egg. Unless you define that field explicitly that is (see greenlet recipe
