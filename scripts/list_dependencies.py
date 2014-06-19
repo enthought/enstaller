@@ -4,26 +4,18 @@ import sys
 import enstaller.plat
 
 from enstaller.config import Configuration
-from enstaller.store.indexed import RemoteHTTPIndexedStore
+from enstaller.fetch import URLFetcher
+from enstaller.main import repository_factory
 from enstaller.resolve import Req, Resolve
-from enstaller.enpkg import get_writable_local_dir
 
-URL_TEMPLATE = 'https://api.enthought.com/eggs/%s/'
-
-def get_default_remote(config, plat):
-    url = URL_TEMPLATE % plat
-    local_dir = get_writable_local_dir(config)
-    print "Using API URL {}".format(url)
-    return RemoteHTTPIndexedStore(url, local_dir)
 
 def query_platform(config, userpass, requirement, platform):
-    remote = get_default_remote(config, platform)
+    index_fetcher = URLFetcher(config.repository_cache, config.auth)
+    index_fetcher._enable_etag_support()
+    repository = repository_factory(index_fetcher, config)
+
     req = Req(requirement)
-
-    print "Connecting to remote repositories..."
-    remote.connect(userpass)
-
-    resolver = Resolve(remote)
+    resolver = Resolve(repository)
 
     def print_level(parent, level=0):
         level += 4
@@ -53,10 +45,11 @@ def main(argv=None):
 
     namespace = p.parse_args(argv)
 
-    config = Configuration._get_default_config()
+    config = Configuration._from_legacy_locations()
+    config._platform = namespace.platform
 
     if namespace.auth is None:
-        userpass = config.get_auth()
+        userpass = config.auth
     else:
         userpass = tuple(namespace.auth.split(":"))
 
