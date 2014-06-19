@@ -152,5 +152,5 @@ class DownloadManager(object):
             download cache.
         """
         context = self.iter_fetch(egg, force)
-        for chunk_size in context:
+        for _ in context:
             pass
