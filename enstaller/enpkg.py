@@ -7,7 +7,7 @@ import sys
 from os.path import isfile, join
 
 from egginst.main import EggInst
-from egginst.progress import console_progress_manager_factory
+from egginst.progress import FileProgressManager, console_progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -51,13 +51,31 @@ class _BaseAction(object):
         return self.iter_execute()
 
 
+class _DummyProgressBar(object):
+    def __call__(self, step=0):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a, **kw):
+        pass
+
+
+def dummy_progress_bar_factory(self, *a, **kw):
+    return _DummyProgressBar()
+
+
 class FetchAction(_BaseAction):
-    def __init__(self, egg, downloader, force=True):
+    def __init__(self, egg, downloader, remote_repository, force=True,
+                 progress_bar_factory=dummy_progress_bar_factory):
         super(FetchAction, self).__init__()
         self._downloader = downloader
         self._egg = egg
         self._force = force
+        self._remote_repository = remote_repository
 
+        self._progress_bar_factory = progress_bar_factory
         self._progress = None
 
         self._current_context = None
@@ -65,16 +83,27 @@ class FetchAction(_BaseAction):
     def cancel(self):
         super(FetchAction, self).cancel()
         self._current_context.cancel()
+        # XXX: hack to not display the remaining progress bar, as the egginst
+        # progress bar API does not allow for cancellation yet.
+        self._progress._progress.silent = True
 
     def progress_update(self, step):
-        self._progress(step)
+        self._progress.update(step)
 
     def iter_execute(self):
         context = self._downloader.iter_fetch(self._egg, self._force)
         self._current_context = context
-        self._progress = context.progress_update
-        for chunk_size in context.iter_content():
-            yield chunk_size
+
+        name, version = egg_name_to_name_version(self._egg)
+        package_metadata = self._remote_repository.find_package(name, version)
+        progress = self._progress_bar_factory(package_metadata.key,
+                                              package_metadata.size)
+
+        file_progress = FileProgressManager(progress)
+        with file_progress:
+            self._progress = file_progress
+            for chunk_size in context.iter_content():
+                yield len(chunk_size)
 
     def execute(self):
         for chunk_size in self.iter_execute():
@@ -84,7 +113,8 @@ class FetchAction(_BaseAction):
 class InstallAction(_BaseAction):
     def __init__(self, egg, top_prefix, remote_repository,
                  top_installed_repository, installed_repository,
-                 cache_directory):
+                 cache_directory,
+                 progress_bar_factory=dummy_progress_bar_factory):
         super(InstallAction, self).__init__()
 
         self._egg = egg
@@ -94,11 +124,7 @@ class InstallAction(_BaseAction):
         self._top_installed_repository = top_installed_repository
         self._installed_repository = installed_repository
 
-        def _progress_factory(filename, installed_size):
-            return console_progress_manager_factory("installing egg", filename,
-                                                    installed_size)
-
-        self._progress_factory = _progress_factory
+        self._progress_factory = progress_bar_factory
         self._progress = None
 
     def progress_update(self, step):
@@ -138,7 +164,8 @@ class InstallAction(_BaseAction):
 
 class RemoveAction(_BaseAction):
     def __init__(self, egg, top_prefix, top_installed_repository,
-                 installed_repository):
+                 installed_repository,
+                 progress_bar_factory=dummy_progress_bar_factory):
         super(RemoveAction, self).__init__()
         self._egg = egg
         self._top_prefix = top_prefix
@@ -146,11 +173,7 @@ class RemoveAction(_BaseAction):
         self._top_installed_repository = top_installed_repository
         self._installed_repository = installed_repository
 
-        def _progress_factory(filename, installed_size):
-            return console_progress_manager_factory("removing egg", filename,
-                                                    installed_size)
-
-        self._progress_factory = _progress_factory
+        self._progress_factory = progress_bar_factory
         self._progress = None
 
     def progress_update(self, step):
@@ -178,6 +201,78 @@ class RemoveAction(_BaseAction):
         for n in self.iter_execute():
             self.progress_update(n)
 
+class ProgressBarContext(object):
+    def __init__(self, default_progress_bar_factory, **kw):
+        """
+        A simple object holding progress bar factories to be used by actions.
+
+        Parameters
+        ----------
+        default_progress_bar_factory : callable
+            The default progress bar factory
+        **kw :
+            action_name -> callable pairs. For each specified action, this
+            specific callable will be used instead of the default factory.
+
+        .. note:: each callable signature must be (label, filename, size)
+        """
+        self.default_progress_bar_factory = default_progress_bar_factory
+
+        self.fetch_progress_factory = kw.get("fetch",
+                                             default_progress_bar_factory)
+        self.install_progress_factory = kw.get("install",
+                                               default_progress_bar_factory)
+        self.remove_progress_factory = kw.get("remove",
+                                              default_progress_bar_factory)
+
+    def fetch_progress(self, filename, size):
+        return self.fetch_progress_factory("fetching", filename, size)
+
+    def install_progress(self, filename, size):
+        return self.fetch_progress_factory("installing egg", filename, size)
+
+    def remove_progress(self, filename, size):
+        return self.fetch_progress_factory("removing egg", filename, size)
+
+
+class _ExecuteContext(object):
+    def __init__(self, actions, enpkg, progress_bar_context):
+        self._top_prefix = enpkg.top_prefix
+        self._actions = actions
+        self._remote_repository = enpkg._remote_repository
+        self._enpkg = enpkg
+
+        self._pbar_context = progress_bar_context
+
+    def _action_factory(self, action):
+        opcode, egg = action
+
+        if opcode.startswith('fetch_'):
+            force = int(opcode[-1])
+            return FetchAction(egg, self._enpkg._downloader,
+                               self._remote_repository, force,
+                               self._pbar_context.fetch_progress)
+        elif opcode.startswith("install"):
+            return InstallAction(egg, self._enpkg.top_prefix,
+                                 self._enpkg._remote_repository,
+                                 self._enpkg._top_installed_repository,
+                                 self._enpkg._installed_repository,
+                                 self._enpkg._downloader.cache_directory,
+                                 self._pbar_context.install_progress)
+        elif opcode.startswith("remove"):
+            return RemoveAction(egg, self._enpkg.top_prefix,
+                                self._enpkg._top_installed_repository,
+                                self._enpkg._installed_repository,
+                                self._pbar_context.remove_progress)
+        else:
+            raise ValueError("Unknown opcode: {0!r}".format(opcode))
+
+    def __iter__(self):
+        with History(self._top_prefix):
+            for action in self._actions:
+                logger.info('\t' + str(action))
+                yield self._action_factory(action)
+
 
 class Enpkg(object):
     """ This is main interface for using enpkg, it is used by the CLI.
@@ -185,18 +280,21 @@ class Enpkg(object):
 
     Parameters
     ----------
-    repository: Repository
+    repository : Repository
         This is the remote repository which enpkg will use to resolve
         dependencies.
-    download_manager: DownloadManager
+    download_manager : DownloadManager
         The download manager used to fetch eggs.
-    prefixes: list of path -- default: [sys.prefix]
+    prefixes : list of path -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
         prefix in the list.
+    progress_context : ProgressBarContext
+        If specified, will be used for progress bar management across all
+        executed actions. If None, use dummy (do nothing) progress bars.
     """
     def __init__(self, remote_repository, download_manager,
-                 prefixes=[sys.prefix]):
+                 prefixes=[sys.prefix], progress_context=None):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
@@ -210,40 +308,12 @@ class Enpkg(object):
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
 
-    class _ExecuteContext(object):
-        def __init__(self, actions, enpkg):
-            self._top_prefix = enpkg.top_prefix
-            self._actions = actions
-            self._remote_repository = enpkg._remote_repository
-            self._enpkg = enpkg
+        self._progress_context = progress_context or \
+                ProgressBarContext(dummy_progress_bar_factory)
 
-        def _action_factory(self, action):
-            opcode, egg = action
-
-            if opcode.startswith('fetch_'):
-                force = int(opcode[-1])
-                return FetchAction(egg, self._enpkg._downloader, force)
-            elif opcode.startswith("install"):
-                return InstallAction(egg, self._enpkg.top_prefix,
-                                     self._enpkg._remote_repository,
-                                     self._enpkg._top_installed_repository,
-                                     self._enpkg._installed_repository,
-                                     self._enpkg._downloader.cache_directory)
-            elif opcode.startswith("remove"):
-                return RemoveAction(egg, self._enpkg.top_prefix,
-                                    self._enpkg._top_installed_repository,
-                                    self._enpkg._installed_repository,)
-            else:
-                raise ValueError("Unknown opcode: {0!r}".format(opcode))
-
-        def __iter__(self):
-            with History(self._top_prefix):
-                for action in self._actions:
-                    logger.info('\t' + str(action))
-                    yield self._action_factory(action)
 
     def execute_context(self, actions):
-        return self._ExecuteContext(actions, self)
+        return _ExecuteContext(actions, self, self._progress_context)
 
     def execute(self, actions):
         """

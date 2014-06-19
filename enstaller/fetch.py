@@ -3,7 +3,6 @@ import logging
 
 from os.path import isfile, join
 
-from egginst.progress import FileProgressManager, console_progress_manager_factory
 from egginst.utils import compute_md5, ensure_dir, makedirs
 
 from enstaller.fetch_utils import checked_content
@@ -18,25 +17,17 @@ logger = logging.getLogger(__name__)
 
 
 class _CancelableResponse(object):
-    def __init__(self, path, package_metadata, fetcher, force, progress_factory):
+    def __init__(self, path, package_metadata, fetcher, force):
         self._path = path
         self._package_metadata = package_metadata
 
         self._canceled = False
-        self._progress_factory = progress_factory
-        self._progress_update = None
 
         self._fetcher = fetcher
         self._force = force
 
-    def progress_update(self, step):
-        self._progress_update(step)
-
     def cancel(self):
         self._canceled = True
-        # XXX: hack to not display the remaining progress bar, as the egginst
-        # progress bar API does not allow for cancellation yet.
-        self._progress.silent = True
 
     def __iter__(self):
         return self.iter_content()
@@ -45,25 +36,18 @@ class _CancelableResponse(object):
         if not self._needs_to_download(self._package_metadata, self._force):
             return
 
-        progress = self._progress_factory(self._package_metadata.key,
-                                          self._package_metadata.size)
-        self._progress = progress
-        file_progress = FileProgressManager(progress)
+        with checked_content(self._path, self._package_metadata.md5) as target:
+            url = self._package_metadata.source_url
+            response = self._fetcher.fetch(url)
 
-        with file_progress:
-            self._progress_update = file_progress.update
-            with checked_content(self._path, self._package_metadata.md5) as target:
-                url = self._package_metadata.source_url
-                response = self._fetcher.fetch(url)
+            for chunk in response.iter_content(1024):
+                if self._canceled:
+                    response.close()
+                    target.abort = True
+                    return
 
-                for chunk in response.iter_content(1024):
-                    if self._canceled:
-                        response.close()
-                        target.abort = True
-                        return
-
-                    target.write(chunk)
-                    yield len(chunk)
+                target.write(chunk)
+                yield chunk
 
     def _needs_to_download(self, package_metadata, force):
         needs_to_download = True
@@ -113,10 +97,6 @@ class URLFetcher(object):
 
 class DownloadManager(object):
     def __init__(self, url_fetcher, repository, auth=None):
-        """
-        execution_aborted: a threading.Event object which signals when the execution
-            needs to be aborted, or None, if we don't want to abort the fetching at all.
-        """
         self._repository = repository
         self._fetcher = url_fetcher
         self.cache_directory = url_fetcher.cache_dir
@@ -127,16 +107,38 @@ class DownloadManager(object):
         return join(self.cache_directory, fn)
 
     def iter_fetch(self, egg, force=False):
+        """ Fetch the given egg using streaming.
+
+        Parameters
+        ----------
+        egg : str
+            An egg filename (e.g. 'numpy-1.8.0-1.egg')
+        force : bool
+            If force is True, will download even if the file is already in the
+            download cache.
+
+        Example
+        -------
+        Simple usage::
+
+            downloader = DownloadManager(...)
+            response = downloader.iter_fetch(egg)
+            for chunk in response:
+                pass
+
+        Note
+        ----
+        Iterating over the response already writes the file at the usual
+        location. This is mostly useful when you want to control cancellation
+        and/or follow download progress.
+        """
         name, version = egg_name_to_name_version(egg)
         package_metadata = self._repository.find_package(name, version)
 
         path = self._path(package_metadata.key)
-        def _progress_factory(filename, installed_size):
-            return console_progress_manager_factory("fetching", filename,
-                                                    installed_size)
 
         return _CancelableResponse(path, package_metadata, self._fetcher,
-                                   force, _progress_factory)
+                                   force)
 
     def fetch(self, egg, force=False):
         """ Fetch the given egg.
@@ -150,5 +152,5 @@ class DownloadManager(object):
             download cache.
         """
         context = self.iter_fetch(egg, force)
-        for chunk_size in context:
-            context.progress_update(chunk_size)
+        for _ in context:
+            pass

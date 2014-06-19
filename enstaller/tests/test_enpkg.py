@@ -226,7 +226,7 @@ class TestFetchAction(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             repository.add_package(package)
 
-        return DownloadManager(URLFetcher(self.tempdir), repository)
+        return DownloadManager(URLFetcher(self.tempdir), repository), repository
 
     def _add_response_for_path(self, path):
         with open(path, "rb") as fp:
@@ -239,11 +239,11 @@ class TestFetchAction(unittest.TestCase):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
-        downloader = self._downloader_factory([path])
+        downloader, repository = self._downloader_factory([path])
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader)
+        action = FetchAction(path, downloader, repository)
         action.execute()
 
         # Then
@@ -257,11 +257,11 @@ class TestFetchAction(unittest.TestCase):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
-        downloader = self._downloader_factory([path])
+        downloader, repository = self._downloader_factory([path])
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader)
+        action = FetchAction(path, downloader, repository)
         for step in action:
             pass
 
@@ -276,11 +276,11 @@ class TestFetchAction(unittest.TestCase):
         # Given
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
-        downloader = self._downloader_factory([path])
+        downloader, repository = self._downloader_factory([path])
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader)
+        action = FetchAction(path, downloader, repository)
         for step in action:
             action.cancel()
 
@@ -288,6 +288,56 @@ class TestFetchAction(unittest.TestCase):
         target = os.path.join(downloader.cache_directory, filename)
         self.assertFalse(os.path.exists(target))
         self.assertTrue(action.is_canceled)
+
+    @responses.activate
+    def test_progress_manager_iter(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader, repository = self._downloader_factory([path])
+        self._add_response_for_path(path)
+
+        # When/Then
+        class MyDummyProgressBar(object):
+            def __call__(self, n):
+                self.fail("progress bar called")
+            def __enter__(self):
+                return self
+            def __exit__(self, *a, **kw):
+                pass
+
+        progress = MyDummyProgressBar()
+        action = FetchAction(path, downloader, repository,
+                             progress_bar_factory=lambda *a, **kw: progress)
+        for step in action:
+            pass
+
+
+    @responses.activate
+    def test_progress_manager(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        downloader, repository = self._downloader_factory([path])
+        self._add_response_for_path(path)
+
+        class MyDummyProgressBar(object):
+            def __init__(self):
+                self.called = False
+            def __call__(self, n):
+                self.called = True
+            def __enter__(self):
+                return self
+            def __exit__(self, *a, **kw):
+                pass
+
+        progress = MyDummyProgressBar()
+        action = FetchAction(path, downloader, repository,
+                             progress_bar_factory=lambda *a, **kw: progress)
+        action.execute()
+
+        # Then
+        self.assertTrue(progress.called)
 
 
 class TestRemoveAction(unittest.TestCase):

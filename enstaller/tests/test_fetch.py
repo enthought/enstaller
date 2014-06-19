@@ -161,20 +161,3 @@ class TestDownloadManager(unittest.TestCase):
         # Ensure we deal correctly with force=False when the egg is already
         # there.
         downloader.fetch(egg, force=False)
-
-    def test_progress_manager(self):
-        """
-        Ensure that the progress manager __call__ is called inside the fetch
-        loop.
-        """
-        # Given
-        egg = "nose-1.3.0-1.egg"
-        repository = self._create_store_and_repository([egg])
-
-        with mock.patch("egginst.progress.ProgressManager") as m:
-            # When
-            downloader = DownloadManager(URLFetcher(self.tempdir), repository)
-            downloader.fetch(egg)
-
-            # Then
-            self.assertTrue(m.called)
