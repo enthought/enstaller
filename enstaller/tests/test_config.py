@@ -604,6 +604,36 @@ class TestConfiguration(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
+    def test_unsupported_syntax(self):
+        # Given
+        data = textwrap.dedent("""\
+        store_url = 'http://acme'
+        store_url += '.com'
+        """)
+        r_message = "Could not parse configuration file (error at line 2: " \
+            "expression \"store_url += '.com'\" not supported)"
+
+        # When
+        with self.assertRaises(InvalidConfiguration) as e:
+            Configuration.from_file(StringIO(data))
+
+        # Then
+        self.assertMultiLineEqual(str(e.exception), r_message)
+
+    def test_invalid_syntax(self):
+        # Given
+        data = "store_url = http://acme.com"
+        r_message = "Could not parse configuration file (invalid python " \
+                    "syntax at line 1: expression 'store_url = " \
+                    "http://acme.com')"
+
+        # When
+        with self.assertRaises(InvalidConfiguration) as e:
+            Configuration.from_file(StringIO(data))
+
+        # Then
+        self.assertMultiLineEqual(str(e.exception), r_message)
+
     def test_proxy_setup(self):
         # Given
         proxy_string = "http://acme.com"

@@ -172,7 +172,7 @@ class _AssignmentParser(ast.NodeVisitor):
     def generic_visit(self, node):
         if type(node) != ast.Module:
             raise InvalidFormat("Unexpected expression @ line {0}".
-                                format(node.lineno))
+                                format(node.lineno), node.lineno)
         super(_AssignmentParser, self).generic_visit(node)
 
     def visit_Assign(self, node):
@@ -180,7 +180,7 @@ class _AssignmentParser(ast.NodeVisitor):
             value = ast.literal_eval(node.value)
         except ValueError:
             msg = "Invalid configuration syntax at line {0}".format(node.lineno)
-            raise InvalidFormat(msg)
+            raise InvalidFormat(msg, node.lineno)
         else:
             for target in node.targets:
                 self._data[target.id] = value

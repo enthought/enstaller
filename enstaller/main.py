@@ -31,8 +31,8 @@ import enstaller
 
 from enstaller.auth import authenticate
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
-                              InvalidConfiguration, NoPackageFound,
-                              UnavailablePackage, EXIT_ABORTED)
+                              InvalidConfiguration, InvalidFormat,
+                              NoPackageFound, UnavailablePackage, EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
                               configuration_read_search_order,
@@ -550,7 +550,12 @@ def main(argv=None):
     if not os.path.isfile(config_filename):
         write_default_config(config_filename)
 
-    config = Configuration.from_file(config_filename)
+    try:
+        config = Configuration.from_file(config_filename)
+    except InvalidConfiguration as e:
+        print(str(e))
+        sys.exit(EXIT_ABORTED)
+
 
     # Check for incompatible actions and options
     # Action options which take no package name pattern:
