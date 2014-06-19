@@ -1,12 +1,12 @@
+appinst>=2.1.4
 coverage
 detox
 machotools>=0.0.2
-appinst>=2.1.4
 mock
 nose
 randomize
-six
-tox
 refactordoc
+six
 sphinx
 sphinx-rtd-theme
+tox
