@@ -59,10 +59,10 @@ instances::
         for package in legacy_index_parser(fetcher, (index_url, store_location)):
             repository.add_package(package)
 
-Note: the package metadata returned by repositories are not always consistent.
-For example, if you create a repository with _from_prefixes, the repository
-will contain instances of InstalledPackageMetadata, not
-RepositoryPackageMetadata.
+.. note:: the package metadata returned by repositories are not always consistent.
+   For example, if you create a repository with _from_prefixes, the repository
+   will contain instances of InstalledPackageMetadata, not
+   RepositoryPackageMetadata.
 
 Querying repositories
 ---------------------
