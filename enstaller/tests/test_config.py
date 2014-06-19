@@ -711,6 +711,37 @@ class TestConfiguration(unittest.TestCase):
         # When/Then
         self.assertEqual(config.indices, r_indices)
 
+    def test_indices_property_platform(self):
+        # Given
+        platform = "win-32"
+        r_indices = [
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
+                format(platform),
+            "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+        ]
+
+        # When
+        config = Configuration()
+        config._platform = platform
+
+        # Then
+        self.assertEqual(config.indices, r_indices)
+
+        # Given
+        platform = "osx-32"
+        r_indices = [
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
+                format(platform),
+            "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+        ]
+
+        # When
+        config = Configuration()
+        config._platform = "osx-32"
+
+        # Then
+        self.assertEqual(config.indices, r_indices)
+
     def test_indices_property_no_pypi(self):
         # Given
         r_indices = [
