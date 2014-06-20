@@ -1,12 +1,2 @@
-coverage
-detox
-encore >= 0.4.0
-machotools>=0.0.2
-appinst>=2.1.4
-okonomiyaki>=0.0.3
-mock
-nose
-randomize
-six
-tox
+-r dev_requirements.txt
 unittest2

@@ -1,14 +1,12 @@
+appinst>=2.1.4
 coverage
 detox
-encore >= 0.4.0
 machotools>=0.0.2
-appinst>=2.1.4
-okonomiyaki>=0.0.3
 mock
 nose
 randomize
-six
-tox
 refactordoc
+six
 sphinx
 sphinx-rtd-theme
+tox
