@@ -1,24 +1,20 @@
-from egginst.console import ProgressManager
+import sys
+
+from egginst.console import ProgressBar
 from egginst.utils import human_bytes
 
 
-def console_progress_manager_factory(message, filename, size):
-    return ProgressManager(size, message, filename=filename,
-                           disp_amount=human_bytes(size))
+def console_progress_manager_factory(message, filename, size, steps=None):
+    if steps is None:
+        steps = size
+    first_line = "%-56s %20s" % (filename, '[%s]' % message)
+    sys.stdout.write(first_line + "\n")
 
+    left_align = 10
+    # 2 for '[' and ']'
+    width = len(first_line) - left_align - 2 - 1
+    bar_template = "{0:>10}".format(human_bytes(size))
+    bar_template += "%(label)s [%(bar)s] %(info)s"
 
-class FileProgressManager(object):
-    def __init__(self, progress_manager):
-        self._progress = progress_manager
-        self._n = 0
-
-    def __enter__(self):
-        self._n = 0
-        return self._progress.__enter__()
-
-    def __exit__(self, *a, **kw):
-        return self._progress.__exit__(*a, **kw)
-
-    def update(self, nbytes):
-        self._n += nbytes
-        return self._progress(self._n)
+    return ProgressBar(length=steps, bar_template=bar_template, width=width,
+                       fill_char=".")

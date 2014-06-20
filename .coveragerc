@@ -4,5 +4,6 @@ omit = enstaller/argparse*
        enstaller/vendor*
        enstaller/verlib*
        egginst/bootstrap.py
+       egginst/console/*
        egginst/macho/*
        */tests/*
