@@ -58,7 +58,7 @@ class TestAuth(unittest.TestCase):
                     main_noexc([])
 
         self.assertEqual(m.value, "No authentication configured, required "
-                                  "to continue.To login, type 'enpkg --userpass'.\n")
+                                  "to continue.\nTo login, type 'enpkg --userpass'.\n")
 
     @without_any_configuration
     def test_userpass_without_config(self):

@@ -60,7 +60,7 @@ FMT = '%-20s %-20s %s'
 VB_FMT = '%(version)s-%(build)s'
 FMT4 = '%-20s %-20s %-20s %s'
 
-PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue."
+PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
 
 def env_option(prefixes):
