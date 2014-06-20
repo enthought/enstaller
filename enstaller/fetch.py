@@ -33,7 +33,7 @@ class _CancelableResponse(object):
         return self.iter_content()
 
     def iter_content(self):
-        if not self._needs_to_download(self._package_metadata, self._force):
+        if not self.needs_to_download:
             return
 
         with checked_content(self._path, self._package_metadata.md5) as target:
@@ -49,12 +49,13 @@ class _CancelableResponse(object):
                 target.write(chunk)
                 yield chunk
 
-    def _needs_to_download(self, package_metadata, force):
+    @property
+    def needs_to_download(self):
         needs_to_download = True
 
         if isfile(self._path):
-            if force:
-                if compute_md5(self._path) == package_metadata.md5:
+            if self._force:
+                if compute_md5(self._path) == self._package_metadata.md5:
                     logger.info("Not refetching, %r MD5 match", self._path)
                     needs_to_download = False
             else:

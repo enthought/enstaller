@@ -22,7 +22,6 @@ import shutil
 import subprocess
 import sys
 import warnings
-import zipfile
 
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
 
@@ -37,10 +36,10 @@ from . import scripts
 from egginst.progress import console_progress_manager_factory
 
 from .links import create_link
-from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
-                    ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
-                    is_zipinfo_symlink, is_zipinfo_dir, zip_has_arcname)
-from .utils import ZipFile
+from .utils import (on_win, bin_dir_name, rel_site_packages, ensure_dir,
+                    rm_empty_dir, rm_rf, get_executable, is_zipinfo_dir,
+                    zip_has_arcname)
+from ._zipfile import ZipFile
 
 EGG_INFO = "EGG-INFO"
 
@@ -437,13 +436,12 @@ class EggInst(object):
             use_legacy_egg_info_format = has_legacy_egg_info_format(arcnames,
                                                                     is_custom_egg)
 
-            n = 0
             for arcname in arcnames:
                 if use_legacy_egg_info_format:
-                    n += self._extract_egg_with_legacy_egg_info(arcname,
-                                                                   is_custom_egg)
+                    n = self._extract_egg_with_legacy_egg_info(arcname,
+                                                               is_custom_egg)
                 else:
-                    n += self._extract(arcname, is_custom_egg)
+                    n = self._extract(arcname, is_custom_egg)
                 yield n
 
         self.post_extract(extra_info)
@@ -597,7 +595,7 @@ def install_egg_cli(path, prefix, noapp=False, extra_info=None):
                                                 size=installer.installed_size)
     with progress:
         for currently_extracted_size in installer.install_iterator(extra_info):
-            progress(step=currently_extracted_size)
+            progress.update(currently_extracted_size)
 
 
 def remove_egg_cli(path, prefix, noapp=False):
@@ -613,7 +611,7 @@ def remove_egg_cli(path, prefix, noapp=False):
                                                 size=remover.installed_size)
     with progress:
         for n, filename in enumerate(remover.remove_iterator()):
-            progress(step=n)
+            progress.update(n)
 
 
 def main(argv=None):

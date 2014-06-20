@@ -299,7 +299,7 @@ class TestFetchAction(unittest.TestCase):
 
         # When/Then
         class MyDummyProgressBar(object):
-            def __call__(self, n):
+            def update(self, n):
                 self.fail("progress bar called")
             def __enter__(self):
                 return self
@@ -324,7 +324,7 @@ class TestFetchAction(unittest.TestCase):
         class MyDummyProgressBar(object):
             def __init__(self):
                 self.called = False
-            def __call__(self, n):
+            def update(self, n):
                 self.called = True
             def __enter__(self):
                 return self

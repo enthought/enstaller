@@ -7,7 +7,6 @@ import sys
 from os.path import isfile, join
 
 from egginst.main import EggInst
-from egginst.progress import FileProgressManager, console_progress_manager_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -52,7 +51,7 @@ class _BaseAction(object):
 
 
 class _DummyProgressBar(object):
-    def __call__(self, step=0):
+    def update(self, *a, **kw):
         pass
 
     def __enter__(self):
@@ -83,15 +82,15 @@ class FetchAction(_BaseAction):
     def cancel(self):
         super(FetchAction, self).cancel()
         self._current_context.cancel()
-        # XXX: hack to not display the remaining progress bar, as the egginst
-        # progress bar API does not allow for cancellation yet.
-        self._progress._progress.silent = True
 
     def progress_update(self, step):
         self._progress.update(step)
 
     def iter_execute(self):
         context = self._downloader.iter_fetch(self._egg, self._force)
+        if not context.needs_to_download:
+            return
+
         self._current_context = context
 
         name, version = egg_name_to_name_version(self._egg)
@@ -99,9 +98,8 @@ class FetchAction(_BaseAction):
         progress = self._progress_bar_factory(package_metadata.key,
                                               package_metadata.size)
 
-        file_progress = FileProgressManager(progress)
-        with file_progress:
-            self._progress = file_progress
+        with progress:
+            self._progress = progress
             for chunk_size in context.iter_content():
                 yield len(chunk_size)
 
@@ -128,7 +126,7 @@ class InstallAction(_BaseAction):
         self._progress = None
 
     def progress_update(self, step):
-        self._progress(step=step)
+        self._progress.update(step)
 
     def _extract_extra_info(self):
         name, version = egg_name_to_name_version(self._egg)
@@ -177,7 +175,7 @@ class RemoveAction(_BaseAction):
         self._progress = None
 
     def progress_update(self, step):
-        self._progress(step=step)
+        self._progress.update(step)
 
     def iter_execute(self):
         installer = EggInst(self._egg, self._top_prefix, False)
@@ -188,7 +186,9 @@ class RemoveAction(_BaseAction):
         name, version = egg_name_to_name_version(self._egg)
         package = self._top_installed_repository.find_package(name, version)
 
-        self._progress = self._progress_factory(installer.fn, remover.installed_size)
+        self._progress = self._progress_factory(installer.fn,
+                                                remover.installed_size,
+                                                len(remover.files))
 
         with self._progress:
             for n, filename in enumerate(remover.remove_iterator()):
@@ -231,8 +231,8 @@ class ProgressBarContext(object):
     def install_progress(self, filename, size):
         return self.fetch_progress_factory("installing egg", filename, size)
 
-    def remove_progress(self, filename, size):
-        return self.fetch_progress_factory("removing egg", filename, size)
+    def remove_progress(self, filename, size, steps):
+        return self.fetch_progress_factory("removing egg", filename, size, steps)
 
 
 class _ExecuteContext(object):

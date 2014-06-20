@@ -6,7 +6,8 @@ import time
 from cStringIO import StringIO
 from os.path import join
 
-from egginst.utils import ZipFile, parse_assignments
+from egginst._zipfile import ZipFile
+from egginst.utils import parse_assignments
 
 # Path relative to EGG-INFO in egg, or $RPPT/EGG-INFO/$package_name when
 # installed

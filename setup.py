@@ -88,6 +88,7 @@ include_testing = True
 
 packages = [
     'egginst',
+    'egginst.console',
     'egginst.macho',
     'enstaller',
     'enstaller.indexed_repo',

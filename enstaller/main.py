@@ -25,6 +25,7 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
+from egginst.progress import console_progress_manager_factory
 from enstaller._version import is_released as IS_RELEASED
 
 import enstaller
@@ -40,8 +41,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               print_config, write_default_config)
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
-from enstaller.enpkg import (Enpkg, ProgressBarContext,
-                             console_progress_manager_factory)
+from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import DownloadManager, URLFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
@@ -436,13 +436,11 @@ def ensure_authenticated_config(config, config_filename):
 
 
 def _fetch_json_with_progress(resp, store_location):
-    from egginst.progress import FileProgressManager, console_progress_manager_factory
     data = io.BytesIO()
 
     length = int(resp.headers.get("content-length", 0))
     progress = console_progress_manager_factory("Fetching index", store_location,
                                                 size=length)
-    progress = FileProgressManager(progress)
     with progress:
         for chunk in _ResponseIterator(resp):
             data.write(chunk)

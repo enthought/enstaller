@@ -15,7 +15,8 @@ from egginst.main import (
     EggInst, get_installed, is_in_legacy_egg_info, main,
     should_copy_in_egg_info)
 from egginst.testing_utils import slow, assert_same_fs
-from egginst.utils import makedirs, zip_write_symlink, ZipFile
+from egginst.utils import makedirs, zip_write_symlink
+from egginst._zipfile import ZipFile
 
 from egginst import eggmeta
 
