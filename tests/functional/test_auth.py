@@ -54,11 +54,12 @@ class TestAuth(unittest.TestCase):
         """
         with use_given_config_context(self.config):
             with mock_print() as m:
-                with self.assertRaises(SystemExit):
-                    main_noexc([])
+                with mock.patch("enstaller.main.configure_authentication_or_exits",
+                                lambda *a: sys.exit(-1)):
+                    with self.assertRaises(SystemExit):
+                        main_noexc([])
 
-        self.assertEqual(m.value, "No authentication configured, required "
-                                  "to continue.\nTo login, type 'enpkg --userpass'.\n")
+        self.assertMultiLineEqual(m.value, "")
 
     @without_any_configuration
     def test_userpass_without_config(self):

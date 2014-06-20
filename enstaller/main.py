@@ -686,8 +686,7 @@ def main(argv=None):
         return
 
     if not config.is_auth_configured:
-        print(PLEASE_AUTH_MESSAGE)
-        sys.exit(-1)
+        configure_authentication_or_exits(config, config_filename)
 
     user = ensure_authenticated_config(config, config_filename)
 
