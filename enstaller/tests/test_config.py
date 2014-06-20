@@ -800,6 +800,11 @@ class TestConfiguration(unittest.TestCase):
 
     def test_from_file_complete_combination1(self):
         # Given
+        if sys.platform == "win32":
+            r_prefix = "C:\\tmp"
+        else:
+            r_prefix = "/tmp"
+        r_repository_cache = r_prefix
         fp = StringIO(textwrap.dedent("""\
         EPD_auth = "{0}"
 
@@ -819,8 +824,8 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
-        self.assertEqual(config.repository_cache, "/tmp")
-        self.assertEqual(config.prefix, "/tmp")
+        self.assertEqual(config.repository_cache, r_repository_cache)
+        self.assertEqual(config.prefix, r_prefix)
         self.assertEqual(config.use_webservice, True)
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.use_pypi, False)
@@ -829,6 +834,11 @@ class TestConfiguration(unittest.TestCase):
 
     def test_from_file_complete_combination2(self):
         # Given
+        if sys.platform == "win32":
+            r_prefix = "C:\\tmp"
+        else:
+            r_prefix = "/tmp"
+        r_repository_cache = r_prefix
         fp = StringIO(textwrap.dedent("""\
         EPD_auth = "{0}"
 
@@ -848,8 +858,8 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
-        self.assertEqual(config.repository_cache, "/tmp")
-        self.assertEqual(config.prefix, "/tmp")
+        self.assertEqual(config.repository_cache, r_repository_cache)
+        self.assertEqual(config.prefix, r_prefix)
         self.assertEqual(config.use_webservice, False)
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.use_pypi, True)
