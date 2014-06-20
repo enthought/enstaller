@@ -63,6 +63,9 @@ FMT4 = '%-20s %-20s %-20s %s'
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
 
+DEFAULT_TEXT_WIDTH = 79
+
+
 def env_option(prefixes):
     print("Prefixes:")
     for p in prefixes:
@@ -320,7 +323,7 @@ def install_req(enpkg, config, req, opts):
             currently logged in as {2!r}).
             """.format(str(e.requirement), subscription, username))
         print()
-        print(textwrap.fill(msg, 79))
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
         _done(FAILURE)
     except NoPackageFound as e:
         print(str(e))
@@ -421,14 +424,12 @@ def ensure_authenticated_config(config, config_filename):
     except AuthFailedError as e:
         username, _ = config.auth
         msg = textwrap.dedent("""\
-            Could not authenticate with user {0!r}. Please check your
-            credentials/configuration and try again. Original error is:
-
-                {1!r}.
-
-            You can change your authentication details with 'enpkg --userpass'
-            """.format(username, str(e)))
-        print(msg)
+            Could not authenticate with user {0!r} against {1!r}. Please check
+            your credentials/configuration and try again (original error is:
+            {2!r}).
+            """.format(username, config.store_url, str(e)))
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+        print("\nYou can change your authentication details with 'enpkg --userpass'.")
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)

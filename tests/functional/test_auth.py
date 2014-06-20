@@ -101,14 +101,13 @@ class TestAuth(unittest.TestCase):
         """
         Ensure 'enpkg req' doesn't crash when creds are invalid
         """
+        self.maxDiff = None
         r_output = textwrap.dedent("""\
-        Could not authenticate with user 'nono'. Please check your
-        credentials/configuration and try again. Original error is:
+        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+        Please check your credentials/configuration and try again (original error is:
+        'Dummy auth error').
 
-            'Dummy auth error'.
-
-        You can change your authentication details with 'enpkg --userpass'
-
+        You can change your authentication details with 'enpkg --userpass'.
         """)
 
         with open(self.config, "w") as fp:
