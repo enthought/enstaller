@@ -473,6 +473,33 @@ def install_from_requirements(enpkg, config, args):
             install_req(enpkg, config, req.rstrip(), args)
 
 
+def configure_authentication_or_exits(config, config_filename):
+    n_trials = 3
+    for i in range(n_trials):
+        username, password = input_auth()
+        if username:
+            break
+        else:
+            print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
+                  format(n_trials - i - 1))
+    else:
+        print("No valid username entered (no modification was written).")
+        sys.exit(-1)
+
+    config.set_auth(username, password)
+    try:
+        config._checked_change_auth(config_filename)
+    except AuthFailedError as e:
+        msg = textwrap.dedent("""\
+            Could not authenticate. Please check your
+            credentials/configuration and try again. Original error is:
+
+                {0!r}.
+
+            No modification was written.""".format(str(e)))
+        print(msg)
+        sys.exit(-1)
+
 def main(argv=None):
     if argv is None: # pragma: no cover
         argv = sys.argv[1:]
@@ -655,31 +682,7 @@ def main(argv=None):
         return
 
     if args.userpass:                             # --userpass
-        n_trials = 3
-        for i in range(n_trials):
-            username, password = input_auth()
-            if username:
-                break
-            else:
-                print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
-                      format(n_trials - i - 1))
-        else:
-            print("No valid username entered (no modification was written).")
-            sys.exit(-1)
-
-        config.set_auth(username, password)
-        try:
-            config._checked_change_auth(config_filename)
-        except AuthFailedError as e:
-            msg = textwrap.dedent("""\
-                Could not authenticate. Please check your
-                credentials/configuration and try again. Original error is:
-
-                    {0!r}.
-
-                No modification was written.""".format(str(e)))
-            print(msg)
-            sys.exit(-1)
+        configure_authentication_or_exits(config, config_filename)
         return
 
     if not config.is_auth_configured:
