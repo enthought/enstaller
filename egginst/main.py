@@ -39,8 +39,8 @@ from egginst.progress import console_progress_manager_factory
 from .links import create_link
 from .utils import (on_win, bin_dir_name, rel_site_packages, human_bytes,
                     ensure_dir, rm_empty_dir, rm_rf, get_executable, makedirs,
-                    is_zipinfo_symlink, is_zipinfo_dir, zip_has_arcname)
-from .utils import ZipFile
+                    is_zipinfo_dir, zip_has_arcname)
+from ._zipfile import ZipFile
 
 EGG_INFO = "EGG-INFO"
 

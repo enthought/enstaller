@@ -7,7 +7,7 @@ import urllib
 import urlparse
 
 from egginst.eggmeta import info_from_z
-from egginst.utils import ZipFile
+from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir

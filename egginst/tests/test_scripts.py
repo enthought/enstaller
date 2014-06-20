@@ -15,7 +15,8 @@ from egginst import exe_data
 
 from egginst.main import EggInst
 from egginst.scripts import create, create_proxies, fix_script, get_executable
-from egginst.utils import ZipFile, compute_md5
+from egginst.utils import compute_md5
+from egginst._zipfile import ZipFile
 
 from .common import mkdtemp
 
