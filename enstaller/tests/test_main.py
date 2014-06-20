@@ -898,14 +898,12 @@ class TestInstallReq(unittest.TestCase):
     @is_authenticated
     def test_recursive_install_unavailable_dependency(self):
         config = Configuration()
-        config.set_auth("None", "None")
+        config.set_auth("nono", "le gros robot")
 
-        r_output = textwrap.dedent("""\
-        Error: cannot install 'scipy', as some requirements are not
-        available at your subscription level.
-
-        You are currently logged in as 'None' (subscription level:
-        'Canopy / EPD Free').
+        r_output = textwrap.dedent("""
+        Cannot install 'scipy', as this package (or some of its requirements) are not
+        available at your subscription level 'Canopy / EPD Free' (You are currently
+        logged in as 'nono').
         """)
 
         self.maxDiff = None

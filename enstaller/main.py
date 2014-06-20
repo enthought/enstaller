@@ -315,12 +315,12 @@ def install_req(enpkg, config, req, opts):
         user_info = authenticate(config)
         subscription = user_info.subscription_level
         msg = textwrap.dedent("""\
-            Error: cannot install {0!r}, as some requirements are not
-            available at your subscription level.
-
-            You are currently logged in as {1!r} (subscription level:
-            {2!r}).""".format(str(e.requirement), username, subscription))
-        print(msg)
+            Cannot install {0!r}, as this package (or some of its requirements)
+            are not available at your subscription level {1!r} (You are
+            currently logged in as {2!r}).
+            """.format(str(e.requirement), subscription, username))
+        print()
+        print(textwrap.fill(msg, 79))
         _done(FAILURE)
     except NoPackageFound as e:
         print(str(e))
