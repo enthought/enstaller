@@ -2,27 +2,24 @@ from __future__ import absolute_import, print_function
 
 from ._compat import string_types
 
-import argparse
 import ast
 import contextlib
 import errno
 import hashlib
 import logging
-import re
 import sys
 import os
 import shutil
 import stat
 import tempfile
-import textwrap
 import zipfile
 
 from os.path import basename, isdir, isfile, islink, join
 
 from enstaller.errors import InvalidFormat
 
-from ._zipfile import (ZIP_SOFTLINK_ATTRIBUTE_MAGIC, ZipFile,
-    is_zipinfo_symlink)
+from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
+
 
 on_win = bool(sys.platform == 'win32')
 
