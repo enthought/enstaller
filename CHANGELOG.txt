@@ -11,7 +11,9 @@ Main highlights:
   * add use_pypi = True/False configuration entry to enable/disable pypi repo
     access (True by default)
   * add enpkg-repair script to fix .egg-info directories
-  * egginst and enstaller now use logging instead of print statements
+  * egginst and enstaller now use logging instead of print statements. Verbose
+    output may be obtained through 'enpkg -v', very verbose through
+    'enpkg -v -v'.
   * add the -y option to automatically answer yes everytime enpkg prompt the
     user for confirmation
   * ask for confirmation when installing unsupported pypi eggs
