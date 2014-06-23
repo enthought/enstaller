@@ -7,7 +7,7 @@ from egginst.utils import human_bytes
 def console_progress_manager_factory(message, filename, size, steps=None):
     if steps is None:
         steps = size
-    first_line = "%-56s %20s" % (filename, '[%s]' % message)
+    first_line = "%-46s %20s" % (filename, '[%s]' % message)
     sys.stdout.write(first_line + "\n")
 
     left_align = 10
@@ -17,4 +17,4 @@ def console_progress_manager_factory(message, filename, size, steps=None):
     bar_template += "%(label)s [%(bar)s] %(info)s"
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
-                       fill_char=".")
+                       fill_char=".", show_percent=False)

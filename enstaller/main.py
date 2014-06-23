@@ -20,6 +20,7 @@ import site
 import string
 import sys
 import textwrap
+import urlparse
 import warnings
 
 from argparse import ArgumentParser
@@ -435,11 +436,16 @@ def ensure_authenticated_config(config, config_filename):
         return user
 
 
+def _display_store_name(store_location):
+    parts = urlparse.urlsplit(store_location)
+    return urlparse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
+
 def _fetch_json_with_progress(resp, store_location):
     data = io.BytesIO()
 
     length = int(resp.headers.get("content-length", 0))
-    progress = console_progress_manager_factory("Fetching index", store_location,
+    display = _display_store_name(store_location)
+    progress = console_progress_manager_factory("Fetching index", display,
                                                 size=length)
     with progress:
         for chunk in _ResponseIterator(resp):
