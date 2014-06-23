@@ -474,7 +474,7 @@ def install_from_requirements(enpkg, config, args):
             install_req(enpkg, config, req.rstrip(), args)
 
 
-def configure_authentication_or_exits(config, config_filename):
+def configure_authentication_or_exit(config, config_filename):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -683,11 +683,11 @@ def main(argv=None):
         return
 
     if args.userpass:                             # --userpass
-        configure_authentication_or_exits(config, config_filename)
+        configure_authentication_or_exit(config, config_filename)
         return
 
     if not config.is_auth_configured:
-        configure_authentication_or_exits(config, config_filename)
+        configure_authentication_or_exit(config, config_filename)
 
     user = ensure_authenticated_config(config, config_filename)
 

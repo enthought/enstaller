@@ -54,7 +54,7 @@ class TestAuth(unittest.TestCase):
         """
         with use_given_config_context(self.config):
             with mock_print() as m:
-                with mock.patch("enstaller.main.configure_authentication_or_exits",
+                with mock.patch("enstaller.main.configure_authentication_or_exit",
                                 lambda *a: sys.exit(-1)):
                     with self.assertRaises(SystemExit):
                         main_noexc([])
