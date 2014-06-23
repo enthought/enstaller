@@ -24,8 +24,7 @@ from enstaller.tests.common import mock_print
 
 from .common import (fake_empty_install_actions, fake_configuration_and_auth,
                      enstaller_version, authenticated_config,
-                     raw_input_always_yes, remote_enstaller_available,
-                     mock_enpkg_class)
+                     raw_input_always_yes, remote_enstaller_available)
 
 class TestEnstallerMainActions(unittest.TestCase):
     def setUp(self):

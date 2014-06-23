@@ -22,7 +22,7 @@ from enstaller.tests.common import (
     succeed_authenticate)
 
 from .common import (
-    empty_index, mock_enpkg_class, use_given_config_context,
+    empty_index, mock_install_req, use_given_config_context,
     without_any_configuration)
 
 FAKE_USER = "nono"
@@ -121,7 +121,7 @@ class TestAuth(unittest.TestCase):
 
     @succeed_authenticate
     @empty_index
-    @mock_enpkg_class
+    @mock_install_req
     @fake_keyring
     def test_no_keyring_to_no_keyring_conversion(self):
         """
@@ -141,7 +141,7 @@ class TestAuth(unittest.TestCase):
 
     @empty_index
     @succeed_authenticate
-    @mock_enpkg_class
+    @mock_install_req
     @fake_keyring
     def test_keyring_to_no_keyring_conversion(self):
         """
