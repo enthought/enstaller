@@ -604,6 +604,13 @@ class TestConfiguration(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
+    def assertSamePath(self, left, right):
+        """Very naive implementation of path comparison."""
+        if sys.platform == "win32":
+            self.assertEqual(left.lower(), right.lower())
+        else:
+            self.assertEqual(left, right)
+
     def test_unsupported_syntax(self):
         # Given
         data = textwrap.dedent("""\
@@ -824,8 +831,8 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
-        self.assertEqual(config.repository_cache, r_repository_cache)
-        self.assertEqual(config.prefix, r_prefix)
+        self.assertSamePath(config.repository_cache, r_repository_cache)
+        self.assertSamePath(config.prefix, r_prefix)
         self.assertEqual(config.use_webservice, True)
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.use_pypi, False)
@@ -858,8 +865,8 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
-        self.assertEqual(config.repository_cache, r_repository_cache)
-        self.assertEqual(config.prefix, r_prefix)
+        self.assertSamePath(config.repository_cache, r_repository_cache)
+        self.assertSamePath(config.prefix, r_prefix)
         self.assertEqual(config.use_webservice, False)
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.use_pypi, True)
