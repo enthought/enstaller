@@ -534,7 +534,9 @@ def main(argv=None):
     p.add_argument("--userpass", action="store_true",
                    help="prompt for Enthought authentication, and save in "
                    "configuration file .enstaller4rc")
-    p.add_argument('-v', "--verbose", action="store_true")
+    p.add_argument('-v', "--verbose", action="count", default=0,
+                   help="Verbose output if specified once, very verbose if " \
+                        "specified twice.")
     p.add_argument('--version', action="version",
                    version='enstaller version: ' + enstaller.__version__)
     p.add_argument("--whats-new", action="store_true",
@@ -573,10 +575,13 @@ def main(argv=None):
     if count_simple_actions > 0 and len(args.cnames) > 0:
         p.error("Option takes no arguments")
 
-    if args.verbose:
-        logging.basicConfig(level=logging.INFO, format="%(message)s")
+    if args.verbose >= 2:
+        level = logging.DEBUG
+    elif args.verbose == 1:
+        level = logging.INFO
     else:
-        logging.basicConfig(level=logging.WARN, format="%(message)s")
+        level = logging.WARN
+    logging.basicConfig(level=level, format="%(message)s")
 
     if args.user:
         args.prefix = user_base
@@ -767,14 +772,14 @@ def main(argv=None):
     if needs_to_downgrade_enstaller(reqs):
         warnings.warn("Enstaller in requirement list: enstaller will be downgraded !")
     else:
-        print("Enstaller is already up to date, not upgrading.")
+        logger.debug("Enstaller is up to date, not updating")
         reqs = [req for req in reqs if req.name != "enstaller"]
 
     logger.info("Requirements:")
     for req in reqs:
         logger.info('    %r', req)
 
-    print("prefix:", prefix)
+    logger.info("prefix: %r", prefix)
 
     REMOVE_ENSTALLER_WARNING = ("Removing enstaller package will break enpkg "
                                 "and is not recommended.")

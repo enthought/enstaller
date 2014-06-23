@@ -69,31 +69,22 @@ class TestEnstallerMainActions(unittest.TestCase):
     @raw_input_always_yes
     @enstaller_version("4.6.3")
     @remote_enstaller_available(["4.6.2"])
-    def test_updated_enstaller(self):
-        r_output = textwrap.dedent("""\
-            Enstaller is already up to date, not upgrading.
-            prefix: {0}
-        """.format(sys.prefix))
-
-        with mock_print() as m:
-            with mock.patch("enstaller.main.install_req"):
-                main([""])
-        self.assertMultiLineEqual(m.value, r_output)
+    @mock.patch("enstaller.main.logger")
+    def test_updated_enstaller(self, logger):
+        with mock.patch("enstaller.main.install_req"):
+            main([""])
+        logger.info.assert_called_with('prefix: %r', sys.prefix)
 
     @authenticated_config
     @raw_input_always_yes
     @enstaller_version("4.6.3")
     @remote_enstaller_available(["4.6.2"])
     def test_updated_enstaller_in_req(self):
-        r_output = textwrap.dedent("""\
-            Enstaller is already up to date, not upgrading.
-            prefix: {0}
-        """.format(sys.prefix))
-
         with mock_print() as m:
             with mock.patch("enstaller.main.install_req"):
                 main(["enstaller"])
-        self.assertMultiLineEqual(m.value, r_output)
+        self.assertMultiLineEqual(m.value, "")
+
 
 class TestEnstallerInstallActions(unittest.TestCase):
     @fake_configuration_and_auth
