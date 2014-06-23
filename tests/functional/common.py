@@ -39,8 +39,8 @@ def without_any_configuration(f):
 
 def mock_install_req(f):
     """
-    Decorating a function/class with this decorator will mock Enpkg completely
-    within enstaller.main function.
+    Decorating a function/class with this decorator will mock install_req
+    completely within enstaller.main function.
     """
     return mock.patch("enstaller.main.install_req", mock.Mock())(f)
 
