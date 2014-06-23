@@ -21,7 +21,7 @@ from enstaller.errors import EXIT_ABORTED
 from enstaller.main import main_noexc
 from enstaller.tests.common import mock_print
 
-from .common import (mock_enpkg_class, set_env_vars, without_any_configuration)
+from .common import mock_install_req, set_env_vars, without_any_configuration
 
 class TestEnstallerMainActions(unittest.TestCase):
     @without_any_configuration
@@ -46,7 +46,7 @@ class TestEnstallerMainActions(unittest.TestCase):
         self.assertEqual(e.exception.code, 0)
 
     @without_any_configuration
-    @mock_enpkg_class
+    @mock_install_req
     def test_verbose(self):
         with self.assertRaises(SystemExit) as e:
             main_noexc(["--verbose", "--env"])
