@@ -54,11 +54,12 @@ class TestAuth(unittest.TestCase):
         """
         with use_given_config_context(self.config):
             with mock_print() as m:
-                with self.assertRaises(SystemExit):
-                    main_noexc([])
+                with mock.patch("enstaller.main.configure_authentication_or_exit",
+                                lambda *a: sys.exit(-1)):
+                    with self.assertRaises(SystemExit):
+                        main_noexc([])
 
-        self.assertEqual(m.value, "No authentication configured, required "
-                                  "to continue.To login, type 'enpkg --userpass'.\n")
+        self.assertMultiLineEqual(m.value, "")
 
     @without_any_configuration
     def test_userpass_without_config(self):
@@ -79,10 +80,9 @@ class TestAuth(unittest.TestCase):
         Ensure enpkg --userpass doesn't crash when creds are invalid
         """
         r_output = textwrap.dedent("""\
-        Could not authenticate. Please check your
-        credentials/configuration and try again. Original error is:
-
-            'Dummy auth error'.
+        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+        Please check your credentials/configuration and try again (original error is:
+        'Dummy auth error').
 
         No modification was written.
         """)
@@ -100,14 +100,13 @@ class TestAuth(unittest.TestCase):
         """
         Ensure 'enpkg req' doesn't crash when creds are invalid
         """
+        self.maxDiff = None
         r_output = textwrap.dedent("""\
-        Could not authenticate with user 'nono'. Please check your
-        credentials/configuration and try again. Original error is:
+        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+        Please check your credentials/configuration and try again (original error is:
+        'Dummy auth error').
 
-            'Dummy auth error'.
-
-        You can change your authentication details with 'enpkg --userpass'
-
+        You can change your authentication details with 'enpkg --userpass'.
         """)
 
         with open(self.config, "w") as fp:

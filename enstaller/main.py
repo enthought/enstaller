@@ -61,8 +61,11 @@ FMT = '%-20s %-20s %s'
 VB_FMT = '%(version)s-%(build)s'
 FMT4 = '%-20s %-20s %-20s %s'
 
-PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue."
+PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
+
+DEFAULT_TEXT_WIDTH = 79
+
 
 def env_option(prefixes):
     print("Prefixes:")
@@ -316,12 +319,12 @@ def install_req(enpkg, config, req, opts):
         user_info = authenticate(config)
         subscription = user_info.subscription_level
         msg = textwrap.dedent("""\
-            Error: cannot install {0!r}, as some requirements are not
-            available at your subscription level.
-
-            You are currently logged in as {1!r} (subscription level:
-            {2!r}).""".format(str(e.requirement), username, subscription))
-        print(msg)
+            Cannot install {0!r}, as this package (or some of its requirements)
+            are not available at your subscription level {1!r} (You are
+            currently logged in as {2!r}).
+            """.format(str(e.requirement), subscription, username))
+        print()
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
         _done(FAILURE)
     except NoPackageFound as e:
         print(str(e))
@@ -416,20 +419,23 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
+def _invalid_authentication_message(auth_url, username, original_error_string):
+    msg = textwrap.dedent("""\
+        Could not authenticate with user {0!r} against {1!r}. Please check
+        your credentials/configuration and try again (original error is:
+        {2!r}).
+        """.format(username, auth_url, original_error_string))
+    return msg
+
 def ensure_authenticated_config(config, config_filename):
     try:
         user = authenticate(config)
     except AuthFailedError as e:
         username, _ = config.auth
-        msg = textwrap.dedent("""\
-            Could not authenticate with user {0!r}. Please check your
-            credentials/configuration and try again. Original error is:
-
-                {1!r}.
-
-            You can change your authentication details with 'enpkg --userpass'
-            """.format(username, str(e)))
-        print(msg)
+        msg = _invalid_authentication_message(config.store_url, username,
+                                              str(e))
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+        print("\nYou can change your authentication details with 'enpkg --userpass'.")
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
@@ -476,6 +482,29 @@ def install_from_requirements(enpkg, config, args):
             args.no_deps = True
             install_req(enpkg, config, req.rstrip(), args)
 
+
+def configure_authentication_or_exit(config, config_filename):
+    n_trials = 3
+    for i in range(n_trials):
+        username, password = input_auth()
+        if username:
+            break
+        else:
+            print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
+                  format(n_trials - i - 1))
+    else:
+        print("No valid username entered (no modification was written).")
+        sys.exit(-1)
+
+    config.set_auth(username, password)
+    try:
+        config._checked_change_auth(config_filename)
+    except AuthFailedError as e:
+        msg = _invalid_authentication_message(config.store_url, username,
+                                              str(e))
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+        print("\nNo modification was written.")
+        sys.exit(-1)
 
 def main(argv=None):
     if argv is None: # pragma: no cover
@@ -664,36 +693,11 @@ def main(argv=None):
         return
 
     if args.userpass:                             # --userpass
-        n_trials = 3
-        for i in range(n_trials):
-            username, password = input_auth()
-            if username:
-                break
-            else:
-                print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
-                      format(n_trials - i - 1))
-        else:
-            print("No valid username entered (no modification was written).")
-            sys.exit(-1)
-
-        config.set_auth(username, password)
-        try:
-            config._checked_change_auth(config_filename)
-        except AuthFailedError as e:
-            msg = textwrap.dedent("""\
-                Could not authenticate. Please check your
-                credentials/configuration and try again. Original error is:
-
-                    {0!r}.
-
-                No modification was written.""".format(str(e)))
-            print(msg)
-            sys.exit(-1)
+        configure_authentication_or_exit(config, config_filename)
         return
 
     if not config.is_auth_configured:
-        print(PLEASE_AUTH_MESSAGE)
-        sys.exit(-1)
+        configure_authentication_or_exit(config, config_filename)
 
     user = ensure_authenticated_config(config, config_filename)
 
