@@ -5,7 +5,7 @@ from setuptools import setup
 from distutils.util import convert_path
 
 MAJOR = 4
-MINOR = 7
+MINOR = 8
 MICRO = 0
 
 IS_RELEASED = False
