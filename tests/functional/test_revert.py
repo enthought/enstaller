@@ -9,16 +9,16 @@ import mock
 
 from enstaller.main import main_noexc
 
-from .common import fake_configuration_and_auth, mock_enpkg_class
+from .common import fake_configuration_and_auth
 
 
 class TestRevert(unittest.TestCase):
     @fake_configuration_and_auth
-    @mock_enpkg_class
     def test_simple(self):
-        with self.assertRaises(SystemExit) as e:
-            main_noexc(["--revert", "10"])
-        self.assertEqual(e.exception.code, 0)
+        with mock.patch("enstaller.main.Enpkg.revert_actions"):
+            with self.assertRaises(SystemExit) as e:
+                main_noexc(["--revert", "10"])
+            self.assertEqual(e.exception.code, 0)
 
     @fake_configuration_and_auth
     def test_no_actions(self):
