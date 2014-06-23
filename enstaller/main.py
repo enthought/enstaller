@@ -418,16 +418,21 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
+def _invalid_authentication_message(auth_url, username, original_error_string):
+    msg = textwrap.dedent("""\
+        Could not authenticate with user {0!r} against {1!r}. Please check
+        your credentials/configuration and try again (original error is:
+        {2!r}).
+        """.format(username, auth_url, original_error_string))
+    return msg
+
 def ensure_authenticated_config(config, config_filename):
     try:
         user = authenticate(config)
     except AuthFailedError as e:
         username, _ = config.auth
-        msg = textwrap.dedent("""\
-            Could not authenticate with user {0!r} against {1!r}. Please check
-            your credentials/configuration and try again (original error is:
-            {2!r}).
-            """.format(username, config.store_url, str(e)))
+        msg = _invalid_authentication_message(config.store_url, username,
+                                              str(e))
         print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
         print("\nYou can change your authentication details with 'enpkg --userpass'.")
         sys.exit(-1)
@@ -491,14 +496,10 @@ def configure_authentication_or_exit(config, config_filename):
     try:
         config._checked_change_auth(config_filename)
     except AuthFailedError as e:
-        msg = textwrap.dedent("""\
-            Could not authenticate. Please check your
-            credentials/configuration and try again. Original error is:
-
-                {0!r}.
-
-            No modification was written.""".format(str(e)))
-        print(msg)
+        msg = _invalid_authentication_message(config.store_url, username,
+                                              str(e))
+        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+        print("\nNo modification was written.")
         sys.exit(-1)
 
 def main(argv=None):

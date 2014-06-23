@@ -80,10 +80,9 @@ class TestAuth(unittest.TestCase):
         Ensure enpkg --userpass doesn't crash when creds are invalid
         """
         r_output = textwrap.dedent("""\
-        Could not authenticate. Please check your
-        credentials/configuration and try again. Original error is:
-
-            'Dummy auth error'.
+        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+        Please check your credentials/configuration and try again (original error is:
+        'Dummy auth error').
 
         No modification was written.
         """)
