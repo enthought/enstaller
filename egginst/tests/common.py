@@ -11,7 +11,10 @@ SUPPORT_SYMLINK = hasattr(os, "symlink")
 
 MACHO_DIRECTORY = os.path.join(os.path.dirname(__file__), "data", "macho")
 
-LEGACY_PLACEHOLD_FILE = os.path.join(MACHO_DIRECTORY, "foo_legacy_placehold.dylib")
+LEGACY_PLACEHOLD_FILE_RPATH = os.path.join(MACHO_DIRECTORY,
+                                           "foo_legacy_placehold_lc_rpath.dylib")
+LEGACY_PLACEHOLD_FILE_LOAD_DYLIB = os.path.join(MACHO_DIRECTORY,
+                                                "foo_legacy_placehold_lc_rpath.dylib")
 NOLEGACY_RPATH_FILE = os.path.join(MACHO_DIRECTORY, "foo_rpath.dylib")
 
 PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY = os.path.join(MACHO_DIRECTORY, "foo.so")
@@ -19,7 +22,7 @@ PYEXT_DEPENDENCY = os.path.join(MACHO_DIRECTORY, "libfoo.dylib")
 
 FILE_TO_RPATHS = {
     NOLEGACY_RPATH_FILE: ["@loader_path/../lib"],
-    LEGACY_PLACEHOLD_FILE: ["/PLACEHOLD" * 20],
+    LEGACY_PLACEHOLD_FILE_RPATH: ["/PLACEHOLD" * 20],
 }
 
 MACHO_ARCH_TO_FILE = {

@@ -14,10 +14,11 @@ from machotools import rewriter_factory
 from egginst.main import EggInst
 from egginst.object_code import find_lib, fix_object_code, get_object_type, macho_add_rpaths_to_file
 
-from .common import DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS, \
-    LEGACY_PLACEHOLD_FILE, NOLEGACY_RPATH_FILE, MACHO_ARCH_TO_FILE, \
-    PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY, \
-    mkdtemp
+from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
+                     LEGACY_PLACEHOLD_FILE_RPATH, NOLEGACY_RPATH_FILE,
+                     MACHO_ARCH_TO_FILE,
+                     PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY,
+                     mkdtemp)
 
 class TestObjectCode(unittest.TestCase):
     def test_get_object_type(self):
@@ -33,7 +34,7 @@ class TestObjectCode(unittest.TestCase):
         """
         with mkdtemp() as d:
             copy = os.path.join(d, "foo.dylib")
-            shutil.copy(LEGACY_PLACEHOLD_FILE, copy)
+            shutil.copy(LEGACY_PLACEHOLD_FILE_RPATH, copy)
 
             with mock.patch("egginst.object_code._targets", [d]):
                 fix_object_code(copy)
@@ -105,8 +106,9 @@ class TestMachoAddRpathsToFile(unittest.TestCase):
         with mkdtemp() as d:
             new_rpaths = ["@loader_path/..", "dummy"]
 
-            copy = os.path.join(d, os.path.basename(LEGACY_PLACEHOLD_FILE))
-            shutil.copy(LEGACY_PLACEHOLD_FILE, copy)
+            copy = os.path.join(d,
+                                os.path.basename(LEGACY_PLACEHOLD_FILE_RPATH))
+            shutil.copy(LEGACY_PLACEHOLD_FILE_RPATH, copy)
 
             macho_add_rpaths_to_file(copy, new_rpaths)
 
