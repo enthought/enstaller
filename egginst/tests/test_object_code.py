@@ -7,8 +7,6 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import os.path as op
-
 import mock
 
 from machotools import rewriter_factory
@@ -19,7 +17,7 @@ from egginst.object_code import find_lib, fix_object_code, get_object_type, mach
 from .common import DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS, \
     LEGACY_PLACEHOLD_FILE, NOLEGACY_RPATH_FILE, MACHO_ARCH_TO_FILE, \
     PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY, \
-    PYTHON_VERSION, mkdtemp
+    mkdtemp
 
 class TestObjectCode(unittest.TestCase):
     def test_get_object_type(self):
