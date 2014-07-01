@@ -157,23 +157,29 @@ def fix_object_code(path):
             f.write(r)
 
 
+def _compute_targets(egg):
+    prefixes = [egg.prefix] if egg.prefix != abspath(sys.prefix) else [sys.prefix]
+
+    targets = []
+    for prefix in prefixes:
+        for line in egg.iter_targets():
+            targets.append(join(prefix, line))
+        targets.append(join(prefix, 'lib'))
+
+    logger.info('Target directories:')
+    for tgt in targets:
+        logger.info('    %r', tgt)
+
+    return targets
+
+
 def fix_files(egg):
     """
     Tries to fix the library path for all object files installed by the egg.
     """
     global _targets
 
-    prefixes = [egg.prefix] if egg.prefix != abspath(sys.prefix) else [sys.prefix]
-
-    _targets = []
-    for prefix in prefixes:
-        for line in egg.iter_targets():
-            _targets.append(join(prefix, line))
-        _targets.append(join(prefix, 'lib'))
-
-    logger.info('Target directories:')
-    for tgt in _targets:
-        logger.info('    %r', tgt)
+    _targets = _compute_targets(egg)
 
     for p in egg.files:
         fix_object_code(p)
