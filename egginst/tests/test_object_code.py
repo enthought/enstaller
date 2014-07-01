@@ -7,12 +7,12 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import mock
-
 from machotools import rewriter_factory
 
 from egginst.main import EggInst
-from egginst.object_code import find_lib, fix_object_code, get_object_type
+from egginst.object_code import (_compute_targets, _find_lib, _fix_object_code,
+                                 get_object_type)
+from egginst import _zipfile
 
 from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
                      LEGACY_PLACEHOLD_FILE_RPATH, NOLEGACY_RPATH_FILE,
@@ -36,11 +36,10 @@ class TestObjectCode(unittest.TestCase):
             copy = os.path.join(d, "foo.dylib")
             shutil.copy(LEGACY_PLACEHOLD_FILE_RPATH, copy)
 
-            with mock.patch("egginst.object_code._targets", [d]):
-                fix_object_code(copy)
-                rpaths = rewriter_factory(copy).rpaths
+            _fix_object_code(copy, [d])
+            rpaths = rewriter_factory(copy).rpaths
 
-                self.assertEqual(rpaths, [d])
+            self.assertEqual(rpaths, [d])
 
     def test_fix_object_code_wo_legacy_macho(self):
         """
@@ -52,11 +51,10 @@ class TestObjectCode(unittest.TestCase):
             copy = os.path.join(d, "foo.dylib")
             shutil.copy(NOLEGACY_RPATH_FILE, copy)
 
-            with mock.patch("egginst.object_code._targets", [d]):
-                fix_object_code(copy)
-                rpaths = rewriter_factory(copy).rpaths
+            _fix_object_code(copy, [d])
+            rpaths = rewriter_factory(copy).rpaths
 
-                self.assertEqual(rpaths, r_rpaths)
+            self.assertEqual(rpaths, r_rpaths)
 
     def test_fix_object_code_with_targets(self):
         """
@@ -76,27 +74,42 @@ class TestObjectCode(unittest.TestCase):
         with mkdtemp() as d:
             installed_pyext_dependency = os.path.join(d, pyext_dependency_dir, os.path.basename(PYEXT_DEPENDENCY))
             installed_pyext_dependency_dir = os.path.dirname(installed_pyext_dependency)
-            with mock.patch("egginst.object_code._targets", [d, installed_pyext_dependency_dir]):
-                installed_pyext = os.path.join(d, os.path.basename(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY))
-                shutil.copy(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, installed_pyext)
+            targets = [d, installed_pyext_dependency_dir]
 
-                os.makedirs(installed_pyext_dependency_dir)
-                shutil.copy(PYEXT_DEPENDENCY, installed_pyext_dependency_dir)
+            installed_pyext = os.path.join(d, os.path.basename(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY))
+            shutil.copy(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, installed_pyext)
 
-                fix_object_code(installed_pyext)
-                deps = set(rewriter_factory(installed_pyext).dependencies)
+            os.makedirs(installed_pyext_dependency_dir)
+            shutil.copy(PYEXT_DEPENDENCY, installed_pyext_dependency_dir)
 
-                self.assertTrue(installed_pyext_dependency in deps)
+            _fix_object_code(installed_pyext, targets)
+            deps = set(rewriter_factory(installed_pyext).dependencies)
+
+            self.assertTrue(installed_pyext_dependency in deps)
 
     @unittest.skipIf(sys.platform=="win32", "This feature is not used on windows.")
     def test_find_lib_with_targets(self):
-        """
-        Test we handle the targets.dat hack correctly in find_lib.
-        """
+        def _compute_target_list(path, d):
+            # FIXME: we need this hack as the internal EggInst zipfile
+            # object is only available within an EggInst.install call.
+            egg_inst = EggInst(path, d)
+            egg_inst.z = zp
+
+            return _compute_targets(egg_inst.iter_targets(), egg_inst.prefix)
+
+        # Given
         with mkdtemp() as d:
-            with mock.patch("egginst.object_code._targets", []):
+            with _zipfile.ZipFile(DUMMY_EGG_WITH_INST_TARGETS) as zp:
                 egg_inst = EggInst(DUMMY_EGG_WITH_INST_TARGETS, d)
                 egg_inst.install()
 
+                targets = _compute_target_list(DUMMY_EGG_WITH_INST_TARGETS, d)
+
                 path = "libfoo.dylib"
-                self.assertEqual(find_lib(path), os.path.join(d, "lib", "foo-4.2", path))
+                r_found_lib = os.path.join(d, "lib", "foo-4.2", path)
+
+                # When
+                found_lib = _find_lib(path, targets)
+
+                # Then
+                self.assertEqual(found_lib, r_found_lib)

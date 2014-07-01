@@ -23,10 +23,6 @@ MAGIC = {
     '\x7fELF': 'ELF',
 }
 
-# list of target direcories where shared object files are found
-_targets = []
-
-
 def get_object_type(path):
     """
     Return the object file type of the specified file (not link).
@@ -39,8 +35,8 @@ def get_object_type(path):
     return MAGIC.get(head)
 
 
-def find_lib(fn):
-    for tgt in _targets:
+def _find_lib(fn, targets):
+    for tgt in targets:
         dst = abspath(join(tgt, fn))
         if exists(dst):
             return dst
@@ -49,7 +45,7 @@ def find_lib(fn):
 
 
 placehold_pat = re.compile(5 * '/PLACEHOLD' + '([^\0\\s]*)\0')
-def fix_object_code(path):
+def _fix_object_code(path, targets):
     tp = get_object_type(path)
     if tp is None:
         return
@@ -69,12 +65,12 @@ def fix_object_code(path):
 
             if tp.startswith('MachO-') and rest.startswith('/'):
                 # If the /PLACEHOLD is found in a LC_LOAD_DYLIB command
-                r = find_lib(rest[1:])
+                r = _find_lib(rest[1:], targets)
             else:
                 # If the /PLACEHOLD is found in a LC_RPATH command (Mach-O) or in
                 # R(UN)PATH on ELF
                 assert rest == '' or rest.startswith(':')
-                rpaths = list(_targets)
+                rpaths = list(targets)
                 # extend the list with rpath which were already in the binary,
                 # if any
                 rpaths.extend(p for p in rest.split(':') if p)
@@ -91,13 +87,16 @@ def fix_object_code(path):
             f.write(r)
 
 
-def _compute_targets(egg):
-    prefixes = [egg.prefix] if egg.prefix != abspath(sys.prefix) else [sys.prefix]
+def _compute_targets(egg_targets, prefix):
+    """
+    Compute the list of target direcories where shared object files are found
+    """
+    prefixes = [prefix] if prefix != abspath(sys.prefix) else [sys.prefix]
 
     targets = []
     for prefix in prefixes:
-        for line in egg.iter_targets():
-            targets.append(join(prefix, line))
+        for target in egg_targets:
+            targets.append(join(prefix, target))
         targets.append(join(prefix, 'lib'))
 
     logger.info('Target directories:')
@@ -107,13 +106,11 @@ def _compute_targets(egg):
     return targets
 
 
-def fix_files(egg):
+def fix_files(files, egg_targets, prefix):
     """
     Tries to fix the library path for all object files installed by the egg.
     """
-    global _targets
+    targets = _compute_targets(egg_targets, prefix)
 
-    _targets = _compute_targets(egg)
-
-    for p in egg.files:
-        fix_object_code(p)
+    for path in files:
+        _fix_object_code(path, targets)
