@@ -9,11 +9,6 @@ from os.path import abspath, join, islink, isfile, exists
 
 logger = logging.getLogger(__name__)
 
-# alt_replace_func is an optional function, which is applied to the
-# replacement string (after the placeholders haven substituted)
-alt_replace_func = None
-
-
 # extensions which are assumed to belong to files which don't contain
 # object code
 NO_OBJ = ('.py', '.pyc', '.pyo', '.h', '.a', '.c', '.txt', '.html', '.xml',
@@ -145,8 +140,6 @@ def fix_object_code(path):
                 r = ':'.join(rpaths)
 
             logger.info("replacing rpath %r with %r", original_r, r)
-            if alt_replace_func is not None:
-                r = alt_replace_func(r)
 
             padding = len(m.group(0)) - len(r)
             if padding < 1: # we need at least one null-character
