@@ -23,6 +23,10 @@ MAGIC = {
     '\x7fELF': 'ELF',
 }
 
+
+PLACEHOLD_PAT = re.compile(5 * '/PLACEHOLD' + '([^\0\\s]*)\0')
+
+
 def get_object_type(path):
     """
     Return the object file type of the specified file (not link).
@@ -44,7 +48,6 @@ def _find_lib(fn, targets):
     return join('/ERROR/path/not/found', fn)
 
 
-placehold_pat = re.compile(5 * '/PLACEHOLD' + '([^\0\\s]*)\0')
 def _fix_object_code(path, targets):
     tp = get_object_type(path)
     if tp is None:
@@ -52,7 +55,7 @@ def _fix_object_code(path, targets):
 
     with open(path, 'r+b') as f:
         data = f.read()
-        matches = list(placehold_pat.finditer(data))
+        matches = list(PLACEHOLD_PAT.finditer(data))
         if not matches:
             return
 

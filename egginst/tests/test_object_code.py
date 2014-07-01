@@ -1,6 +1,7 @@
 import os
 import shutil
 import sys
+import tempfile
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -17,10 +18,15 @@ from egginst import _zipfile
 from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
                      LEGACY_PLACEHOLD_FILE_RPATH, NOLEGACY_RPATH_FILE,
                      MACHO_ARCH_TO_FILE,
-                     PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY,
-                     mkdtemp)
+                     PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY)
 
 class TestObjectCode(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_get_object_type(self):
         self.assertEqual(get_object_type(MACHO_ARCH_TO_FILE["x86"]), "MachO-i386")
         self.assertEqual(get_object_type(MACHO_ARCH_TO_FILE["amd64"]), "MachO-x86_64")
@@ -32,14 +38,13 @@ class TestObjectCode(unittest.TestCase):
         """
         Test that we handle correctly our legacy egg with the /PLACHOLD * 20 hack.
         """
-        with mkdtemp() as d:
-            copy = os.path.join(d, "foo.dylib")
-            shutil.copy(LEGACY_PLACEHOLD_FILE_RPATH, copy)
+        copy = os.path.join(self.prefix, "foo.dylib")
+        shutil.copy(LEGACY_PLACEHOLD_FILE_RPATH, copy)
 
-            _fix_object_code(copy, [d])
-            rpaths = rewriter_factory(copy).rpaths
+        _fix_object_code(copy, [self.prefix])
+        rpaths = rewriter_factory(copy).rpaths
 
-            self.assertEqual(rpaths, [d])
+        self.assertEqual(rpaths, [self.prefix])
 
     def test_fix_object_code_wo_legacy_macho(self):
         """
@@ -47,14 +52,13 @@ class TestObjectCode(unittest.TestCase):
         don't touch them).
         """
         r_rpaths = FILE_TO_RPATHS[NOLEGACY_RPATH_FILE]
-        with mkdtemp() as d:
-            copy = os.path.join(d, "foo.dylib")
-            shutil.copy(NOLEGACY_RPATH_FILE, copy)
+        copy = os.path.join(self.prefix, "foo.dylib")
+        shutil.copy(NOLEGACY_RPATH_FILE, copy)
 
-            _fix_object_code(copy, [d])
-            rpaths = rewriter_factory(copy).rpaths
+        _fix_object_code(copy, self.prefix)
+        rpaths = rewriter_factory(copy).rpaths
 
-            self.assertEqual(rpaths, r_rpaths)
+        self.assertEqual(rpaths, r_rpaths)
 
     def test_fix_object_code_with_targets(self):
         """
@@ -71,21 +75,23 @@ class TestObjectCode(unittest.TestCase):
         # targets.dat hack by patching object_code._targets with mock
         pyext_dependency_dir = os.path.join("lib", "foo-4.2")
 
-        with mkdtemp() as d:
-            installed_pyext_dependency = os.path.join(d, pyext_dependency_dir, os.path.basename(PYEXT_DEPENDENCY))
-            installed_pyext_dependency_dir = os.path.dirname(installed_pyext_dependency)
-            targets = [d, installed_pyext_dependency_dir]
+        installed_pyext_dependency = os.path.join(self.prefix,
+                                                  pyext_dependency_dir,
+                                                  os.path.basename(PYEXT_DEPENDENCY))
+        installed_pyext_dependency_dir = os.path.dirname(installed_pyext_dependency)
+        targets = [self.prefix, installed_pyext_dependency_dir]
 
-            installed_pyext = os.path.join(d, os.path.basename(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY))
-            shutil.copy(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, installed_pyext)
+        installed_pyext = os.path.join(self.prefix,
+                                       os.path.basename(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY))
+        shutil.copy(PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, installed_pyext)
 
-            os.makedirs(installed_pyext_dependency_dir)
-            shutil.copy(PYEXT_DEPENDENCY, installed_pyext_dependency_dir)
+        os.makedirs(installed_pyext_dependency_dir)
+        shutil.copy(PYEXT_DEPENDENCY, installed_pyext_dependency_dir)
 
-            _fix_object_code(installed_pyext, targets)
-            deps = set(rewriter_factory(installed_pyext).dependencies)
+        _fix_object_code(installed_pyext, targets)
+        deps = set(rewriter_factory(installed_pyext).dependencies)
 
-            self.assertTrue(installed_pyext_dependency in deps)
+        self.assertTrue(installed_pyext_dependency in deps)
 
     @unittest.skipIf(sys.platform=="win32", "This feature is not used on windows.")
     def test_find_lib_with_targets(self):
@@ -98,18 +104,17 @@ class TestObjectCode(unittest.TestCase):
             return _compute_targets(egg_inst.iter_targets(), egg_inst.prefix)
 
         # Given
-        with mkdtemp() as d:
-            with _zipfile.ZipFile(DUMMY_EGG_WITH_INST_TARGETS) as zp:
-                egg_inst = EggInst(DUMMY_EGG_WITH_INST_TARGETS, d)
-                egg_inst.install()
+        with _zipfile.ZipFile(DUMMY_EGG_WITH_INST_TARGETS) as zp:
+            egg_inst = EggInst(DUMMY_EGG_WITH_INST_TARGETS, self.prefix)
+            egg_inst.install()
 
-                targets = _compute_target_list(DUMMY_EGG_WITH_INST_TARGETS, d)
+            targets = _compute_target_list(DUMMY_EGG_WITH_INST_TARGETS, self.prefix)
 
-                path = "libfoo.dylib"
-                r_found_lib = os.path.join(d, "lib", "foo-4.2", path)
+            path = "libfoo.dylib"
+            r_found_lib = os.path.join(self.prefix, "lib", "foo-4.2", path)
 
-                # When
-                found_lib = _find_lib(path, targets)
+            # When
+            found_lib = _find_lib(path, targets)
 
-                # Then
-                self.assertEqual(found_lib, r_found_lib)
+            # Then
+            self.assertEqual(found_lib, r_found_lib)
