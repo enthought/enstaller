@@ -48,65 +48,6 @@ def find_lib(fn):
     return join('/ERROR/path/not/found', fn)
 
 
-def macho_path_as_data(path, pad_to=4):
-    """ Encode a path as data for a MachO header.
-
-    Namely, this will encode the text according to the filesystem
-    encoding and zero-pad the result out to 4 bytes.
-    """
-    from egginst.macho.util import fsencoding
-    path = fsencoding(path) + b'\x00'
-    rem = len(path) % pad_to
-    if rem > 0:
-        path += b'\x00' * (pad_to - rem)
-    return path
-
-def macho_add_rpath_to_header(header, rpath):
-    """ Add an LC_RPATH load command to a MachOHeader.
-    """
-    from egginst.macho import mach_o
-    from egginst.macho.ptypes import sizeof
-    if header.header.magic in (mach_o.MH_MAGIC, mach_o.MH_CIGAM):
-        pad_to = 4
-    else:
-        pad_to = 8
-    data = macho_path_as_data(rpath, pad_to=pad_to)
-    header_size = sizeof(mach_o.load_command) + sizeof(mach_o.rpath_command)
-    command_size = header_size + len(data)
-    cmd = mach_o.rpath_command(header_size, _endian_=header.endian)
-    lc = mach_o.load_command(mach_o.LC_RPATH, command_size,
-        _endian_=header.endian)
-    header.commands.append((lc, cmd, data))
-    header.header.ncmds += 1
-    header.changedHeaderSizeBy(command_size)
-
-def macho_delete_placehold(header):
-    """ Remove LC_RPATH commands that refer to /PLACEHOLD.
-    """
-    from egginst.macho import mach_o
-    to_delete = []
-    for lc, cmd, data in header.commands:
-        if lc.cmd == mach_o.LC_RPATH and data.startswith('/PLACEHOLD'):
-            to_delete.append((lc, cmd, data))
-    for l_c_d in to_delete:
-        header.commands.remove(l_c_d)
-        header.header.ncmds -= 1
-        header.changedHeaderSizeBy(-l_c_d[0].cmdsize)
-
-def macho_add_rpaths_to_file(filename, rpaths):
-    """ Add LC_RPATH load commands to all headers in a MachO file.
-    """
-    from egginst.macho import MachO
-    macho = MachO.MachO(filename)
-    for header in macho.headers:
-        macho_delete_placehold(header)
-        for rpath in rpaths:
-            macho_add_rpath_to_header(header, rpath)
-    with open(filename, 'rb+') as f:
-        for header in macho.headers:
-            f.seek(0)
-            header.write(f)
-
 placehold_pat = re.compile(5 * '/PLACEHOLD' + '([^\0\\s]*)\0')
 def fix_object_code(path):
     tp = get_object_type(path)
