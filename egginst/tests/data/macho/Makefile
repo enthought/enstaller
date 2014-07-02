@@ -4,7 +4,10 @@ foo_rpath.dylib: src/foo.c
 	$(CC) $< -o $@ -shared -install_name $@
 	install_name_tool -add_rpath @loader_path/../lib $@
 
-foo_legacy_placehold.dylib: src/foo.c
+foo_legacy_placehold_lc_dylib.dylib: src/foo.c libfoo.dylib
+	$(CC) $< -o $@ -shared -install_name $@ -L . -lfoo
+
+foo_legacy_placehold_lc_rpath.dylib: src/foo.c
 	$(CC) $< -o $@ -shared -install_name $@
 	install_name_tool -add_rpath /PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD/PLACEHOLD $@
 

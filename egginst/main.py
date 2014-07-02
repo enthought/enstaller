@@ -340,7 +340,8 @@ class EggInst(object):
                 scripts.create_proxies(self)
             else:
                 from . import object_code
-                object_code.fix_files(self)
+                object_code.fix_files(self.files, list(self.iter_targets()),
+                                      self.prefix)
 
                 self._create_links()
 
