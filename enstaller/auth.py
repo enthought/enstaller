@@ -4,7 +4,7 @@ import urllib2
 import urlparse
 
 from enstaller.errors import (AuthFailedError, ConnectionError,
-                              EnstallerException, InvalidConfiguration)
+                              EnstallerException)
 
 
 _INDEX_NAME = "index.json"
