@@ -10,9 +10,9 @@ enpkg or Canopy's package manager instead to deal with dependencies correctly.
 """
 from __future__ import absolute_import, print_function
 
+from ._compat import configparser, StringIO
+
 import argparse
-import ConfigParser
-import cStringIO
 import json
 import logging
 import os
@@ -378,8 +378,8 @@ class EggInst(object):
                                              ignore_empty=False))
         if lines == []:
             return
-        conf = ConfigParser.ConfigParser()
-        conf.readfp(cStringIO.StringIO('\n'.join(lines) + '\n'))
+        conf = configparser.ConfigParser()
+        conf.readfp(StringIO('\n'.join(lines) + '\n'))
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
             logger.debug('creating scripts')
@@ -403,7 +403,7 @@ class EggInst(object):
 
     def _lines_from_arcname(self, arcname, ignore_empty=True):
         if zip_has_arcname(self.z, arcname):
-            for line in self.z.read(arcname).splitlines():
+            for line in self.z.read(arcname).decode("utf8").splitlines():
                 line = line.strip()
                 if ignore_empty and line == '':
                     continue
@@ -555,7 +555,8 @@ class EggInst(object):
 def read_meta(meta_dir):
     meta_json = join(meta_dir, 'egginst.json')
     if isfile(meta_json):
-        return json.load(open(meta_json))
+        with open(meta_json) as fp:
+            return json.load(fp)
     return None
 
 

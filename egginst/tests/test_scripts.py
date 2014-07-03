@@ -1,18 +1,14 @@
-import ConfigParser
+from egginst._compat import configparser, TestCase, StringIO
+
 import hashlib
 import os.path
-import StringIO
 import sys
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 import mock
 
 from egginst import exe_data
 
+from egginst._compat import text_type
 from egginst.main import EggInst
 from egginst.scripts import create, create_proxies, fix_script, get_executable
 from egginst.utils import compute_md5
@@ -23,7 +19,7 @@ from .common import mkdtemp
 DUMMY_EGG_WITH_PROXY = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy-1.3.40-3.egg")
 DUMMY_EGG_WITH_PROXY_SCRIPTS = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy_scripts-1.0.0-1.egg")
 
-class TestScripts(unittest.TestCase):
+class TestScripts(TestCase):
     def test_get_executable(self):
         # FIXME: EggInst init overwrite egginst.scripts.executable. Need to
         # mock this until we remove that insanity
@@ -46,7 +42,7 @@ class TestScripts(unittest.TestCase):
                 executable = get_executable(pythonw=True)
                 self.assertEqual(executable, "pythonw.exe")
 
-class TestFixScript(unittest.TestCase):
+class TestFixScript(TestCase):
     def test_egginst_script_untouched(self):
         """
         Ensure we don't touch a script which has already been written by
@@ -122,7 +118,7 @@ if __name__ == '__main__':
 def escape_win32_path(p):
     return p.replace("\\", "\\\\")
 
-class TestCreateScript(unittest.TestCase):
+class TestCreateScript(TestCase):
     @mock.patch("egginst.utils.on_win", False)
     def test_simple(self):
         if sys.platform == "win32":
@@ -149,8 +145,8 @@ dummy = dummy:main_cli
 [gui_scripts]
 dummy-gui = dummy:main_gui
 """
-        s = StringIO.StringIO(entry_points)
-        config = ConfigParser.ConfigParser()
+        s = StringIO(entry_points)
+        config = configparser.ConfigParser()
         config.readfp(s)
 
         with mkdtemp() as d:
@@ -206,8 +202,8 @@ dummy = dummy:main_cli
 [gui_scripts]
 dummy-gui = dummy:main_gui
 """
-        s = StringIO.StringIO(entry_points)
-        config = ConfigParser.ConfigParser()
+        s = StringIO(entry_points)
+        config = configparser.ConfigParser()
         config.readfp(s)
 
         with mock.patch("sys.executable", python_executable):
@@ -238,7 +234,7 @@ dummy-gui = dummy:main_gui
                 self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
                                  hashlib.md5(exe_data.gui).hexdigest())
 
-class TestProxy(unittest.TestCase):
+class TestProxy(TestCase):
     @mock.patch("sys.platform", "win32")
     @mock.patch("egginst.main.bin_dir_name", "Scripts")
     @mock.patch("egginst.utils.on_win", True)
@@ -247,13 +243,13 @@ class TestProxy(unittest.TestCase):
         Test we handle correctly entries of the form 'path PROXY'.
         """
         r_python_proxy_data_template = """\
-#!"{executable}"
+#!"%(executable)s"
 # This proxy was created by egginst from an egg with special instructions
 #
 import sys
 import subprocess
 
-src = '{src}'
+src = %(src)r
 
 sys.exit(subprocess.call([src] + sys.argv[1:]))
 """
@@ -261,9 +257,9 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
         with mkdtemp() as prefix:
             with mock.patch("sys.executable", os.path.join(prefix, "python.exe")):
                 proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
-                r_python_proxy_data = r_python_proxy_data_template.format(
-                        executable=os.path.join(prefix, "python.exe"),
-                        src=escape_win32_path(proxy_path))
+                r_python_proxy_data = r_python_proxy_data_template % \
+                        {'executable': os.path.join(prefix, "python.exe"),
+                         'src': text_type(escape_win32_path(proxy_path))}
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:

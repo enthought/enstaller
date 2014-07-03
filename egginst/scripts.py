@@ -6,6 +6,7 @@ import sys
 import re
 from os.path import abspath, basename, join, isdir, isfile, islink
 
+from egginst.exe_data import cli, gui
 from egginst.utils import on_win, rm_rf
 
 
@@ -41,9 +42,9 @@ def write_exe(dst, script_type='console_scripts'):
     fo.close()
     """
     if script_type == 'console_scripts':
-        from exe_data import cli as data
+        data = cli
     elif script_type == 'gui_scripts':
-        from exe_data import gui as data
+        data = gui
     else:
         raise Exception("Did not except script_type=%r" % script_type)
 

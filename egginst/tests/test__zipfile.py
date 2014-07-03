@@ -9,7 +9,7 @@ else:
 from egginst.utils import compute_md5, ensure_dir
 from egginst.tests.common import (NOSE_1_3_0, SUPPORT_SYMLINK,
     VTK_EGG_DEFERRED_SOFTLINK, ZIP_WITH_SOFTLINK, mkdtemp)
-from egginst._compat import StringIO
+from egginst._compat import BytesIO
 from egginst._zipfile import ZipFile
 
 
@@ -71,7 +71,7 @@ class TestZipFile(unittest.TestCase):
                 extracted_data = zp.read(arcname)
             self.assertTrue(os.path.exists(os.path.join(d, "FOO")))
             self.assertEqual(compute_md5(os.path.join(d, "FOO")),
-                             compute_md5(StringIO(extracted_data)))
+                             compute_md5(BytesIO(extracted_data)))
             self.assertFalse(os.path.exists(os.path.join(d, "EGG-INFO",
                                                          "PKG-INFO")))
 

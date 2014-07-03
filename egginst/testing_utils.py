@@ -1,6 +1,6 @@
 from __future__ import print_function
 
-from ._compat import http_client
+from egginst._compat import http_client
 
 import contextlib
 import functools

@@ -1,9 +1,10 @@
 from __future__ import print_function
 
+from ._compat import StringIO
+
 import json
 import time
 
-from cStringIO import StringIO
 from os.path import join
 
 from egginst._zipfile import ZipFile
@@ -27,11 +28,11 @@ def info_from_z(z):
 
     arcname = 'EGG-INFO/spec/depend'
     if arcname in z.namelist():
-        res.update(parse_rawspec(z.read(arcname)))
+        res.update(parse_rawspec(z.read(arcname).decode("utf8")))
 
     arcname = 'EGG-INFO/info.json'
     if arcname in z.namelist():
-        res.update(json.loads(z.read(arcname)))
+        res.update(json.loads(z.read(arcname).decode("utf8")))
 
     res['name'] = res['name'].lower().replace('-', '_')
     return res
