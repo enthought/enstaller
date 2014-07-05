@@ -29,7 +29,7 @@ class TestURLFetcher(unittest.TestCase):
 
     def test_proxy_simple(self):
         # Given
-        proxies = [ProxyInfo.from_string("http://acme.com")]
+        proxies = {"http": str(ProxyInfo.from_string("http://acme.com"))}
 
         # When
         fetcher = URLFetcher(self.prefix, proxies=proxies)
@@ -39,8 +39,8 @@ class TestURLFetcher(unittest.TestCase):
 
     def test_proxies(self):
         # Given
-        proxies = [ProxyInfo.from_string("http://acme.com"),
-                   ProxyInfo.from_string("https://acme.com:3129")]
+        proxies = {"http": str(ProxyInfo.from_string("http://acme.com")),
+                   "https": str(ProxyInfo.from_string("https://acme.com:3129"))}
 
         # When
         fetcher = URLFetcher(self.prefix, proxies=proxies)
