@@ -701,14 +701,13 @@ def main(argv=None):
 
     user = ensure_authenticated_config(config, config_filename)
 
-    proxies = [config.proxy] if config.proxy else []
-
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               proxies)
+                               config.proxy_dict)
     index_fetcher._enable_etag_support()
     repository = repository_factory(index_fetcher, config)
 
-    fetcher = URLFetcher(config.repository_cache, config.auth, proxies)
+    fetcher = URLFetcher(config.repository_cache, config.auth,
+                         config.proxy_dict)
     downloader = DownloadManager(fetcher, repository)
 
     enpkg = Enpkg(repository, downloader, prefixes,

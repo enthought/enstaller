@@ -70,11 +70,7 @@ class URLFetcher(object):
         self._auth = auth
         self.cache_dir= cache_dir
 
-        if proxies:
-            self._proxies = dict((proxy_info.scheme, str(proxy_info)) for
-                                 proxy_info in proxies)
-        else:
-            self._proxies = {}
+        self._proxies = proxies or {}
 
         session = requests.Session()
         session.mount("file://", LocalFileAdapter())
