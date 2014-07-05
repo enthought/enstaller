@@ -86,14 +86,15 @@ def authenticate(configuration):
 
     if configuration.use_webservice:
         # check credentials using web API
-        user = _web_auth(auth, configuration.api_url)
+        user = _web_auth(auth, configuration.api_url, configuration.proxy_dict)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         for index_url, __ in configuration.indices:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = requests.head(index_url, auth=auth)
+                resp = requests.head(index_url, auth=auth,
+                                     proxies=configuration.proxy_dict)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
@@ -144,19 +145,20 @@ def subscription_message(config, user):
     return message
 
 
-def _web_auth(auth, api_url):
+def _web_auth(auth, api_url, proxies=None):
     """
     Authenticate a user's credentials (an `auth` tuple of username, password)
     using the web API.
     """
+    if proxies is None:
+        proxies = {}
     # Make basic local checks
     username, password = auth
     if username is None or password is None:
         raise AuthFailedError("Authentication error: User login is required.")
 
-    # Authenticate with the web API
     try:
-        resp = requests.get(api_url, auth=auth)
+        resp = requests.get(api_url, auth=auth, proxies=proxies)
     except requests.exceptions.ConnectionError as e:
         msg = "could not connect to {0!r} when authenticating".format(api_url)
         raise AuthFailedError(msg)
