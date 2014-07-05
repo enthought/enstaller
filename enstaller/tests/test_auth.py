@@ -1,7 +1,6 @@
 import json
 import os.path
 import shutil
-import socket
 import sys
 import tempfile
 
@@ -10,16 +9,14 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-from cStringIO import StringIO
-
-from mock import MagicMock, patch
+from mock import patch
 
 import enstaller.config
 
 from enstaller.auth import _web_auth, DUMMY_USER, UserInfo, authenticate
 from enstaller.config import Configuration, write_default_config
-from enstaller.errors import (AuthFailedError, ConnectionError,
-                              EnstallerException, InvalidConfiguration)
+from enstaller.errors import (AuthFailedError, EnstallerException,
+                              InvalidConfiguration)
 from enstaller.tests.common import fake_keyring
 from enstaller.vendor import requests, responses
 
