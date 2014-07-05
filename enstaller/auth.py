@@ -1,10 +1,8 @@
 import json
-import socket
-import urllib2
 import urlparse
 
-from enstaller.errors import (AuthFailedError, ConnectionError,
-                              EnstallerException, InvalidConfiguration)
+from enstaller.errors import AuthFailedError, EnstallerException
+from enstaller.vendor import requests
 
 
 _INDEX_NAME = "index.json"
@@ -88,25 +86,25 @@ def authenticate(configuration):
 
     if configuration.use_webservice:
         # check credentials using web API
-        user = _web_auth(auth, configuration.api_url)
+        user = _web_auth(auth, configuration.api_url, configuration.proxy_dict)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         for index_url, __ in configuration.indices:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
+                resp = requests.head(index_url, auth=auth,
+                                     proxies=configuration.proxy_dict)
                 try:
-                    _head_request(index_url, auth)
-                except urllib2.HTTPError as e:
-                    http_code = e.getcode()
-                    # Python 2.6 compat: HTTPError.reason not available there
-                    reason = getattr(e, "reason", "Unkown")
+                    resp.raise_for_status()
+                except requests.exceptions.HTTPError as e:
+                    http_code = resp.status_code
                     if http_code in (401, 403):
-                        msg = "Authentication error: {0!r}".format(reason)
+                        msg = "Authentication error: {0!r}".format(e.message)
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
-                              format(index_url, e.msg)
+                              format(index_url, e.message)
                         raise AuthFailedError(msg)
                     else:
                         raise
@@ -147,50 +145,32 @@ def subscription_message(config, user):
     return message
 
 
-def _web_auth(auth, api_url):
+def _web_auth(auth, api_url, proxies=None):
     """
     Authenticate a user's credentials (an `auth` tuple of username, password)
     using the web API.
     """
+    if proxies is None:
+        proxies = {}
     # Make basic local checks
     username, password = auth
     if username is None or password is None:
         raise AuthFailedError("Authentication error: User login is required.")
 
-    # Authenticate with the web API
-    auth = 'Basic ' + (':'.join(auth).encode('base64').strip())
-    req = urllib2.Request(api_url, headers={'Authorization': auth})
-
     try:
-        f = urllib2.urlopen(req)
-    except urllib2.URLError as e:
-        if isinstance(e.reason, socket.gaierror):
-            msg = "could not connect to {0!r}".format(api_url)
-            raise ConnectionError(msg)
-        else:
-            msg = e.reason
-            raise AuthFailedError("Authentication error ({0!r})".format(msg))
-
-    try:
-        res = f.read()
-    except urllib2.HTTPError as e:
-        raise AuthFailedError("Authentication error: %s" % e.reason)
-
-    # See if web API refused to authenticate
-    user = UserInfo.from_json_string(res)
-    if not user.is_authenticated:
-        raise AuthFailedError('Authentication error: Invalid user login.')
-
-    return user
-
-
-def _head_request(url, auth=None):
-    if auth:
-        auth = 'Basic ' + (':'.join(auth).encode('base64').strip())
-        request = urllib2.Request(url)
-        request.add_unredirected_header("Authorization", auth)
+        resp = requests.get(api_url, auth=auth, proxies=proxies)
+    except requests.exceptions.ConnectionError as e:
+        msg = "could not connect to {0!r} when authenticating".format(api_url)
+        raise AuthFailedError(msg)
     else:
-        request = urllib2.Request(url)
-    request.get_method = lambda: 'HEAD'
-
-    return urllib2.urlopen(request)
+        try:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise AuthFailedError("Authentication error: %r" % str(e))
+        else:
+            # See if web API refused to authenticate
+            user = UserInfo.from_json_string(resp.content)
+            if not user.is_authenticated:
+                msg = 'Authentication error: Invalid user login.'
+                raise AuthFailedError(msg)
+            return user

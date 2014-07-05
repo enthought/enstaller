@@ -115,6 +115,7 @@ class TestWriteConfig(unittest.TestCase):
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
+        self.assertEqual(config.proxy_dict, {})
         self.assertEqual(config.use_webservice, True)
         self.assertEqual(config.webservice_entry_point,
                          "https://api.enthought.com/eggs/{0}/".format(custom_plat))
@@ -131,6 +132,7 @@ class TestWriteConfig(unittest.TestCase):
 
         config = Configuration.from_file(self.f)
         self.assertEqual(str(config.proxy), proxystr)
+        self.assertEqual(config.proxy_dict, {"http": proxystr})
 
     def test_add_url(self):
         # Given

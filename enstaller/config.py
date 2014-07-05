@@ -442,6 +442,17 @@ class Configuration(object):
         return self._proxy
 
     @property
+    def proxy_dict(self):
+        """
+        A dictionary <scheme>:<proxy_string> that can be used as the proxies
+        argument for requests.
+        """
+        if self._proxy:
+            return {self._proxy.scheme: str(self._proxy)}
+        else:
+            return {}
+
+    @property
     def auth(self):
         return (self._username, self._password)
 
