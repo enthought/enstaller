@@ -17,4 +17,4 @@ def console_progress_manager_factory(message, filename, size, steps=None):
     bar_template += "%(label)s [%(bar)s] %(info)s"
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
-                       fill_char=".", show_percent=False)
+                       fill_char=".", show_percent=False, show_eta=False)
