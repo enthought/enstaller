@@ -11,8 +11,8 @@ install:
    - pip install coveralls
    - python setup.py develop
 script:
-   - coverage run --source=enstaller,egginst -a -m nose.core enstaller egginst
-   - coverage run --source=enstaller,egginst -a -m nose.core tests/functional
+   - coverage run --source=enstaller,egginst -a -m haas enstaller egginst
+   - coverage run --source=enstaller,egginst -a -m haas tests/functional
 after_success:
     coveralls
 notifications:
