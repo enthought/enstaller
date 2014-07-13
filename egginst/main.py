@@ -379,7 +379,13 @@ class EggInst(object):
         if lines == []:
             return
         conf = configparser.ConfigParser()
-        conf.readfp(StringIO('\n'.join(lines) + '\n'))
+        data = u'\n'.join(lines) + '\n'
+        # XXX: hack to workaround 2.6-specific bug with ConfigParser and
+        # unicode.
+        if sys.version_info < (2, 7):
+            conf.readfp(StringIO(data.encode("utf8")))
+        else:
+            conf.readfp(StringIO(data))
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
             logger.debug('creating scripts')

@@ -1,5 +1,7 @@
 from __future__ import print_function
 
+import sys
+
 from ._compat import StringIO
 
 import json
@@ -15,7 +17,12 @@ from egginst.utils import parse_assignments
 APPINST_PATH = join("inst", "appinst.dat")
 
 def parse_rawspec(data):
-    spec = parse_assignments(StringIO(data))
+    # XXX: hack to workaround 2.6-specific bug with ast-parser and
+    # unicode.
+    if sys.version_info < (2, 7):
+        spec = parse_assignments(StringIO(data.encode("utf8")))
+    else:
+        spec = parse_assignments(StringIO(data))
     res = {}
     for k in ('name', 'version', 'build',
               'arch', 'platform', 'osdist', 'python', 'packages'):
