@@ -71,7 +71,7 @@ class TestCheckedContent(unittest.TestCase):
         # When/Then
         with self.assertRaises(InvalidChecksum):
             with checked_content(path, checksum) as fp:
-                fp.write("")
+                fp.write(b"")
 
     def test_abort(self):
         # Given

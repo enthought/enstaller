@@ -1,5 +1,6 @@
 import json
-import urlparse
+
+from egginst._compat import urlparse
 
 from enstaller.errors import AuthFailedError, EnstallerException
 from enstaller.vendor import requests
@@ -100,14 +101,14 @@ def authenticate(configuration):
                 except requests.exceptions.HTTPError as e:
                     http_code = resp.status_code
                     if http_code in (401, 403):
-                        msg = "Authentication error: {0!r}".format(e.message)
+                        msg = "Authentication error: {0!r}".format(str(e))
                         raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
-                              format(index_url, e.message)
+                              format(index_url, str(e))
                         raise AuthFailedError(msg)
                     else:
-                        raise
+                        raise AuthFailedError(str(e))
         user = UserInfo(is_authenticated=True)
 
     return user
@@ -169,7 +170,7 @@ def _web_auth(auth, api_url, proxies=None):
             raise AuthFailedError("Authentication error: %r" % str(e))
         else:
             # See if web API refused to authenticate
-            user = UserInfo.from_json_string(resp.content)
+            user = UserInfo.from_json_string(resp.content.decode("utf8"))
             if not user.is_authenticated:
                 msg = 'Authentication error: Invalid user login.'
                 raise AuthFailedError(msg)

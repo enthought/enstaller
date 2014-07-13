@@ -1,15 +1,17 @@
 from __future__ import print_function
 
+from egginst._compat import urlparse
+from egginst._compat import input, pathname2url, unquote, url2pathname
+
 import sys
 
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 
-import urllib
-import urlparse
-
 from egginst.utils import compute_md5
 
-from verlib import NormalizedVersion, IrrationalVersionError
+from enstaller.verlib import NormalizedVersion, IrrationalVersionError
+from enstaller import plat
+
 
 
 PY_VER = '%i.%i' % sys.version_info[:2]
@@ -117,8 +119,6 @@ def cleanup_url(url):
 
 
 def fill_url(url):
-    import plat
-
     url = url.replace('{ARCH}', plat.arch)
     url = url.replace('{SUBDIR}', plat.subdir)
     url = url.replace('{PLATFORM}', plat.custom_plat)
@@ -156,7 +156,7 @@ def path_to_uri(path):
     It produces URI that are recognized by the windows
     shell API on windows, e.g. 'C:\\foo.txt' will be
     'file:///C:/foo.txt'"""
-    return urlparse.urljoin("file:", urllib.pathname2url(path))
+    return urlparse.urljoin("file:", pathname2url(path))
 
 def uri_to_path(uri):
     """Convert a valid file uri scheme string to a native
@@ -168,11 +168,11 @@ def uri_to_path(uri):
     on windows instead of C:\\foo.txt)."""
     urlpart = urlparse.urlparse(uri)
     if urlpart.scheme == "file":
-        unquoted = urllib.unquote(uri)
+        unquoted = unquote(uri)
         path = unquoted[len("file://"):]
         if sys.platform == "win32" and path.startswith("/"):
             path = path[1:]
-        return urllib.url2pathname(path)
+        return url2pathname(path)
     else:
         raise ValueError("Invalid file uri: {0}".format(uri))
 
@@ -206,5 +206,5 @@ def prompt_yes_no(message, force_yes=False):
         print(message)
         return True
     else:
-        yn = raw_input(message)
+        yn = input(message)
         return yn.lower() in set(['y', 'yes'])

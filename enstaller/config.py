@@ -15,13 +15,15 @@ import warnings
 from getpass import getpass
 from os.path import isfile, join
 
+from egginst._compat import input, string_types
 from egginst.utils import parse_assignments
 
 from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import _INDEX_NAME, DUMMY_USER, authenticate, subscription_message
+from enstaller.auth import (_INDEX_NAME, DUMMY_USER, authenticate,
+                            subscription_message)
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
@@ -166,16 +168,20 @@ IndexedRepos = [
 
 
 def _decode_auth(s):
-    parts = base64.decodestring(s).split(":")
+    parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
     if len(parts) == 2:
         return tuple(parts)
     else:
         raise InvalidConfiguration("Invalid auth line")
 
 
+def _encode_string_base64(s):
+    return base64.encodestring(s.encode("utf8")).decode("utf8")
+
+
 def _encode_auth(username, password):
     s = "{0}:{1}".format(username, password)
-    return base64.encodestring(s).rstrip()
+    return _encode_string_base64(s).rstrip()
 
 
 def write_default_config(filename):
@@ -331,7 +337,7 @@ class Configuration(object):
                 msg = _create_error_message(fp, e)
                 raise InvalidConfiguration(msg)
 
-            for k, v in parsed.iteritems():
+            for k, v in parsed.items():
                 if k in translator:
                     translator[k](v)
                 else:
@@ -339,7 +345,7 @@ class Configuration(object):
                                   "ignored".format(k))
             return ret
 
-        if isinstance(filename, basestring):
+        if isinstance(filename, string_types):
             with open(filename, "r") as fp:
                 ret = _create(fp)
                 ret._filename = filename
@@ -524,7 +530,7 @@ class Configuration(object):
                 fo.write(data)
             return
 
-        authline = 'EPD_auth = %r' % self.encoded_auth
+        authline = 'EPD_auth = \'%s\'' % self.encoded_auth
 
         if pat.search(data):
             data = pat.sub(authline, data)
@@ -657,7 +663,7 @@ def input_auth():
     print(textwrap.dedent("""\
         Please enter the email address and password for your Canopy / EPD
         subscription.  """))
-    username = raw_input('Email (or username): ').strip()
+    username = input('Email (or username): ').strip()
     if not username:
         return None, None
     return username, getpass('Password: ')

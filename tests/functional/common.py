@@ -5,6 +5,8 @@ import tempfile
 
 import mock
 
+from egginst._compat import PY2
+
 from enstaller.config import Configuration
 from enstaller.repository import Repository
 from enstaller.plat import custom_plat
@@ -143,5 +145,8 @@ def remote_enstaller_available(versions):
     return dec
 
 def raw_input_always_yes(f):
-    wrap = mock.patch("__builtin__.raw_input", lambda ignored: "y")
+    if PY2:
+        wrap = mock.patch("__builtin__.raw_input", lambda ignored: "y")
+    else:
+        wrap = mock.patch("builtins.input", lambda ignored: "y")
     return wrap(f)

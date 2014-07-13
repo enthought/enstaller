@@ -1,11 +1,12 @@
+from egginst._compat import urlparse
+
 import collections
 import operator
 import os
 import os.path
 import sys
-import urllib
-import urlparse
 
+from egginst._compat import pathname2url
 from egginst.eggmeta import info_from_z
 from egginst._zipfile import ZipFile
 
@@ -97,7 +98,7 @@ class RepositoryPackageMetadata(PackageMetadata):
             metadata = info_from_z(zp)
 
         if len(store_location) == 0:
-            store_location = urllib.pathname2url(os.path.dirname(path)) + "/"
+            store_location = pathname2url(os.path.dirname(path)) + "/"
             store_location = urlparse.urljoin("file:/", store_location)
 
         if not store_location.endswith("/"):
@@ -418,7 +419,7 @@ class Repository(object):
         packages : iterable
             Iterable of RepositoryPackageMetadata-like.
         """
-        for packages_set in self._name_to_packages.itervalues():
+        for packages_set in self._name_to_packages.values():
             for package in packages_set:
                 yield package
 

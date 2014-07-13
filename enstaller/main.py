@@ -17,15 +17,14 @@ import os
 import posixpath
 import re
 import site
-import string
 import sys
 import textwrap
-import urlparse
 import warnings
 
 from argparse import ArgumentParser
 from os.path import isfile
 
+from egginst._compat import urlparse
 from egginst.progress import console_progress_manager_factory
 from enstaller._version import is_released as IS_RELEASED
 
@@ -133,7 +132,7 @@ def imports_option(repository):
     print(60 * "=")
 
     names = set(package.name for package in repository.iter_packages())
-    for name in sorted(names, key=string.lower):
+    for name in sorted(names, key=lambda s: s.lower()):
         packages = repository.find_packages(name)
         info = packages[0]._compat_dict
         loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
@@ -160,7 +159,7 @@ def search(enpkg, remote_repository, installed_repository, config, user,
     for package in installed_repository.iter_packages():
         installed[package.name] = VB_FMT % package._compat_dict
 
-    for name in sorted(names, key=string.lower):
+    for name in sorted(names, key=lambda s: s.lower()):
         if pat and not pat.search(name):
             continue
         disp_name = names[name]
@@ -421,7 +420,7 @@ def get_config_filename(use_sys_config):
 
 def _invalid_authentication_message(auth_url, username, original_error_string):
     msg = textwrap.dedent("""\
-        Could not authenticate with user {0!r} against {1!r}. Please check
+        Could not authenticate with user '{0}' against {1!r}. Please check
         your credentials/configuration and try again (original error is:
         {2!r}).
         """.format(username, auth_url, original_error_string))
@@ -818,7 +817,7 @@ def main(argv=None):
             try:
                 enpkg.execute(enpkg._solver.remove_actions(req))
             except EnpkgError as e:
-                print(e.message)
+                print(str(e))
         else:
             install_req(enpkg, config, req, args)
 

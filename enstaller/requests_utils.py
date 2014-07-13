@@ -5,10 +5,11 @@ import base64
 import logging
 import os
 import sqlite3
-import urlparse
 
 from io import FileIO
-from cPickle import loads, dumps, HIGHEST_PROTOCOL
+
+from egginst._compat import pickle, urlparse
+from egginst._compat import buffer
 
 from enstaller.utils import uri_to_path
 from enstaller.vendor import requests, sqlite_cache
@@ -92,8 +93,10 @@ class _ResponseIterator(object):
         self._iter = self._response.iter_content(self._chunk_size)
         return self
 
-    def next(self):
-        return self._iter.next()
+    def __next__(self):
+        return next(self._iter)
+
+    next = __next__
 
     def __len__(self):
         return int(self._size / self._chunk_size + 1)
@@ -125,14 +128,14 @@ class DBCache(BaseCache):
             self._cache = _NullCache()
 
     def _encode_key(self, key):
-        return base64.b64encode(key)
+        return base64.b64encode(key.encode("utf8")).decode("utf8")
 
     def _encode_value(self, value):
-        data = dumps(value, protocol=HIGHEST_PROTOCOL)
+        data = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
         return buffer(data)
 
     def _decode_value(self, encoded_value):
-        return loads(str(encoded_value))
+        return pickle.loads(bytes(encoded_value))
 
     def get(self, key):
         try:

@@ -135,7 +135,7 @@ class TestDownloadManager(unittest.TestCase):
 
         def _corrupt_file(target):
             with open(target, "wb") as fo:
-                fo.write("")
+                fo.write(b"")
 
         # When
         downloader = DownloadManager(URLFetcher(self.tempdir), repository)
