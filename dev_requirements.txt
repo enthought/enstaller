@@ -1,6 +1,5 @@
 appinst>=2.1.4
 coverage
-#detox
 machotools>=0.0.2
 mock
 haas
