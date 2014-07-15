@@ -74,7 +74,8 @@ prefix=/foo/bar
 exec_prefix=${prefix}
 libdir=${prefix}/lib
 """
-        with tempfile.NamedTemporaryFile(suffix=".pc", delete=False) as fp:
+        with tempfile.NamedTemporaryFile(suffix=".pc",
+                                         delete=False, mode="wt") as fp:
             pc_file = fp.name
             fp.write(data)
             fp.close()

@@ -1,9 +1,9 @@
 from __future__ import print_function
 
+from egginst._compat import PY2, StringIO
+
 import collections
 import contextlib
-
-from cStringIO import StringIO
 
 import mock
 
@@ -55,8 +55,25 @@ class MockedPrint(object):
 def mock_print():
     m = MockedPrint()
 
-    with mock.patch("__builtin__.print", m):
-        yield m
+    if PY2:
+        with mock.patch("__builtin__.print", m):
+            yield m
+    else:
+        with mock.patch("builtins.print", m):
+            yield m
+
+
+@contextlib.contextmanager
+def mock_input(input_string):
+    def f(ignored):
+        return input_string
+
+    if PY2:
+        with mock.patch("__builtin__.raw_input", f):
+            yield f
+    else:
+        with mock.patch("builtins.input", f):
+            yield f
 
 
 # Decorators to force a certain configuration
@@ -151,11 +168,11 @@ def mock_history_get_state_context(state=None):
         yield context
 
 @contextlib.contextmanager
-def mock_raw_input(message, return_value):
+def mock_raw_input(return_value):
     def _function(message):
         print(message)
         return return_value
 
-    with mock.patch("__builtin__.raw_input",
+    with mock.patch("enstaller.utils.input",
                     side_effect=_function) as context:
         yield context

@@ -84,7 +84,7 @@ class TestDistNaming(unittest.TestCase):
             ]:
             lst.append(dist_naming.comparable_spec(dict(version=v, build=b)))
 
-        for i in xrange(len(lst) - 1):
+        for i in range(len(lst) - 1):
             self.assert_(lst[i] < lst[i + 1])
 
 
@@ -222,6 +222,7 @@ class TestChain1(unittest.TestCase):
         self.c = c
         self.repos = repos
 
+    @mock.patch("enstaller.indexed_repo.requirement.PY_VER", "2.7")
     def test_get_repo(self):
         for req_string, repo_name in [
             ('MySQL_python', 'gpl'),
@@ -266,14 +267,14 @@ class TestChain1(unittest.TestCase):
     def test_order1(self):
         self.assertEqual(self.c.install_sequence(Req('numpy')),
                          [self.repos['epd'] + egg for egg in
-                          'MKL-10.3-1.egg', 'numpy-1.6.0-3.egg'])
+                          ('MKL-10.3-1.egg', 'numpy-1.6.0-3.egg')])
 
     @mock.patch("enstaller.indexed_repo.requirement.PY_VER", "2.7")
     def test_order2(self):
         self.assertEqual(self.c.install_sequence(Req('scipy')),
                          [self.repos['epd'] + egg for egg in
-                          'MKL-10.3-1.egg', 'numpy-1.5.1-2.egg',
-                          'scipy-0.9.0-1.egg'])
+                          ('MKL-10.3-1.egg', 'numpy-1.5.1-2.egg',
+                          'scipy-0.9.0-1.egg')])
 
 
 class TestChain2(unittest.TestCase):

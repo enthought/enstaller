@@ -1,5 +1,4 @@
-import urllib2
-import urlparse
+from egginst._compat import splitpasswd, splitport, splituser, urlparse
 
 from enstaller.errors import InvalidConfiguration
 
@@ -12,12 +11,12 @@ class ProxyInfo(object):
     def from_string(cls, s):
         parts = urlparse.urlparse(s)
         scheme = parts.scheme
-        userpass, hostport = urllib2.splituser(parts.netloc)
+        userpass, hostport = splituser(parts.netloc)
         if userpass is None:
             user, password = "", ""
         else:
-            user, password = urllib2.splitpasswd(userpass)
-        host, port = urllib2.splitport(hostport)
+            user, password = splitpasswd(userpass)
+        host, port = splitport(hostport)
         if port is None:
             port = _DEFAULT_PORT
         else:

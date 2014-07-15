@@ -62,11 +62,11 @@ class TestEnstallerMainActions(unittest.TestCase):
     @without_any_configuration
     def test_crash_handling_default(self):
         r_output = textwrap.dedent("""\
-        enstaller: Error: enstaller crashed (uncaught exception <type 'exceptions.Exception'>: Exception()).
+        enstaller: Error: enstaller crashed (uncaught exception {0}: Exception()).
         Please report this on enstaller issue tracker:
             http://github.com/enthought/enstaller/issues
         You can get a full traceback by setting the ENSTALLER_DEBUG environment variable
-        """)
+        """.format(Exception))
         env = ControlledEnv(["ENSTALLER_DEBUG"])
         with mock.patch("enstaller.main.os.environ", env):
             with mock.patch("enstaller.main.main", side_effect=Exception):

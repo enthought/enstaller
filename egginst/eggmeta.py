@@ -1,9 +1,12 @@
 from __future__ import print_function
 
+import sys
+
+from ._compat import StringIO
+
 import json
 import time
 
-from cStringIO import StringIO
 from os.path import join
 
 from egginst._zipfile import ZipFile
@@ -14,7 +17,12 @@ from egginst.utils import parse_assignments
 APPINST_PATH = join("inst", "appinst.dat")
 
 def parse_rawspec(data):
-    spec = parse_assignments(StringIO(data))
+    # XXX: hack to workaround 2.6-specific bug with ast-parser and
+    # unicode.
+    if sys.version_info < (2, 7):
+        spec = parse_assignments(StringIO(data.encode("utf8")))
+    else:
+        spec = parse_assignments(StringIO(data))
     res = {}
     for k in ('name', 'version', 'build',
               'arch', 'platform', 'osdist', 'python', 'packages'):
@@ -27,11 +35,11 @@ def info_from_z(z):
 
     arcname = 'EGG-INFO/spec/depend'
     if arcname in z.namelist():
-        res.update(parse_rawspec(z.read(arcname)))
+        res.update(parse_rawspec(z.read(arcname).decode("utf8")))
 
     arcname = 'EGG-INFO/info.json'
     if arcname in z.namelist():
-        res.update(json.loads(z.read(arcname)))
+        res.update(json.loads(z.read(arcname).decode("utf8")))
 
     res['name'] = res['name'].lower().replace('-', '_')
     return res

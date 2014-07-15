@@ -175,7 +175,7 @@ class TestPromptYesNo(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock_raw_input(message, "yes"):
+            with mock_raw_input("yes"):
                 res = prompt_yes_no(message)
 
         # Then
@@ -188,7 +188,7 @@ class TestPromptYesNo(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock_raw_input(message, "no"):
+            with mock_raw_input("no"):
                 res = prompt_yes_no(message)
 
         # Then
@@ -201,7 +201,7 @@ class TestPromptYesNo(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock_raw_input(message, "yes") as mocked_input:
+            with mock_raw_input("yes") as mocked_input:
                 res = prompt_yes_no(message, True)
 
         # Then

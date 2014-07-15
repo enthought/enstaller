@@ -1,4 +1,5 @@
-import StringIO
+from egginst._compat import BytesIO
+
 import unittest
 
 from egginst.eggmeta import info_from_z, parse_rawspec
@@ -31,7 +32,7 @@ packages = []
 """
 
 def _create_inmemory_egg(archives):
-    s = StringIO.StringIO()
+    s = BytesIO()
     with ZipFile(s, "w") as z:
         for arcname, data in archives.items():
             z.writestr(arcname, data)

@@ -292,6 +292,9 @@ class TestCycle(unittest.TestCase):
         try:
             eg = eggs_rs(self.resolve, 'cycleParent 2.0-5')
         except Exception as e:
-            self.assertIn("Loop", e.message, "unexpected exception message "+repr(e.message) )
+            self.assertIn("Loop", str(e),
+                          "unexpected exception message "+repr(e) )
         else:
-            self.assertIsNone(eg, "dependency cycle did not trigger an exception "+repr(eg))
+            self.assertIsNone(eg, 
+                              "dependency cycle did not trigger an exception " 
+                              + repr(eg))

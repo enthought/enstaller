@@ -9,7 +9,6 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-from egginst.testing_utils import network
 from egginst.tests.common import mkdtemp
 
 from enstaller.compat import path_to_uri
@@ -39,7 +38,6 @@ class TestLegacyStores(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
-    @network
     def test_url_fetcher(self):
         # Given
         url = "https://api.enthought.com/accounts/user/info"

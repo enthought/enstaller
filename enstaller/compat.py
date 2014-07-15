@@ -1,5 +1,6 @@
-import urllib
-import urlparse
+from egginst._compat import urlparse
+from egginst._compat import pathname2url
+
 
 def close_file_or_response(fp):
     if hasattr(fp, "close"):
@@ -10,4 +11,4 @@ def close_file_or_response(fp):
 
 def path_to_uri(path):
     """Convert the given path to a file:// uri."""
-    return urlparse.urljoin("file:", urllib.pathname2url(path))
+    return urlparse.urljoin("file:", pathname2url(path))

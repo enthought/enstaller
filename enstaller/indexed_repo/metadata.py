@@ -1,15 +1,18 @@
+from __future__ import print_function, absolute_import
+
 import os
 import sys
 import re
 import bz2
 import string
 import zipfile
-from cStringIO import StringIO
 from collections import defaultdict
 from os.path import basename, isfile, join, getmtime, getsize
 
-from dist_naming import is_valid_eggname
-from requirement import Req
+from egginst._compat import StringIO
+
+from .dist_naming import is_valid_eggname
+from .requirement import Req
 
 from enstaller.utils import compute_md5
 
@@ -30,7 +33,7 @@ def parse_index(data):
         d[fn].append(line.rstrip())
 
     res = {}
-    for fn in d.iterkeys():
+    for fn in d:
         res[fn] = '\n'.join(d[fn])
     return res
 
@@ -93,7 +96,7 @@ def parse_data(data, index=False):
     output dictionary.  It is an error these are missing in the input data.
     """
     spec = {}
-    exec data.replace('\r', '') in spec
+    exec(data.replace('\r', ''), spec)
     assert spec['metadata_version'] >= '1.1', spec
 
     var_names = [ # these must be present
@@ -121,7 +124,7 @@ def parse_depend_index(data):
     each distname to a dict mapping variable names to their values.
     """
     d = parse_index(data)
-    for fn in d.iterkeys():
+    for fn in d:
         # convert the values from a text string (of the spec file) to a dict
         d[fn] = parse_data(d[fn], index=True)
     return d
@@ -179,7 +182,7 @@ def write_txt_bz2(path, data):
     as well as the bz2 compressed data to a file alongside 'data', where the
     txt extension is replaced by bz2.
     """
-    fo = open(path, 'w')
+    fo = open(path, 'wt')
     fo.write(data)
     fo.close()
     assert path.endswith('.txt'), path
@@ -197,7 +200,7 @@ def update_index(dir_path, force=False, verbose=False):
     """
     txt_path = join(dir_path, 'index-depend.txt')
     if verbose:
-        print "Updating:", txt_path
+        print("Updating:", txt_path)
 
     if force or not isfile(txt_path):
         section = {}
@@ -211,7 +214,7 @@ def update_index(dir_path, force=False, verbose=False):
         if not fn.endswith('.egg'):
             continue
         if not is_valid_eggname(fn):
-            print "WARNING: ignoring invalid egg name:", fn
+            print("WARNING: ignoring invalid egg name:", fn)
             continue
         path = join(dir_path, fn)
         if fn in section:
@@ -226,7 +229,7 @@ def update_index(dir_path, force=False, verbose=False):
             sys.stdout.flush()
 
     if verbose:
-        print
+        print()
     write_txt_bz2(txt_path, faux.getvalue())
     faux.close()
 

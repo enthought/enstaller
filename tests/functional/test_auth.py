@@ -19,7 +19,7 @@ from enstaller.config import _encode_auth, _set_keyring_password
 
 from enstaller.tests.common import (
     fake_keyring, mock_print, fail_authenticate, mock_input_auth,
-    succeed_authenticate)
+    mock_raw_input, succeed_authenticate)
 
 from .common import (
     empty_index, mock_install_req, use_given_config_context,
@@ -67,8 +67,9 @@ class TestAuth(unittest.TestCase):
         Ensure we don't crash when empty information is input in --userpass
         prompt (no .enstaller4rc found).
         """
+        from enstaller.main import main
         with use_given_config_context(self.config):
-            with mock.patch("__builtin__.raw_input", return_value="") as m:
+            with mock_input_auth("", "") as m:
                 with self.assertRaises(SystemExit):
                     main_noexc(["--userpass"])
 

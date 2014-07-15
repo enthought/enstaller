@@ -1,6 +1,6 @@
-from dist_naming import split_eggname, filename_dist
-
 from enstaller.utils import PY_VER, canonical
+
+from .dist_naming import split_eggname, filename_dist
 
 
 class Req(object):

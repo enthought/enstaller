@@ -50,8 +50,8 @@ from enstaller.vendor import responses
 import enstaller.tests.common
 from .common import (dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     fake_keyring, is_authenticated,
-                     FAKE_MD5, FAKE_SIZE)
+                     mock_raw_input, fake_keyring, is_authenticated, FAKE_MD5,
+                     FAKE_SIZE)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -69,7 +69,7 @@ class TestEnstallerUpdate(unittest.TestCase):
         ]
         repository = enstaller.tests.common.repository_factory(enstaller_eggs)
 
-        with mock.patch("__builtin__.raw_input", lambda ignored: "y"):
+        with mock_raw_input("yes"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
                 enpkg = Enpkg(repository, mock.Mock())
                 opts = mock.Mock()
@@ -120,11 +120,11 @@ class TestMisc(unittest.TestCase):
 
     def test_epd_install_confirm(self):
         for allowed_yes in ("y", "Y", "yes", "YES", "YeS"):
-            with mock.patch("__builtin__.raw_input", lambda ignored: allowed_yes):
+            with mock_raw_input(allowed_yes):
                 self.assertTrue(epd_install_confirm())
 
         for non_yes in ("n", "N", "no", "NO", "dummy"):
-            with mock.patch("__builtin__.raw_input", lambda ignored: non_yes):
+            with mock_raw_input(non_yes):
                 self.assertFalse(epd_install_confirm())
 
     @mock.patch("sys.platform", "linux2")
@@ -155,13 +155,14 @@ class TestMisc(unittest.TestCase):
         with mock.patch("sys.path", site_packages[::-1]):
             with self.assertRaises(InvalidPythonPathConfiguration) as e:
                 check_prefixes(prefixes)
-            message = e.exception.message
-            self.assertEqual(message, "Order of path prefixes doesn't match PYTHONPATH")
+            message = str(e.exception)
+            self.assertEqual(message,
+                             "Order of path prefixes doesn't match PYTHONPATH")
 
         with mock.patch("sys.path", []):
             with self.assertRaises(InvalidPythonPathConfiguration) as e:
                 check_prefixes(prefixes)
-            message = e.exception.message
+            message = str(e.exception)
             self.assertEqual(message,
                              "Expected to find {0} in PYTHONPATH". \
                              format(site_packages[0]))
@@ -178,13 +179,13 @@ class TestMisc(unittest.TestCase):
         with mock.patch("sys.path", site_packages[::-1]):
             with self.assertRaises(InvalidPythonPathConfiguration) as e:
                 check_prefixes(prefixes)
-            message = e.exception.message
+            message = str(e.exception)
             self.assertEqual(message, "Order of path prefixes doesn't match PYTHONPATH")
 
         with mock.patch("sys.path", []):
             with self.assertRaises(InvalidPythonPathConfiguration) as e:
                 check_prefixes(prefixes)
-            message = e.exception.message
+            message = str(e.exception)
             self.assertEqual(message,
                              "Expected to find {0} in PYTHONPATH". \
                              format(site_packages[0]))
@@ -972,13 +973,15 @@ class TestInstallReq(unittest.TestCase):
         (https://support.enthought.com/entries/23389761) may help you with
         installing it.
 
+        Are you sure that you wish to proceed?  (y/[n]) 
         """)
 
         # When
-        with mock.patch("__builtin__.raw_input", return_value="y"):
-            with mock_print() as mocked_print:
+        with mock_print() as mocked_print:
+            with mock_raw_input("yes"):
                 with mock.patch("enstaller.main.Enpkg.execute") as m:
-                    enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
+                    enpkg = _create_prefix_with_eggs(Configuration(),
+                                                     self.prefix, [],
                                                      remote_entries)
                     install_req(enpkg, Configuration(), "nose", FakeOptions())
 

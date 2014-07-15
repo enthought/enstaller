@@ -7,7 +7,7 @@ import sys
 import tempfile
 import textwrap
 
-from cStringIO import StringIO
+from egginst._compat import StringIO
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -28,20 +28,18 @@ from enstaller.config import (abs_expanduser,
     convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
-    Configuration, add_url)
+    Configuration, add_url, _encode_auth, _encode_string_base64)
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
-                     mock_print, fake_keyring_context, fake_keyring)
-
-def compute_creds(username, password):
-    return "{0}:{1}".format(username, password).encode("base64").rstrip()
+                     mock_input, mock_print, fake_keyring_context,
+                     fake_keyring)
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
-FAKE_CREDS = compute_creds(FAKE_USER, FAKE_PASSWORD)
+FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
 
 
 @contextlib.contextmanager
@@ -88,12 +86,12 @@ class TestGetPath(unittest.TestCase):
 class TestInputAuth(unittest.TestCase):
     @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
     def test_simple(self):
-        with mock.patch("__builtin__.raw_input", lambda ignored: FAKE_USER):
+        with mock_input(FAKE_USER):
             self.assertEqual(input_auth(), (FAKE_USER, FAKE_PASSWORD))
 
     @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
     def test_empty(self):
-        with mock.patch("__builtin__.raw_input", lambda ignored: ""):
+        with mock_input(""):
             self.assertEqual(input_auth(), (None, None))
 
 class TestWriteConfig(unittest.TestCase):
@@ -149,7 +147,7 @@ class TestWriteConfig(unittest.TestCase):
         # Then
         with open(path, "r") as fp:
             data = fp.read()
-            self.assertRegexpMatches(data, "http://acme.com")
+            self.assertRegex(data, "http://acme.com")
 
     @make_keyring_unavailable
     def test_change_store_url(self):
@@ -209,6 +207,7 @@ class TestConfigKeyringConversion(unittest.TestCase):
         Ensure we don't convert EPD_auth to using keyring.
         """
         # Given
+        r_content = "EPD_auth = '{0}'".format(FAKE_CREDS)
         path = os.path.join(self.prefix, ".enstaller4rc")
 
         old_config = "EPD_username = '{0}'".format(FAKE_USER)
@@ -225,7 +224,7 @@ class TestConfigKeyringConversion(unittest.TestCase):
             # Then
             self.assertTrue(converted)
             with open(path) as fp:
-                self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+                self.assertMultiLineEqual(fp.read(), r_content)
 
     @fake_keyring
     def test_auth_conversion_without_password_in_keyring(self):
@@ -301,7 +300,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
     @make_keyring_unavailable
     def test_change_existing_config_file(self):
         r_new_password = "ouioui_dans_sa_petite_voiture"
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
@@ -315,7 +314,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
     @make_keyring_unavailable
     def test_change_existing_config_file_empty_username(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(fp.name)
@@ -329,7 +328,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
     def test_change_existing_config_file_without_keyring(self):
         # Given
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         # When
@@ -340,14 +339,14 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         # Then
         with open(fp.name, "r") as f:
             content = f.read()
-            self.assertNotRegexpMatches(content, "EPD_username")
-            self.assertRegexpMatches(content, "EPD_auth")
+            self.assertNotRegex(content, "EPD_username")
+            self.assertRegex(content, "EPD_auth")
         config = Configuration.from_file(fp.name)
         self.assertEqual(config.auth, ("user", "dummy"))
 
     @make_keyring_unavailable
     def test_change_empty_config_file_empty_username(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         config = Configuration.from_file(fp.name)
@@ -358,7 +357,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
     @make_keyring_unavailable
     def test_no_config_file(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         config = Configuration()
@@ -374,7 +373,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
     def test_change_auth_wo_existing_auth(self):
         r_output = "EPD_auth = '{0}'\n".format(FAKE_CREDS)
 
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         config = Configuration.from_file(fp.name)
@@ -390,7 +389,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
     @make_keyring_unavailable
     def test_change_config_file_empty_auth(self):
         config_data = "EPD_auth = '{0}'".format(FAKE_CREDS)
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write(config_data)
 
         config = Configuration.from_file(fp.name)
@@ -403,14 +402,14 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 class TestAuthenticationConfiguration(unittest.TestCase):
     @make_keyring_unavailable
     def test_without_configuration_no_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         config = Configuration.from_file(fp.name)
         self.assertFalse(config.is_auth_configured)
 
     def test_without_configuration_with_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         with mock.patch("enstaller.config.keyring"):
@@ -419,7 +418,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
 
     @make_keyring_unavailable
     def test_with_configuration_no_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             auth_line = "EPD_auth = '{0}'".format(FAKE_CREDS)
             fp.write(auth_line)
 
@@ -427,7 +426,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
         self.assertTrue(config.is_auth_configured)
 
     def test_with_configuration_with_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             auth_line = "EPD_username = '{0}'".format(FAKE_USER)
             fp.write(auth_line)
 
@@ -455,7 +454,7 @@ class TestConfigurationParsing(unittest.TestCase):
 
     @make_keyring_unavailable
     def test_epd_invalid_auth(self):
-        s = StringIO("EPD_auth = '{0}'".format(base64.encodestring(FAKE_USER).rstrip()))
+        s = StringIO("EPD_auth = '{0}'".format(_encode_string_base64(FAKE_USER)))
 
         with self.assertRaises(InvalidConfiguration):
             Configuration.from_file(s)
@@ -549,7 +548,7 @@ class TestConfigurationPrint(unittest.TestCase):
                     keyring_backend=_keyring_backend_name())
 
         try:
-            with tempfile.NamedTemporaryFile(delete=False) as fp:
+            with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
                 fp.write("")
             config = Configuration.from_file(fp.name)
         finally:
@@ -896,7 +895,7 @@ class TestMisc(unittest.TestCase):
 
 class TestPrependUrl(unittest.TestCase):
     def setUp(self):
-        with tempfile.NamedTemporaryFile(delete=False) as fp:
+        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             pass
 
         self.filename = fp.name

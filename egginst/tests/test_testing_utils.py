@@ -31,7 +31,7 @@ class TestControlledEnv(unittest.TestCase):
         env["key2"] = "value2"
 
         # Then
-        self.assertItemsEqual(env.keys(), os.environ.keys() + ["key1", "key2"])
+        self.assertItemsEqual(env.keys(), list(os.environ.keys()) + ["key1", "key2"])
 
     def test_get_item(self):
         # Given
@@ -46,7 +46,7 @@ class TestControlledEnv(unittest.TestCase):
         env = ControlledEnv(environ={"key1": "value1"})
 
         # When/Then
-        self.assertFalse(os.environ.keys()[0] in env)
+        self.assertFalse(list(os.environ.keys())[0] in env)
 
 
 class TestAssertSameFs(unittest.TestCase):

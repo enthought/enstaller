@@ -6,7 +6,7 @@ from os.path import getmtime, isfile, join
 
 from egginst.eggmeta import info_from_z
 
-from utils import info_file
+from enstaller.utils import info_file
 
 
 egg_fmt = '%(name)s-%(version)s-%(build)d.egg'

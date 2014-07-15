@@ -1,13 +1,10 @@
+from egginst._compat import TestCase
+
+import base64
 import json
 import os.path
 import shutil
-import sys
 import tempfile
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 from mock import patch
 
@@ -27,7 +24,8 @@ anon_user = UserInfo(False)
 old_auth_user = DUMMY_USER
 
 def compute_creds(username, password):
-    return "{0}:{1}".format(username, password).encode("base64").rstrip()
+    s = "{0}:{1}".format(username, password)
+    return base64.b64encode(s.encode("ascii")).rstrip()
 
 AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 
@@ -50,7 +48,7 @@ R_JSON_NOAUTH_RESP = {'is_authenticated': False,
 
 
 @fake_keyring
-class CheckedChangeAuthTestCase(unittest.TestCase):
+class CheckedChangeAuthTestCase(TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.f = os.path.join(self.d, "enstaller4rc")
@@ -116,7 +114,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             config._checked_change_auth(self.f)
 
 
-class TestSubscriptionLevel(unittest.TestCase):
+class TestSubscriptionLevel(TestCase):
     def test_unsubscribed_user(self):
         user_info = UserInfo(True)
         self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
@@ -135,7 +133,7 @@ class TestSubscriptionLevel(unittest.TestCase):
         self.assertIsNone(user_info.subscription_level)
 
 
-class TestWebAuth(unittest.TestCase):
+class TestWebAuth(TestCase):
     def setUp(self):
         self.config = Configuration()
 
@@ -178,6 +176,7 @@ class TestWebAuth(unittest.TestCase):
 
         return config
 
+    @responses.activate
     def test_auth_failure_404(self):
         # Given
         config = self._no_webservice_config()
@@ -189,6 +188,7 @@ class TestWebAuth(unittest.TestCase):
         with self.assertRaises(AuthFailedError):
             authenticate(config)
 
+    @responses.activate
     def test_auth_failure_50x(self):
         # Given
         config = self._no_webservice_config()
@@ -220,7 +220,7 @@ class TestWebAuth(unittest.TestCase):
             _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url)
 
 
-class TestAuthenticate(unittest.TestCase):
+class TestAuthenticate(TestCase):
     @fake_keyring
     def test_use_webservice_valid_user(self):
         config = Configuration()
@@ -266,13 +266,9 @@ class TestAuthenticate(unittest.TestCase):
             authenticate(config)
 
 
-class SearchTestCase(unittest.TestCase):
+class SearchTestCase(TestCase):
     pass
 
 
-class InstallTestCase(unittest.TestCase):
+class InstallTestCase(TestCase):
     pass
-
-
-if __name__ == '__main__':
-    unittest.main()
