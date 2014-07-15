@@ -115,9 +115,6 @@ if __name__ == '__main__':
             with open(path, "rt") as fp:
                 self.assertMultiLineEqual(fp.read(), r_egginst_script)
 
-def escape_win32_path(p):
-    return p.replace("\\", "\\\\")
-
 class TestCreateScript(TestCase):
     @mock.patch("egginst.utils.on_win", False)
     def test_simple(self):
@@ -259,7 +256,7 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                 proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
                 r_python_proxy_data = r_python_proxy_data_template % \
                         {'executable': os.path.join(prefix, "python.exe"),
-                         'src': text_type(escape_win32_path(proxy_path))}
+                         'src': text_type(proxy_path)}
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:
@@ -276,7 +273,7 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                     self.assertTrue(compute_md5(coff_proxy),
                                     hashlib.md5(exe_data.cli).hexdigest())
 
-                    with open(python_proxy) as fp:
+                    with open(python_proxy, "rt") as fp:
                         python_proxy_data = fp.read()
                         self.assertMultiLineEqual(
                                 python_proxy_data,
