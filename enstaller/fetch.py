@@ -88,8 +88,10 @@ class URLFetcher(object):
         self._session.mount("https://", adapter)
 
     def fetch(self, url):
-        return self._session.get(url, stream=True, auth=self._auth,
-                                 proxies=self._proxies)
+        response = self._session.get(url, stream=True, auth=self._auth,
+                                     proxies=self._proxies)
+        response.raise_for_status()
+        return response
 
 
 class DownloadManager(object):
