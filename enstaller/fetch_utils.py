@@ -75,4 +75,5 @@ def checked_content(filename, expected_md5):
             return
         else:
             if expected_md5 != checked_target.checksum:
-                raise InvalidChecksum(filename, expected_md5, checked_target.checksum)
+                raise InvalidChecksum(filename, expected_md5,
+                                      checked_target.checksum)
