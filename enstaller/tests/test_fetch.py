@@ -13,6 +13,8 @@ import mock
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
+from enstaller.vendor import requests, responses
+
 from enstaller.errors import EnstallerException
 from enstaller.fetch import DownloadManager, URLFetcher
 from enstaller.proxy_info import ProxyInfo
@@ -161,3 +163,24 @@ class TestDownloadManager(unittest.TestCase):
         # Ensure we deal correctly with force=False when the egg is already
         # there.
         downloader.fetch(egg, force=False)
+
+    @responses.activate
+    def test_fetch_unauthorized(self):
+        # Given
+        filename = "nose-1.3.0-1.egg"
+        url = "http://api.enthought.com/eggs/yoyo/"
+
+        repository = Repository()
+
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+        package = RepositoryPackageMetadata.from_egg(path, url)
+        repository.add_package(package)
+
+        responses.add(responses.GET, url + filename,
+                      body='{"error": "forbidden"}',
+                      status=403)
+        downloader = DownloadManager(URLFetcher(self.tempdir), repository)
+
+        # When/Then
+        with self.assertRaises(requests.exceptions.HTTPError):
+            context = downloader.fetch(filename)
