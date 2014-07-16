@@ -7,6 +7,8 @@ class InvalidChecksum(EnstallerException):
                    "(expected {2!r})"
         self.msg = template.format(filename, actual_checksum,
                                    expected_checksum)
+    def __str__(self):
+        return self.msg
 
 class ConnectionError(EnstallerException):
     pass
