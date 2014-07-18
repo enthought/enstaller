@@ -38,6 +38,7 @@ class TestLegacyStores(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+    @responses.activate
     def test_url_fetcher(self):
         # Given
         url = "https://api.enthought.com/accounts/user/info"
@@ -49,6 +50,9 @@ class TestLegacyStores(unittest.TestCase):
             'last_name': None,
             'subscription_level': u'unregistered'
         }
+        responses.add(responses.GET, url,
+                      body=json.dumps(r_user_info), status=200,
+                      content_type='application/json')
 
         # When
         with mkdtemp() as tempdir:
