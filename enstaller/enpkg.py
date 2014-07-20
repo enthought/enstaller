@@ -232,7 +232,8 @@ class ProgressBarContext(object):
         return self.fetch_progress_factory("installing egg", filename, size)
 
     def remove_progress(self, filename, size, steps):
-        return self.fetch_progress_factory("removing egg", filename, size, steps)
+        return self.fetch_progress_factory("removing egg", filename, size,
+                                           steps)
 
 
 class _ExecuteContext(object):
@@ -301,7 +302,8 @@ class Enpkg(object):
         self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
-        self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
+        self._top_installed_repository = \
+                Repository._from_prefixes([self.top_prefix])
 
         self._downloader = download_manager
 

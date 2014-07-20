@@ -136,7 +136,8 @@ class Resolve(object):
         return the egg with the largest version and build number
         """
         assert req.strictness >= 1
-        d = dict((package.key, package) for package in self.repository.find_packages(req.name))
+        d = dict((package.key, package) for package in
+                 self.repository.find_packages(req.name))
         if len(d) == 0:
             return None
         matches = []
@@ -152,7 +153,8 @@ class Resolve(object):
         return the set of requirement objects listed by the given egg
         """
         name, version = egg_name_to_name_version(egg)
-        return set(Req(s) for s in self.repository.find_package(name, version).packages)
+        package = self.repository.find_package(name, version)
+        return set(Req(s) for s in package.packages)
 
     def name_egg(self, egg):
         """
