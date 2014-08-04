@@ -341,7 +341,7 @@ class Enpkg(object):
           * complete set of eggs, i.e. a set of egg file names
           * revision number (negative numbers allowed)
         """
-        h = History(self.prefixes[0])
+        h = History(self.top_prefix)
         h.update()
         if isinstance(arg, set):
             state = arg
@@ -382,4 +382,4 @@ class Enpkg(object):
         return a history (h) object with this Enpkg instance prefix.
         """
         # FIXME: only used by canopy
-        return History(self.prefixes[0])
+        return History(self.top_prefix)

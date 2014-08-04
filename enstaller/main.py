@@ -505,12 +505,11 @@ def configure_authentication_or_exit(config, config_filename):
         print("\nNo modification was written.")
         sys.exit(-1)
 
-def main(argv=None):
-    if argv is None: # pragma: no cover
-        argv = sys.argv[1:]
 
-    user_base = getattr(site, "USER_BASE", abs_expanduser('~/.local'))
+def _user_base():
+    return getattr(site, "USER_BASE", abs_expanduser('~/.local'))
 
+def _create_parser():
     p = ArgumentParser(description=__doc__)
     p.add_argument('cnames', metavar='NAME', nargs='*',
                    help='package(s) to work on')
@@ -564,7 +563,8 @@ def main(argv=None):
     p.add_argument("--update-all", action="store_true",
                    help="update all installed packages")
     p.add_argument("--user", action="store_true",
-               help="install into user prefix, i.e. --prefix=%r" % user_base)
+               help="install into user prefix, i.e. --prefix=%r" % \
+                    _user_base())
     p.add_argument("--userpass", action="store_true",
                    help="prompt for Enthought authentication, and save in "
                    "configuration file .enstaller4rc")
@@ -578,18 +578,12 @@ def main(argv=None):
     p.add_argument("-y", "--yes", action="store_true",
                    help="Assume 'yes' to all queries and do not prompt.")
 
+    return p
+
+
+def _preprocess_options(argv):
+    p = _create_parser()
     args = p.parse_args(argv)
-
-    config_filename = get_config_filename(args.sys_config)
-    if not os.path.isfile(config_filename):
-        write_default_config(config_filename)
-
-    try:
-        config = Configuration.from_file(config_filename)
-    except InvalidConfiguration as e:
-        print(str(e))
-        sys.exit(EXIT_ABORTED)
-
 
     # Check for incompatible actions and options
     # Action options which take no package name pattern:
@@ -618,7 +612,7 @@ def main(argv=None):
     logging.basicConfig(level=level, format="%(message)s")
 
     if args.user:
-        args.prefix = user_base
+        args.prefix = _user_base()
 
     if args.prefix and args.sys_prefix:
         p.error("Options --prefix and --sys-prefix exclude each other")
@@ -626,10 +620,23 @@ def main(argv=None):
     if args.force and args.forceall:
         p.error("Options --force and --forceall exclude each other")
 
-    pat = None
-    if (args.list or args.search) and args.cnames:
-        pat = re.compile(args.cnames[0], re.I)
+    return p, args
 
+
+def _ensure_config_or_die(config_filename):
+    if not os.path.isfile(config_filename):
+        write_default_config(config_filename)
+
+    try:
+        config = Configuration.from_file(config_filename)
+    except InvalidConfiguration as e:
+        print(str(e))
+        sys.exit(EXIT_ABORTED)
+
+    return config
+
+
+def _compute_prefixes(args, config):
     # make prefix
     if args.sys_prefix:
         prefix = sys.prefix
@@ -644,12 +651,38 @@ def main(argv=None):
     else:
         prefixes = [prefix, sys.prefix]
 
+    return prefix, prefixes
+
+
+def main(argv=None):
+    if argv is None: # pragma: no cover
+        argv = sys.argv[1:]
+
+    parser, args = _preprocess_options(argv)
+
+    pat = None
+    if (args.list or args.search) and args.cnames:
+        pat = re.compile(args.cnames[0], re.I)
+
+    config_filename = get_config_filename(args.sys_config)
+    config = _ensure_config_or_die(config_filename)
+
+    if args.proxy:
+        try:
+            config.set_proxy_from_string(args.proxy)
+        except InvalidConfiguration as e:
+            print("Error: invalid proxy setting {0!r}".format(e))
+            sys.exit(1)
+
+    prefix, prefixes = _compute_prefixes(args, config)
+
     if args.user:
         try:
             check_prefixes(prefixes)
         except InvalidPythonPathConfiguration:
-            warnings.warn("Using the --user option, but your PYTHONPATH is not setup " \
-                          "accordingly")
+            msg  = "Using the --user option, but your PYTHONPATH is not " \
+                   "setup accordingly"
+            warnings.warn(msg)
 
     exit_if_sudo_on_venv(prefix)
 
@@ -675,13 +708,6 @@ def main(argv=None):
     if args.list:                                 # --list
         list_option(prefixes, pat)
         return
-
-    if args.proxy:                                # --proxy
-        try:
-            config.set_proxy_from_string(args.proxy)
-        except InvalidConfiguration as e:
-            print("Error: invalid proxy setting {0!r}".format(e))
-            sys.exit(1)
 
     if args.config:                               # --config
         print_config(config, prefixes[0])
@@ -744,7 +770,7 @@ def main(argv=None):
 
     if args.info:                                 # --info
         if len(args.cnames) != 1:
-            p.error("Option requires one argument (name of package)")
+            parser.error("Option requires one argument (name of package)")
         info_option(enpkg._remote_repository, enpkg._installed_repository,
                     args.cnames[0])
         return
@@ -762,7 +788,7 @@ def main(argv=None):
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
-        p.error("Requirement(s) missing")
+        parser.error("Requirement(s) missing")
     elif len(args.cnames) == 2:
         pat = re.compile(r'\d+\.\d+')
         if pat.match(args.cnames[1]):
@@ -806,9 +832,9 @@ def main(argv=None):
 
     if any(req.name == 'epd' for req in reqs):
         if args.remove:
-            p.error("Can't remove 'epd'")
+            parser.error("Can't remove 'epd'")
         elif len(reqs) > 1:
-            p.error("Can't combine 'enpkg epd' with other packages.")
+            parser.error("Can't combine 'enpkg epd' with other packages.")
         elif not epd_install_confirm(args.yes):
             return
 
