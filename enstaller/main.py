@@ -385,10 +385,12 @@ def check_prefixes(prefixes):
         try:
             index_order.append(sys_path.index(path))
         except ValueError:
-            raise InvalidPythonPathConfiguration("Expected to find %s in PYTHONPATH" % (path,))
+            msg = "Expected to find %s in PYTHONPATH" % (path,)
+            raise InvalidPythonPathConfiguration(msg)
     else:
         if not index_order == sorted(index_order):
-            raise InvalidPythonPathConfiguration("Order of path prefixes doesn't match PYTHONPATH")
+            msg = "Order of path prefixes doesn't match PYTHONPATH"
+            raise InvalidPythonPathConfiguration(msg)
 
 
 def needs_to_downgrade_enstaller(reqs):
@@ -434,7 +436,8 @@ def ensure_authenticated_config(config, config_filename):
         msg = _invalid_authentication_message(config.store_url, username,
                                               str(e))
         print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
-        print("\nYou can change your authentication details with 'enpkg --userpass'.")
+        print("\nYou can change your authentication details with "
+              "'enpkg --userpass'.")
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
@@ -466,7 +469,8 @@ def repository_factory(fetcher, config):
         resp = fetcher.fetch(url)
         resp.raise_for_status()
 
-        for package in parse_index(_fetch_json_with_progress(resp, store_location),
+        for package in parse_index(_fetch_json_with_progress(resp,
+                                                             store_location),
                                    store_location):
             repository.add_package(package)
     return repository
@@ -489,8 +493,9 @@ def configure_authentication_or_exit(config, config_filename):
         if username:
             break
         else:
-            print("Please enter a non empty username ({0} trial(s) left, Ctrl+C to exit)". \
-                  format(n_trials - i - 1))
+            msg = "Please enter a non empty username ({0} trial(s) left, " \
+                  "Ctrl+C to exit)". format(n_trials - i - 1)
+            print(msg)
     else:
         print("No valid username entered (no modification was written).")
         sys.exit(-1)
@@ -804,7 +809,8 @@ def main(argv=None):
 
     # This code assumes we have already upgraded enstaller if needed
     if needs_to_downgrade_enstaller(reqs):
-        warnings.warn("Enstaller in requirement list: enstaller will be downgraded !")
+        msg = "Enstaller in requirement list: enstaller will be downgraded !"
+        warnings.warn()
     else:
         logger.debug("Enstaller is up to date, not updating")
         reqs = [req for req in reqs if req.name != "enstaller"]
@@ -866,7 +872,8 @@ Please report this on enstaller issue tracker:
         if enstaller_debug:
             raise
         else:
-            msg += "\nYou can get a full traceback by setting the ENSTALLER_DEBUG environment variable"
+            msg += "\nYou can get a full traceback by setting the " \
+                   "ENSTALLER_DEBUG environment variable"
             print(msg % ("enstaller", "enstaller", e.__class__, repr(e)))
             sys.exit(1)
 
