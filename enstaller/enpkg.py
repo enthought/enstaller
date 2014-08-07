@@ -10,6 +10,7 @@ from egginst.main import EggInst
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
+from enstaller.fetch import _DownloadManager
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
 
@@ -284,8 +285,8 @@ class Enpkg(object):
     repository : Repository
         This is the remote repository which enpkg will use to resolve
         dependencies.
-    download_manager : DownloadManager
-        The download manager used to fetch eggs.
+    fetcher : URLFetcher
+        The url fetcher used to fetch eggs.
     prefixes : list of path -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
@@ -294,7 +295,7 @@ class Enpkg(object):
         If specified, will be used for progress bar management across all
         executed actions. If None, use dummy (do nothing) progress bars.
     """
-    def __init__(self, remote_repository, download_manager,
+    def __init__(self, remote_repository, url_fetcher,
                  prefixes=[sys.prefix], progress_context=None):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
@@ -305,7 +306,7 @@ class Enpkg(object):
         self._top_installed_repository = \
                 Repository._from_prefixes([self.top_prefix])
 
-        self._downloader = download_manager
+        self._downloader = _DownloadManager(url_fetcher, remote_repository)
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)

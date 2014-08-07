@@ -4,10 +4,13 @@ from egginst._compat import PY2, StringIO
 
 import collections
 import contextlib
+import sys
 
 import mock
 
 from enstaller.auth import UserInfo
+from enstaller.config import Configuration
+from enstaller.enpkg import Enpkg
 from enstaller.errors import AuthFailedError
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -176,3 +179,20 @@ def mock_raw_input(return_value):
     with mock.patch("enstaller.utils.input",
                     side_effect=_function) as context:
         yield context
+
+def unconnected_enpkg_factory(prefixes=None):
+    """
+    Create an Enpkg instance which does not require an authenticated
+    repository.
+    """
+    if prefixes is None:
+        prefixes = [sys.prefix]
+    config = Configuration()
+    repository = Repository()
+    return Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+                 prefixes=prefixes)
+
+def mock_fetcher_factory(repository_cache):
+    mocked_fetcher = mock.Mock()
+    mocked_fetcher.cache_dir = repository_cache
+    return mocked_fetcher

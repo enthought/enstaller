@@ -42,7 +42,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
-from enstaller.fetch import DownloadManager, URLFetcher
+from enstaller.fetch import URLFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.legacy_stores import parse_index
@@ -749,9 +749,7 @@ def main(argv=None):
 
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
-    downloader = DownloadManager(fetcher, repository)
-
-    enpkg = Enpkg(repository, downloader, prefixes,
+    enpkg = Enpkg(repository, fetcher, prefixes,
                   ProgressBarContext(console_progress_manager_factory))
 
     if args.dry_run:

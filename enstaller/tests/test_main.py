@@ -50,14 +50,15 @@ from enstaller.vendor import responses
 import enstaller.tests.common
 from .common import (dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     mock_raw_input, fake_keyring, is_authenticated, FAKE_MD5,
+                     mock_raw_input, fake_keyring, is_authenticated,
+                     mock_fetcher_factory, unconnected_enpkg_factory, FAKE_MD5,
                      FAKE_SIZE)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
 
-        enpkg = Enpkg(mock.Mock(), mock.Mock())
+        enpkg = unconnected_enpkg_factory()
         self.assertFalse(update_enstaller(enpkg, config, False, {}))
 
     def _test_update_enstaller(self, low_version, high_version):
@@ -71,7 +72,8 @@ class TestEnstallerUpdate(unittest.TestCase):
 
         with mock_raw_input("yes"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(repository, mock.Mock())
+                enpkg = Enpkg(repository,
+                              mock_fetcher_factory(config.repository_cache))
                 opts = mock.Mock()
                 opts.no_deps = False
                 return update_enstaller(enpkg, config, config.autoupdate, opts)
@@ -360,7 +362,8 @@ def _create_repositories(remote_entries=None, installed_entries=None):
 
     return remote_repository, installed_repository
 
-def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entries=None):
+def _create_prefix_with_eggs(config, prefix, installed_entries=None,
+                             remote_entries=None):
     if remote_entries is None:
         remote_entries = []
     if installed_entries is None:
@@ -368,7 +371,8 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None, remote_entr
 
     repository = enstaller.tests.common.repository_factory(remote_entries)
 
-    enpkg = Enpkg(repository, mock.Mock(), prefixes=[prefix])
+    enpkg = Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+                  prefixes=[prefix])
     for package in installed_entries:
         package.store_location = prefix
         enpkg._top_installed_repository.add_package(package)
