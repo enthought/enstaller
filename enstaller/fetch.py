@@ -43,7 +43,7 @@ class _CancelableResponse(object):
             for chunk in response.iter_content(1024):
                 if self._canceled:
                     response.close()
-                    target.abort = True
+                    target.abort()
                     return
 
                 target.write(chunk)

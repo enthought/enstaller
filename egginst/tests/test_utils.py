@@ -77,7 +77,7 @@ class TestAtomicFile(TestCase):
         # When
         with atomic_file(path) as fp:
             fp.write(r_content[:2])
-            fp.abort = True
+            fp.abort()
 
         # Then
         self.assertFalse(os.path.exists(path))

@@ -289,11 +289,15 @@ def atomic_file(filename, mode='w+b'):
     class _FileWrapper(object):
         def __init__(self, fp):
             self._fp = fp
-            self.abort = False
             # Make the name private to prevent people from re-opening the file
             # (not supported on e.g. windows, and will interfere with the
             # atomic_rename feature anyway).
             self._name = fp.name
+
+            self._is_aborted = False
+
+        def abort(self):
+            self._is_aborted = True
 
         def write(self, data):
             self._fp.write(data)
@@ -313,5 +317,5 @@ def atomic_file(filename, mode='w+b'):
             os.unlink(temp_fp._name)
         raise
     else:
-        if not temp_fp.abort:
+        if not temp_fp._is_aborted:
             rename(temp_fp._name, filename)

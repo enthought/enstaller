@@ -81,4 +81,4 @@ class TestCheckedContent(unittest.TestCase):
 
         # When/Then
         with checked_content(path, checksum) as fp:
-            fp.abort = True
+            fp.abort()
