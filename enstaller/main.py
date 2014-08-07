@@ -586,6 +586,17 @@ def _create_parser():
     return p
 
 
+def _compute_reqs(cnames):
+    reqs = []
+    for arg in cnames:
+        if '-' in arg:
+            name, version = arg.split('-', 1)
+            reqs.append(Req(name + ' ' + version))
+        else:
+            reqs.append(Req(arg))
+    return reqs
+
+
 def _preprocess_options(argv):
     p = _create_parser()
     args = p.parse_args(argv)
@@ -799,13 +810,7 @@ def main(argv=None):
         if pat.match(args.cnames[1]):
             args.cnames = ['-'.join(args.cnames)]
 
-    reqs = []
-    for arg in args.cnames:
-        if '-' in arg:
-            name, version = arg.split('-', 1)
-            reqs.append(Req(name + ' ' + version))
-        else:
-            reqs.append(Req(arg))
+    reqs = _compute_reqs(args.cnames)
 
     # This code assumes we have already upgraded enstaller if needed
     if needs_to_downgrade_enstaller(reqs):
