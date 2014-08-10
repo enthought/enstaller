@@ -335,10 +335,9 @@ class TestMisc(unittest.TestCase):
             dummy_repository_package_factory("scipy", "0.13.3", 1),
         ]
         self._mock_index(entries)
-        fetcher = URLFetcher(config.repository_cache, config.auth)
 
         # When
-        repository = repository_factory(fetcher, config)
+        repository = repository_factory(config)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")

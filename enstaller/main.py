@@ -463,10 +463,14 @@ def _fetch_json_with_progress(resp, store_location):
     return json.loads(data.getvalue().decode("utf-8"))
 
 
-def repository_factory(fetcher, config):
+def repository_factory(config):
+    index_fetcher = URLFetcher(config.repository_cache, config.auth,
+                               config.proxy_dict)
+    index_fetcher._enable_etag_support()
+
     repository = Repository()
     for url, store_location in config.indices:
-        resp = fetcher.fetch(url)
+        resp = index_fetcher.fetch(url)
         resp.raise_for_status()
 
         for package in parse_index(_fetch_json_with_progress(resp,
@@ -742,11 +746,7 @@ def main(argv=None):
 
     user = ensure_authenticated_config(config, config_filename)
 
-    index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict)
-    index_fetcher._enable_etag_support()
-    repository = repository_factory(index_fetcher, config)
-
+    repository = repository_factory(config)
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
     enpkg = Enpkg(repository, fetcher, prefixes,
