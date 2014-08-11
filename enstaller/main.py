@@ -57,10 +57,12 @@ PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
 
 
 def epd_install_confirm(force_yes=False):
-    print("Warning: 'enpkg epd' will downgrade any packages that are currently")
-    print("at a higher version than in the specified EPD release.")
-    print("Usually it is preferable to update all installed packages with:")
-    print("    enpkg --update-all")
+    msg = textwrap.dedent("""\
+        Warning: 'enpkg epd' will downgrade any packages that are currently")
+        at a higher version than in the specified EPD release.
+        Usually it is preferable to update all installed packages with:
+            enpkg --update-all""")
+    print(msg)
     return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
                          force_yes)
 
