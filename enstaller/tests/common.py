@@ -81,8 +81,12 @@ def mock_input(input_string):
 
 # Decorators to force a certain configuration
 def is_authenticated(f):
-    return mock.patch("enstaller.main.authenticate",
-                      lambda ignored: UserInfo(True))(f)
+    w1 = mock.patch("enstaller.cli.utils.authenticate",
+                     lambda ignored: UserInfo(True))
+    w2 = mock.patch("enstaller.config.authenticate",
+                     lambda ignored: UserInfo(True))
+    return w1(w2(f))
+
 
 def is_not_authenticated(f):
     return mock.patch("enstaller.main.authenticate",
@@ -212,3 +216,29 @@ def create_repositories(remote_entries=None, installed_entries=None):
         installed_repository.add_package(installed_entry)
 
     return remote_repository, installed_repository
+
+
+class FakeOptions(object):
+    def __init__(self):
+        self.force = False
+        self.forceall = False
+        self.no_deps = False
+        self.yes = False
+
+
+def create_prefix_with_eggs(config, prefix, installed_entries=None,
+                             remote_entries=None):
+    if remote_entries is None:
+        remote_entries = []
+    if installed_entries is None:
+        installed_entries = []
+
+    repository = repository_factory(remote_entries)
+
+    enpkg = Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+                  prefixes=[prefix])
+    for package in installed_entries:
+        package.store_location = prefix
+        enpkg._top_installed_repository.add_package(package)
+        enpkg._installed_repository.add_package(package)
+    return enpkg

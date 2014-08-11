@@ -31,7 +31,7 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.fetch import URLFetcher
-from enstaller.main import (check_prefixes, disp_store_info,
+from enstaller.main import (check_prefixes,
                             epd_install_confirm, env_option,
                             get_config_filename, get_package_path,
                             imports_option,
@@ -48,11 +48,12 @@ from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 
 import enstaller.tests.common
-from .common import (create_repositories, dummy_installed_package_factory,
+from .common import (create_prefix_with_eggs, create_repositories,
+                     dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring, is_authenticated,
-                     mock_fetcher_factory, unconnected_enpkg_factory, FAKE_MD5,
-                     FAKE_SIZE)
+                     mock_fetcher_factory, unconnected_enpkg_factory,
+                     FakeOptions, FAKE_MD5, FAKE_SIZE)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -325,24 +326,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(repository.find_packages("nose"), [])
 
 
-def _create_prefix_with_eggs(config, prefix, installed_entries=None,
-                             remote_entries=None):
-    if remote_entries is None:
-        remote_entries = []
-    if installed_entries is None:
-        installed_entries = []
-
-    repository = enstaller.tests.common.repository_factory(remote_entries)
-
-    enpkg = Enpkg(repository, mock_fetcher_factory(config.repository_cache),
-                  prefixes=[prefix])
-    for package in installed_entries:
-        package.store_location = prefix
-        enpkg._top_installed_repository.add_package(package)
-        enpkg._installed_repository.add_package(package)
-    return enpkg
-
-
 class TestSearch(unittest.TestCase):
     def test_no_installed(self):
         config = Configuration()
@@ -361,7 +344,7 @@ class TestSearch(unittest.TestCase):
             entries = [dummy_repository_package_factory("dummy", "1.0.0", 1),
                        dummy_repository_package_factory("dummy", "0.9.8", 1),
                        dummy_repository_package_factory("another_dummy", "2.0.0", 1)]
-            enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
+            enpkg = create_prefix_with_eggs(config, d, remote_entries=entries)
 
             with mock_print() as m:
                 search(enpkg._remote_repository,
@@ -382,7 +365,7 @@ class TestSearch(unittest.TestCase):
             entries = [dummy_repository_package_factory("dummy", "1.0.1", 1),
                        dummy_repository_package_factory("dummy", "0.9.8", 1)]
             installed_entries = [dummy_installed_package_factory("dummy", "1.0.1", 1)]
-            enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
+            enpkg = create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
                 search(enpkg._remote_repository,
@@ -403,7 +386,7 @@ class TestSearch(unittest.TestCase):
                        dummy_repository_package_factory("dummy", "0.9.8", 1),
                        dummy_repository_package_factory("another_package", "2.0.0", 1)]
             installed_entries = [dummy_installed_package_factory("dummy", "1.0.1", 1)]
-            enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
+            enpkg = create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
                 search(enpkg._remote_repository,
@@ -446,7 +429,7 @@ class TestSearch(unittest.TestCase):
 
         with mkdtemp() as d:
             with mock_print() as m:
-                enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
+                enpkg = create_prefix_with_eggs(config, d, remote_entries=entries)
                 search(enpkg._remote_repository,
                        enpkg._installed_repository, config, UserInfo(True))
 
@@ -542,7 +525,7 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(config, d,
+            enpkg = create_prefix_with_eggs(config, d,
                     installed_entries, remote_entries)
             with mock_print() as m:
                 update_all(enpkg, config, FakeOptions())
@@ -569,7 +552,7 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(config, d, installed_entries, remote_entries)
+            enpkg = create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.main.install_req") as mocked_install_req:
                 with mock_print() as m:
                     update_all(enpkg, config, FakeOptions())
@@ -598,20 +581,12 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         with mkdtemp() as d:
-            enpkg = _create_prefix_with_eggs(config, d, installed_entries, remote_entries)
+            enpkg = create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.main.install_req") as mocked_install_req:
                 with mock_print() as m:
                     update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
-
-class FakeOptions(object):
-    def __init__(self):
-        self.force = False
-        self.forceall = False
-        self.no_deps = False
-        self.yes = False
-
 
 class TestInstallFromRequirements(unittest.TestCase):
     def setUp(self):
@@ -634,7 +609,7 @@ class TestInstallFromRequirements(unittest.TestCase):
             fp.write("numpy 1.8.0-1\nnose 1.2.1-1")
 
         config = Configuration()
-        enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+        enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
         args = FakeOptions()
         args.requirements = requirements_file
 
@@ -656,91 +631,6 @@ class TestInstallReq(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    def test_simple_install(self):
-        remote_entries = [
-            dummy_repository_package_factory("nose", "1.3.0", 1)
-        ]
-
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(Configuration(), self.prefix, [],
-                    remote_entries)
-            install_req(enpkg, Configuration(), "nose", FakeOptions())
-            m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
-                                  ('install', 'nose-1.3.0-1.egg')])
-
-    def test_simple_non_existing_requirement(self):
-        config = Configuration()
-        r_error_string = "No egg found for requirement 'nono_le_petit_robot'.\n"
-        non_existing_requirement = "nono_le_petit_robot"
-
-        with mock.patch("enstaller.main.Enpkg.execute") as mocked_execute:
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [])
-            with mock_print() as mocked_print:
-                with self.assertRaises(SystemExit) as e:
-                    install_req(enpkg, config, non_existing_requirement,
-                                FakeOptions())
-                self.assertEqual(exception_code(e), 1)
-                self.assertEqual(mocked_print.value, r_error_string)
-            mocked_execute.assert_not_called()
-
-    def test_simple_no_install_needed(self):
-        installed_entries = [
-            dummy_installed_package_factory("nose", "1.3.0", 1)
-        ]
-        remote_entries = [
-            dummy_repository_package_factory("nose", "1.3.0", 1)
-        ]
-        config = Configuration()
-
-        with mock.patch("enstaller.main.Enpkg.execute") as m:
-            enpkg = _create_prefix_with_eggs(config, self.prefix,
-                                             installed_entries, remote_entries)
-            install_req(enpkg, config, "nose", FakeOptions())
-            m.assert_called_with([])
-
-    @is_authenticated
-    def test_install_not_available(self):
-        config = Configuration()
-
-        nose = dummy_repository_package_factory("nose", "1.3.0", 1)
-        nose.available = False
-        remote_entries = [nose]
-
-        enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-
-        with mock.patch("enstaller.main.Enpkg.execute"):
-            with mock.patch("enstaller.config.subscription_message") as subscription_message:
-                with self.assertRaises(SystemExit) as e:
-                    install_req(enpkg, config, "nose", FakeOptions())
-                subscription_message.assert_called()
-                self.assertEqual(exception_code(e), 1)
-
-    @is_authenticated
-    def test_recursive_install_unavailable_dependency(self):
-        config = Configuration()
-        config.set_auth("nono", "le gros robot")
-
-        r_output = textwrap.dedent("""
-        Cannot install 'scipy', as this package (or some of its requirements) are not
-        available at your subscription level 'Canopy / EPD Free' (You are currently
-        logged in as 'nono').
-        """)
-
-        self.maxDiff = None
-        numpy = dummy_repository_package_factory("numpy", "1.7.1", 1)
-        numpy.available = False
-        scipy = dummy_repository_package_factory("scipy", "0.12.0", 1)
-        scipy.packages = ["numpy 1.7.1"]
-
-        remote_entries = [numpy, scipy]
-
-        with mock.patch("enstaller.main.Enpkg.execute"):
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            with mock_print() as m:
-                with self.assertRaises(SystemExit):
-                    install_req(enpkg, config, "scipy", FakeOptions())
-                self.assertMultiLineEqual(m.value, r_output)
-
     @mock.patch("sys.platform", "darwin")
     def test_os_error_darwin(self):
         config = Configuration()
@@ -753,7 +643,7 @@ class TestInstallReq(unittest.TestCase):
             error = OSError()
             error.errno = errno.EACCES
             m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+            enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(SystemExit):
                 install_req(enpkg, config, "nose", FakeOptions())
 
@@ -769,7 +659,7 @@ class TestInstallReq(unittest.TestCase):
             error = OSError()
             error.errno = errno.EACCES
             m.side_effect = error
-            enpkg = _create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+            enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(OSError):
                 install_req(enpkg, config, "nose", FakeOptions())
 
@@ -799,7 +689,7 @@ class TestInstallReq(unittest.TestCase):
         with mock_print() as mocked_print:
             with mock_raw_input("yes"):
                 with mock.patch("enstaller.main.Enpkg.execute") as m:
-                    enpkg = _create_prefix_with_eggs(Configuration(),
+                    enpkg = create_prefix_with_eggs(Configuration(),
                                                      self.prefix, [],
                                                      remote_entries)
                     install_req(enpkg, Configuration(), "nose", FakeOptions())
