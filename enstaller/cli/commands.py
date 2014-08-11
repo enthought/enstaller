@@ -51,6 +51,16 @@ def info_option(remote_repository, installed_repository, name):
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
+def install_from_requirements(enpkg, config, args):
+    """
+    Install a set of requirements specified in the requirements file.
+    """
+    with open(args.requirements, "r") as fp:
+        for req in fp:
+            args.no_deps = True
+            install_req(enpkg, config, req.rstrip(), args)
+
+
 def list_option(prefixes, pat=None):
     for prefix in reversed(prefixes):
         print("prefix:", prefix)

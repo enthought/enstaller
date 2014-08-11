@@ -37,7 +37,7 @@ from enstaller.main import (check_prefixes,
                             imports_option,
                             install_from_requirements, install_req,
                             needs_to_downgrade_enstaller,
-                            name_egg, repository_factory,
+                            repository_factory,
                             search, update_all,
                             update_enstaller, whats_new)
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
@@ -434,41 +434,6 @@ class TestSearch(unittest.TestCase):
                        enpkg._installed_repository, config, UserInfo(True))
 
                 self.assertMultiLineEqual(m.value, r_output)
-
-class TestInstallFromRequirements(unittest.TestCase):
-    def setUp(self):
-        self.prefix = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.prefix)
-
-    def test_install_from_requirements(self):
-        # Given
-        remote_entries = [
-            dummy_repository_package_factory("numpy", "1.8.0", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
-            dummy_repository_package_factory("nose", "1.2.1", 2),
-            dummy_repository_package_factory("nose", "1.3.0", 1)
-        ]
-
-        requirements_file = os.path.join(self.prefix, "requirements.txt")
-        with open(requirements_file, "w") as fp:
-            fp.write("numpy 1.8.0-1\nnose 1.2.1-1")
-
-        config = Configuration()
-        enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-        args = FakeOptions()
-        args.requirements = requirements_file
-
-        # When
-        with mock.patch("enstaller.main.install_req") as mocked_install_req:
-            install_from_requirements(enpkg, config, args)
-
-        # Then
-        mocked_install_req.assert_has_calls(
-            [mock.call(enpkg, config, "numpy 1.8.0-1", args),
-             mock.call(enpkg, config, "nose 1.2.1-1", args)])
-
 
 @fake_keyring
 class TestInstallReq(unittest.TestCase):

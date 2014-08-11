@@ -44,8 +44,9 @@ from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
-                                    info_option, list_option, print_history,
-                                    revert, search, update_all, whats_new)
+                                    info_option, install_from_requirements,
+                                    list_option, print_history, revert, search,
+                                    update_all, whats_new)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
 from enstaller.cli.utils import install_req, repository_factory
 
@@ -171,16 +172,6 @@ def ensure_authenticated_config(config, config_filename):
     else:
         convert_auth_if_required(config_filename)
         return user
-
-
-def install_from_requirements(enpkg, config, args):
-    """
-    Install a set of requirements specified in the requirements file.
-    """
-    with open(args.requirements, "r") as fp:
-        for req in fp:
-            args.no_deps = True
-            install_req(enpkg, config, req.rstrip(), args)
 
 
 def configure_authentication_or_exit(config, config_filename):

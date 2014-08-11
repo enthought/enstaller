@@ -5,10 +5,10 @@ import shutil
 import sys
 import tempfile
 import textwrap
-import unittest
 
 import mock
 
+from egginst._compat import TestCase
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, mkdtemp
 
@@ -36,7 +36,7 @@ else:
         return ctx.exception.code
 
 
-class TestMisc(unittest.TestCase):
+class TestMisc(TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -65,7 +65,7 @@ class TestMisc(unittest.TestCase):
             name_egg(name)
 
 
-class TestInfoStrings(unittest.TestCase):
+class TestInfoStrings(TestCase):
     def test_print_install_time(self):
         with mkdtemp() as d:
             installed_entries = [dummy_installed_package_factory("dummy",
@@ -108,7 +108,7 @@ class TestInfoStrings(unittest.TestCase):
             self.assertEqual(m.value, r_out)
 
 
-class TestUpdatesCheck(unittest.TestCase):
+class TestUpdatesCheck(TestCase):
     def _create_repositories(self, entries, installed_entries):
         repository = Repository()
         for entry in entries:
@@ -207,7 +207,7 @@ class TestUpdatesCheck(unittest.TestCase):
         self.assertEqual(epd_update0["update"].version, "7.3")
 
 
-class TestInstallReq(unittest.TestCase):
+class TestInstallReq(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

@@ -1,5 +1,8 @@
 from __future__ import absolute_import, print_function
 
+import os
+import shutil
+import tempfile
 import textwrap
 
 import mock
@@ -16,7 +19,8 @@ from enstaller.tests.common import (FAKE_MD5, FAKE_SIZE, PY_VER,
                                     dummy_repository_package_factory,
                                     mock_print)
 
-from ..commands import info_option, update_all, whats_new
+from ..commands import (info_option, install_from_requirements, update_all,
+                        whats_new)
 
 
 class TestInfoStrings(TestCase):
@@ -211,3 +215,38 @@ class TestUpdatesCheck(TestCase):
                     update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
+
+
+class TestInstallFromRequirements(TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_install_from_requirements(self):
+        # Given
+        remote_entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2),
+            dummy_repository_package_factory("nose", "1.2.1", 2),
+            dummy_repository_package_factory("nose", "1.3.0", 1)
+        ]
+
+        requirements_file = os.path.join(self.prefix, "requirements.txt")
+        with open(requirements_file, "w") as fp:
+            fp.write("numpy 1.8.0-1\nnose 1.2.1-1")
+
+        config = Configuration()
+        enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
+        args = FakeOptions()
+        args.requirements = requirements_file
+
+        # When
+        with mock.patch("enstaller.cli.commands.install_req") as mocked_install_req:
+            install_from_requirements(enpkg, config, args)
+
+        # Then
+        mocked_install_req.assert_has_calls(
+            [mock.call(enpkg, config, "numpy 1.8.0-1", args),
+             mock.call(enpkg, config, "nose 1.2.1-1", args)])
