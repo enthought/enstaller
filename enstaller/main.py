@@ -40,7 +40,7 @@ from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository, egg_name_to_name_version
-from enstaller.resolve import Req, comparable_info
+from enstaller.resolve import Req
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
@@ -49,32 +49,12 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     revert, search)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
-                                 name_egg, repository_factory)
+                                 name_egg, repository_factory, updates_check)
 
 logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def updates_check(remote_repository, installed_repository):
-    updates = []
-    EPD_update = []
-    for package in installed_repository.iter_packages():
-        key = package.key
-        info = package._compat_dict
-
-        info["key"] = key
-        av_metadatas = remote_repository.find_sorted_packages(info['name'])
-        if len(av_metadatas) == 0:
-            continue
-        av_metadata = av_metadatas[-1]
-        if av_metadata.comparable_version > comparable_info(info):
-            if info['name'] == "epd":
-                EPD_update.append({'current': info, 'update': av_metadata})
-            else:
-                updates.append({'current': info, 'update': av_metadata})
-    return updates, EPD_update
 
 
 def whats_new(remote_repository, installed_repository):

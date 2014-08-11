@@ -12,6 +12,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository
 from enstaller.requests_utils import _ResponseIterator
+from enstaller.resolve import comparable_info
 
 
 FMT = '%-20s %-20s %s'
@@ -67,6 +68,26 @@ def repository_factory(config):
 
 def name_egg(egg):
     return split_eggname(egg)[0]
+
+
+def updates_check(remote_repository, installed_repository):
+    updates = []
+    EPD_update = []
+    for package in installed_repository.iter_packages():
+        key = package.key
+        info = package._compat_dict
+
+        info["key"] = key
+        av_metadatas = remote_repository.find_sorted_packages(info['name'])
+        if len(av_metadatas) == 0:
+            continue
+        av_metadata = av_metadatas[-1]
+        if av_metadata.comparable_version > comparable_info(info):
+            if info['name'] == "epd":
+                EPD_update.append({'current': info, 'update': av_metadata})
+            else:
+                updates.append({'current': info, 'update': av_metadata})
+    return updates, EPD_update
 
 
 # Private functions
