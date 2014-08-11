@@ -46,6 +46,7 @@ from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
+from enstaller.cli.commands import env_option, imports_option
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
                                  name_egg, repository_factory)
@@ -56,12 +57,6 @@ logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def env_option(prefixes):
-    print("Prefixes:")
-    for p in prefixes:
-        print('    %s%s' % (p, ['', ' (sys)'][p == sys.prefix]))
 
 
 def info_option(remote_repository, installed_repository, name):
@@ -97,18 +92,6 @@ def list_option(prefixes, pat=None):
         repository = Repository._from_prefixes([prefix])
         print_installed(repository, pat)
         print()
-
-
-def imports_option(repository):
-    print(FMT % ('Name', 'Version', 'Location'))
-    print(60 * "=")
-
-    names = set(package.name for package in repository.iter_packages())
-    for name in sorted(names, key=lambda s: s.lower()):
-        packages = repository.find_packages(name)
-        info = packages[0]._compat_dict
-        loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
-        print(FMT % (name, VB_FMT % info, loc))
 
 
 def search(remote_repository, installed_repository, config, user, pat=None):
