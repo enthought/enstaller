@@ -139,10 +139,11 @@ def imports_option(repository):
         print(FMT % (name, VB_FMT % info, loc))
 
 
-def search(enpkg, remote_repository, installed_repository, config, user,
-           pat=None):
+def search(remote_repository, installed_repository, config, user, pat=None):
     """
-    Print the packages that are available in the (remote) KVS.
+    Print the packages that are available in the (remote) repository.
+
+    It also prints a '*' in front of packages already installed.
     """
     # Flag indicating if the user received any 'not subscribed to'
     # messages
@@ -778,7 +779,7 @@ def main(argv=None):
         return
 
     if args.search:                               # --search
-        search(enpkg, enpkg._remote_repository, enpkg._installed_repository,
+        search(enpkg._remote_repository, enpkg._installed_repository,
                config, user, pat)
         return
 

@@ -475,7 +475,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository,
+                search(enpkg._remote_repository,
                        enpkg._top_installed_repository, config, UserInfo(True))
                 self.assertMultiLineEqual(m.value, r_output)
 
@@ -496,7 +496,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository,
+                search(enpkg._remote_repository,
                        enpkg._installed_repository, config, UserInfo(True))
                 self.assertMultiLineEqual(m.value, r_output)
 
@@ -517,7 +517,7 @@ class TestSearch(unittest.TestCase):
             enpkg = _create_prefix_with_eggs(config, d, installed_entries, entries)
 
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository,
+                search(enpkg._remote_repository,
                        enpkg._top_installed_repository,
                        config, UserInfo(True),
                        pat=re.compile("dummy"))
@@ -531,7 +531,7 @@ class TestSearch(unittest.TestCase):
                                      * 1.0.1-1            commercial           {0}
                 """.format(""))
             with mock_print() as m:
-                search(enpkg, enpkg._remote_repository,
+                search(enpkg._remote_repository,
                        enpkg._top_installed_repository, config,
                        UserInfo(True), pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
@@ -558,7 +558,7 @@ class TestSearch(unittest.TestCase):
         with mkdtemp() as d:
             with mock_print() as m:
                 enpkg = _create_prefix_with_eggs(config, d, remote_entries=entries)
-                search(enpkg, enpkg._remote_repository,
+                search(enpkg._remote_repository,
                        enpkg._installed_repository, config, UserInfo(True))
 
                 self.assertMultiLineEqual(m.value, r_output)
