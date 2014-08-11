@@ -36,8 +36,8 @@ from enstaller.main import (check_prefixes, disp_store_info,
                             get_config_filename, get_package_path,
                             imports_option,
                             install_from_requirements, install_req,
-                            install_time_string, needs_to_downgrade_enstaller,
-                            name_egg, print_installed, repository_factory,
+                            needs_to_downgrade_enstaller,
+                            name_egg, repository_factory,
                             search, update_all, updates_check,
                             update_enstaller, whats_new)
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
@@ -342,43 +342,6 @@ def _create_prefix_with_eggs(config, prefix, installed_entries=None,
         enpkg._installed_repository.add_package(package)
     return enpkg
 
-class TestInfoStrings(unittest.TestCase):
-    def test_print_install_time(self):
-        with mkdtemp() as d:
-            installed_entries = [dummy_installed_package_factory("dummy",
-                                                                 "1.0.1", 1)]
-            enpkg = _create_prefix_with_eggs(Configuration(), d, installed_entries)
-
-            self.assertRegexpMatches(install_time_string(enpkg._installed_repository,
-                                                         "dummy"),
-                                     "dummy-1.0.1-1.egg was installed on:")
-
-            self.assertEqual(install_time_string(enpkg._installed_repository, "ddummy"), "")
-
-    def test_print_installed(self):
-        with mkdtemp() as d:
-            r_out = textwrap.dedent("""\
-                Name                 Version              Store
-                ============================================================
-                dummy                1.0.1-1              -
-                """)
-            ec = EggInst(DUMMY_EGG, d)
-            ec.install()
-
-            repository = Repository._from_prefixes([d])
-            with mock_print() as m:
-                print_installed(repository)
-            self.assertEqual(m.value, r_out)
-
-            r_out = textwrap.dedent("""\
-                Name                 Version              Store
-                ============================================================
-                """)
-
-            repository = Repository._from_prefixes([d])
-            with mock_print() as m:
-                print_installed(repository, pat=re.compile("no_dummy"))
-            self.assertEqual(m.value, r_out)
 
 class TestSearch(unittest.TestCase):
     def test_no_installed(self):

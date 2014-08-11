@@ -1,3 +1,5 @@
+from __future__ import absolute_import, print_function
+
 import io
 import json
 
@@ -33,6 +35,17 @@ def install_time_string(installed_repository, name):
     for info in installed_repository.find_packages(name):
         lines.append('%s was installed on: %s' % (info.key, info.ctime))
     return "\n".join(lines)
+
+
+def print_installed(repository, pat=None):
+    print(FMT % ('Name', 'Version', 'Store'))
+    print(60 * '=')
+    for package in repository.iter_packages():
+        if pat and not pat.search(package.name):
+            continue
+        info = package._compat_dict
+        print(FMT % (name_egg(package.key), VB_FMT % info,
+              disp_store_info(info)))
 
 
 def repository_factory(config):

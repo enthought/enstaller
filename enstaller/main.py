@@ -48,23 +48,12 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     print_history, revert)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
-                                 name_egg, repository_factory)
+                                 name_egg, print_installed, repository_factory)
 
 logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def print_installed(repository, pat=None):
-    print(FMT % ('Name', 'Version', 'Store'))
-    print(60 * '=')
-    for package in repository.iter_packages():
-        if pat and not pat.search(package.name):
-            continue
-        info = package._compat_dict
-        print(FMT % (name_egg(package.key), VB_FMT % info,
-              disp_store_info(info)))
 
 
 def list_option(prefixes, pat=None):
