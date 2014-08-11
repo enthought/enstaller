@@ -45,59 +45,14 @@ from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, list_option, print_history,
-                                    revert, search)
+                                    revert, search, update_all, whats_new)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, VB_FMT
-from enstaller.cli.utils import (install_req, name_egg, repository_factory,
-                                 updates_check)
+from enstaller.cli.utils import (install_req, name_egg, repository_factory)
 
 logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def whats_new(remote_repository, installed_repository):
-    updates, EPD_update = updates_check(remote_repository,
-                                        installed_repository)
-    if not (updates or EPD_update):
-        print("No new version of any installed package is available")
-    else:
-        if EPD_update:
-            new_EPD_version = EPD_update[0]['update'].full_version
-            print("EPD", new_EPD_version, "is available. "
-                  "To update to it (with confirmation warning), run "
-                  "'enpkg epd'.")
-        if updates:
-            print(FMT % ('Name', 'installed', 'available'))
-            print(60 * "=")
-            for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
-                             update['update'].full_version))
-
-
-def update_all(enpkg, config, args):
-    updates, EPD_update = updates_check(enpkg._remote_repository,
-                                        enpkg._installed_repository)
-    if not (updates or EPD_update):
-        print("No new version of any installed package is available")
-    else:
-        if EPD_update:
-            new_EPD_version = EPD_update[0]['update'].full_version
-            print("EPD", new_EPD_version, "is available. "
-                  "To update to it (with confirmation warning), "
-                  "run 'enpkg epd'.")
-        if updates:
-            print("The following updates and their dependencies "
-                  "will be installed")
-            print(FMT % ('Name', 'installed', 'available'))
-            print(60 * "=")
-            for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
-                             update['update'].full_version))
-            for update in updates:
-                install_req(enpkg, config, update['current']['name'], args)
 
 
 def epd_install_confirm(force_yes=False):

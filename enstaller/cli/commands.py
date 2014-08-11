@@ -7,7 +7,8 @@ from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
 
-from .utils import FMT, FMT4, VB_FMT, install_time_string, print_installed
+from .utils import (FMT, FMT4, VB_FMT, install_req, install_time_string,
+                    name_egg, print_installed, updates_check)
 
 
 def env_option(prefixes):
@@ -115,3 +116,47 @@ def search(remote_repository, installed_repository, config, user, pat=None):
             Note: some of those packages are not available at your current
             subscription level ({0!r}).""".format(user.subscription_level))
         print(msg)
+
+
+def update_all(enpkg, config, args):
+    updates, EPD_update = updates_check(enpkg._remote_repository,
+                                        enpkg._installed_repository)
+    if not (updates or EPD_update):
+        print("No new version of any installed package is available")
+    else:
+        if EPD_update:
+            new_EPD_version = EPD_update[0]['update'].full_version
+            print("EPD", new_EPD_version, "is available. "
+                  "To update to it (with confirmation warning), "
+                  "run 'enpkg epd'.")
+        if updates:
+            print("The following updates and their dependencies "
+                  "will be installed")
+            print(FMT % ('Name', 'installed', 'available'))
+            print(60 * "=")
+            for update in updates:
+                print(FMT % (name_egg(update['current']['key']),
+                             VB_FMT % update['current'],
+                             update['update'].full_version))
+            for update in updates:
+                install_req(enpkg, config, update['current']['name'], args)
+
+
+def whats_new(remote_repository, installed_repository):
+    updates, EPD_update = updates_check(remote_repository,
+                                        installed_repository)
+    if not (updates or EPD_update):
+        print("No new version of any installed package is available")
+    else:
+        if EPD_update:
+            new_EPD_version = EPD_update[0]['update'].full_version
+            print("EPD", new_EPD_version, "is available. "
+                  "To update to it (with confirmation warning), run "
+                  "'enpkg epd'.")
+        if updates:
+            print(FMT % ('Name', 'installed', 'available'))
+            print(60 * "=")
+            for update in updates:
+                print(FMT % (name_egg(update['current']['key']),
+                             VB_FMT % update['current'],
+                             update['update'].full_version))
