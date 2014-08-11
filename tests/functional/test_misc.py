@@ -26,7 +26,8 @@ class TestMisc(unittest.TestCase):
 
     @authenticated_config
     def test_log(self):
-        with mock.patch("enstaller.main.History", spec=History) as mocked_history:
+        with mock.patch("enstaller.cli.commands.History",
+                        spec=History) as mocked_history:
             with self.assertRaises(SystemExit) as e:
                 with mock_print() as m:
                     main_noexc(["--log"])
@@ -37,7 +38,7 @@ class TestMisc(unittest.TestCase):
     @authenticated_config
     def test_freeze(self):
         installed_requirements = ["dummy 1.0.0-1", "another_dummy 1.0.1-1"]
-        with mock.patch("enstaller.main.get_freeze_list",
+        with mock.patch("enstaller.cli.commands.get_freeze_list",
                         return_value=installed_requirements):
             with self.assertRaises(SystemExit) as e:
                 with mock_print() as m:

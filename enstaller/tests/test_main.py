@@ -34,7 +34,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.main import (check_prefixes, disp_store_info,
                             epd_install_confirm, env_option,
                             get_config_filename, get_package_path,
-                            imports_option, info_option,
+                            imports_option,
                             install_from_requirements, install_req,
                             install_time_string, needs_to_downgrade_enstaller,
                             name_egg, print_installed, repository_factory,
@@ -48,7 +48,7 @@ from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 
 import enstaller.tests.common
-from .common import (dummy_installed_package_factory,
+from .common import (create_repositories, dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring, is_authenticated,
                      mock_fetcher_factory, unconnected_enpkg_factory, FAKE_MD5,
@@ -325,21 +325,6 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(repository.find_packages("nose"), [])
 
 
-def _create_repositories(remote_entries=None, installed_entries=None):
-    if remote_entries is None:
-        remote_entries = []
-    if installed_entries is None:
-        installed_entries = []
-
-    remote_repository = Repository()
-    for remote_entry in remote_entries:
-        remote_repository.add_package(remote_entry)
-    installed_repository = Repository()
-    for installed_entry in installed_entries:
-        installed_repository.add_package(installed_entry)
-
-    return remote_repository, installed_repository
-
 def _create_prefix_with_eggs(config, prefix, installed_entries=None,
                              remote_entries=None):
     if remote_entries is None:
@@ -369,44 +354,6 @@ class TestInfoStrings(unittest.TestCase):
                                      "dummy-1.0.1-1.egg was installed on:")
 
             self.assertEqual(install_time_string(enpkg._installed_repository, "ddummy"), "")
-
-    def test_info_option(self):
-        self.maxDiff = None
-
-        # Given
-        r_output = textwrap.dedent("""\
-        Package: enstaller
-
-        Version: 4.6.2-1
-            Product: commercial
-            Available: True
-            Python version: {2}
-            Store location: {3}
-            MD5: {0}
-            Size: {1}
-            Requirements: None
-        Version: 4.6.3-1
-            Product: commercial
-            Available: True
-            Python version: {2}
-            Store location: {3}
-            MD5: {0}
-            Size: {1}
-            Requirements: None
-        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, ""))
-
-        entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
-                   dummy_repository_package_factory("enstaller", "4.6.3", 1)]
-
-        remote_repository, installed_repository = \
-                _create_repositories(remote_entries=entries)
-
-        # When
-        with mock_print() as m:
-            info_option(remote_repository, installed_repository,
-                        "enstaller")
-        # Then
-        self.assertMultiLineEqual(m.value, r_output)
 
     def test_print_installed(self):
         with mkdtemp() as d:
@@ -587,7 +534,7 @@ class TestUpdatesCheck(unittest.TestCase):
         ]
 
         remote, installed = \
-                _create_repositories(installed_entries=installed_entries)
+                create_repositories(installed_entries=installed_entries)
 
         # When
         updates, EPD_update =  updates_check(remote, installed)
@@ -601,7 +548,7 @@ class TestUpdatesCheck(unittest.TestCase):
         installed_entries = [dummy_installed_package_factory("EPD", "7.2", 1)]
         remote_entries = [dummy_repository_package_factory("EPD", "7.3", 1)]
 
-        remote, installed = _create_repositories(remote_entries,
+        remote, installed = create_repositories(remote_entries,
                                                  installed_entries)
 
         # When
@@ -633,7 +580,7 @@ class TestUpdatesCheck(unittest.TestCase):
             dummy_repository_package_factory("scipy", "0.13.0", 1)
         ]
 
-        remote, installed = _create_repositories(remote_entries,
+        remote, installed = create_repositories(remote_entries,
                                                  installed_entries)
 
         # When
@@ -658,7 +605,7 @@ class TestUpdatesCheck(unittest.TestCase):
             dummy_repository_package_factory("EPD", "7.3", 2),
         ]
 
-        remote, installed = _create_repositories(remote_entries,
+        remote, installed = create_repositories(remote_entries,
                                                  installed_entries)
 
         # When
@@ -681,8 +628,8 @@ class TestUpdatesCheck(unittest.TestCase):
             dummy_repository_package_factory("scipy", "0.12.0", 1)
         ]
 
-        remote, installed = _create_repositories(remote_entries,
-                                                 installed_entries)
+        remote, installed = create_repositories(remote_entries,
+                                                installed_entries)
 
         # When
         with mock_print() as m:

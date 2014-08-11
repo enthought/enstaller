@@ -39,14 +39,13 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
-from enstaller.freeze import get_freeze_list
-from enstaller.history import History
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
-from enstaller.cli.commands import env_option, imports_option
+from enstaller.cli.commands import (env_option, freeze, imports_option,
+                                    print_history, revert)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
                                  name_egg, repository_factory)
@@ -57,23 +56,6 @@ logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def info_option(remote_repository, installed_repository, name):
-    name = name.lower()
-    print('Package:', name)
-    print(install_time_string(installed_repository, name))
-    pad = 4*' '
-    for metadata in remote_repository.find_sorted_packages(name):
-        print('Version: ' + metadata.full_version)
-        print(pad + 'Product: %s' % metadata.product)
-        print(pad + 'Available: %s' % metadata.available)
-        print(pad + 'Python version: %s' % metadata.python)
-        print(pad + 'Store location: %s' % metadata.store_location)
-        print(pad + 'MD5: %s' % metadata.md5)
-        print(pad + 'Size: %s' % metadata.size)
-        reqs = set(r for r in metadata.packages)
-        print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
 def print_installed(repository, pat=None):
@@ -635,14 +617,11 @@ def main(argv=None):
         return
 
     if args.log:                                  # --log
-        h = History(prefix)
-        h.update()
-        h.print_log()
+        print_history(prefix)
         return
 
     if args.freeze:
-        for package in get_freeze_list(prefixes):
-            print(package)
+        freeze(prefixes)
         return
 
     if args.list:                                 # --list
@@ -684,11 +663,7 @@ def main(argv=None):
         return
 
     if args.revert:                               # --revert
-        actions = enpkg.revert_actions(args.revert)
-        if actions:
-            enpkg.execute(actions)
-        else:
-            print("Nothing to do")
+        revert(enpkg, args.revert)
         return
 
     # Try to auto-update enstaller

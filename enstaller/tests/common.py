@@ -196,3 +196,19 @@ def mock_fetcher_factory(repository_cache):
     mocked_fetcher = mock.Mock()
     mocked_fetcher.cache_dir = repository_cache
     return mocked_fetcher
+
+
+def create_repositories(remote_entries=None, installed_entries=None):
+    if remote_entries is None:
+        remote_entries = []
+    if installed_entries is None:
+        installed_entries = []
+
+    remote_repository = Repository()
+    for remote_entry in remote_entries:
+        remote_repository.add_package(remote_entry)
+    installed_repository = Repository()
+    for installed_entry in installed_entries:
+        installed_repository.add_package(installed_entry)
+
+    return remote_repository, installed_repository
