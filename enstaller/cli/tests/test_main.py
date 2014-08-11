@@ -39,7 +39,7 @@ class TestInfoStrings(TestCase):
                    dummy_repository_package_factory("enstaller", "4.6.3", 1)]
 
         remote_repository, installed_repository = \
-                create_repositories(remote_entries=entries)
+            create_repositories(remote_entries=entries)
 
         # When
         with mock_print() as m:
