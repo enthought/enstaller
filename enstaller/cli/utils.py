@@ -12,6 +12,13 @@ from enstaller.repository import Repository
 from enstaller.requests_utils import _ResponseIterator
 
 
+FMT = '%-20s %-20s %s'
+VB_FMT = '%(version)s-%(build)s'
+FMT4 = '%-20s %-20s %-20s %s'
+
+DEFAULT_TEXT_WIDTH = 79
+
+
 def disp_store_info(info):
     sl = info.get('store_location')
     if not sl:
@@ -19,6 +26,13 @@ def disp_store_info(info):
     for rm in 'http://', 'https://', 'www', '.enthought.com', '/repo/':
         sl = sl.replace(rm, '')
     return sl.replace('/eggs/', ' ').strip('/')
+
+
+def install_time_string(installed_repository, name):
+    lines = []
+    for info in installed_repository.find_packages(name):
+        lines.append('%s was installed on: %s' % (info.key, info.ctime))
+    return "\n".join(lines)
 
 
 def repository_factory(config):

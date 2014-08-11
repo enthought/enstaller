@@ -46,33 +46,22 @@ from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
-from enstaller.cli.utils import disp_store_info, name_egg, repository_factory
+from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
+from enstaller.cli.utils import (disp_store_info, install_time_string,
+                                 name_egg, repository_factory)
 
 
 logger = logging.getLogger(__name__)
 
 
-FMT = '%-20s %-20s %s'
-VB_FMT = '%(version)s-%(build)s'
-FMT4 = '%-20s %-20s %-20s %s'
-
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-DEFAULT_TEXT_WIDTH = 79
 
 
 def env_option(prefixes):
     print("Prefixes:")
     for p in prefixes:
         print('    %s%s' % (p, ['', ' (sys)'][p == sys.prefix]))
-
-
-def install_time_string(installed_repository, name):
-    lines = []
-    for info in installed_repository.find_packages(name):
-        lines.append('%s was installed on: %s' % (info.key, info.ctime))
-    return "\n".join(lines)
 
 
 def info_option(remote_repository, installed_repository, name):
