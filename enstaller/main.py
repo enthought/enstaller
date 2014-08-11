@@ -45,68 +45,16 @@ from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
-                                    print_history, revert)
-from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
+                                    info_option, list_option, print_history,
+                                    revert, search)
+from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
-                                 name_egg, print_installed, repository_factory)
+                                 name_egg, repository_factory)
 
 logger = logging.getLogger(__name__)
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
-
-
-def list_option(prefixes, pat=None):
-    for prefix in reversed(prefixes):
-        print("prefix:", prefix)
-        repository = Repository._from_prefixes([prefix])
-        print_installed(repository, pat)
-        print()
-
-
-def search(remote_repository, installed_repository, config, user, pat=None):
-    """
-    Print the packages that are available in the (remote) repository.
-
-    It also prints a '*' in front of packages already installed.
-    """
-    # Flag indicating if the user received any 'not subscribed to'
-    # messages
-    subscribed = True
-
-    print(FMT4 % ('Name', '  Versions', 'Product', 'Note'))
-    print(80 * '=')
-
-    names = {}
-    for metadata in remote_repository.iter_packages():
-        names[metadata.name] = metadata.name
-
-    installed = {}
-    for package in installed_repository.iter_packages():
-        installed[package.name] = VB_FMT % package._compat_dict
-
-    for name in sorted(names, key=lambda s: s.lower()):
-        if pat and not pat.search(name):
-            continue
-        disp_name = names[name]
-        installed_version = installed.get(name)
-        for metadata in remote_repository.find_sorted_packages(name):
-            version = metadata.full_version
-            disp_ver = (('* ' if installed_version == version else '  ') +
-                        version)
-            available = metadata.available
-            product = metadata.product
-            if not available:
-                subscribed = False
-            print(FMT4 % (disp_name, disp_ver, product,
-                  '' if available else 'not subscribed to'))
-            disp_name = ''
-
-    if config.use_webservice and not subscribed:
-        msg = textwrap.dedent("""\
-            Note: some of those packages are not available at your current
-            subscription level ({0!r}).""".format(user.subscription_level))
-        print(msg)
 
 
 def updates_check(remote_repository, installed_repository):

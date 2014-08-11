@@ -17,7 +17,7 @@ from .common import authenticated_config
 class TestMisc(unittest.TestCase):
     @authenticated_config
     def test_list_bare(self):
-        with mock.patch("enstaller.main.print_installed"):
+        with mock.patch("enstaller.cli.commands.print_installed"):
             with self.assertRaises(SystemExit) as e:
                 with mock_print() as m:
                     main_noexc(["--list"])
