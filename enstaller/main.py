@@ -46,8 +46,8 @@ from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, list_option, print_history,
                                     revert, search, update_all, whats_new)
-from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, VB_FMT
-from enstaller.cli.utils import (install_req, name_egg, repository_factory)
+from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
+from enstaller.cli.utils import install_req, repository_factory
 
 logger = logging.getLogger(__name__)
 
