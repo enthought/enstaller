@@ -489,7 +489,7 @@ def main(argv=None):
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
-        p.error("Requirement(s) missing")
+        parser.error("Requirement(s) missing")
     elif len(args.cnames) == 2:
         pat = re.compile(r'\d+\.\d+')
         if pat.match(args.cnames[1]):
