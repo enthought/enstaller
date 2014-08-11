@@ -64,7 +64,6 @@ class TestInfoStrings(unittest.TestCase):
 
     def test_print_installed(self):
         with mkdtemp() as d:
-            d = "/Users/cournape/tmp/egginst"
             r_out = textwrap.dedent("""\
                 Name                 Version              Store
                 ============================================================
