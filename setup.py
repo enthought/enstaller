@@ -90,6 +90,7 @@ packages = [
     'egginst',
     'egginst.console',
     'enstaller',
+    'enstaller.cli',
     'enstaller.indexed_repo',
     'enstaller.vendor',
     'enstaller.vendor.cachecontrol',

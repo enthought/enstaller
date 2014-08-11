@@ -9,8 +9,6 @@ from __future__ import print_function
 
 import argparse
 import errno
-import io
-import json
 import logging
 import ntpath
 import os
@@ -24,7 +22,6 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
-from egginst._compat import urlparse
 from egginst.progress import console_progress_manager_factory
 from enstaller._version import is_released as IS_RELEASED
 
@@ -45,12 +42,12 @@ from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
-from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
-from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
+
+from enstaller.cli.utils import repository_factory
 
 
 logger = logging.getLogger(__name__)
@@ -443,42 +440,6 @@ def ensure_authenticated_config(config, config_filename):
     else:
         convert_auth_if_required(config_filename)
         return user
-
-
-def _display_store_name(store_location):
-    parts = urlparse.urlsplit(store_location)
-    return urlparse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
-
-def _fetch_json_with_progress(resp, store_location):
-    data = io.BytesIO()
-
-    length = int(resp.headers.get("content-length", 0))
-    display = _display_store_name(store_location)
-    progress = console_progress_manager_factory("Fetching index", display,
-                                                size=length)
-    with progress:
-        for chunk in _ResponseIterator(resp):
-            data.write(chunk)
-            progress.update(len(chunk))
-
-    return json.loads(data.getvalue().decode("utf-8"))
-
-
-def repository_factory(config):
-    index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict)
-    index_fetcher._enable_etag_support()
-
-    repository = Repository()
-    for url, store_location in config.indices:
-        resp = index_fetcher.fetch(url)
-        resp.raise_for_status()
-
-        for package in parse_index(_fetch_json_with_progress(resp,
-                                                             store_location),
-                                   store_location):
-            repository.add_package(package)
-    return repository
 
 
 def install_from_requirements(enpkg, config, args):
