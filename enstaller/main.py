@@ -50,9 +50,7 @@ from enstaller.cli.utils import DEFAULT_TEXT_WIDTH, FMT, FMT4, VB_FMT
 from enstaller.cli.utils import (disp_store_info, install_time_string,
                                  name_egg, repository_factory)
 
-
 logger = logging.getLogger(__name__)
-
 
 PLEASE_AUTH_MESSAGE = ("No authentication configured, required to continue.\n"
                        "To login, type 'enpkg --userpass'.")
@@ -65,7 +63,8 @@ def print_installed(repository, pat=None):
         if pat and not pat.search(package.name):
             continue
         info = package._compat_dict
-        print(FMT % (name_egg(package.key), VB_FMT % info, disp_store_info(info)))
+        print(FMT % (name_egg(package.key), VB_FMT % info,
+              disp_store_info(info)))
 
 
 def list_option(prefixes, pat=None):
@@ -111,7 +110,7 @@ def search(remote_repository, installed_repository, config, user, pat=None):
             if not available:
                 subscribed = False
             print(FMT4 % (disp_name, disp_ver, product,
-                   '' if available else 'not subscribed to'))
+                  '' if available else 'not subscribed to'))
             disp_name = ''
 
     if config.use_webservice and not subscribed:
@@ -142,7 +141,8 @@ def updates_check(remote_repository, installed_repository):
 
 
 def whats_new(remote_repository, installed_repository):
-    updates, EPD_update = updates_check(remote_repository, installed_repository)
+    updates, EPD_update = updates_check(remote_repository,
+                                        installed_repository)
     if not (updates or EPD_update):
         print("No new version of any installed package is available")
     else:
@@ -172,8 +172,8 @@ def update_all(enpkg, config, args):
                   "To update to it (with confirmation warning), "
                   "run 'enpkg epd'.")
         if updates:
-            print ("The following updates and their dependencies "
-                   "will be installed")
+            print("The following updates and their dependencies "
+                  "will be installed")
             print(FMT % ('Name', 'installed', 'available'))
             print(60 * "=")
             for update in updates:
@@ -183,6 +183,7 @@ def update_all(enpkg, config, args):
             for update in updates:
                 install_req(enpkg, config, update['current']['name'], args)
 
+
 def epd_install_confirm(force_yes=False):
     print("Warning: 'enpkg epd' will downgrade any packages that are currently")
     print("at a higher version than in the specified EPD release.")
@@ -190,6 +191,7 @@ def epd_install_confirm(force_yes=False):
     print("    enpkg --update-all")
     return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
                          force_yes)
+
 
 def install_req(enpkg, config, req, opts):
     """
@@ -241,10 +243,9 @@ def install_req(enpkg, config, req, opts):
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
-        actions = enpkg._solver.install_actions(
-                req,
-                mode=mode,
-                force=opts.force, forceall=opts.forceall)
+        actions = enpkg._solver.install_actions(req, mode=mode,
+                                                force=opts.force,
+                                                forceall=opts.forceall)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
@@ -296,6 +297,7 @@ def update_enstaller(enpkg, config, autoupdate, opts):
             updated = True
     return updated
 
+
 def get_package_path(prefix):
     """Return site-packages path for the given repo prefix.
 
@@ -323,7 +325,7 @@ def check_prefixes(prefixes):
         try:
             index_order.append(sys_path.index(path))
         except ValueError:
-            msg = "Expected to find %s in PYTHONPATH" % (path,)
+            msg = "Expected to find %s in PYTHONPATH" % (path, )
             raise InvalidPythonPathConfiguration(msg)
     else:
         if not index_order == sorted(index_order):
@@ -365,6 +367,7 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
         {2!r}).
         """.format(username, auth_url, original_error_string))
     return msg
+
 
 def ensure_authenticated_config(config, config_filename):
     try:
@@ -420,6 +423,7 @@ def configure_authentication_or_exit(config, config_filename):
 def _user_base():
     return getattr(site, "USER_BASE", abs_expanduser('~/.local'))
 
+
 def _create_parser():
     p = ArgumentParser(description=__doc__)
     p.add_argument('cnames', metavar='NAME', nargs='*',
@@ -443,7 +447,7 @@ def _create_parser():
     p.add_argument('-l', "--list", action="store_true",
                    help="list the packages currently installed on the system")
     p.add_argument('-n', "--dry-run", action="store_true",
-               help="show what would have been downloaded/removed/installed")
+                   help="show what would have been downloaded/removed/installed")
     p.add_argument('-N', "--no-deps", action="store_true",
                    help="neither download nor install dependencies")
     p.add_argument("--env", action="store_true",
@@ -474,13 +478,13 @@ def _create_parser():
     p.add_argument("--update-all", action="store_true",
                    help="update all installed packages")
     p.add_argument("--user", action="store_true",
-               help="install into user prefix, i.e. --prefix=%r" % \
-                    _user_base())
+                   help="install into user prefix, i.e. --prefix=%r" %
+                        _user_base())
     p.add_argument("--userpass", action="store_true",
                    help="prompt for Enthought authentication, and save in "
                    "configuration file .enstaller4rc")
     p.add_argument('-v', "--verbose", action="count", default=0,
-                   help="Verbose output if specified once, very verbose if " \
+                   help="Verbose output if specified once, very verbose if "
                         "specified twice.")
     p.add_argument('--version', action="version",
                    version='enstaller version: ' + enstaller.__version__)
@@ -510,12 +514,12 @@ def _preprocess_options(argv):
     # Check for incompatible actions and options
     # Action options which take no package name pattern:
     simple_standalone_actions = (args.config, args.env, args.userpass,
-                                args.revert, args.log, args.whats_new,
-                                args.update_all, args.remove_enstaller,
-                                args.add_url, args.freeze, args.requirements)
+                                 args.revert, args.log, args.whats_new,
+                                 args.update_all, args.remove_enstaller,
+                                 args.add_url, args.freeze, args.requirements)
     # Action options which can take a package name pattern:
     complex_standalone_actions = (args.list, args.imports,
-                                 args.search, args.info, args.remove)
+                                  args.search, args.info, args.remove)
 
     count_simple_actions = sum(bool(opt) for opt in simple_standalone_actions)
     count_complex_actions = sum(bool(opt) for opt in complex_standalone_actions)
@@ -577,7 +581,7 @@ def _compute_prefixes(args, config):
 
 
 def main(argv=None):
-    if argv is None: # pragma: no cover
+    if argv is None:  # pragma: no cover
         argv = sys.argv[1:]
 
     parser, args = _preprocess_options(argv)
@@ -602,8 +606,8 @@ def main(argv=None):
         try:
             check_prefixes(prefixes)
         except InvalidPythonPathConfiguration:
-            msg  = "Using the --user option, but your PYTHONPATH is not " \
-                   "setup accordingly"
+            msg = "Using the --user option, but your PYTHONPATH is not " \
+                  "setup accordingly"
             warnings.warn(msg)
 
     exit_if_sudo_on_venv(prefix)
@@ -751,6 +755,7 @@ def main(argv=None):
         else:
             install_req(enpkg, config, req, args)
 
+
 def main_noexc(argv=None):
     if "ENSTALLER_DEBUG" in os.environ:
         enstaller_debug = True
@@ -775,5 +780,5 @@ Please report this on enstaller issue tracker:
             print(msg % ("enstaller", "enstaller", e.__class__, repr(e)))
             sys.exit(1)
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     main_noexc()
