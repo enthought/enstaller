@@ -36,7 +36,6 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
-from enstaller.egg_meta import split_eggname
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
@@ -47,7 +46,7 @@ from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
-from enstaller.cli.utils import repository_factory
+from enstaller.cli.utils import disp_store_info, name_egg, repository_factory
 
 
 logger = logging.getLogger(__name__)
@@ -67,19 +66,6 @@ def env_option(prefixes):
     print("Prefixes:")
     for p in prefixes:
         print('    %s%s' % (p, ['', ' (sys)'][p == sys.prefix]))
-
-
-def disp_store_info(info):
-    sl = info.get('store_location')
-    if not sl:
-        return '-'
-    for rm in 'http://', 'https://', 'www', '.enthought.com', '/repo/':
-        sl = sl.replace(rm, '')
-    return sl.replace('/eggs/', ' ').strip('/')
-
-
-def name_egg(egg):
-    return split_eggname(egg)[0]
 
 
 def install_time_string(installed_repository, name):
