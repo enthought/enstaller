@@ -303,7 +303,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
     # This code assumes we have already upgraded enstaller if needed
     if needs_to_downgrade_enstaller(reqs):
         msg = "Enstaller in requirement list: enstaller will be downgraded !"
-        warnings.warn()
+        warnings.warn(msg)
     else:
         logger.debug("Enstaller is up to date, not updating")
         reqs = [req for req in reqs if req.name != "enstaller"]
