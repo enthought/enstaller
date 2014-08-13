@@ -201,6 +201,153 @@ def configure_authentication_or_exit(config, config_filename):
         sys.exit(-1)
 
 
+def setup_proxy_or_die(config, proxy):
+    if proxy:
+        try:
+            config.set_proxy_from_string(proxy)
+        except InvalidConfiguration as e:
+            print("Error: invalid proxy setting {0!r}".format(e))
+            sys.exit(1)
+
+
+def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
+                                    prefix, pat):
+    """
+    Returns True if a command has been executed.
+    """
+    if args.env:                                  # --env
+        env_option(prefixes)
+        return True
+
+    if args.log:                                  # --log
+        print_history(prefix)
+        return True
+
+    if args.freeze:
+        freeze(prefixes)
+        return True
+
+    if args.list:                                 # --list
+        list_option(prefixes, pat)
+        return True
+
+    if args.config:                               # --config
+        print_config(config, prefixes[0])
+        return True
+
+    if args.add_url:                              # --add-url
+        add_url(config_filename, config, args.add_url)
+        return True
+
+    if args.userpass:                             # --userpass
+        configure_authentication_or_exit(config, config_filename)
+        return True
+
+
+def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
+                                 pat):
+    if args.dry_run:
+        def print_actions(actions):
+            for item in actions:
+                print('%-8s %s' % item)
+        enpkg.execute = print_actions
+
+    if args.imports:                              # --imports
+        repository = Repository._from_prefixes(enpkg.prefixes)
+        imports_option(repository)
+        return
+
+    if args.revert:                               # --revert
+        revert(enpkg, args.revert)
+        return
+
+    # Try to auto-update enstaller
+    if update_enstaller(enpkg, config, config.autoupdate, args):
+        print("Enstaller has been updated.\n"
+              "Please re-run your previous command.")
+        return
+
+    if args.search:                               # --search
+        search(enpkg._remote_repository, enpkg._installed_repository,
+               config, user, pat)
+        return
+
+    if args.info:                                 # --info
+        if len(args.cnames) != 1:
+            parser.error("Option requires one argument (name of package)")
+        info_option(enpkg._remote_repository, enpkg._installed_repository,
+                    args.cnames[0])
+        return
+
+    if args.whats_new:                            # --whats-new
+        whats_new(enpkg._remote_repository, enpkg._installed_repository)
+        return
+
+    if args.update_all:                           # --update-all
+        update_all(enpkg, config, args)
+        return
+
+    if args.requirements:
+        install_from_requirements(enpkg, config, args)
+        return
+
+    if len(args.cnames) == 0 and not args.remove_enstaller:
+        parser.error("Requirement(s) missing")
+    elif len(args.cnames) == 2:
+        pat = re.compile(r'\d+\.\d+')
+        if pat.match(args.cnames[1]):
+            args.cnames = ['-'.join(args.cnames)]
+
+    reqs = _compute_reqs(args.cnames)
+
+    # This code assumes we have already upgraded enstaller if needed
+    if needs_to_downgrade_enstaller(reqs):
+        msg = "Enstaller in requirement list: enstaller will be downgraded !"
+        warnings.warn()
+    else:
+        logger.debug("Enstaller is up to date, not updating")
+        reqs = [req for req in reqs if req.name != "enstaller"]
+
+    logger.info("Requirements:")
+    for req in reqs:
+        logger.info('    %r', req)
+
+    logger.info("prefix: %r", prefix)
+
+    REMOVE_ENSTALLER_WARNING = ("Removing enstaller package will break enpkg "
+                                "and is not recommended.")
+    if args.remove:
+        if any(req.name == 'enstaller' for req in reqs):
+            print(REMOVE_ENSTALLER_WARNING)
+            print("If you are sure you wish to remove enstaller, use:")
+            print("    enpkg --remove-enstaller")
+            return
+
+    if args.remove_enstaller:
+        print(REMOVE_ENSTALLER_WARNING)
+        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
+            args.remove = True
+            reqs = [Req('enstaller')]
+
+    if any(req.name == 'epd' for req in reqs):
+        if args.remove:
+            parser.error("Can't remove 'epd'")
+        elif len(reqs) > 1:
+            parser.error("Can't combine 'enpkg epd' with other packages.")
+        elif not epd_install_confirm(args.yes):
+            return
+
+    for req in reqs:
+        if args.remove:                               # --remove
+            try:
+                enpkg.execute(enpkg._solver.remove_actions(req))
+            except EnpkgError as e:
+                print(str(e))
+        else:
+            install_req(enpkg, config, req, args)
+
+
+
 def _user_base():
     return getattr(site, "USER_BASE", abs_expanduser('~/.local'))
 
@@ -374,12 +521,7 @@ def main(argv=None):
     config_filename = get_config_filename(args.sys_config)
     config = _ensure_config_or_die(config_filename)
 
-    if args.proxy:
-        try:
-            config.set_proxy_from_string(args.proxy)
-        except InvalidConfiguration as e:
-            print("Error: invalid proxy setting {0!r}".format(e))
-            sys.exit(1)
+    setup_proxy_or_die(config, args.proxy)
 
     prefix, prefixes = _compute_prefixes(args, config)
 
@@ -397,37 +539,12 @@ def main(argv=None):
     for prefix in prefixes:
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
-    if args.env:                                  # --env
-        env_option(prefixes)
-        return
-
-    if args.log:                                  # --log
-        print_history(prefix)
-        return
-
-    if args.freeze:
-        freeze(prefixes)
-        return
-
-    if args.list:                                 # --list
-        list_option(prefixes, pat)
-        return
-
-    if args.config:                               # --config
-        print_config(config, prefixes[0])
-        return
-
-    if args.add_url:                              # --add-url
-        add_url(config_filename, config, args.add_url)
-        return
-
-    if args.userpass:                             # --userpass
-        configure_authentication_or_exit(config, config_filename)
+    if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
+                                       prefix, pat):
         return
 
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename)
-
     user = ensure_authenticated_config(config, config_filename)
 
     repository = repository_factory(config)
@@ -436,105 +553,8 @@ def main(argv=None):
     enpkg = Enpkg(repository, fetcher, prefixes,
                   ProgressBarContext(console_progress_manager_factory))
 
-    if args.dry_run:
-        def print_actions(actions):
-            for item in actions:
-                print('%-8s %s' % item)
-        enpkg.execute = print_actions
-
-    if args.imports:                              # --imports
-        repository = Repository._from_prefixes(enpkg.prefixes)
-        imports_option(repository)
-        return
-
-    if args.revert:                               # --revert
-        revert(enpkg, args.revert)
-        return
-
-    # Try to auto-update enstaller
-    if update_enstaller(enpkg, config, config.autoupdate, args):
-        print("Enstaller has been updated.\n"
-              "Please re-run your previous command.")
-        return
-
-    if args.search:                               # --search
-        search(enpkg._remote_repository, enpkg._installed_repository,
-               config, user, pat)
-        return
-
-    if args.info:                                 # --info
-        if len(args.cnames) != 1:
-            parser.error("Option requires one argument (name of package)")
-        info_option(enpkg._remote_repository, enpkg._installed_repository,
-                    args.cnames[0])
-        return
-
-    if args.whats_new:                            # --whats-new
-        whats_new(enpkg._remote_repository, enpkg._installed_repository)
-        return
-
-    if args.update_all:                           # --update-all
-        update_all(enpkg, config, args)
-        return
-
-    if args.requirements:
-        install_from_requirements(enpkg, config, args)
-        return
-
-    if len(args.cnames) == 0 and not args.remove_enstaller:
-        parser.error("Requirement(s) missing")
-    elif len(args.cnames) == 2:
-        pat = re.compile(r'\d+\.\d+')
-        if pat.match(args.cnames[1]):
-            args.cnames = ['-'.join(args.cnames)]
-
-    reqs = _compute_reqs(args.cnames)
-
-    # This code assumes we have already upgraded enstaller if needed
-    if needs_to_downgrade_enstaller(reqs):
-        msg = "Enstaller in requirement list: enstaller will be downgraded !"
-        warnings.warn()
-    else:
-        logger.debug("Enstaller is up to date, not updating")
-        reqs = [req for req in reqs if req.name != "enstaller"]
-
-    logger.info("Requirements:")
-    for req in reqs:
-        logger.info('    %r', req)
-
-    logger.info("prefix: %r", prefix)
-
-    REMOVE_ENSTALLER_WARNING = ("Removing enstaller package will break enpkg "
-                                "and is not recommended.")
-    if args.remove:
-        if any(req.name == 'enstaller' for req in reqs):
-            print(REMOVE_ENSTALLER_WARNING)
-            print("If you are sure you wish to remove enstaller, use:")
-            print("    enpkg --remove-enstaller")
-            return
-
-    if args.remove_enstaller:
-        print(REMOVE_ENSTALLER_WARNING)
-        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
-            args.remove = True
-            reqs = [Req('enstaller')]
-
-    if any(req.name == 'epd' for req in reqs):
-        if args.remove:
-            parser.error("Can't remove 'epd'")
-        elif len(reqs) > 1:
-            parser.error("Can't combine 'enpkg epd' with other packages.")
-        elif not epd_install_confirm(args.yes):
-            return
-
-    for req in reqs:
-        if args.remove:                               # --remove
-            try:
-                enpkg.execute(enpkg._solver.remove_actions(req))
-            except EnpkgError as e:
-                print(str(e))
-        else:
-            install_req(enpkg, config, req, args)
+    dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
+                                 pat)
 
 
 def main_noexc(argv=None):
