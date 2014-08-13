@@ -10,9 +10,7 @@ from enstaller.resolve import Req, Resolve
 
 
 def query_platform(config, userpass, requirement, platform):
-    index_fetcher = URLFetcher(config.repository_cache, config.auth)
-    index_fetcher._enable_etag_support()
-    repository = repository_factory(index_fetcher, config)
+    repository = repository_factory(config)
 
     req = Req(requirement)
     resolver = Resolve(repository)
