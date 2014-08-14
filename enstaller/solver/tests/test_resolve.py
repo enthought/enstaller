@@ -97,7 +97,7 @@ class TestChain1(unittest.TestCase):
             ('bitarray', 'epd'),
             ('foobar', None),
             ]:
-            self.resolve.get_egg(Requirement(req_string))
+            self.resolve._latest_egg(Requirement(req_string))
 
 
     @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
@@ -111,10 +111,10 @@ class TestChain1(unittest.TestCase):
             ('swig 1.3.40-2', 'epd', 'swig-1.3.40-2.egg'),
             ('foobar', None, None),
             ]:
-            self.assertEqual(self.resolve.get_egg(Requirement(req_string)), egg)
+            self.assertEqual(self.resolve._latest_egg(Requirement(req_string)), egg)
 
     def test_reqs_dist(self):
-        self.assertEqual(self.resolve.reqs_egg('FiPy-2.1-1.egg'),
+        self.assertEqual(self.resolve._dependencies_from_egg('FiPy-2.1-1.egg'),
                          set([Requirement('distribute'),
                               Requirement('scipy'),
                               Requirement('numpy'),

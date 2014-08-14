@@ -57,6 +57,12 @@ class PackageMetadata(object):
             self.name, self.version, self.build, self.key)
 
     @property
+    def dependencies(self):
+        # FIXME: we keep packages for backward compatibility (called as is in
+        # the index).
+        return self.packages
+
+    @property
     def full_version(self):
         """
         The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
