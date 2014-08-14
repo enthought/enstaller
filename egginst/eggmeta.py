@@ -19,7 +19,7 @@ APPINST_PATH = join("inst", "appinst.dat")
 def parse_rawspec(data):
     # XXX: hack to workaround 2.6-specific bug with ast-parser and
     # unicode.
-    if sys.version_info < (2, 7):
+    if sys.version_info < (2, 7, 3):
         spec = parse_assignments(StringIO(data.encode("utf8")))
     else:
         spec = parse_assignments(StringIO(data))
