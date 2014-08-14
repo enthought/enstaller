@@ -16,7 +16,8 @@ from enstaller.repository import Repository, RepositoryPackageMetadata
 
 from enstaller.indexed_repo.metadata import parse_depend_index
 
-from ..resolve import Resolve, Req
+from ..resolve import Resolve
+from ..requirement import Requirement
 
 
 INDEX_REPO_DIR = abspath(join(dirname(__file__), os.pardir, os.pardir,
@@ -49,7 +50,7 @@ def _old_style_indices_to_repository(indices):
 
 
 def eggs_rs(c, req_string):
-    return c.install_sequence(Req(req_string))
+    return c.install_sequence(Requirement(req_string))
 
 class TestChain0(unittest.TestCase):
     def setUp(self):
@@ -96,7 +97,7 @@ class TestChain1(unittest.TestCase):
             ('bitarray', 'epd'),
             ('foobar', None),
             ]:
-            self.resolve.get_egg(Req(req_string))
+            self.resolve.get_egg(Requirement(req_string))
 
 
     @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
@@ -110,33 +111,33 @@ class TestChain1(unittest.TestCase):
             ('swig 1.3.40-2', 'epd', 'swig-1.3.40-2.egg'),
             ('foobar', None, None),
             ]:
-            self.assertEqual(self.resolve.get_egg(Req(req_string)), egg)
+            self.assertEqual(self.resolve.get_egg(Requirement(req_string)), egg)
 
     def test_reqs_dist(self):
         self.assertEqual(self.resolve.reqs_egg('FiPy-2.1-1.egg'),
-                         set([Req('distribute'),
-                              Req('scipy'),
-                              Req('numpy'),
-                              Req('pysparse 1.2.dev203')]))
+                         set([Requirement('distribute'),
+                              Requirement('scipy'),
+                              Requirement('numpy'),
+                              Requirement('pysparse 1.2.dev203')]))
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_root(self):
-        self.assertEqual(self.resolve.install_sequence(Req('numpy 1.5.1'),
+        self.assertEqual(self.resolve.install_sequence(Requirement('numpy 1.5.1'),
                                                        mode='root'),
                          ['numpy-1.5.1-2.egg'])
 
-        self.assertEqual(self.resolve.install_sequence(Req('numpy 1.5.1-1'),
+        self.assertEqual(self.resolve.install_sequence(Requirement('numpy 1.5.1-1'),
                                                        mode='root'),
                          ['numpy-1.5.1-1.egg'])
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_order1(self):
-        self.assertEqual(self.resolve.install_sequence(Req('numpy')),
+        self.assertEqual(self.resolve.install_sequence(Requirement('numpy')),
                          ['MKL-10.3-1.egg', 'numpy-1.6.0-3.egg'])
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_order2(self):
-        self.assertEqual(self.resolve.install_sequence(Req('scipy')),
+        self.assertEqual(self.resolve.install_sequence(Requirement('scipy')),
                          ['MKL-10.3-1.egg', 'numpy-1.5.1-2.egg',
                           'scipy-0.9.0-1.egg'])
 
@@ -148,24 +149,24 @@ class TestChain2(unittest.TestCase):
         self.repo = _old_style_indices_to_repository(indices)
         self.resolve = Resolve(self.repo)
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_flat_recur1(self):
-        d1 = self.resolve.install_sequence(Req('openepd'), mode='flat')
-        d2 = self.resolve.install_sequence(Req('openepd'), mode='recur')
+        d1 = self.resolve.install_sequence(Requirement('openepd'), mode='flat')
+        d2 = self.resolve.install_sequence(Requirement('openepd'), mode='recur')
         self.assertEqual(d1, d2)
-        d3 = self.resolve.install_sequence(Req('foo'), mode='recur')
+        d3 = self.resolve.install_sequence(Requirement('foo'), mode='recur')
         self.assertEqual(d2[:-1], d3[:-1])
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_flat_recur2(self):
         for rs in 'epd 7.0', 'epd 7.0-1', 'epd 7.0-2':
-            d1 = self.resolve.install_sequence(Req(rs), mode='flat')
-            d2 = self.resolve.install_sequence(Req(rs), mode='recur')
+            d1 = self.resolve.install_sequence(Requirement(rs), mode='flat')
+            d2 = self.resolve.install_sequence(Requirement(rs), mode='recur')
             self.assertEqual(d1, d2)
 
-    @mock.patch("enstaller.solver.resolve.PY_VER", "2.7")
+    @mock.patch("enstaller.solver.requirement.PY_VER", "2.7")
     def test_multiple_reqs(self):
-        lst = self.resolve.install_sequence(Req('ets'))
+        lst = self.resolve.install_sequence(Requirement('ets'))
         self.assert_('numpy-1.5.1-2.egg' in lst)
 
 class TestCycle(unittest.TestCase):

@@ -5,9 +5,9 @@ from collections import defaultdict
 from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.errors import NoPackageFound
 from enstaller.repository import egg_name_to_name_version
-from enstaller.utils import PY_VER, comparable_version
+from enstaller.utils import comparable_version
 
-from .requirement import Req
+from .requirement import Requirement
 
 logger = logging.getLogger(__name__)
 
@@ -62,7 +62,7 @@ class Resolve(object):
         """
         name, version = egg_name_to_name_version(egg)
         package = self.repository.find_package(name, version)
-        return set(Req(s) for s in package.packages)
+        return set(Requirement(s) for s in package.packages)
 
     def name_egg(self, egg):
         """

@@ -43,7 +43,7 @@ from enstaller.main import (check_prefixes,
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
-from enstaller.solver import Req
+from enstaller.solver import Requirement
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 
@@ -250,19 +250,21 @@ class TestMisc(unittest.TestCase):
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Req.from_anything("numpy"), Req.from_anything("scipy")]
+        reqs = [Requirement.from_anything("numpy"),
+                Requirement.from_anything("scipy")]
 
         # When/Then
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Req.from_anything("enstaller"), Req.from_anything("scipy")]
+        reqs = [Requirement.from_anything("enstaller"),
+                Requirement.from_anything("scipy")]
 
         # When/Then
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Req.from_anything("enstaller 4.5.1")]
+        reqs = [Requirement.from_anything("enstaller 4.5.1")]
 
         # When/Then
         self.assertTrue(needs_to_downgrade_enstaller(reqs))
@@ -436,7 +438,7 @@ class TestSearch(unittest.TestCase):
                 self.assertMultiLineEqual(m.value, r_output)
 
 @fake_keyring
-class TestInstallReq(unittest.TestCase):
+class TestInstallRequirement(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

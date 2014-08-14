@@ -7,10 +7,10 @@ else:
 
 import mock
 
-from ..requirement import Req
+from ..requirement import Requirement
 
 
-class TestReq(unittest.TestCase):
+class TestRequirement(unittest.TestCase):
     def assertEqualRequirements(self, left, right):
         self.assertEqual(left.as_dict(), right.as_dict())
 
@@ -23,7 +23,7 @@ class TestReq(unittest.TestCase):
             ('BAZ 1.8-2', 'baz', '1.8', 2,    3),
             ('qux 1.3-0', 'qux', '1.3', 0,    3),
             ]:
-            r = Req(req_string)
+            r = Requirement(req_string)
             self.assertEqual(r.name, name)
             self.assertEqual(r.version, version)
             self.assertEqual(r.build, build)
@@ -36,18 +36,18 @@ class TestReq(unittest.TestCase):
             ('bar 1.9',   dict(name='bar', version='1.9')),
             ('BAZ 1.8-2', dict(name='baz', version='1.8', build=2)),
             ]:
-            r = Req(req_string)
+            r = Requirement(req_string)
             self.assertEqual(r.as_dict(), d)
 
     def test_misc_methods(self):
         for req_string in ['', 'foo', 'bar 1.2', 'baz 2.6.7-5']:
-            r = Req(req_string)
+            r = Requirement(req_string)
             self.assertEqual(str(r), req_string)
             self.assertEqual(r, r)
             self.assertEqual(eval(repr(r)), r)
 
-        self.assertNotEqual(Req('foo'), Req('bar'))
-        self.assertNotEqual(Req('foo 1.4'), Req('foo 1.4-5'))
+        self.assertNotEqual(Requirement('foo'), Requirement('bar'))
+        self.assertNotEqual(Requirement('foo 1.4'), Requirement('foo 1.4-5'))
 
     def test_matches(self):
         spec = dict(name='foo_bar', version='2.4.1', build=3, python=None)
@@ -60,13 +60,13 @@ class TestReq(unittest.TestCase):
             ('FOO_BAR 2.4.1-3', True),
             ('FOO_Bar 2.4.1-1', False),
             ]:
-            self.assertEqual(Req(req_string).matches(spec), m, req_string)
+            self.assertEqual(Requirement(req_string).matches(spec), m, req_string)
 
     def test_matches_py(self):
         spec = dict(name='foo', version='2.4.1', build=3, python=None)
         for py in ['2.4', '2.5', '2.6', '3.1']:
-            with mock.patch("enstaller.solver.resolve.PY_VER", py):
-                self.assertEqual(Req('foo').matches(spec), True)
+            with mock.patch("enstaller.solver.requirement.PY_VER", py):
+                self.assertEqual(Requirement('foo').matches(spec), True)
 
         spec25 = dict(spec)
         spec25.update(dict(python='2.5'))
@@ -75,49 +75,49 @@ class TestReq(unittest.TestCase):
         spec26.update(dict(python='2.6'))
 
         with mock.patch("enstaller.solver.requirement.PY_VER", "2.5"):
-            self.assertEqual(Req('foo').matches(spec25), True)
-            self.assertEqual(Req('foo').matches(spec26), False)
+            self.assertEqual(Requirement('foo').matches(spec25), True)
+            self.assertEqual(Requirement('foo').matches(spec26), False)
 
         with mock.patch("enstaller.solver.requirement.PY_VER", "2.6"):
-            self.assertEqual(Req('foo').matches(spec25), False)
-            self.assertEqual(Req('foo').matches(spec26), True)
+            self.assertEqual(Requirement('foo').matches(spec25), False)
+            self.assertEqual(Requirement('foo').matches(spec26), True)
 
     def test_from_anything_name(self):
         # Given
         req_arg = "numpy"
 
         # When
-        req = Req.from_anything(req_arg)
+        req = Requirement.from_anything(req_arg)
 
         # Then
-        self.assertEqualRequirements(req, Req(req_arg))
+        self.assertEqualRequirements(req, Requirement(req_arg))
 
     def test_from_anything_name_and_version(self):
         # Given
         req_arg = "numpy 1.8.0"
 
         # When
-        req = Req.from_anything(req_arg)
+        req = Requirement.from_anything(req_arg)
 
         # Then
-        self.assertEqualRequirements(req, Req(req_arg))
+        self.assertEqualRequirements(req, Requirement(req_arg))
 
     def test_from_anything_name_and_version_and_build(self):
         # Given
         req_arg = "numpy 1.8.0-1"
 
         # When
-        req = Req.from_anything(req_arg)
+        req = Requirement.from_anything(req_arg)
 
         # Then
-        self.assertEqualRequirements(req, Req(req_arg))
+        self.assertEqualRequirements(req, Requirement(req_arg))
 
     def test_from_anything_req(self):
         # Given
-        req_arg = Req("numpy 1.8.0-1")
+        req_arg = Requirement("numpy 1.8.0-1")
 
         # When
-        req = Req.from_anything(req_arg)
+        req = Requirement.from_anything(req_arg)
 
         # Then
         self.assertEqualRequirements(req, req_arg)

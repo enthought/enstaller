@@ -17,7 +17,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.solver import Req, comparable_info
+from enstaller.solver import Requirement, comparable_info
 from enstaller.utils import prompt_yes_no
 
 
@@ -43,7 +43,7 @@ def install_req(enpkg, config, req, opts):
     """
     # Unix exit-status codes
     FAILURE = 1
-    req = Req.from_anything(req)
+    req = Requirement.from_anything(req)
 
     def _done(exit_status):
         sys.exit(exit_status)

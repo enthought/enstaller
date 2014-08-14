@@ -39,7 +39,7 @@ from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
-from enstaller.solver import Req, Solver
+from enstaller.solver import Requirement, Solver
 from enstaller.solver.core import create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
@@ -327,7 +327,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
         print(REMOVE_ENSTALLER_WARNING)
         if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
             args.remove = True
-            reqs = [Req('enstaller')]
+            reqs = [Requirement('enstaller')]
 
     if any(req.name == 'epd' for req in reqs):
         if args.remove:
@@ -429,9 +429,9 @@ def _compute_reqs(cnames):
     for arg in cnames:
         if '-' in arg:
             name, version = arg.split('-', 1)
-            reqs.append(Req(name + ' ' + version))
+            reqs.append(Requirement(name + ' ' + version))
         else:
-            reqs.append(Req(arg))
+            reqs.append(Requirement(arg))
     return reqs
 
 

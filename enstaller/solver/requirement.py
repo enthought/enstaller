@@ -4,7 +4,7 @@ from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.utils import PY_VER
 
 
-class Req(object):
+class Requirement(object):
     """
     A requirement object is initialized by a requirement string. Attributes:
     name: the lowercase project name
@@ -83,7 +83,7 @@ class Req(object):
         """
         return a canonical representation of the object
         """
-        return 'Req(%r)' % str(self)
+        return 'Requirement(%r)' % str(self)
 
     def __eq__(self, other):
         return (self.name == other.name  and

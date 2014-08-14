@@ -7,7 +7,7 @@ from enstaller.errors import EnpkgError, UnavailablePackage
 from enstaller.repository import (egg_name_to_name_version, Repository,
                                   RepositoryPackageMetadata)
 
-from .requirement import Req
+from .requirement import Requirement
 from .resolve import Resolve
 
 
@@ -53,7 +53,7 @@ class Solver(object):
             installed_version = enstaller.__version__
 
         mode = 'recur'
-        req = Req.from_anything("enstaller")
+        req = Requirement.from_anything("enstaller")
         eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         if eggs is None:
             raise EnpkgError("No egg found for requirement '%s'." % req)
@@ -76,7 +76,7 @@ class Solver(object):
           * a requirement object (enstaller.resolve.Req)
           * the requirement as a string
         """
-        req = Req.from_anything(arg)
+        req = Requirement.from_anything(arg)
         # resolve the list of eggs that need to be installed
         eggs = Resolve(self._remote_repository).install_sequence(req, mode)
         unavailables = []
@@ -137,7 +137,7 @@ class Solver(object):
         Create the action necessary to remove an egg.  The argument, may be
         one of ..., see above.
         """
-        req = Req.from_anything(arg)
+        req = Requirement.from_anything(arg)
         assert req.name
         if req.version and req.build:
             full_version = "{0}-{1}".format(req.version, req.build)
