@@ -7,7 +7,8 @@ from enstaller.errors import EnpkgError, UnavailablePackage
 from enstaller.repository import (egg_name_to_name_version, Repository,
                                   RepositoryPackageMetadata)
 
-from .resolve import Req, Resolve
+from .requirement import Req
+from .resolve import Resolve
 
 
 def create_enstaller_update_repository(repository, version):
