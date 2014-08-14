@@ -92,6 +92,7 @@ packages = [
     'enstaller',
     'enstaller.cli',
     'enstaller.indexed_repo',
+    'enstaller.solver',
     'enstaller.vendor',
     'enstaller.vendor.cachecontrol',
     'enstaller.vendor.cachecontrol.caches',

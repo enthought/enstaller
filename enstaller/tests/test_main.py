@@ -43,7 +43,7 @@ from enstaller.main import (check_prefixes,
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
-from enstaller.resolve import Req
+from enstaller.solver import Req
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 

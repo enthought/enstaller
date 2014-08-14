@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import os.path
 import shutil
 import sys
@@ -16,9 +18,11 @@ from egginst.utils import makedirs
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.repository import Repository
-from enstaller.solver import Solver, create_enstaller_update_repository
 
-from .common import dummy_repository_package_factory, repository_factory
+from ..core import Solver, create_enstaller_update_repository
+
+from enstaller.tests.common import (dummy_repository_package_factory,
+                                    repository_factory)
 
 
 class TestSolver(unittest.TestCase):

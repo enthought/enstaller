@@ -17,7 +17,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.resolve import Req, comparable_info
+from enstaller.solver import Req, comparable_info
 from enstaller.utils import prompt_yes_no
 
 

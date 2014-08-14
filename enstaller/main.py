@@ -39,8 +39,8 @@ from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
-from enstaller.resolve import Req
-from enstaller.solver import Solver, create_enstaller_update_repository
+from enstaller.solver import Req, Solver
+from enstaller.solver.core import create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
