@@ -48,7 +48,7 @@ from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 
 import enstaller.tests.common
-from .common import (create_prefix_with_eggs, create_repositories,
+from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring, is_authenticated,
