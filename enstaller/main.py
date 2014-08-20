@@ -340,7 +340,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
     for req in reqs:
         if args.remove:                               # --remove
             try:
-                enpkg.execute(enpkg._solver.remove_actions(req))
+                enpkg.execute(enpkg._solver_factory().remove_actions(req))
             except EnpkgError as e:
                 print(str(e))
         else:

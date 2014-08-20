@@ -308,11 +308,14 @@ class Enpkg(object):
 
         self._downloader = _DownloadManager(url_fetcher, remote_repository)
 
-        self._solver = Solver(self._remote_repository,
-                              self._top_installed_repository)
-
         self._progress_context = progress_context or \
                 ProgressBarContext(dummy_progress_bar_factory)
+
+
+    def _solver_factory(self):
+        solver = Solver(self._remote_repository,
+                        self._top_installed_repository)
+        return solver
 
 
     def execute_context(self, actions):

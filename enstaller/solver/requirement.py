@@ -94,7 +94,3 @@ class Requirement(object):
     def __hash__(self):
         return (hash(self.strictness) ^ hash(self.name) ^
                 hash(self.version) ^ hash(self.build))
-
-
-
-

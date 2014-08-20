@@ -54,7 +54,7 @@ class TestEnpkgActions(unittest.TestCase):
             enpkg = unconnected_enpkg_factory([d])
 
             with mock.patch("enstaller.enpkg.RemoveAction.execute") as mocked_remove:
-                actions = enpkg._solver.remove_actions("dummy")
+                actions = enpkg._solver_factory().remove_actions("dummy")
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
 
@@ -99,7 +99,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 mocked_fetcher.cache_dir = config.repository_cache
                 enpkg = Enpkg(repository, mocked_fetcher,
                               prefixes=self.prefixes)
-                actions = enpkg._solver.install_actions("dummy")
+                actions = enpkg._solver_factory().install_actions("dummy")
                 enpkg.execute(actions)
 
                 mocked_fetch.assert_called()
@@ -151,7 +151,7 @@ class TestEnpkgRevert(unittest.TestCase):
         fetcher = URLFetcher(config.repository_cache)
 
         enpkg = Enpkg(repository, fetcher, prefixes=self.prefixes)
-        actions = enpkg._solver.install_actions("dummy")
+        actions = enpkg._solver_factory().install_actions("dummy")
         enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
