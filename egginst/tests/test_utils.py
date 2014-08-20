@@ -77,10 +77,12 @@ class TestAtomicFile(TestCase):
         # When
         with atomic_file(path) as fp:
             fp.write(r_content[:2])
+            temp_name = fp._name
             fp.abort()
 
         # Then
         self.assertFalse(os.path.exists(path))
+        self.assertFalse(os.path.exists(temp_name))
 
     def test_exists(self):
         # Given
