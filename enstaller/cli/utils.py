@@ -87,10 +87,8 @@ def install_req(enpkg, config, req, opts):
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
-        solver = enpkg._solver_factory()
-        actions = solver.install_actions(req, mode=mode,
-                                         force=opts.force,
-                                         forceall=opts.forceall)
+        solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
+        actions = solver.install_actions(req)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:

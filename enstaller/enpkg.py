@@ -312,9 +312,10 @@ class Enpkg(object):
                 ProgressBarContext(dummy_progress_bar_factory)
 
 
-    def _solver_factory(self):
+    def _solver_factory(self, mode='recur', force=False, forceall=False):
         solver = Solver(self._remote_repository,
-                        self._top_installed_repository)
+                        self._top_installed_repository,
+                        mode, force, forceall)
         return solver
 
 

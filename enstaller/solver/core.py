@@ -43,9 +43,14 @@ def create_enstaller_update_repository(repository, version):
 
 
 class Solver(object):
-    def __init__(self, remote_repository, top_installed_repository):
+    def __init__(self, remote_repository, top_installed_repository,
+                 mode='recur', force=False, forceall=False):
         self._remote_repository = remote_repository
         self._top_installed_repository = top_installed_repository
+
+        self.mode = mode
+        self.force = force
+        self.forceall = forceall
 
     def _install_actions_enstaller(self, installed_version=None):
         # installed_version is only useful for testing
@@ -64,9 +69,9 @@ class Solver(object):
             if version == installed_version:
                 return []
             else:
-                return self._install_actions(eggs, mode, False, False)
+                return self._install_actions(eggs, self.mode, False, False)
 
-    def install_actions(self, arg, mode='recur', force=False, forceall=False):
+    def install_actions(self, arg):
         """
         Create a list of actions which are required for installing, which
         includes updating, a package (without actually doing anything).
@@ -78,7 +83,7 @@ class Solver(object):
         """
         req = Requirement.from_anything(arg)
         # resolve the list of eggs that need to be installed
-        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
+        eggs = Resolve(self._remote_repository).install_sequence(req, self.mode)
         unavailables = []
         for egg in eggs:
             name, version = egg_name_to_name_version(egg)
@@ -87,7 +92,8 @@ class Solver(object):
                 unavailables.append(egg)
         if len(unavailables) > 0:
             raise UnavailablePackage(req)
-        return self._install_actions(eggs, mode, force, forceall)
+        return self._install_actions(eggs, self.mode, self.force,
+                                     self.forceall)
 
     def _install_actions(self, eggs, mode, force, forceall):
         if not forceall:
