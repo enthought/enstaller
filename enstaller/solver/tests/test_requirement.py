@@ -5,7 +5,7 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
-import mock
+from enstaller.repository import PackageVersionInfo
 
 from ..requirement import Requirement
 
@@ -50,7 +50,7 @@ class TestRequirement(unittest.TestCase):
         self.assertNotEqual(Requirement('foo 1.4'), Requirement('foo 1.4-5'))
 
     def test_matches(self):
-        spec = dict(name='foo_bar', version='2.4.1', build=3, python=None)
+        spec = PackageVersionInfo('foo_bar', '2.4.1', 3)
         for req_string, m in [
             ('', True),
             ('foo', False),
@@ -61,26 +61,6 @@ class TestRequirement(unittest.TestCase):
             ('FOO_Bar 2.4.1-1', False),
             ]:
             self.assertEqual(Requirement(req_string).matches(spec), m, req_string)
-
-    def test_matches_py(self):
-        spec = dict(name='foo', version='2.4.1', build=3, python=None)
-        for py in ['2.4', '2.5', '2.6', '3.1']:
-            with mock.patch("enstaller.solver.requirement.PY_VER", py):
-                self.assertEqual(Requirement('foo').matches(spec), True)
-
-        spec25 = dict(spec)
-        spec25.update(dict(python='2.5'))
-
-        spec26 = dict(spec)
-        spec26.update(dict(python='2.6'))
-
-        with mock.patch("enstaller.solver.requirement.PY_VER", "2.5"):
-            self.assertEqual(Requirement('foo').matches(spec25), True)
-            self.assertEqual(Requirement('foo').matches(spec26), False)
-
-        with mock.patch("enstaller.solver.requirement.PY_VER", "2.6"):
-            self.assertEqual(Requirement('foo').matches(spec25), False)
-            self.assertEqual(Requirement('foo').matches(spec26), True)
 
     def test_from_anything_name(self):
         # Given

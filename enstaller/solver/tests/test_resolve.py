@@ -1,5 +1,3 @@
-import mock
-
 from egginst._compat import TestCase
 from enstaller.repository import Repository
 from enstaller.tests.common import (create_repositories,
@@ -45,8 +43,7 @@ class TestResolve(TestCase):
         packages = [
                 dummy_repository_package_factory("swig", "1.3.40", 1),
                 dummy_repository_package_factory("swig", "1.3.40", 2),
-                dummy_repository_package_factory("swig", "2.0.1", 1,
-                                                 py_ver="2.4"),
+                dummy_repository_package_factory("swig", "2.0.1", 1)
         ]
         repository = self._repository_factory(packages)
 
@@ -55,4 +52,4 @@ class TestResolve(TestCase):
         latest = resolver._latest_egg(Requirement("swig"))
 
         # Then
-        self.assertEqual(latest, "swig-1.3.40-2.egg")
+        self.assertEqual(latest, "swig-2.0.1-1.egg")

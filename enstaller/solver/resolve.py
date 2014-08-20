@@ -47,7 +47,7 @@ class Resolve(object):
         d = dict((package.key, package) for package in
                  self.repository.find_packages(requirement.name))
         matches = [key for key, package in d.items() \
-                   if requirement.matches(package._spec_info)]
+                   if requirement.matches(package)]
         if len(matches) == 0:
             return None
         else:

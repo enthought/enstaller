@@ -173,15 +173,8 @@ class TestLegacyStores(unittest.TestCase):
         # Then
         self.assertEqual(len(packages), 0)
 
-        with mock.patch("enstaller.legacy_stores.PY_VER", "2.4"):
-            # When
-            packages = list(parse_index(index, ""))
+        # When
+        packages = list(parse_index(index, "", "*"))
 
-            # Then
-            self.assertEqual(len(packages), 0)
-
-            # When
-            packages = list(parse_index(index, "", "*"))
-
-            # Then
-            self.assertEqual(len(packages), 1)
+        # Then
+        self.assertEqual(len(packages), 1)

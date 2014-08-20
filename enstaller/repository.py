@@ -15,6 +15,13 @@ from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import comparable_version, compute_md5
 
 
+class PackageVersionInfo(object):
+    def __init__(self, name, version, build):
+        self.name = name
+        self.version = version
+        self.build = build
+
+
 class PackageMetadata(object):
     """
     PackageMetadataBase encompasses the metadata required to resolve
@@ -78,14 +85,6 @@ class PackageMetadata(object):
         """
         return comparable_version(self.version), self.build
 
-    @property
-    def _spec_info(self):
-        """
-        Returns a dictionary that can be used as an argument to Req.matches
-        """
-        # FIXME: to remove before 4.7.0
-        keys = ("name", "python", "version", "build")
-        return dict((k, getattr(self, k)) for k in keys)
 
 class RepositoryPackageMetadata(PackageMetadata):
     """

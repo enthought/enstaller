@@ -48,26 +48,26 @@ class Requirement(object):
                 res[var_name] = getattr(self, var_name)
         return res
 
-    def matches(self, spec):
+    def matches(self, candidate):
         """
-        Returns True if the spec of a distribution matches the requirement
-        (self).  That is, the name must match, and the version must be in
-        the list of required versions.
+        Returns whether the given package candidate matches the requirement.
+
+        Parameters
+        ----------
+        candidate: PackageVersionInfo
+            The package to test.
         """
-        if spec['python'] not in (None, PY_VER):
-            return False
         if self.strictness == 0:
             return True
-        if spec['name'] != self.name:
+        if candidate.name != self.name:
             return False
         if self.strictness == 1:
             return True
-        if spec['version'] != self.version:
+        if candidate.version != self.version:
             return False
         if self.strictness == 2:
             return True
-        assert self.strictness == 3
-        return spec['build'] == self.build
+        return candidate.build == self.build
 
     def __str__(self):
         if self.strictness == 0:
