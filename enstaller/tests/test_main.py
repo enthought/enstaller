@@ -510,5 +510,5 @@ class TestInstallRequirement(unittest.TestCase):
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
-        m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
+        m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
                               ('install', 'nose-1.3.0-1.egg')])

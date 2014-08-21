@@ -246,7 +246,7 @@ class TestInstallReq(TestCase):
             enpkg = create_prefix_with_eggs(Configuration(), self.prefix, [],
                     remote_entries)
             install_req(enpkg, Configuration(), "nose", FakeOptions())
-            m.assert_called_with([('fetch_0', 'nose-1.3.0-1.egg'),
+            m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
                                   ('install', 'nose-1.3.0-1.egg')])
 
     def test_simple_non_existing_requirement(self):

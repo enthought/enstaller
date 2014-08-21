@@ -40,7 +40,7 @@ class TestSolver(unittest.TestCase):
         ]
 
         r_actions = [
-            ('fetch_0', 'numpy-1.8.0-2.egg'),
+            ('fetch', 'numpy-1.8.0-2.egg'),
             ('install', 'numpy-1.8.0-2.egg')
         ]
 
@@ -97,7 +97,7 @@ class TestSolver(unittest.TestCase):
         l1_egg = NOSE_1_2_1
 
         expected_actions = [
-            ('fetch_0', os.path.basename(l0_egg)),
+            ('fetch', os.path.basename(l0_egg)),
             ('remove', os.path.basename(l1_egg)),
             ('install', os.path.basename(l0_egg)),
         ]

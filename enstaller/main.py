@@ -551,7 +551,8 @@ def main(argv=None):
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
     enpkg = Enpkg(repository, fetcher, prefixes,
-                  ProgressBarContext(console_progress_manager_factory))
+                  ProgressBarContext(console_progress_manager_factory),
+                  args.force or args.forceall)
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                  pat)

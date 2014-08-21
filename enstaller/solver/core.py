@@ -103,9 +103,7 @@ class Solver(object):
             else:
                 eggs = self._filter_installed_eggs(eggs)
 
-        res = []
-        for egg in eggs:
-            res.append(('fetch_%d' % bool(forceall or force), egg))
+        res = [('fetch', egg) for egg in eggs]
 
         # remove packages with the same name (from first egg collection
         # only, in reverse install order)
