@@ -21,11 +21,12 @@ from enstaller.repository import Repository
 
 from ..core import Solver, create_enstaller_update_repository
 
-from enstaller.tests.common import (dummy_repository_package_factory,
+from enstaller.tests.common import (dummy_installed_package_factory,
+                                    dummy_repository_package_factory,
                                     repository_factory)
 
 
-class TestSolver(unittest.TestCase):
+class TestSolverNoDependencies(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -103,7 +104,8 @@ class TestSolver(unittest.TestCase):
         ]
 
         entries = [
-            dummy_repository_package_factory(*split_eggname(os.path.basename(l0_egg))),
+            dummy_repository_package_factory(
+                *split_eggname(os.path.basename(l0_egg))),
         ]
 
         repository = repository_factory(entries)
@@ -124,6 +126,107 @@ class TestSolver(unittest.TestCase):
 
         actions = solver.install_actions("nose")
         self.assertListEqual(actions, expected_actions)
+
+
+class TestSolverDependencies(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        entries = [
+            dummy_repository_package_factory("MKL", "10.3", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2,
+                                             dependencies=["MKL 10.3"]),
+        ]
+
+        repository = repository_factory(entries)
+        installed_repository = Repository()
+
+        expected_actions = [
+            ('fetch', "MKL-10.3-1.egg"),
+            ('fetch', "numpy-1.8.0-2.egg"),
+            ('install', "MKL-10.3-1.egg"),
+            ('install', "numpy-1.8.0-2.egg"),
+        ]
+
+        # When
+        solver = Solver(repository, installed_repository)
+        actions = solver.install_actions("numpy")
+
+        # Then
+        self.assertListEqual(actions, expected_actions)
+
+    def test_simple_installed(self):
+        # Given
+        entries = [
+            dummy_repository_package_factory("MKL", "10.3", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2,
+                                             dependencies=["MKL 10.3"]),
+        ]
+
+        repository = repository_factory(entries)
+        installed_repository = Repository()
+        installed_repository.add_package(
+                dummy_installed_package_factory("MKL", "10.3", 1))
+
+        expected_actions = [
+            ('fetch', "numpy-1.8.0-2.egg"),
+            ('install', "numpy-1.8.0-2.egg"),
+        ]
+
+        # When
+        solver = Solver(repository, installed_repository)
+        actions = solver.install_actions("numpy")
+
+        # Then
+        self.assertListEqual(actions, expected_actions)
+
+    def test_simple_all_installed(self):
+        # Given
+        entries = [
+            dummy_repository_package_factory("MKL", "10.3", 1),
+            dummy_repository_package_factory("numpy", "1.8.0", 2,
+                                             dependencies=["MKL 10.3"]),
+        ]
+
+        repository = repository_factory(entries)
+
+        installed_entries = [
+            dummy_installed_package_factory("MKL", "10.3", 1),
+            dummy_installed_package_factory("numpy", "1.8.0", 2)
+        ]
+        installed_repository = Repository()
+        for package in installed_entries:
+            installed_repository.add_package(package)
+
+        # When
+        solver = Solver(repository, installed_repository)
+        actions = solver.install_actions("numpy")
+
+        # Then
+        self.assertListEqual(actions, [])
+
+        # When
+        solver = Solver(repository, installed_repository, force=True)
+        actions = solver.install_actions("numpy")
+
+        # Then
+        self.assertListEqual(actions,
+                             [("fetch", "numpy-1.8.0-2.egg"),
+                              ("remove", "numpy-1.8.0-2.egg"),
+                              ("install", "numpy-1.8.0-2.egg")])
+
+        # When
+        solver = Solver(repository, installed_repository, force=True,
+                        forceall=True)
+        actions = solver.install_actions("numpy")
+
+        # Then
+        self.assertListEqual(actions,
+                             [("fetch", "MKL-10.3-1.egg"),
+                              ("fetch", "numpy-1.8.0-2.egg"),
+                              ("remove", "numpy-1.8.0-2.egg"),
+                              ("remove", "MKL-10.3-1.egg"),
+                              ("install", "MKL-10.3-1.egg"),
+                              ("install", "numpy-1.8.0-2.egg")])
 
 
 class TestEnstallerUpdateHack(unittest.TestCase):
