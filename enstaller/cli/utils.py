@@ -37,6 +37,30 @@ def disp_store_info(info):
     return sl.replace('/eggs/', ' ').strip('/')
 
 
+def _is_any_package_unavailable(remote_repository, actions):
+    unavailables = []
+    for opcode, egg in actions:
+        if opcode == "install":
+            name, version = egg_name_to_name_version(egg)
+            package = remote_repository.find_package(name, version)
+            if not package.available:
+                unavailables.append(egg)
+    return len(unavailables) > 0
+
+
+def _notify_unavailable_package(config, requirement):
+    username, __ = config.auth
+    user_info = authenticate(config)
+    subscription = user_info.subscription_level
+    msg = textwrap.dedent("""\
+        Cannot install {0!r}, as this package (or some of its requirements)
+        are not available at your subscription level {1!r} (You are
+        currently logged in as {2!r}).
+        """.format(str(requirement), subscription, username))
+    print()
+    print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+
+
 def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
@@ -89,24 +113,15 @@ def install_req(enpkg, config, req, opts):
         mode = 'root' if opts.no_deps else 'recur'
         solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
         actions = solver.install_actions(req)
+        if _is_any_package_unavailable(enpkg._remote_repository, actions):
+            _notify_unavailable_package(config, req)
+            _done(FAILURE)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
             print("No update necessary, %r is up-to-date." % req.name)
             print(install_time_string(enpkg._installed_repository,
                                       req.name))
-    except UnavailablePackage as e:
-        username, __ = config.auth
-        user_info = authenticate(config)
-        subscription = user_info.subscription_level
-        msg = textwrap.dedent("""\
-            Cannot install {0!r}, as this package (or some of its requirements)
-            are not available at your subscription level {1!r} (You are
-            currently logged in as {2!r}).
-            """.format(str(e.requirement), subscription, username))
-        print()
-        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
-        _done(FAILURE)
     except NoPackageFound as e:
         print(str(e))
         _done(FAILURE)
