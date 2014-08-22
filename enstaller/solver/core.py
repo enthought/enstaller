@@ -42,6 +42,22 @@ def create_enstaller_update_repository(repository, version):
     return new_repository
 
 
+def install_actions_enstaller(remote_repository, installed_repository):
+    latest = remote_repository.find_latest_package("enstaller")
+
+    if latest.version == enstaller.__version__:
+        return []
+    else:
+        actions = [("fetch", latest.key)]
+
+        installed_enstallers = installed_repository.find_packages(latest.name)
+        if len(installed_enstallers) >= 1:
+            actions.append(("remove", latest.key))
+
+        actions.append(("install", latest.key))
+        return actions
+
+
 class Solver(object):
     def __init__(self, remote_repository, top_installed_repository,
                  mode='recur', force=False, forceall=False):
@@ -51,25 +67,6 @@ class Solver(object):
         self.mode = mode
         self.force = force
         self.forceall = forceall
-
-    def _install_actions_enstaller(self, installed_version=None):
-        # installed_version is only useful for testing
-        if installed_version is None:
-            installed_version = enstaller.__version__
-
-        mode = 'recur'
-        req = Requirement.from_anything("enstaller")
-        eggs = Resolve(self._remote_repository).install_sequence(req, mode)
-        if eggs is None:
-            raise EnpkgError("No egg found for requirement '%s'." % req)
-        elif not len(eggs) == 1:
-            raise EnpkgError("No egg found to update enstaller, aborting...")
-        else:
-            name, version, build = split_eggname(eggs[0])
-            if version == installed_version:
-                return []
-            else:
-                return self._install_actions(eggs, self.mode, False, False)
 
     def install_actions(self, arg):
         """

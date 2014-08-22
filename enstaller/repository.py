@@ -372,6 +372,24 @@ class Repository(object):
                                                                   version))
 
 
+    def find_latest_package(self, name):
+        """Returns the latest package with the given name.
+
+        Parameters
+        ----------
+        name : str
+            The package's name
+
+        Returns
+        -------
+        package : PackageMetadata
+        """
+        packages = self.find_sorted_packages(name)
+        if len(packages) < 1:
+            raise ValueError("No package with name {0!r}".format(name))
+        else:
+            return packages[-1]
+
     def find_sorted_packages(self, name):
         """Returns a list of package metadata with the given name and version,
         sorted from lowest to highest version (when possible).

@@ -40,7 +40,8 @@ from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
 from enstaller.solver import Requirement, Solver
-from enstaller.solver.core import create_enstaller_update_repository
+from enstaller.solver.core import (create_enstaller_update_repository,
+                                   install_actions_enstaller)
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
@@ -80,8 +81,9 @@ def update_enstaller(enpkg, config, autoupdate, opts):
         return updated
     new_repository = create_enstaller_update_repository(
         enpkg._remote_repository, enstaller.__version__)
-    solver = Solver(new_repository, enpkg._top_installed_repository)
-    if len(solver._install_actions_enstaller()) > 0:
+    actions = install_actions_enstaller(new_repository,
+                                        enpkg._top_installed_repository)
+    if len(actions) > 0:
         if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
                          opts.yes):
             install_req(enpkg, config, 'enstaller', opts)

@@ -10,6 +10,8 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
+import mock
+
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
@@ -19,7 +21,8 @@ from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, NoPackageFound
 from enstaller.repository import Repository
 
-from ..core import Solver, create_enstaller_update_repository
+from ..core import (Solver, create_enstaller_update_repository,
+                    install_actions_enstaller)
 
 from enstaller.tests.common import (dummy_installed_package_factory,
                                     dummy_repository_package_factory,
@@ -260,5 +263,7 @@ class TestEnstallerUpdateHack(unittest.TestCase):
 
         new_repository = create_enstaller_update_repository(repository,
                                                             local_version)
-        solver = Solver(new_repository, Repository._from_prefixes([self.prefix]))
-        return solver._install_actions_enstaller(local_version)
+        install_repository = Repository._from_prefixes()
+        with mock.patch("enstaller.__version__", local_version):
+            return install_actions_enstaller(new_repository,
+                                             install_repository)
