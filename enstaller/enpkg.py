@@ -287,7 +287,7 @@ class Enpkg(object):
         dependencies.
     fetcher : URLFetcher
         The url fetcher used to fetch eggs.
-    prefixes : list of path -- default: [sys.prefix]
+    prefixes : list of paths -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
         prefix in the list.
