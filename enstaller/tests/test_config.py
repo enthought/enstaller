@@ -816,8 +816,8 @@ class TestConfiguration(unittest.TestCase):
         fp = StringIO(textwrap.dedent("""\
         EPD_auth = "{creds}"
 
-        repository_cache = "{prefix}"
-        prefix = "{prefix}"
+        repository_cache = {prefix!r}
+        prefix = {prefix!r}
         use_webservice = True
 
         store_url = "http://acme.com"
@@ -850,8 +850,8 @@ class TestConfiguration(unittest.TestCase):
         fp = StringIO(textwrap.dedent("""\
         EPD_auth = "{creds}"
 
-        repository_cache = "{prefix}"
-        prefix = "{prefix}"
+        repository_cache = {prefix!r}
+        prefix = {prefix!r}
         use_webservice = False
 
         store_url = "http://acme.com"
