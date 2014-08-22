@@ -836,17 +836,17 @@ class TestConfiguration(unittest.TestCase):
             r_prefix = "/tmp"
         r_repository_cache = r_prefix
         fp = StringIO(textwrap.dedent("""\
-        EPD_auth = "{0}"
+        EPD_auth = "{creds}"
 
-        repository_cache = "/tmp"
-        prefix = "/tmp"
+        repository_cache = {prefix!r}
+        prefix = {prefix!r}
         use_webservice = True
 
         store_url = "http://acme.com"
         use_pypi = False
         autoupdate = False
         noapp = False
-        """.format(FAKE_CREDS)))
+        """.format(creds=FAKE_CREDS, prefix=r_prefix)))
 
         # When
         config = Configuration.from_file(fp)
@@ -870,17 +870,17 @@ class TestConfiguration(unittest.TestCase):
             r_prefix = "/tmp"
         r_repository_cache = r_prefix
         fp = StringIO(textwrap.dedent("""\
-        EPD_auth = "{0}"
+        EPD_auth = "{creds}"
 
-        repository_cache = "/tmp"
-        prefix = "/tmp"
+        repository_cache = {prefix!r}
+        prefix = {prefix!r}
         use_webservice = False
 
         store_url = "http://acme.com"
         use_pypi = True
         autoupdate = True
         noapp = True
-        """.format(FAKE_CREDS)))
+        """.format(creds=FAKE_CREDS, prefix=r_prefix)))
 
         # When
         config = Configuration.from_file(fp)
