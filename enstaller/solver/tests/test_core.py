@@ -23,6 +23,8 @@ from enstaller.repository import Repository
 
 from ..core import (Solver, create_enstaller_update_repository,
                     install_actions_enstaller)
+from ..request import Request
+from ..requirement import Requirement
 
 from enstaller.tests.common import (dummy_installed_package_factory,
                                     dummy_repository_package_factory,
@@ -44,7 +46,6 @@ class TestSolverNoDependencies(unittest.TestCase):
         ]
 
         r_actions = [
-            ('fetch', 'numpy-1.8.0-2.egg'),
             ('install', 'numpy-1.8.0-2.egg')
         ]
 
@@ -52,11 +53,14 @@ class TestSolverNoDependencies(unittest.TestCase):
         installed_repository = Repository._from_prefixes([self.prefix])
         solver = Solver(repository, installed_repository)
 
-        actions = solver.install_actions("numpy")
+        request = Request()
+        request.install(Requirement("numpy"))
+        actions = solver.resolve(request)
 
         self.assertEqual(actions, r_actions)
 
     def test_install_no_egg_entry(self):
+        # Given
         entries = [
             dummy_repository_package_factory("numpy", "1.6.1", 1),
             dummy_repository_package_factory("numpy", "1.8.0", 2),
@@ -66,10 +70,15 @@ class TestSolverNoDependencies(unittest.TestCase):
         installed_repository = Repository._from_prefixes([self.prefix])
         solver = Solver(repository, installed_repository)
 
+        request = Request()
+        request.install(Requirement("scipy"))
+
+        # When/Then
         with self.assertRaises(NoPackageFound):
-            solver.install_actions("scipy")
+            solver.resolve(request)
 
     def test_remove_actions(self):
+        # Given
         repository = Repository()
 
         for egg in [DUMMY_EGG]:
@@ -78,10 +87,17 @@ class TestSolverNoDependencies(unittest.TestCase):
 
         solver = Solver(repository, Repository._from_prefixes([self.prefix]))
 
-        actions = solver.remove_actions("dummy")
+        request = Request()
+        request.remove(Requirement("dummy"))
+
+        # When
+        actions = solver.resolve(request)
+
+        # Then
         self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
 
     def test_remove_non_existing(self):
+        # Given
         entries = [
             dummy_repository_package_factory("numpy", "1.6.1", 1),
             dummy_repository_package_factory("numpy", "1.8.0", 2),
@@ -90,18 +106,22 @@ class TestSolverNoDependencies(unittest.TestCase):
         repository = repository_factory(entries)
         solver = Solver(repository, Repository._from_prefixes([self.prefix]))
 
-        with self.assertRaises(EnpkgError):
-            solver.remove_actions("numpy")
+        request = Request()
+        request.remove(Requirement("numpy"))
 
+        # When/Then
+        with self.assertRaises(EnpkgError):
+            solver.resolve(request)
+  
     def test_chained_override_update(self):
         """ Test update to package with latest version in lower prefix
         but an older version in primary prefix.
         """
+        # Given
         l0_egg = NOSE_1_3_0
         l1_egg = NOSE_1_2_1
 
         expected_actions = [
-            ('fetch', os.path.basename(l0_egg)),
             ('remove', os.path.basename(l1_egg)),
             ('install', os.path.basename(l0_egg)),
         ]
@@ -127,7 +147,13 @@ class TestSolverNoDependencies(unittest.TestCase):
         installed_repository = Repository._from_prefixes([l1])
         solver = Solver(repository, installed_repository)
 
-        actions = solver.install_actions("nose")
+        request = Request()
+        request.install(Requirement("nose"))
+
+        # When
+        actions = solver.resolve(request)
+
+        # Then
         self.assertListEqual(actions, expected_actions)
 
 
@@ -144,15 +170,16 @@ class TestSolverDependencies(unittest.TestCase):
         installed_repository = Repository()
 
         expected_actions = [
-            ('fetch', "MKL-10.3-1.egg"),
-            ('fetch', "numpy-1.8.0-2.egg"),
             ('install', "MKL-10.3-1.egg"),
             ('install', "numpy-1.8.0-2.egg"),
         ]
 
+        request = Request()
+        request.install(Requirement("numpy"))
+
         # When
         solver = Solver(repository, installed_repository)
-        actions = solver.install_actions("numpy")
+        actions = solver.resolve(request)
 
         # Then
         self.assertListEqual(actions, expected_actions)
@@ -171,13 +198,15 @@ class TestSolverDependencies(unittest.TestCase):
                 dummy_installed_package_factory("MKL", "10.3", 1))
 
         expected_actions = [
-            ('fetch', "numpy-1.8.0-2.egg"),
             ('install', "numpy-1.8.0-2.egg"),
         ]
 
         # When
+        request = Request()
+        request.install(Requirement("numpy"))
+
         solver = Solver(repository, installed_repository)
-        actions = solver.install_actions("numpy")
+        actions = solver.resolve(request)
 
         # Then
         self.assertListEqual(actions, expected_actions)
@@ -201,32 +230,32 @@ class TestSolverDependencies(unittest.TestCase):
             installed_repository.add_package(package)
 
         # When
+        request = Request()
+        request.install(Requirement("numpy"))
+
         solver = Solver(repository, installed_repository)
-        actions = solver.install_actions("numpy")
+        actions = solver.resolve(request)
 
         # Then
         self.assertListEqual(actions, [])
 
         # When
         solver = Solver(repository, installed_repository, force=True)
-        actions = solver.install_actions("numpy")
+        actions = solver.resolve(request)
 
         # Then
         self.assertListEqual(actions,
-                             [("fetch", "numpy-1.8.0-2.egg"),
-                              ("remove", "numpy-1.8.0-2.egg"),
+                             [("remove", "numpy-1.8.0-2.egg"),
                               ("install", "numpy-1.8.0-2.egg")])
 
         # When
         solver = Solver(repository, installed_repository, force=True,
                         forceall=True)
-        actions = solver.install_actions("numpy")
+        actions = solver.resolve(request)
 
         # Then
         self.assertListEqual(actions,
-                             [("fetch", "MKL-10.3-1.egg"),
-                              ("fetch", "numpy-1.8.0-2.egg"),
-                              ("remove", "numpy-1.8.0-2.egg"),
+                             [("remove", "numpy-1.8.0-2.egg"),
                               ("remove", "MKL-10.3-1.egg"),
                               ("install", "MKL-10.3-1.egg"),
                               ("install", "numpy-1.8.0-2.egg")])

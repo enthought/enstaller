@@ -68,22 +68,39 @@ class Solver(object):
         self.force = force
         self.forceall = forceall
 
-    def install_actions(self, arg):
-        """
-        Create a list of actions which are required for installing, which
-        includes updating, a package (without actually doing anything).
+    def resolve(self, request):
+        operations = []
 
-        The first argument may be any of:
-          * the KVS key, i.e. the egg filename
-          * a requirement object (enstaller.resolve.Req)
-          * the requirement as a string
-        """
-        req = Requirement.from_anything(arg)
-        # resolve the list of eggs that need to be installed
-        eggs = Resolve(self._remote_repository).install_sequence(req, self.mode)
-        return self._install_actions(eggs)
+        for job in request.jobs:
+            if job.kind == "install":
+                operations.extend(self._install(job.requirement))
+            elif job.kind == "remove":
+                operations.extend(("remove", p) for p in
+                                  self._remove(job.requirement))
+            else:
+                raise ValueError("Unsupported job kind: {0}".format(job.kind))
 
-    def _install_actions(self, eggs):
+        return operations
+
+    def _install(self, requirement):
+        eggs = Resolve(self._remote_repository).install_sequence(requirement,
+                                                                 self.mode)
+        return self._install_actions(eggs, self.mode, self.force,
+                                     self.forceall)
+
+    def _remove(self, requirement):
+        if requirement.version and requirement.build:
+            full_version = "{0}-{1}".format(requirement.version,
+                                            requirement.build)
+        else:
+            full_version = None
+        packages = self._top_installed_repository.find_packages(
+                requirement.name, full_version)
+        if len(packages) == 0:
+            raise EnpkgError("package %s not installed" % (requirement, ))
+        return [packages[0].key]
+
+    def _install_actions(self, eggs, mode, force, forceall):
         if not self.forceall:
             # remove already installed eggs from egg list
             if self.force:
@@ -91,10 +108,9 @@ class Solver(object):
             else:
                 eggs = self._filter_installed_eggs(eggs)
 
-        res = [('fetch', egg) for egg in eggs]
-
         # remove packages with the same name (from first egg collection
         # only, in reverse install order)
+        res = []
         for egg in reversed(eggs):
             name = split_eggname(egg)[0].lower()
             installed_packages = self._top_installed_repository.find_packages(name)
@@ -123,20 +139,3 @@ class Solver(object):
             else:
                 filtered_eggs.append(egg)
         return filtered_eggs
-
-    def remove_actions(self, arg):
-        """
-        Create the action necessary to remove an egg.  The argument, may be
-        one of ..., see above.
-        """
-        req = Requirement.from_anything(arg)
-        assert req.name
-        if req.version and req.build:
-            full_version = "{0}-{1}".format(req.version, req.build)
-        else:
-            full_version = None
-        packages = self._top_installed_repository.find_packages(req.name,
-                                                                full_version)
-        if len(packages) == 0:
-            raise EnpkgError("package %s not installed" % (req, ))
-        return [('remove', packages[0].key)]

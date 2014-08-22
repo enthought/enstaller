@@ -17,7 +17,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.solver import Requirement, comparable_info
+from enstaller.solver import Request, Requirement, comparable_info
 from enstaller.utils import prompt_yes_no
 
 
@@ -68,6 +68,8 @@ def install_req(enpkg, config, req, opts):
     # Unix exit-status codes
     FAILURE = 1
     req = Requirement.from_anything(req)
+    request = Request()
+    request.install(req)
 
     def _done(exit_status):
         sys.exit(exit_status)
@@ -112,7 +114,10 @@ def install_req(enpkg, config, req, opts):
     try:
         mode = 'root' if opts.no_deps else 'recur'
         solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
-        actions = solver.install_actions(req)
+        actions = solver.resolve(request)
+        installed = (egg for opcode, egg in actions if opcode == "install")
+        actions = [("fetch", egg) for egg in installed] + actions
+
         if _is_any_package_unavailable(enpkg._remote_repository, actions):
             _notify_unavailable_package(config, req)
             _done(FAILURE)
