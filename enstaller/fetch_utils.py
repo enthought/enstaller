@@ -18,11 +18,18 @@ class MD5File(object):
         """
         self._fp = fp
         self._h = hashlib.md5()
-        self.abort = False
+        self._aborted = False
+
+    @property
+    def is_aborted(self):
+        return self._aborted
 
     @property
     def checksum(self):
         return self._h.hexdigest()
+
+    def abort(self):
+        self._aborted = True
 
     def write(self, data):
         """
@@ -70,8 +77,8 @@ def checked_content(filename, expected_md5):
         checked_target = MD5File(target)
         yield checked_target
 
-        if checked_target.abort:
-            target.abort = True
+        if checked_target.is_aborted:
+            target.abort()
             return
         else:
             if expected_md5 != checked_target.checksum:

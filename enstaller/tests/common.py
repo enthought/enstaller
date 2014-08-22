@@ -4,10 +4,13 @@ from egginst._compat import PY2, StringIO
 
 import collections
 import contextlib
+import sys
 
 import mock
 
 from enstaller.auth import UserInfo
+from enstaller.config import Configuration
+from enstaller.enpkg import Enpkg
 from enstaller.errors import AuthFailedError
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -78,8 +81,12 @@ def mock_input(input_string):
 
 # Decorators to force a certain configuration
 def is_authenticated(f):
-    return mock.patch("enstaller.main.authenticate",
-                      lambda ignored: UserInfo(True))(f)
+    w1 = mock.patch("enstaller.cli.utils.authenticate",
+                     lambda ignored: UserInfo(True))
+    w2 = mock.patch("enstaller.config.authenticate",
+                     lambda ignored: UserInfo(True))
+    return w1(w2(f))
+
 
 def is_not_authenticated(f):
     return mock.patch("enstaller.main.authenticate",
@@ -176,3 +183,62 @@ def mock_raw_input(return_value):
     with mock.patch("enstaller.utils.input",
                     side_effect=_function) as context:
         yield context
+
+def unconnected_enpkg_factory(prefixes=None):
+    """
+    Create an Enpkg instance which does not require an authenticated
+    repository.
+    """
+    if prefixes is None:
+        prefixes = [sys.prefix]
+    config = Configuration()
+    repository = Repository()
+    return Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+                 prefixes=prefixes)
+
+def mock_fetcher_factory(repository_cache):
+    mocked_fetcher = mock.Mock()
+    mocked_fetcher.cache_dir = repository_cache
+    return mocked_fetcher
+
+
+def create_repositories(remote_entries=None, installed_entries=None):
+    if remote_entries is None:
+        remote_entries = []
+    if installed_entries is None:
+        installed_entries = []
+
+    remote_repository = Repository()
+    for remote_entry in remote_entries:
+        remote_repository.add_package(remote_entry)
+    installed_repository = Repository()
+    for installed_entry in installed_entries:
+        installed_repository.add_package(installed_entry)
+
+    return remote_repository, installed_repository
+
+
+class FakeOptions(object):
+    def __init__(self):
+        self.force = False
+        self.forceall = False
+        self.no_deps = False
+        self.yes = False
+
+
+def create_prefix_with_eggs(config, prefix, installed_entries=None,
+                             remote_entries=None):
+    if remote_entries is None:
+        remote_entries = []
+    if installed_entries is None:
+        installed_entries = []
+
+    repository = repository_factory(remote_entries)
+
+    enpkg = Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+                  prefixes=[prefix])
+    for package in installed_entries:
+        package.store_location = prefix
+        enpkg._top_installed_repository.add_package(package)
+        enpkg._installed_repository.add_package(package)
+    return enpkg

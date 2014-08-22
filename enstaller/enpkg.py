@@ -10,6 +10,7 @@ from egginst.main import EggInst
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
+from enstaller.fetch import _DownloadManager
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
 
@@ -232,7 +233,8 @@ class ProgressBarContext(object):
         return self.fetch_progress_factory("installing egg", filename, size)
 
     def remove_progress(self, filename, size, steps):
-        return self.fetch_progress_factory("removing egg", filename, size, steps)
+        return self.fetch_progress_factory("removing egg", filename, size,
+                                           steps)
 
 
 class _ExecuteContext(object):
@@ -283,9 +285,9 @@ class Enpkg(object):
     repository : Repository
         This is the remote repository which enpkg will use to resolve
         dependencies.
-    download_manager : DownloadManager
-        The download manager used to fetch eggs.
-    prefixes : list of path -- default: [sys.prefix]
+    fetcher : URLFetcher
+        The url fetcher used to fetch eggs.
+    prefixes : list of paths -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
         prefix in the list.
@@ -293,7 +295,7 @@ class Enpkg(object):
         If specified, will be used for progress bar management across all
         executed actions. If None, use dummy (do nothing) progress bars.
     """
-    def __init__(self, remote_repository, download_manager,
+    def __init__(self, remote_repository, url_fetcher,
                  prefixes=[sys.prefix], progress_context=None):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
@@ -301,9 +303,10 @@ class Enpkg(object):
         self._remote_repository = remote_repository
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
-        self._top_installed_repository = Repository._from_prefixes([self.top_prefix])
+        self._top_installed_repository = \
+                Repository._from_prefixes([self.top_prefix])
 
-        self._downloader = download_manager
+        self._downloader = _DownloadManager(url_fetcher, remote_repository)
 
         self._solver = Solver(self._remote_repository,
                               self._top_installed_repository)
@@ -339,7 +342,7 @@ class Enpkg(object):
           * complete set of eggs, i.e. a set of egg file names
           * revision number (negative numbers allowed)
         """
-        h = History(self.prefixes[0])
+        h = History(self.top_prefix)
         h.update()
         if isinstance(arg, set):
             state = arg
@@ -380,4 +383,4 @@ class Enpkg(object):
         return a history (h) object with this Enpkg instance prefix.
         """
         # FIXME: only used by canopy
-        return History(self.prefixes[0])
+        return History(self.top_prefix)

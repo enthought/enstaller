@@ -372,13 +372,7 @@ class Configuration(object):
         self._filename = None
         self._platform = plat.custom_plat
 
-    @property
-    def store_url(self):
-        return self._store_url
-
-    def set_store_url(self, url):
-        self._store_url = url
-
+    # Properties
     @property
     def autoupdate(self):
         return self._autoupdate
@@ -418,6 +412,43 @@ class Configuration(object):
 
     def disable_webservice(self):
         self._use_webservice = False
+
+    @property
+    def prefix(self):
+        return self._prefix
+
+    def set_prefix(self, value):
+        self._prefix = abs_expanduser(value)
+
+    @property
+    def indexed_repositories(self):
+        return self._indexed_repositories
+
+    def set_indexed_repositories(self, urls):
+        self._indexed_repositories = [fill_url(url) for url in urls]
+
+    @property
+    def store_url(self):
+        return self._store_url
+
+    def set_store_url(self, url):
+        self._store_url = url
+
+    @property
+    def repository_cache(self):
+        """ Absolute path where eggs will be cached."""
+        return self._repository_cache
+
+    def set_repository_cache(self, value):
+        """ Change the value of repository_cache."""
+        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
+
+    @property
+    def username(self):
+        return self._username
+
+    def set_username(self, value):
+        self._username = value
 
     @property
     def webservice_entry_point(self):
@@ -566,36 +597,6 @@ class Configuration(object):
             return True
         else:
             return False
-
-    @property
-    def prefix(self):
-        return self._prefix
-
-    def set_prefix(self, value):
-        self._prefix = abs_expanduser(value)
-
-    @property
-    def repository_cache(self):
-        """ Absolute path where eggs will be cached."""
-        return self._repository_cache
-
-    def set_repository_cache(self, value):
-        """ Change the value of repository_cache."""
-        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
-
-    @property
-    def indexed_repositories(self):
-        return self._indexed_repositories
-
-    def set_indexed_repositories(self, urls):
-        self._indexed_repositories = [fill_url(url) for url in urls]
-
-    @property
-    def username(self):
-        return self._username
-
-    def set_username(self, value):
-        self._username = value
 
     @property
     def encoded_auth(self):

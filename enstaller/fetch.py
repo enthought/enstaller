@@ -43,7 +43,7 @@ class _CancelableResponse(object):
             for chunk in response.iter_content(1024):
                 if self._canceled:
                     response.close()
-                    target.abort = True
+                    target.abort()
                     return
 
                 target.write(chunk)
@@ -94,7 +94,7 @@ class URLFetcher(object):
         return response
 
 
-class DownloadManager(object):
+class _DownloadManager(object):
     def __init__(self, url_fetcher, repository, auth=None):
         self._repository = repository
         self._fetcher = url_fetcher

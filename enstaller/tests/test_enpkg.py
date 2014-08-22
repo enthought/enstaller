@@ -17,7 +17,7 @@ from egginst.utils import compute_md5, makedirs
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError
-from enstaller.fetch import DownloadManager, URLFetcher
+from enstaller.fetch import _DownloadManager, URLFetcher
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -25,19 +25,10 @@ from enstaller.utils import PY_VER, path_to_uri
 from enstaller.vendor import responses
 
 from .common import (dummy_repository_package_factory,
-                     mock_history_get_state_context, repository_factory)
+                     mock_fetcher_factory,
+                     mock_history_get_state_context, repository_factory,
+                     unconnected_enpkg_factory)
 
-
-def _unconnected_enpkg_factory():
-    """
-    Create an Enpkg instance which does not require an authenticated
-    repository.
-    """
-    config = Configuration()
-    repository = Repository()
-    mocked_fetcher = mock.Mock()
-    mocked_fetcher.cache_directory = config.repository_cache
-    return Enpkg(repository, mocked_fetcher)
 
 class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
@@ -45,7 +36,7 @@ class TestEnpkgActions(unittest.TestCase):
         Ensuring enpkg.execute([]) does not crash
         """
         # Given
-        enpkg = _unconnected_enpkg_factory()
+        enpkg = unconnected_enpkg_factory()
 
         # When/Then
         enpkg.execute([])
@@ -60,7 +51,7 @@ class TestEnpkgActions(unittest.TestCase):
                 egginst = EggInst(egg, d)
                 egginst.install()
 
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=[d])
+            enpkg = unconnected_enpkg_factory([d])
 
             with mock.patch("enstaller.enpkg.RemoveAction.execute") as mocked_remove:
                 actions = enpkg._solver.remove_actions("dummy")
@@ -82,7 +73,7 @@ class TestEnpkgExecute(unittest.TestCase):
         repository = Repository()
 
         with mock.patch("enstaller.enpkg.FetchAction") as mocked_fetch:
-            enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
+            enpkg = unconnected_enpkg_factory(prefixes=self.prefixes)
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
 
@@ -105,7 +96,7 @@ class TestEnpkgExecute(unittest.TestCase):
         with mock.patch("enstaller.enpkg.FetchAction.execute") as mocked_fetch:
             with mock.patch("enstaller.enpkg.InstallAction.execute") as mocked_install:
                 mocked_fetcher = mock.Mock()
-                mocked_fetcher.cache_directory = config.repository_cache
+                mocked_fetcher.cache_dir = config.repository_cache
                 enpkg = Enpkg(repository, mocked_fetcher,
                               prefixes=self.prefixes)
                 actions = enpkg._solver.install_actions("dummy")
@@ -126,7 +117,7 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_empty_history(self):
         repository = Repository()
 
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
+        enpkg = unconnected_enpkg_factory(self.prefixes)
         enpkg.revert_actions(0)
 
         with self.assertRaises(EnpkgError):
@@ -135,7 +126,9 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_invalid_argument(self):
         repository = Repository()
 
-        enpkg = Enpkg(repository, mock.Mock(), prefixes=self.prefixes)
+        enpkg = Enpkg(repository,
+                      mock_fetcher_factory(Configuration().repository_cache),
+                      prefixes=self.prefixes)
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
 
@@ -155,9 +148,9 @@ class TestEnpkgRevert(unittest.TestCase):
                          body=fp.read(), status=200,
                          content_type='application/json')
 
-        downloader = DownloadManager(URLFetcher(config.repository_cache), repository)
+        fetcher = URLFetcher(config.repository_cache)
 
-        enpkg = Enpkg(repository, downloader, prefixes=self.prefixes)
+        enpkg = Enpkg(repository, fetcher, prefixes=self.prefixes)
         actions = enpkg._solver.install_actions("dummy")
         enpkg.execute(actions)
 
@@ -173,7 +166,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = set(["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"])
 
         with mock_history_get_state_context(installed_eggs | enstaller_egg):
-            enpkg = _unconnected_enpkg_factory()
+            enpkg = unconnected_enpkg_factory()
             ret = enpkg.revert_actions(installed_eggs)
 
             self.assertEqual(ret, [])
@@ -182,7 +175,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = _unconnected_enpkg_factory()
+            enpkg = unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs))
 
             self.assertEqual(ret, [])
@@ -194,7 +187,7 @@ class TestEnpkgRevert(unittest.TestCase):
         installed_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = _unconnected_enpkg_factory()
+            enpkg = unconnected_enpkg_factory()
             ret = enpkg.revert_actions(set(installed_eggs[:1]))
 
             self.assertEqual(ret, [("remove", "another_dummy-1.0.0-1.egg")])
@@ -207,7 +200,7 @@ class TestEnpkgRevert(unittest.TestCase):
         revert_eggs = ["dummy-1.0.0-1.egg", "another_dummy-1.0.0-1.egg"]
 
         with mock_history_get_state_context(installed_eggs):
-            enpkg = _unconnected_enpkg_factory()
+            enpkg = unconnected_enpkg_factory()
             with mock.patch.object(enpkg, "_remote_repository"):
                 ret = enpkg.revert_actions(set(revert_eggs))
                 self.assertEqual(ret, r_actions)
@@ -226,7 +219,8 @@ class TestFetchAction(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             repository.add_package(package)
 
-        return DownloadManager(URLFetcher(self.tempdir), repository), repository
+        return (_DownloadManager(URLFetcher(self.tempdir), repository),
+                repository)
 
     def _add_response_for_path(self, path):
         with open(path, "rb") as fp:

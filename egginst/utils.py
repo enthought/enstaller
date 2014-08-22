@@ -289,14 +289,26 @@ def atomic_file(filename, mode='w+b'):
     class _FileWrapper(object):
         def __init__(self, fp):
             self._fp = fp
-            self.abort = False
             # Make the name private to prevent people from re-opening the file
             # (not supported on e.g. windows, and will interfere with the
             # atomic_rename feature anyway).
             self._name = fp.name
 
+            self._is_aborted = False
+
+        def abort(self):
+            self._is_aborted = True
+
         def write(self, data):
             self._fp.write(data)
+
+    def _cleanup(temp_fp):
+        if temp_fp is not None:
+            try:
+                os.unlink(temp_fp._name)
+            except OSError as e:
+                if not e.errno != errno.EEXIST:
+                    raise
 
     temp_prefix = os.path.basename(filename)
     temp_dir = os.path.dirname(filename)
@@ -309,9 +321,10 @@ def atomic_file(filename, mode='w+b'):
             temp_fp = _FileWrapper(_temp_fp)
             yield temp_fp
     except:
-        if temp_fp is not None and os.path.exists(temp_fp._name):
-            os.unlink(temp_fp._name)
+        _cleanup(temp_fp)
         raise
     else:
-        if not temp_fp.abort:
+        if temp_fp._is_aborted:
+            _cleanup(temp_fp)
+        else:
             rename(temp_fp._name, filename)
