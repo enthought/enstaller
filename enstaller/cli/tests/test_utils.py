@@ -235,7 +235,7 @@ class TestInstallReq(TestCase):
             with self.assertRaises(SystemExit) as e:
                 install_req(enpkg, config, "nose", FakeOptions())
             subscription_message.assert_called()
-            self.assertEqual(exception_code(e), 1)
+            self.assertEqual(e.exception.code, 1)
 
     def test_simple_install(self):
         remote_entries = [
