@@ -3,11 +3,10 @@ from enstaller.utils import PY_VER
 import enstaller
 
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import EnpkgError, UnavailablePackage
+from enstaller.errors import EnpkgError
 from enstaller.repository import (egg_name_to_name_version, Repository,
                                   RepositoryPackageMetadata)
 
-from .requirement import Requirement
 from .resolve import Resolve
 
 

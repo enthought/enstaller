@@ -1,8 +1,6 @@
 import logging
-import re
 from collections import defaultdict
 
-from enstaller.egg_meta import is_valid_eggname, split_eggname
 from enstaller.errors import NoPackageFound
 from enstaller.repository import egg_name_to_name_version
 from enstaller.utils import comparable_version

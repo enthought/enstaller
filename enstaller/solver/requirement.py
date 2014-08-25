@@ -1,7 +1,6 @@
 import re
 
 from enstaller.egg_meta import is_valid_eggname, split_eggname
-from enstaller.utils import PY_VER
 
 
 class Requirement(object):
