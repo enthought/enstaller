@@ -147,7 +147,8 @@ class TestEnpkgRevert(unittest.TestCase):
         fetcher = URLFetcher(config.repository_cache)
 
         enpkg = Enpkg(repository, fetcher, prefixes=self.prefixes)
-        actions = [("install", os.path.basename(egg))]
+        actions = [("fetch", os.path.basename(egg)),
+                   ("install", os.path.basename(egg))]
         enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
