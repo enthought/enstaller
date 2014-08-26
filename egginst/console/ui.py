@@ -170,6 +170,8 @@ class ProgressBar(object):
         from .termui import get_terminal_size
 
         if self.is_hidden:
+            # FIXME: we removed the display code here. I believe it is a click
+            # bug.
             self.file.flush()
             return
 
