@@ -616,10 +616,11 @@ def remove_egg_cli(path, prefix, noapp=False):
         logger.error("Error: can't find meta data for: %r", remover.cname)
         return
     progress = console_progress_manager_factory("removing egg", installer.fn,
-                                                size=remover.installed_size)
+                                                remover.installed_size,
+                                                len(remover.files))
     with progress:
-        for n, filename in enumerate(remover.remove_iterator()):
-            progress.update(n)
+        for filename in remover.remove_iterator():
+            progress.update(1)
 
 
 def main(argv=None):
