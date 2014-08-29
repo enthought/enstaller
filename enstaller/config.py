@@ -593,7 +593,7 @@ class Configuration(object):
         authentication information is correct.
 
         """
-        if self._username and self._password:
+        if self._username and self._password is not None:
             return True
         else:
             return False
