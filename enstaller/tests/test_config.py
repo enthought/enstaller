@@ -298,6 +298,27 @@ class TestGetAuth(unittest.TestCase):
                 get_auth()
 
 class TestWriteAndChangeAuth(unittest.TestCase):
+    def test_simple_set_auth(self):
+        # Given
+        config = Configuration()
+
+        # When/Then
+        self.assertFalse(config.is_auth_configured)
+
+        # Given
+        config = Configuration()
+        config.set_auth("", "")
+
+        # When/Then
+        self.assertFalse(config.is_auth_configured)
+
+        # Given
+        config = Configuration()
+        config.set_auth("yoyoma", "")
+
+        # When/Then
+        self.assertTrue(config.is_auth_configured)
+
     @make_keyring_unavailable
     def test_change_existing_config_file(self):
         r_new_password = "ouioui_dans_sa_petite_voiture"
