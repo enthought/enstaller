@@ -4,6 +4,10 @@ from egginst.console import ProgressBar
 from egginst.utils import human_bytes
 
 
+def dummy_progress_bar_factory(*a, **kw):
+    return _DummyProgressBar()
+
+
 def console_progress_manager_factory(message, filename, size, steps=None):
     if steps is None:
         steps = size
@@ -18,3 +22,14 @@ def console_progress_manager_factory(message, filename, size, steps=None):
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
                        fill_char=".", show_percent=False)
+
+
+class _DummyProgressBar(object):
+    def update(self, *a, **kw):
+        pass
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a, **kw):
+        pass
