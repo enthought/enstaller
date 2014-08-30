@@ -7,6 +7,7 @@ import sys
 from os.path import isfile, join
 
 from egginst.main import EggInst
+from egginst.progress import dummy_progress_bar_factory
 
 from enstaller.errors import EnpkgError
 from enstaller.eggcollect import meta_dir_from_prefix
@@ -48,21 +49,6 @@ class _BaseAction(object):
 
     def __iter__(self):
         return self.iter_execute()
-
-
-class _DummyProgressBar(object):
-    def update(self, *a, **kw):
-        pass
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a, **kw):
-        pass
-
-
-def dummy_progress_bar_factory(self, *a, **kw):
-    return _DummyProgressBar()
 
 
 class FetchAction(_BaseAction):
