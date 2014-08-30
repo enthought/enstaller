@@ -39,7 +39,7 @@ from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
-from enstaller.solver import Request, Requirement, Solver
+from enstaller.solver import Request, Requirement
 from enstaller.solver.core import (create_enstaller_update_repository,
                                    install_actions_enstaller)
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
@@ -339,15 +339,17 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
         elif not epd_install_confirm(args.yes):
             return
 
-    for req in reqs:
-        if args.remove:                               # --remove
+    if args.remove:
+        for req in reqs:
+            solver = enpkg._solver_factory()
             try:
                 request = Request()
                 request.remove(req)
-                enpkg.execute(enpkg._solver_factory().resolve(request))
+                enpkg.execute(solver.resolve(request))
             except EnpkgError as e:
                 print(str(e))
-        else:
+    else:
+        for req in reqs:
             install_req(enpkg, config, req, args)
 
 
