@@ -9,12 +9,14 @@ if sys.version_info < (2, 7):
 else:
     import unittest
 
+import mock
+
 from egginst.tests.common import mkdtemp
 
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.fetch import URLFetcher
-from enstaller.legacy_stores import legacy_index_parser
+from enstaller.legacy_stores import legacy_index_parser, parse_index
 from enstaller.plat import custom_plat
 
 from enstaller.tests.common import dummy_repository_package_factory
@@ -134,8 +136,45 @@ class TestLegacyStores(unittest.TestCase):
 
         # When
         fetcher = URLFetcher(config.repository_cache, config.auth)
-        packages = list(legacy_index_parser(fetcher, config.indices))
+        packages = list(legacy_index_parser(fetcher, config.indices,
+                                            python_version="2.6"))
 
         # Then
         self.assertEqual(len(packages), 1)
         self.assertEqual(packages[0].key, "zope.testing-3.8.3-1.egg")
+
+
+    def test_parse_index_python_version(self):
+        # Given
+        index = {
+           "zope.testing-3.8.3-1.egg": {
+               "available": True,
+               "build": 1,
+               "md5": "6041fd75b7fe9187ccef0d40332c6c16",
+               "mtime": 1262725254.0,
+               "name": "zope.testing",
+               "product": "commercial",
+               "python": "2.6",
+               "size": 514439,
+               "type": "egg",
+               "version": "3.8.3",
+           }
+        }
+
+        # When
+        packages = list(parse_index(index, "", python_version="2.6"))
+
+        # Then
+        self.assertEqual(len(packages), 1)
+
+        # When
+        packages = list(parse_index(index, "", python_version="2.4"))
+
+        # Then
+        self.assertEqual(len(packages), 0)
+
+        # When
+        packages = list(parse_index(index, "", "*"))
+
+        # Then
+        self.assertEqual(len(packages), 1)

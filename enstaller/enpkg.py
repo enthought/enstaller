@@ -224,21 +224,22 @@ class ProgressBarContext(object):
 
 
 class _ExecuteContext(object):
-    def __init__(self, actions, enpkg, progress_bar_context):
+    def __init__(self, actions, enpkg, progress_bar_context, force=False):
         self._top_prefix = enpkg.top_prefix
         self._actions = actions
         self._remote_repository = enpkg._remote_repository
         self._enpkg = enpkg
+        self._force = force
+
 
         self._pbar_context = progress_bar_context
 
     def _action_factory(self, action):
         opcode, egg = action
 
-        if opcode.startswith('fetch_'):
-            force = int(opcode[-1])
+        if opcode.startswith('fetch'):
             return FetchAction(egg, self._enpkg._downloader,
-                               self._remote_repository, force,
+                               self._remote_repository, self._force,
                                self._pbar_context.fetch_progress)
         elif opcode.startswith("install"):
             return InstallAction(egg, self._enpkg.top_prefix,
@@ -282,7 +283,8 @@ class Enpkg(object):
         executed actions. If None, use dummy (do nothing) progress bars.
     """
     def __init__(self, remote_repository, url_fetcher,
-                 prefixes=[sys.prefix], progress_context=None):
+                 prefixes=[sys.prefix], progress_context=None,
+                 force=False):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
@@ -294,15 +296,21 @@ class Enpkg(object):
 
         self._downloader = _DownloadManager(url_fetcher, remote_repository)
 
-        self._solver = Solver(self._remote_repository,
-                              self._top_installed_repository)
-
         self._progress_context = progress_context or \
                 ProgressBarContext(dummy_progress_bar_factory)
 
+        self._force = force
+
+    def _solver_factory(self, mode='recur', force=False, forceall=False):
+        solver = Solver(self._remote_repository,
+                        self._top_installed_repository,
+                        mode, force, forceall)
+        return solver
+
 
     def execute_context(self, actions):
-        return _ExecuteContext(actions, self, self._progress_context)
+        return _ExecuteContext(actions, self, self._progress_context,
+                               self._force)
 
     def execute(self, actions):
         """

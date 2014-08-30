@@ -18,7 +18,7 @@ from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.resolve import Req, comparable_info
+from enstaller.solver import Request, Requirement, comparable_info
 from enstaller.utils import prompt_yes_no
 
 
@@ -38,13 +38,39 @@ def disp_store_info(info):
     return sl.replace('/eggs/', ' ').strip('/')
 
 
+def _is_any_package_unavailable(remote_repository, actions):
+    unavailables = []
+    for opcode, egg in actions:
+        if opcode == "install":
+            name, version = egg_name_to_name_version(egg)
+            package = remote_repository.find_package(name, version)
+            if not package.available:
+                unavailables.append(egg)
+    return len(unavailables) > 0
+
+
+def _notify_unavailable_package(config, requirement):
+    username, __ = config.auth
+    user_info = authenticate(config)
+    subscription = user_info.subscription_level
+    msg = textwrap.dedent("""\
+        Cannot install {0!r}, as this package (or some of its requirements)
+        are not available at your subscription level {1!r} (You are
+        currently logged in as {2!r}).
+        """.format(str(requirement), subscription, username))
+    print()
+    print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+
+
 def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
     """
     # Unix exit-status codes
     FAILURE = 1
-    req = Req.from_anything(req)
+    req = Requirement.from_anything(req)
+    request = Request()
+    request.install(req)
 
     def _done(exit_status):
         sys.exit(exit_status)
@@ -88,27 +114,20 @@ def install_req(enpkg, config, req, opts):
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
-        actions = enpkg._solver.install_actions(req, mode=mode,
-                                                force=opts.force,
-                                                forceall=opts.forceall)
+        solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
+        actions = solver.resolve(request)
+        installed = (egg for opcode, egg in actions if opcode == "install")
+        actions = [("fetch", egg) for egg in installed] + actions
+
+        if _is_any_package_unavailable(enpkg._remote_repository, actions):
+            _notify_unavailable_package(config, req)
+            _done(FAILURE)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
             print("No update necessary, %r is up-to-date." % req.name)
             print(install_time_string(enpkg._installed_repository,
                                       req.name))
-    except UnavailablePackage as e:
-        username, __ = config.auth
-        user_info = authenticate(config)
-        subscription = user_info.subscription_level
-        msg = textwrap.dedent("""\
-            Cannot install {0!r}, as this package (or some of its requirements)
-            are not available at your subscription level {1!r} (You are
-            currently logged in as {2!r}).
-            """.format(str(e.requirement), subscription, username))
-        print()
-        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
-        _done(FAILURE)
     except NoPackageFound as e:
         print(str(e))
         _done(FAILURE)

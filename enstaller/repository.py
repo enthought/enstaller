@@ -15,6 +15,13 @@ from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import comparable_version, compute_md5
 
 
+class PackageVersionInfo(object):
+    def __init__(self, name, version, build):
+        self.name = name
+        self.version = version
+        self.build = build
+
+
 class PackageMetadata(object):
     """
     PackageMetadataBase encompasses the metadata required to resolve
@@ -57,6 +64,12 @@ class PackageMetadata(object):
             self.name, self.version, self.build, self.key)
 
     @property
+    def dependencies(self):
+        # FIXME: we keep packages for backward compatibility (called as is in
+        # the index).
+        return self.packages
+
+    @property
     def full_version(self):
         """
         The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
@@ -72,14 +85,6 @@ class PackageMetadata(object):
         """
         return comparable_version(self.version), self.build
 
-    @property
-    def _spec_info(self):
-        """
-        Returns a dictionary that can be used as an argument to Req.matches
-        """
-        # FIXME: to remove before 4.7.0
-        keys = ("name", "python", "version", "build")
-        return dict((k, getattr(self, k)) for k in keys)
 
 class RepositoryPackageMetadata(PackageMetadata):
     """
@@ -366,6 +371,24 @@ class Repository(object):
         raise MissingPackage("Package '{0}-{1}' not found".format(name,
                                                                   version))
 
+
+    def find_latest_package(self, name):
+        """Returns the latest package with the given name.
+
+        Parameters
+        ----------
+        name : str
+            The package's name
+
+        Returns
+        -------
+        package : PackageMetadata
+        """
+        packages = self.find_sorted_packages(name)
+        if len(packages) < 1:
+            raise ValueError("No package with name {0!r}".format(name))
+        else:
+            return packages[-1]
 
     def find_sorted_packages(self, name):
         """Returns a list of package metadata with the given name and version,

@@ -22,7 +22,7 @@ import mock
 from enstaller.main import main
 from enstaller.tests.common import mock_print
 
-from .common import (fake_empty_install_actions, fake_configuration_and_auth,
+from .common import (fake_empty_resolve, fake_configuration_and_auth,
                      enstaller_version, authenticated_config,
                      raw_input_always_yes, remote_enstaller_available)
 
@@ -87,12 +87,12 @@ class TestEnstallerMainActions(unittest.TestCase):
 
 class TestEnstallerInstallActions(unittest.TestCase):
     @fake_configuration_and_auth
-    @fake_empty_install_actions
+    @fake_empty_resolve
     def test_install_numpy(self):
         main(["numpy"])
 
     @fake_configuration_and_auth
-    @fake_empty_install_actions
+    @fake_empty_resolve
     def test_install_epd(self):
         with mock.patch("enstaller.main.epd_install_confirm") as m:
             main(["epd"])

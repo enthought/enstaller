@@ -39,8 +39,9 @@ from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
-from enstaller.resolve import Req
-from enstaller.solver import Solver, create_enstaller_update_repository
+from enstaller.solver import Request, Requirement
+from enstaller.solver.core import (create_enstaller_update_repository,
+                                   install_actions_enstaller)
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
@@ -80,8 +81,9 @@ def update_enstaller(enpkg, config, autoupdate, opts):
         return updated
     new_repository = create_enstaller_update_repository(
         enpkg._remote_repository, enstaller.__version__)
-    solver = Solver(new_repository, enpkg._top_installed_repository)
-    if len(solver._install_actions_enstaller()) > 0:
+    actions = install_actions_enstaller(new_repository,
+                                        enpkg._top_installed_repository)
+    if len(actions) > 0:
         if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
                          opts.yes):
             install_req(enpkg, config, 'enstaller', opts)
@@ -327,7 +329,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
         print(REMOVE_ENSTALLER_WARNING)
         if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
             args.remove = True
-            reqs = [Req('enstaller')]
+            reqs = [Requirement('enstaller')]
 
     if any(req.name == 'epd' for req in reqs):
         if args.remove:
@@ -337,13 +339,17 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
         elif not epd_install_confirm(args.yes):
             return
 
-    for req in reqs:
-        if args.remove:                               # --remove
+    if args.remove:
+        for req in reqs:
+            solver = enpkg._solver_factory()
             try:
-                enpkg.execute(enpkg._solver.remove_actions(req))
+                request = Request()
+                request.remove(req)
+                enpkg.execute(solver.resolve(request))
             except EnpkgError as e:
                 print(str(e))
-        else:
+    else:
+        for req in reqs:
             install_req(enpkg, config, req, args)
 
 
@@ -431,9 +437,9 @@ def _compute_reqs(cnames):
     for arg in cnames:
         if '-' in arg:
             name, version = arg.split('-', 1)
-            reqs.append(Req(name + ' ' + version))
+            reqs.append(Requirement(name + ' ' + version))
         else:
-            reqs.append(Req(arg))
+            reqs.append(Requirement(arg))
     return reqs
 
 
@@ -556,7 +562,8 @@ def main(argv=None):
         progress_bar_context = None
     else:
         progress_bar_context = ProgressBarContext(console_progress_manager_factory)
-    enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context)
+    enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
+                  args.force or args.forceall)
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                  pat)
