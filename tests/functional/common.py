@@ -47,10 +47,10 @@ def mock_install_req(f):
     return mock.patch("enstaller.main.install_req", mock.Mock())(f)
 
 
-def fake_empty_install_actions(f):
+def fake_empty_resolve(f):
     @functools.wraps(f)
     def wrapper(*a, **kw):
-        with mock.patch("enstaller.enpkg.Solver.install_actions", return_value=[]):
+        with mock.patch("enstaller.enpkg.Solver.resolve", return_value=[]):
             return f(*a, **kw)
     return wrapper
 
