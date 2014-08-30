@@ -26,7 +26,7 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
-from egginst.progress import console_progress_manager_factory
+from egginst.progress import console_progress_manager_factory, dummy_progress_bar_factory
 from enstaller._version import is_released as IS_RELEASED
 
 import enstaller
@@ -446,13 +446,17 @@ def _display_store_name(store_location):
     parts = urlparse.urlsplit(store_location)
     return urlparse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
 
-def _fetch_json_with_progress(resp, store_location):
+def _fetch_json_with_progress(resp, store_location, quiet=False):
     data = io.BytesIO()
 
     length = int(resp.headers.get("content-length", 0))
     display = _display_store_name(store_location)
-    progress = console_progress_manager_factory("Fetching index", display,
-                                                size=length)
+
+    if quiet:
+        progress = dummy_progress_bar_factory()
+    else:
+        progress = console_progress_manager_factory("Fetching index", display,
+                                                    size=length)
     with progress:
         for chunk in _ResponseIterator(resp):
             data.write(chunk)
@@ -461,13 +465,15 @@ def _fetch_json_with_progress(resp, store_location):
     return json.loads(data.getvalue().decode("utf-8"))
 
 
-def repository_factory(fetcher, config):
+def repository_factory(fetcher, config, quiet=False):
     repository = Repository()
     for url, store_location in config.indices:
         resp = fetcher.fetch(url)
         resp.raise_for_status()
 
-        for package in parse_index(_fetch_json_with_progress(resp, store_location),
+        for package in parse_index(_fetch_json_with_progress(resp,
+                                                             store_location,
+                                                             quiet),
                                    store_location):
             repository.add_package(package)
     return repository
@@ -554,6 +560,8 @@ def main(argv=None):
     p.add_argument("--revert", metavar="REV#",
                    help="revert to a previous set of packages (does not revert "
                    "enstaller itself)")
+    p.add_argument('-q', "--quiet", action="store_true",
+                   help="Quiet output.")
     p.add_argument('-s', "--search", action="store_true",
                    help="search the online repo index "
                         "and display versions available")
@@ -704,14 +712,17 @@ def main(argv=None):
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
                                config.proxy_dict)
     index_fetcher._enable_etag_support()
-    repository = repository_factory(index_fetcher, config)
+    repository = repository_factory(index_fetcher, config, args.quiet)
 
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
     downloader = DownloadManager(fetcher, repository)
 
-    enpkg = Enpkg(repository, downloader, prefixes,
-                  ProgressBarContext(console_progress_manager_factory))
+    if args.quiet:
+        progress_bar_context = None
+    else:
+        progress_bar_context = ProgressBarContext(console_progress_manager_factory)
+    enpkg = Enpkg(repository, downloader, prefixes, progress_bar_context)
 
     if args.dry_run:
         def print_actions(actions):
