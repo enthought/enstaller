@@ -8,7 +8,8 @@ import textwrap
 
 from egginst._compat import urlparse
 
-from egginst.progress import console_progress_manager_factory
+from egginst.progress import (console_progress_manager_factory,
+                              dummy_progress_bar_factory)
 
 from enstaller.auth import authenticate
 from enstaller.egg_meta import split_eggname
@@ -138,7 +139,7 @@ def print_installed(repository, pat=None):
               disp_store_info(info)))
 
 
-def repository_factory(config):
+def repository_factory(config, quiet=False):
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
                                config.proxy_dict)
     index_fetcher._enable_etag_support()
@@ -149,7 +150,8 @@ def repository_factory(config):
         resp.raise_for_status()
 
         for package in parse_index(_fetch_json_with_progress(resp,
-                                                             store_location),
+                                                             store_location,
+                                                             quiet),
                                    store_location):
             repository.add_package(package)
     return repository
@@ -181,13 +183,16 @@ def updates_check(remote_repository, installed_repository):
 
 # Private functions
 
-def _fetch_json_with_progress(resp, store_location):
+def _fetch_json_with_progress(resp, store_location, quiet=False):
     data = io.BytesIO()
 
     length = int(resp.headers.get("content-length", 0))
     display = _display_store_name(store_location)
-    progress = console_progress_manager_factory("Fetching index", display,
-                                                size=length)
+    if quiet:
+        progress = dummy_progress_bar_factory()
+    else:
+        progress = console_progress_manager_factory("Fetching index", display,
+                                                    size=length)
     with progress:
         for chunk in _ResponseIterator(resp):
             data.write(chunk)
