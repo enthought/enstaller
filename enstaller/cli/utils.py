@@ -158,7 +158,7 @@ def print_installed(repository, pat=None):
               disp_store_info(info)))
 
 
-def repository_factory(config, quiet=False):
+def repository_factory(config, progress_factory=None):
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
                                config.proxy_dict)
     index_fetcher._enable_etag_support()
@@ -170,7 +170,7 @@ def repository_factory(config, quiet=False):
 
         for package in parse_index(_fetch_json_with_progress(resp,
                                                              store_location,
-                                                             quiet),
+                                                             progress_factory),
                                    store_location):
             repository.add_package(package)
     return repository
@@ -202,16 +202,16 @@ def updates_check(remote_repository, installed_repository):
 
 # Private functions
 
-def _fetch_json_with_progress(resp, store_location, quiet=False):
+def _fetch_json_with_progress(resp, store_location, progress_factory=None):
     data = io.BytesIO()
 
     length = int(resp.headers.get("content-length", 0))
     display = _display_store_name(store_location)
-    if quiet:
-        progress = dummy_progress_bar_factory()
+
+    if progress_factory:
+        progress = progress_factory("Fetching index", display, size=length)
     else:
-        progress = console_progress_manager_factory("Fetching index", display,
-                                                    size=length)
+        progress = dummy_progress_bar_factory()
     with progress:
         for chunk in _ResponseIterator(resp):
             data.write(chunk)
