@@ -719,9 +719,11 @@ def main(argv=None):
     downloader = DownloadManager(fetcher, repository)
 
     if args.quiet:
+        progress_factory = None
         progress_bar_context = None
     else:
-        progress_bar_context = ProgressBarContext(console_progress_manager_factory)
+        progress_factory = console_progress_manager_factory
+        progress_bar_context = ProgressBarContext(progress_factory)
     enpkg = Enpkg(repository, downloader, prefixes, progress_bar_context)
 
     if args.dry_run:
