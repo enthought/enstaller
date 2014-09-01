@@ -117,3 +117,11 @@ def apply_placeholder_hack(files, egg_targets, prefix):
 
     for path in files:
         _fix_object_code(path, targets)
+
+
+# XXX: kept for legacy reason, DO NOT REMOVE.
+# This code is used during enstaller inplace update.
+def fix_files(egg_inst):
+    if egg_inst.cname != "enstaller":
+        msg = "Legacy dummy code used for an egg not called enstaller !"
+        raise RuntimeError(msg)

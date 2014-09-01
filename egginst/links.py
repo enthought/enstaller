@@ -10,6 +10,14 @@ from egginst.utils import rm_rf
 logger = logging.getLogger(__name__)
 
 
+# XXX: kept for legacy reason, DO NOT REMOVE.
+# This code is used during enstaller inplace update.
+def create(egg_inst):
+    if egg_inst.cname != "enstaller":
+        msg = "Legacy dummy code used for an egg not called enstaller !"
+        raise RuntimeError(msg)
+
+
 def create_link(arcname, link, prefix):
     usr = 'EGG-INFO/usr/'
     assert arcname.startswith(usr), arcname
