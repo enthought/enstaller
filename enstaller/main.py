@@ -401,6 +401,8 @@ def _create_parser():
     p.add_argument("--revert", metavar="REV#",
                    help="revert to a previous set of packages (does not revert "
                    "enstaller itself)")
+    p.add_argument('-q', "--quiet", action="store_true",
+                   help="Quiet output.")
     p.add_argument('-s', "--search", action="store_true",
                    help="search the online repo index "
                         "and display versions available")
@@ -553,11 +555,14 @@ def main(argv=None):
         configure_authentication_or_exit(config, config_filename)
     user = ensure_authenticated_config(config, config_filename)
 
-    repository = repository_factory(config)
+    repository = repository_factory(config, args.quiet)
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
-    enpkg = Enpkg(repository, fetcher, prefixes,
-                  ProgressBarContext(console_progress_manager_factory),
+    if args.quiet:
+        progress_bar_context = None
+    else:
+        progress_bar_context = ProgressBarContext(console_progress_manager_factory)
+    enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
                   args.force or args.forceall)
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
