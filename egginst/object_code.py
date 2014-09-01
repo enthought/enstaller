@@ -109,7 +109,7 @@ def _compute_targets(egg_targets, prefix):
     return targets
 
 
-def fix_files(files, egg_targets, prefix):
+def apply_placeholder_hack(files, egg_targets, prefix):
     """
     Tries to fix the library path for all object files installed by the egg.
     """
