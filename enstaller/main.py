@@ -719,7 +719,6 @@ def main(argv=None):
     downloader = DownloadManager(fetcher, repository)
 
     if args.quiet:
-        progress_factory = None
         progress_bar_context = None
     else:
         progress_factory = console_progress_manager_factory
