@@ -31,11 +31,11 @@ except ImportError:  # pragma: no cover
     appinst = None
 
 from . import eggmeta
+from . import object_code
 from . import scripts
 
-from egginst.progress import console_progress_manager_factory
-
 from .links import create_link
+from .progress import console_progress_manager_factory
 from .utils import (on_win, bin_dir_name, rel_site_packages, ensure_dir,
                     rm_empty_dir, rm_rf, get_executable, is_zipinfo_dir,
                     zip_has_arcname)
@@ -339,8 +339,7 @@ class EggInst(object):
             if on_win:
                 scripts.create_proxies(self)
             else:
-                from . import object_code
-                object_code.fix_files(self)
+                object_code.apply_placeholder_hack(self)
 
                 self._create_links()
 

@@ -157,7 +157,7 @@ def fix_object_code(path):
             f.write(r)
 
 
-def fix_files(egg):
+def apply_placeholder_hack(egg):
     """
     Tries to fix the library path for all object files installed by the egg.
     """
