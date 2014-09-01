@@ -555,15 +555,13 @@ def main(argv=None):
         configure_authentication_or_exit(config, config_filename)
     user = ensure_authenticated_config(config, config_filename)
 
-    if args.quiet:
-        progress_factory = None
-        progress_bar_context = None
-    else:
-        progress_factory = console_progress_manager_factory
-        progress_bar_context = ProgressBarContext(progress_factory)
-    repository = repository_factory(config, progress_factory)
+    repository = repository_factory(config, args.quiet)
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict)
+    if args.quiet:
+        progress_bar_context = None
+    else:
+        progress_bar_context = ProgressBarContext(console_progress_manager_factory)
     enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
                   args.force or args.forceall)
 
