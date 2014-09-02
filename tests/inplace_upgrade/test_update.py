@@ -10,6 +10,8 @@ import zipfile
 
 import os.path as op
 
+import pathlib
+
 from fabric.api import lcd, local
 from fabric.decorators import task
 
@@ -367,13 +369,20 @@ packages = []
     _generate_egg_index(index_filename, target_egg, forced_version,
                         forced_build)
 
+    if sys.platform == "win32":
+        # XXX: we cannot use as_uri because enstaller does not handle them
+        # properly...
+        repo_uri = "file://{}/".format(pathlib.Path(repo_dir).as_posix())
+    else:
+        repo_uri = "file://{}/".format(repo_dir)
+
     with open(op.join(ROOT, ".enstaller4rc"), "w") as fp:
         fp.write("""\
 IndexedRepos = [
-    'file://{}/'
+    '{}'
 ]
 use_webservice = False
-""".format(repo_dir))
+""".format(repo_uri))
 
 
 @task
