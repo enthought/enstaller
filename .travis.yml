@@ -16,7 +16,7 @@ matrix:
 before_install:
    - if [ "${TEST_INPLACE_UPGRADE}" == "1" ]; then
        sudo apt-get install fabric python-requests python-pip;
-       pip install --user pathlib;
+       pip install pathlib;
        fi
 
 install:
