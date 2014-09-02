@@ -109,7 +109,7 @@ def _compute_targets(egg_targets, prefix):
     return targets
 
 
-def fix_files(files, egg_targets, prefix):
+def apply_placeholder_hack(files, egg_targets, prefix):
     """
     Tries to fix the library path for all object files installed by the egg.
     """
@@ -117,3 +117,11 @@ def fix_files(files, egg_targets, prefix):
 
     for path in files:
         _fix_object_code(path, targets)
+
+
+# XXX: kept for legacy reason, DO NOT REMOVE.
+# This code is used during enstaller inplace update.
+def fix_files(egg_inst):
+    if egg_inst.cname != "enstaller":
+        msg = "Legacy dummy code used for an egg not called enstaller !"
+        raise RuntimeError(msg)
