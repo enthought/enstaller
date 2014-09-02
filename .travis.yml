@@ -15,7 +15,7 @@ matrix:
 
 before_install:
    - if [ "${TEST_INPLACE_UPGRADE}" == "1" ]; then
-       sudo apt-get install fabric python-requests;
+       sudo apt-get install fabric python-requests python-pathlib;
        fi
 
 install:
@@ -34,7 +34,6 @@ script:
        coverage run --source=enstaller,egginst -a -m haas enstaller egginst;
        coverage run --source=enstaller,egginst -a -m haas tests/functional;
        fi
-
 
 after_success:
     coveralls
