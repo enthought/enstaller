@@ -2,16 +2,16 @@ language: python
 
 matrix:
     include:
-        - 2.6
-          TEST_INPLACE_UPGRADE=0
-        - 2.7
-          TEST_INPLACE_UPGRADE=0
-        - 2.7
-          TEST_INPLACE_UPGRADE=1
-        - 3.3
-          TEST_INPLACE_UPGRADE=0
-        - 3.4
-          TEST_INPLACE_UPGRADE=0
+        - python: 2.6
+          env: TEST_INPLACE_UPGRADE=0
+        - python: 2.7
+          env: TEST_INPLACE_UPGRADE=0
+        - python: 2.7
+          env: TEST_INPLACE_UPGRADE=1
+        - python: 3.3
+          env: TEST_INPLACE_UPGRADE=0
+        - python: 3.4
+          env: TEST_INPLACE_UPGRADE=0
 
 before_install:
    - if [ "${TEST_INPLACE_UPGRADE}" == "1" ]; then
