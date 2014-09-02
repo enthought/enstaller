@@ -14,8 +14,8 @@ matrix:
 
 before_install:
    - if [ "${RUN_INPLACE_UPGRADE}" -eq 1 ]; then
-     sudo apt-get install fabric python-requests
-     fi
+       sudo apt-get install fabric python-requests;
+       fi
 
 install:
    - if [ "${TRAVIS_PYTHON_VERSION}" == "2.6" ]; then
