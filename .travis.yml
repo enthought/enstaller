@@ -4,6 +4,8 @@ python:
    - 2.7
    - 3.3
    - 3.4
+before_install:
+   - sudo apt-get install fabric python-requests
 install:
    - if [ "${TRAVIS_PYTHON_VERSION}" == "2.6" ]; then
        pip install -r dev_requirements26.txt;
