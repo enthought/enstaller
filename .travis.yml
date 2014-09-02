@@ -12,6 +12,7 @@ install:
        fi
    - pip install coveralls
    - python setup.py develop
+   - fab -f tests/inplace_upgrade/test_update.py run_enstaller_upgrade
 script:
    - coverage run --source=enstaller,egginst -a -m nose.core enstaller egginst
    - coverage run --source=enstaller,egginst -a -m nose.core tests/functional
