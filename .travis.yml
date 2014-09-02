@@ -13,7 +13,7 @@ matrix:
      RUN_INPLACE_UPGRADE=0
 
 before_install:
-   - if [ "${RUN_INPLACE_UPGRADE}" -eq 1 ]; then
+   - if [ "${RUN_INPLACE_UPGRADE}" == "1" ]; then
        sudo apt-get install fabric python-requests;
        fi
 
