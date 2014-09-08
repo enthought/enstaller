@@ -10,7 +10,6 @@ from egginst.main import EggInst
 from egginst.progress import dummy_progress_bar_factory
 
 from enstaller.errors import EnpkgError
-from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.fetch import _DownloadManager
 from enstaller.repository import (InstalledPackageMetadata, Repository,
