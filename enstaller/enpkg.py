@@ -366,10 +366,9 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self._downloader.cache_directory, egg)):
-                eggname, version, build = split_eggname(egg)
+                eggname, version = egg_name_to_name_version(egg)
                 try:
-                    pack =self._remote_repository.find_package(eggname,
-                                                      "-".join([version,build]))
+                    pack =self._remote_repository.find_package(eggname, version)
 
                     res.append(('fetch_0', egg))
                 except MissingPackage:
