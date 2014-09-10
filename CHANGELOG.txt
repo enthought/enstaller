@@ -1,3 +1,17 @@
+2014-09-09   4.7.3:
+-------------------
+
+Bug fixes:
+
+  * fix enpkg  self-update from 4.6.5.
+
+2014-09-01   4.7.2:
+-------------------
+
+Improvements:
+
+  * Backport the --quiet/-q option.
+
 2014-08-30   4.7.1:
 -------------------
 
