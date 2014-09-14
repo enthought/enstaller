@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function
 
+import datetime
 import os
 import shutil
 import tempfile
@@ -28,6 +29,7 @@ class TestInfoStrings(TestCase):
         self.maxDiff = None
 
         # Given
+        mtime = 0.0
         r_output = textwrap.dedent("""\
         Package: enstaller
 
@@ -36,6 +38,7 @@ class TestInfoStrings(TestCase):
             Available: True
             Python version: {2}
             Store location: {3}
+            Last modified: {4}
             MD5: {0}
             Size: {1}
             Requirements: None
@@ -44,10 +47,12 @@ class TestInfoStrings(TestCase):
             Available: True
             Python version: {2}
             Store location: {3}
+            Last modified: {4}
             MD5: {0}
             Size: {1}
             Requirements: None
-        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, ""))
+        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, "",
+                   datetime.datetime.fromtimestamp(mtime)))
 
         entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
                    dummy_repository_package_factory("enstaller", "4.6.3", 1)]

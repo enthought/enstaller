@@ -29,12 +29,12 @@ def dummy_installed_package_factory(name, version, build, key=None,
 
 def dummy_repository_package_factory(name, version, build, key=None,
                                      py_ver=PY_VER, store_location="",
-                                     dependencies=None):
+                                     dependencies=None, mtime=0.0):
     dependencies = dependencies or []
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
     fake_size = FAKE_SIZE
     fake_md5 = FAKE_MD5
-    fake_mtime = 0.0
+    fake_mtime = mtime
     return RepositoryPackageMetadata(key, name.lower(), version, build,
                                      dependencies, py_ver, fake_size,
                                      fake_md5, fake_mtime, "commercial",
