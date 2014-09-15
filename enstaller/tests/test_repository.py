@@ -162,6 +162,29 @@ class TestInstalledPackage(unittest.TestCase):
         # Then
         self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
 
+    def test_from_meta_dir_no_packages(self):
+        # Given
+        json_dict = {
+          "arch": "amd64",
+          "build": 1,
+          "ctime": "Thu Apr 24 15:41:24 2014",
+          "hook": False,
+          "key": "VTK-5.10.1-1.egg",
+          "name": "vtk",
+          "osdist": "RedHat_5",
+          "platform": "linux2",
+          "python": "2.7",
+          "type": "egg",
+          "version": "5.10.1"
+        }
+
+        # When
+        metadata = InstalledPackageMetadata.from_installed_meta_dict(json_dict)
+
+        # Then
+        self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
+        self.assertEqual(metadata.packages, [])
+
 
 class TestRepository(unittest.TestCase):
     def setUp(self):

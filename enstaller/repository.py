@@ -188,7 +188,7 @@ class InstalledPackageMetadata(PackageMetadata):
     @classmethod
     def from_installed_meta_dict(cls, json_dict):
         return cls(json_dict["key"], json_dict["name"], json_dict["version"],
-                   json_dict["build"], json_dict["packages"],
+                   json_dict["build"], json_dict.get("packages", []),
                    json_dict["python"], json_dict["ctime"],
                    json_dict.get("store_location", ""))
 
