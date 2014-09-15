@@ -1,5 +1,6 @@
 from __future__ import absolute_import, print_function
 
+import datetime
 import sys
 import textwrap
 
@@ -45,6 +46,8 @@ def info_option(remote_repository, installed_repository, name):
         print(pad + 'Available: %s' % metadata.available)
         print(pad + 'Python version: %s' % metadata.python)
         print(pad + 'Store location: %s' % metadata.store_location)
+        last_mtime = datetime.datetime.fromtimestamp(metadata.mtime)
+        print(pad + 'Last modified: %s' % last_mtime)
         print(pad + 'MD5: %s' % metadata.md5)
         print(pad + 'Size: %s' % metadata.size)
         reqs = set(r for r in metadata.packages)
