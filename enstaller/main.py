@@ -364,7 +364,7 @@ def _create_parser():
                    help='package(s) to work on')
     p.add_argument("--add-url", metavar='URL',
                    help="add a repository URL to the configuration file")
-    p.add_argument("--disable-certificate-checking", "-k", action="store_true",
+    p.add_argument("--insecure", "-k", action="store_true",
                    help="Disable SSL cert verification")
     p.add_argument("--config", action="store_true",
                    help="display the configuration and exit")
@@ -553,7 +553,7 @@ def main(argv=None):
                                        prefix, pat):
         return
 
-    verify = not args.disable_certificate_checking
+    verify = not args.insecure
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename, verify)
     user = ensure_authenticated_config(config, config_filename, verify)
