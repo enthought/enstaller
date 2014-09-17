@@ -1,8 +1,14 @@
 import hashlib
+import os
 import contextlib
 
 from egginst.utils import atomic_file
 from enstaller.errors import InvalidChecksum
+
+
+def _verify_ssl():
+    key = "ENSTALLER_NO_SSL_VERIFICATION"
+    return os.environ.get("ENSTALLER_NO_SSL_VERIFICATION", "0") == "0"
 
 
 class MD5File(object):

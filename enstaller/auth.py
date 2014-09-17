@@ -3,6 +3,7 @@ import json
 from egginst._compat import urlparse
 
 from enstaller.errors import AuthFailedError, EnstallerException
+from enstaller.fetch_utils import _verify_ssl
 from enstaller.vendor import requests
 
 
@@ -159,7 +160,7 @@ def _web_auth(auth, api_url, proxies=None):
         raise AuthFailedError("Authentication error: User login is required.")
 
     try:
-        resp = requests.get(api_url, auth=auth, proxies=proxies)
+        resp = requests.get(api_url, auth=auth, proxies=proxies, verify=_verify_ssl())
     except requests.exceptions.ConnectionError as e:
         msg = "could not connect to {0!r} when authenticating".format(api_url)
         raise AuthFailedError(msg)

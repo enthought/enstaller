@@ -5,7 +5,7 @@ from os.path import isfile, join
 
 from egginst.utils import compute_md5, ensure_dir, makedirs
 
-from enstaller.fetch_utils import checked_content
+from enstaller.fetch_utils import checked_content, _verify_ssl
 from enstaller.repository import egg_name_to_name_version
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)
@@ -89,7 +89,7 @@ class URLFetcher(object):
 
     def fetch(self, url):
         response = self._session.get(url, stream=True, auth=self._auth,
-                                     proxies=self._proxies)
+                                     proxies=self._proxies, verify=_verify_ssl())
         response.raise_for_status()
         return response
 
