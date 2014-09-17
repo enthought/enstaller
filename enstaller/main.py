@@ -154,12 +154,35 @@ def get_config_filename(use_sys_config):
 
 
 def _invalid_authentication_message(auth_url, username, original_error_string):
-    msg = textwrap.dedent("""\
-        Could not authenticate with user '{0}' against {1!r}. Please check
-        your credentials/configuration and try again (original error is:
-        {2!r}).
-        """.format(username, auth_url, original_error_string))
-    return msg
+    if "routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed" \
+            in original_error_string:
+        paragraph1 = textwrap.fill(textwrap.dedent("""\
+            Could not authenticate against {0!r} because the underlying SSL
+            library used by enpkg could not verify the CA certificate. This
+            could happen because you have a very old SSL library. You can disable
+            CA certificate checking by using the -k/--insecure option of enpkg::
+            """.format(auth_url)))
+        template = paragraph1 + textwrap.dedent("""
+
+                enpkg -k <your options>
+
+            The original error is:
+
+            {{0}}
+            """.format(auth_url))
+        formatted_error = "\n".join(" "* 4 + line for line in \
+                                    textwrap.wrap("`" +
+                                                  original_error_string + "`"))
+        msg = template.format(formatted_error)
+        auth_error = False
+    else:
+        msg = textwrap.dedent("""\
+            Could not authenticate with user '{0}' against {1!r}. Please check
+            your credentials/configuration and try again (original error is:
+            {2!r}).
+            """.format(username, auth_url, original_error_string))
+        auth_error = True
+    return msg, auth_error
 
 
 def ensure_authenticated_config(config, config_filename, verify=True):
@@ -167,11 +190,12 @@ def ensure_authenticated_config(config, config_filename, verify=True):
         user = authenticate(config, verify=verify)
     except AuthFailedError as e:
         username, _ = config.auth
-        msg = _invalid_authentication_message(config.store_url, username,
-                                              str(e))
-        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
-        print("\nYou can change your authentication details with "
-              "'enpkg --userpass'.")
+        msg, is_auth_error = _invalid_authentication_message(config.store_url,
+                                                             username, str(e))
+        print(msg)
+        if is_auth_error:
+            print("\nYou can change your authentication details with "
+                  "'enpkg --userpass'.")
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)

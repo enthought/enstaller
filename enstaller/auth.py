@@ -164,8 +164,7 @@ def _web_auth(auth, api_url, proxies=None, verify=True):
     try:
         resp = requests.get(api_url, auth=auth, proxies=proxies, verify=verify)
     except requests.exceptions.ConnectionError as e:
-        msg = "could not connect to {0!r} when authenticating".format(api_url)
-        raise AuthFailedError(msg)
+        raise AuthFailedError(e)
     else:
         try:
             resp.raise_for_status()
