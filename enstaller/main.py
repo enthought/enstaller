@@ -220,8 +220,8 @@ def configure_authentication_or_exit(config, config_filename, verify=True):
     try:
         config._checked_change_auth(config_filename, verify)
     except AuthFailedError as e:
-        msg = _invalid_authentication_message(config.store_url, username,
-                                              str(e))
+        msg, _ = _invalid_authentication_message(config.store_url, username,
+                                                 str(e))
         print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
         print("\nNo modification was written.")
         sys.exit(-1)
