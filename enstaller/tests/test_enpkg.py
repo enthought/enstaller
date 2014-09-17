@@ -10,7 +10,6 @@ else:
 
 import mock
 
-from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
 
@@ -127,6 +126,14 @@ class TestEnpkgRevert(unittest.TestCase):
                       prefixes=self.prefixes)
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
+
+    def test_revert_missing_unavailable_egg(self):
+        egg = "non_existing_dummy_egg-1.0.0-1.egg"
+        enpkg = Enpkg(Repository(),
+                      mock_fetcher_factory(Configuration().repository_cache),
+                      prefixes=self.prefixes)
+        with self.assertRaises(EnpkgError):
+            enpkg.revert_actions(set([egg]))
 
     @responses.activate
     def test_simple_scenario(self):
