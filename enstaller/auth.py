@@ -3,7 +3,6 @@ import json
 from egginst._compat import urlparse
 
 from enstaller.errors import AuthFailedError, EnstallerException
-from enstaller.fetch_utils import _verify_ssl
 from enstaller.vendor import requests
 
 
@@ -57,7 +56,7 @@ class UserInfo(object):
 DUMMY_USER = UserInfo(False)
 
 
-def authenticate(configuration):
+def authenticate(configuration, verify=True):
     """
     Attempt to authenticate the user's credentials by the appropriate
     means.
@@ -67,6 +66,8 @@ def authenticate(configuration):
     configuration : Configuration_like
         A Configuration instance. The authentication information need to be set
         up.
+    verify : bool
+	If False, do not verify SSL certificate when authenticating (unsecure).
 
     Returns
     -------
@@ -88,7 +89,8 @@ def authenticate(configuration):
 
     if configuration.use_webservice:
         # check credentials using web API
-        user = _web_auth(auth, configuration.api_url, configuration.proxy_dict)
+        user = _web_auth(auth, configuration.api_url, configuration.proxy_dict,
+                         verify=verify)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
@@ -147,7 +149,7 @@ def subscription_message(config, user):
     return message
 
 
-def _web_auth(auth, api_url, proxies=None):
+def _web_auth(auth, api_url, proxies=None, verify=True):
     """
     Authenticate a user's credentials (an `auth` tuple of username, password)
     using the web API.
@@ -160,7 +162,7 @@ def _web_auth(auth, api_url, proxies=None):
         raise AuthFailedError("Authentication error: User login is required.")
 
     try:
-        resp = requests.get(api_url, auth=auth, proxies=proxies, verify=_verify_ssl())
+        resp = requests.get(api_url, auth=auth, proxies=proxies, verify=verify)
     except requests.exceptions.ConnectionError as e:
         msg = "could not connect to {0!r} when authenticating".format(api_url)
         raise AuthFailedError(msg)

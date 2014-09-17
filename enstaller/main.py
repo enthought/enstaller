@@ -162,9 +162,9 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
     return msg
 
 
-def ensure_authenticated_config(config, config_filename):
+def ensure_authenticated_config(config, config_filename, verify=True):
     try:
-        user = authenticate(config)
+        user = authenticate(config, verify=verify)
     except AuthFailedError as e:
         username, _ = config.auth
         msg = _invalid_authentication_message(config.store_url, username,
@@ -178,7 +178,7 @@ def ensure_authenticated_config(config, config_filename):
         return user
 
 
-def configure_authentication_or_exit(config, config_filename):
+def configure_authentication_or_exit(config, config_filename, verify=True):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -194,7 +194,7 @@ def configure_authentication_or_exit(config, config_filename):
 
     config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename)
+        config._checked_change_auth(config_filename, verify)
     except AuthFailedError as e:
         msg = _invalid_authentication_message(config.store_url, username,
                                               str(e))
@@ -364,6 +364,8 @@ def _create_parser():
                    help='package(s) to work on')
     p.add_argument("--add-url", metavar='URL',
                    help="add a repository URL to the configuration file")
+    p.add_argument("--disable-certificate-checking", "-k", action="store_true",
+                   help="Disable SSL cert verification")
     p.add_argument("--config", action="store_true",
                    help="display the configuration and exit")
     p.add_argument('-f', "--force", action="store_true",
@@ -551,13 +553,14 @@ def main(argv=None):
                                        prefix, pat):
         return
 
+    verify = not args.disable_certificate_checking
     if not config.is_auth_configured:
-        configure_authentication_or_exit(config, config_filename)
-    user = ensure_authenticated_config(config, config_filename)
+        configure_authentication_or_exit(config, config_filename, verify)
+    user = ensure_authenticated_config(config, config_filename, verify)
 
-    repository = repository_factory(config, args.quiet)
+    repository = repository_factory(config, args.quiet, verify)
     fetcher = URLFetcher(config.repository_cache, config.auth,
-                         config.proxy_dict)
+                         config.proxy_dict, verify)
     if args.quiet:
         progress_bar_context = None
     else:

@@ -5,7 +5,7 @@ from os.path import isfile, join
 
 from egginst.utils import compute_md5, ensure_dir, makedirs
 
-from enstaller.fetch_utils import checked_content, _verify_ssl
+from enstaller.fetch_utils import checked_content
 from enstaller.repository import egg_name_to_name_version
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)
@@ -66,9 +66,10 @@ class _CancelableResponse(object):
 
 
 class URLFetcher(object):
-    def __init__(self, cache_dir, auth=None, proxies=None):
+    def __init__(self, cache_dir, auth=None, proxies=None, verify=True):
         self._auth = auth
         self.cache_dir= cache_dir
+        self.verify = verify
 
         self._proxies = proxies or {}
 
@@ -89,7 +90,7 @@ class URLFetcher(object):
 
     def fetch(self, url):
         response = self._session.get(url, stream=True, auth=self._auth,
-                                     proxies=self._proxies, verify=_verify_ssl())
+                                     proxies=self._proxies, verify=self.verify)
         response.raise_for_status()
         return response
 
