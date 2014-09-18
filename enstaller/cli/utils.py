@@ -158,9 +158,9 @@ def print_installed(repository, pat=None):
               disp_store_info(info)))
 
 
-def repository_factory(config, quiet=False):
+def repository_factory(config, quiet=False, verify=True):
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict)
+                               config.proxy_dict, verify)
     index_fetcher._enable_etag_support()
 
     repository = Repository()
