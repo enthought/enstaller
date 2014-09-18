@@ -1,5 +1,4 @@
 import hashlib
-import os
 import contextlib
 
 from egginst.utils import atomic_file
