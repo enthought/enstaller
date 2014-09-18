@@ -102,11 +102,12 @@ class TestAuth(unittest.TestCase):
         """
         self.maxDiff = None
         r_output = textwrap.dedent("""\
-        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
-        Please check your credentials/configuration and try again (original error is:
-        'Dummy auth error').
+            Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
+            your credentials/configuration and try again (original error is:
+            'Dummy auth error').
 
-        You can change your authentication details with 'enpkg --userpass'.
+
+            You can change your authentication details with 'enpkg --userpass'.
         """)
 
         with open(self.config, "w") as fp:

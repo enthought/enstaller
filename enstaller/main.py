@@ -420,22 +420,48 @@ def get_config_filename(use_sys_config):
 
 
 def _invalid_authentication_message(auth_url, username, original_error_string):
-    msg = textwrap.dedent("""\
-        Could not authenticate with user {0!r} against {1!r}. Please check
-        your credentials/configuration and try again (original error is:
-        {2!r}).
-        """.format(username, auth_url, original_error_string))
-    return msg
+    if "routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed" \
+            in original_error_string:
+        paragraph1 = textwrap.fill(textwrap.dedent("""\
+            Could not authenticate against {0!r} because the underlying SSL
+            library used by enpkg could not verify the CA certificate. This
+            could happen because you have a very old SSL library. You can disable
+            CA certificate checking by using the -k/--insecure option of enpkg::
+            """.format(auth_url)))
+        template = paragraph1 + textwrap.dedent("""
 
-def ensure_authenticated_config(config, config_filename):
+                enpkg -k <your options>
+
+            The original error is:
+
+            {{0}}
+            """.format(auth_url))
+        formatted_error = "\n".join(" "* 4 + line for line in \
+                                    textwrap.wrap("`" +
+                                                  original_error_string + "`"))
+        msg = template.format(formatted_error)
+        auth_error = False
+    else:
+        msg = textwrap.dedent("""\
+            Could not authenticate with user '{0}' against {1!r}. Please check
+            your credentials/configuration and try again (original error is:
+            {2!r}).
+            """.format(username, auth_url, original_error_string))
+        auth_error = True
+    return msg, auth_error
+
+
+def ensure_authenticated_config(config, config_filename, verify=True):
     try:
-        user = authenticate(config)
+        user = authenticate(config, verify=verify)
     except AuthFailedError as e:
         username, _ = config.auth
-        msg = _invalid_authentication_message(config.store_url, username,
-                                              str(e))
-        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
-        print("\nYou can change your authentication details with 'enpkg --userpass'.")
+        msg, is_auth_error = _invalid_authentication_message(config.store_url,
+                                                             username, str(e))
+        print(msg)
+        if is_auth_error:
+            print("\nYou can change your authentication details with "
+                  "'enpkg --userpass'.")
         sys.exit(-1)
     else:
         convert_auth_if_required(config_filename)
@@ -489,7 +515,7 @@ def install_from_requirements(enpkg, config, args):
             install_req(enpkg, config, req.rstrip(), args)
 
 
-def configure_authentication_or_exit(config, config_filename):
+def configure_authentication_or_exit(config, config_filename, verify=True):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -504,10 +530,10 @@ def configure_authentication_or_exit(config, config_filename):
 
     config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename)
+        config._checked_change_auth(config_filename, verify)
     except AuthFailedError as e:
-        msg = _invalid_authentication_message(config.store_url, username,
-                                              str(e))
+        msg, _ = _invalid_authentication_message(config.store_url, username,
+                                                 str(e))
         print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
         print("\nNo modification was written.")
         sys.exit(-1)
@@ -523,6 +549,8 @@ def main(argv=None):
                    help='package(s) to work on')
     p.add_argument("--add-url", metavar='URL',
                    help="add a repository URL to the configuration file")
+    p.add_argument("--insecure", "-k", action="store_true",
+                   help="Disable SSL cert verification")
     p.add_argument("--config", action="store_true",
                    help="display the configuration and exit")
     p.add_argument('-f', "--force", action="store_true",
@@ -704,8 +732,9 @@ def main(argv=None):
         configure_authentication_or_exit(config, config_filename)
         return
 
+    verify = not args.insecure
     if not config.is_auth_configured:
-        configure_authentication_or_exit(config, config_filename)
+        configure_authentication_or_exit(config, config_filename, verify)
 
     user = ensure_authenticated_config(config, config_filename)
 
