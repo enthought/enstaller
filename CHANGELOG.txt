@@ -4,6 +4,7 @@
 Main highlights:
 
   * Support for python 3 (>= 3.3) and pypy
+  * Add -k/--insecure option to ignore CA certification checks.
 
 Internals:
 
