@@ -9,7 +9,7 @@ from os.path import isfile, join
 from egginst.main import EggInst
 from egginst.progress import dummy_progress_bar_factory
 
-from enstaller.errors import EnpkgError
+from enstaller.errors import EnpkgError, MissingPackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   egg_name_to_name_version)
@@ -354,9 +354,12 @@ class Enpkg(object):
             if egg.startswith('enstaller'):
                 continue
             if not isfile(join(self._downloader.cache_directory, egg)):
-                if self._remote_repository._has_package_key(egg):
+                eggname, version = egg_name_to_name_version(egg)
+                try:
+                    pack = self._remote_repository.find_package(eggname,
+                                                                version)
                     res.append(('fetch_0', egg))
-                else:
+                except MissingPackage:
                     raise EnpkgError("cannot revert -- missing %r" % egg)
             res.append(('install', egg))
         return res

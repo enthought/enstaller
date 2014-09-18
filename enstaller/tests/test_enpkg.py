@@ -139,6 +139,12 @@ class TestEnpkgRevert(unittest.TestCase):
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
 
+    def test_revert_missing_unavailable_egg(self):
+        egg = "non_existing_dummy_egg-1.0.0-1.egg"
+        enpkg = _unconnected_enpkg_factory()
+        with self.assertRaises(EnpkgError):
+            enpkg.revert_actions(set([egg]))
+
     @responses.activate
     def test_simple_scenario(self):
         egg = DUMMY_EGG
