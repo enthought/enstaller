@@ -4,26 +4,26 @@ import sys
 import enstaller.plat
 
 from enstaller.config import Configuration
-from enstaller.fetch import URLFetcher
 from enstaller.main import repository_factory
-from enstaller.resolve import Req, Resolve
+from enstaller.solver import Requirement
+from enstaller.solver.resolve import Resolve
 
 
 def query_platform(config, userpass, requirement, platform):
     repository = repository_factory(config)
 
-    req = Req(requirement)
-    resolver = Resolve(repository)
+    requirement = Requirement(requirement)
+    resolve = Resolve(repository)
 
     def print_level(parent, level=0):
         level += 4
-        for r in resolver.reqs_egg(parent):
-            print "{}{}".format(level * " ", r)
-            egg = resolver.get_egg(r)
+        for r in resolve._dependencies_from_egg(parent):
+            print "{0}{1}".format(level * " ", r)
+            egg = resolve._latest_egg(r)
             print_level(egg, level)
 
-    root = resolver.get_egg(req)
-    print("Resolving dependencies for {}: latest egg is {}".format(req, root))
+    root = resolve._latest_egg(requirement)
+    print("Resolving dependencies for {0}: {1}".format(requirement, root))
     print_level(root)
 
 def main(argv=None):
