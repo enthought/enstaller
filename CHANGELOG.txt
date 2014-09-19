@@ -5,6 +5,8 @@ Bug fixes:
 
   * Backport fix to handle installed metadata without any dependencies
   * Backport fix to put back last modified entry in enpkg --info output
+  * Backport -k/--insecure option to workaround old SSL libraries on OS X
+  * Backport fix for --revert for non existing eggs
 
 2014-09-09   4.7.3:
 -------------------
