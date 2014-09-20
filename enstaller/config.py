@@ -578,13 +578,13 @@ class Configuration(object):
         with open(filename, 'w') as fo:
             fo.write(data)
 
-    def _checked_change_auth(self, filename, verify=True):
+    def _checked_change_auth(self, filename, connection_handler):
         if not self.is_auth_configured:
             raise InvalidConfiguration("No auth configured: cannot "
                                        "change auth.")
         user = {}
 
-        user = authenticate(self, verify)
+        user = authenticate(connection_handler, self)
         self._change_auth(filename)
         print(subscription_message(self, user))
         return user
@@ -686,7 +686,7 @@ def prepend_url(filename, url):
         fp.write(data)
 
 
-def print_config(config, prefix):
+def print_config(config, prefix, connection_handler):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
     print("sys.prefix:", sys.prefix)
@@ -708,7 +708,7 @@ def print_config(config, prefix):
 
     user = DUMMY_USER
     try:
-        user = authenticate(config)
+        user = authenticate(connection_handler, config)
     except Exception as e:
         print(e)
     print(subscription_message(config, user))

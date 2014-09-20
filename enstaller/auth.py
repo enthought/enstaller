@@ -56,18 +56,18 @@ class UserInfo(object):
 DUMMY_USER = UserInfo(False)
 
 
-def authenticate(configuration, verify=True):
+def authenticate(connection_handler, configuration):
     """
     Attempt to authenticate the user's credentials by the appropriate
     means.
 
     Parameters
     ----------
+    connection_handler : ConnectionHandler
+        The connection handler used for actual network connections.
     configuration : Configuration_like
         A Configuration instance. The authentication information need to be set
         up.
-    verify : bool
-	If False, do not verify SSL certificate when authenticating (unsecure).
 
     Returns
     -------
@@ -89,16 +89,14 @@ def authenticate(configuration, verify=True):
 
     if configuration.use_webservice:
         # check credentials using web API
-        user = _web_auth(auth, configuration.api_url, configuration.proxy_dict,
-                         verify=verify)
+        user = _web_auth(auth, configuration.api_url, connection_handler)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         for index_url, __ in configuration.indices:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = requests.head(index_url, auth=auth,
-                                     proxies=configuration.proxy_dict)
+                resp = connection_handler.head(index_url, auth=auth)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
@@ -149,20 +147,18 @@ def subscription_message(config, user):
     return message
 
 
-def _web_auth(auth, api_url, proxies=None, verify=True):
+def _web_auth(auth, api_url, connection_handler):
     """
     Authenticate a user's credentials (an `auth` tuple of username, password)
     using the web API.
     """
-    if proxies is None:
-        proxies = {}
     # Make basic local checks
     username, password = auth
     if username is None or password is None:
         raise AuthFailedError("Authentication error: User login is required.")
 
     try:
-        resp = requests.get(api_url, auth=auth, proxies=proxies, verify=verify)
+        resp = connection_handler.get(api_url, auth=auth)
     except requests.exceptions.ConnectionError as e:
         raise AuthFailedError(e)
     else:

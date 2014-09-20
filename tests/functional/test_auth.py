@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import contextlib
+import json
 import os.path
 import shutil
 import sys
@@ -14,7 +15,9 @@ else:
 
 import mock
 
-from enstaller.main import main_noexc
+from enstaller.vendor import responses
+
+from enstaller.main import main, main_noexc
 from enstaller.config import _encode_auth, _set_keyring_password
 
 from enstaller.tests.common import (
@@ -96,6 +99,32 @@ class TestAuth(unittest.TestCase):
                         main_noexc(["--userpass"])
 
         self.assertMultiLineEqual(m.value, r_output)
+
+    @mock_install_req
+    @empty_index
+    @responses.activate
+    def test_enpkg_req_with_valid_auth(self):
+        """
+        Ensure 'enpkg req' authenticate as expected
+        """
+        with open(self.config, "w") as fp:
+            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
+
+        json_data = {
+            "is_authenticated": True,
+            "first_name": "nono",
+            "last_name": "le petit robot",
+            "has_subscription": True,
+            "subscription_level": "free"
+        }
+        responses.add(responses.GET,
+                      "https://api.enthought.com/accounts/user/info/",
+                      body=json.dumps(json_data),
+                      status=200,
+                      content_type='application/json')
+
+        with use_given_config_context(self.config):
+            main(["nono"])
 
     @fail_authenticate
     def test_enpkg_req_with_invalid_auth(self):

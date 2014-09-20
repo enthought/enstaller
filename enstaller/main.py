@@ -35,6 +35,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
+from enstaller.connection_handler import ConnectionHandler
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
@@ -185,10 +186,10 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
     return msg, auth_error
 
 
-def ensure_authenticated_config(config, config_filename, verify=True,
+def ensure_authenticated_config(config, config_filename, connection_handler,
                                 use_new_format=False):
     try:
-        user = authenticate(config, verify=verify)
+        user = authenticate(connection_handler, config)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,
@@ -204,7 +205,8 @@ def ensure_authenticated_config(config, config_filename, verify=True,
         return user
 
 
-def configure_authentication_or_exit(config, config_filename, verify=True):
+def configure_authentication_or_exit(config, config_filename,
+                                     connection_handler):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -220,7 +222,7 @@ def configure_authentication_or_exit(config, config_filename, verify=True):
 
     config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename, verify)
+        config._checked_change_auth(config_filename, connection_handler)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
@@ -239,7 +241,7 @@ def setup_proxy_or_die(config, proxy):
 
 
 def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                    prefix, pat):
+                                    prefix, pat, connection_handler):
     """
     Returns True if a command has been executed.
     """
@@ -268,7 +270,8 @@ def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
         return True
 
     if args.userpass:                             # --userpass
-        configure_authentication_or_exit(config, config_filename)
+        configure_authentication_or_exit(config, config_filename,
+                                         connection_handler)
         return True
 
 
@@ -587,14 +590,18 @@ def main(argv=None):
     for prefix in prefixes:
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
+    verify = not args.insecure
+    connection_handler = ConnectionHandler(verify=verify)
+
     if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                       prefix, pat):
+                                       prefix, pat, connection_handler):
         return
 
-    verify = not args.insecure
     if not config.is_auth_configured:
-        configure_authentication_or_exit(config, config_filename, verify)
-    user = ensure_authenticated_config(config, config_filename, verify,
+        configure_authentication_or_exit(config, config_filename,
+                                         connection_handler)
+    user = ensure_authenticated_config(config, config_filename,
+                                       connection_handler,
                                        use_new_format=use_new_format)
 
     repository = repository_factory(config, args.quiet, verify)
