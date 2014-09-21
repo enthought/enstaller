@@ -112,6 +112,39 @@ class LegacyCanopyAuthManager(object):
         return user
 
 
+class OldRepoAuthManager(object):
+    def __init__(self, index_urls, auth):
+        self.index_urls = index_urls
+        self._raw_auth = auth
+        self._auth = None
+
+    @property
+    def auth(self):
+        return self._auth
+
+    def authenticate(self, connection_handler):
+        for index_url, _ in self.index_urls:
+            parse = urlparse.urlparse(index_url)
+            if parse.scheme in ("http", "https"):
+                resp = connection_handler.head(index_url, auth=self.auth)
+                try:
+                    resp.raise_for_status()
+                except requests.exceptions.HTTPError as e:
+                    http_code = resp.status_code
+                    if http_code in (401, 403):
+                        msg = "Authentication error: {0!r}".format(str(e))
+                        raise AuthFailedError(msg)
+                    elif http_code == 404:
+                        msg = "Could not access repo {0!r} (error: {1!r})". \
+                              format(index_url, str(e))
+                        raise AuthFailedError(msg)
+                    else:
+                        raise AuthFailedError(str(e))
+        user = UserInfo(is_authenticated=True)
+        self._auth = self._raw_auth
+        return UserInfo(is_authenticated=True)
+
+
 IAuthManager.register(LegacyCanopyAuthManager)
 
 
@@ -147,29 +180,12 @@ def authenticate(connection_handler, configuration):
     auth = configuration.auth
 
     if configuration.use_webservice:
-        # check credentials using web API
         user = _web_auth(auth, configuration.api_url, connection_handler)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
-        for index_url, __ in configuration.indices:
-            parse = urlparse.urlparse(index_url)
-            if parse.scheme in ("http", "https"):
-                resp = connection_handler.head(index_url, auth=auth)
-                try:
-                    resp.raise_for_status()
-                except requests.exceptions.HTTPError as e:
-                    http_code = resp.status_code
-                    if http_code in (401, 403):
-                        msg = "Authentication error: {0!r}".format(str(e))
-                        raise AuthFailedError(msg)
-                    elif http_code == 404:
-                        msg = "Could not access repo {0!r} (error: {1!r})". \
-                              format(index_url, str(e))
-                        raise AuthFailedError(msg)
-                    else:
-                        raise AuthFailedError(str(e))
-        user = UserInfo(is_authenticated=True)
+        authenticator = OldRepoAuthManager(configuration.indices, auth)
+        user = authenticator.authenticate(connection_handler)
 
     return user
 
