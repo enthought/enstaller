@@ -222,7 +222,7 @@ def configure_authentication_or_exit(config, config_filename, verify=True):
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
-        print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
+        print(msg)
         print("\nNo modification was written.")
         sys.exit(-1)
 
