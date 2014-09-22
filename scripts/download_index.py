@@ -2,7 +2,7 @@ import argparse
 import json
 import sys
 
-import requests
+from enstaller.vendor import requests
 
 import enstaller.config
 import enstaller.plat
@@ -38,7 +38,7 @@ def main(argv=None):
     else:
         auth = tuple(auth.split(":"))
 
-    url = namespace.url % plat
+    url = namespace.url % platform
 
     print "Using user {}".format(auth[0])
     url += "index.json"
