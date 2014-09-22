@@ -10,7 +10,8 @@ from mock import patch
 
 import enstaller.config
 
-from enstaller.auth import _web_auth, DUMMY_USER, UserInfo, authenticate
+from enstaller.auth import DUMMY_USER, UserInfo, authenticate
+from enstaller.auth._impl import _web_auth
 from enstaller.config import Configuration, write_default_config
 from enstaller.connection_handler import ConnectionHandler
 from enstaller.errors import (AuthFailedError, EnstallerException,
@@ -158,7 +159,7 @@ class TestWebAuth(TestCase):
                          UserInfo.from_json(R_JSON_AUTH_RESP))
 
     def test_connection_failure(self):
-        with patch("enstaller.auth.requests.get",
+        with patch("enstaller.auth.auth_managers.requests.get",
                    side_effect=requests.exceptions.ConnectionError):
             with self.assertRaises(AuthFailedError):
                 _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url,
@@ -238,7 +239,7 @@ class TestAuthenticate(TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        with patch("enstaller.auth._web_auth") as mocked_auth:
+        with patch("enstaller.auth._impl._web_auth") as mocked_auth:
             authenticate(self.connection_handler, config)
             self.assertTrue(mocked_auth.called)
 
@@ -247,7 +248,7 @@ class TestAuthenticate(TestCase):
         config = Configuration()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        with patch("enstaller.auth._web_auth") as mocked_auth:
+        with patch("enstaller.auth._impl._web_auth") as mocked_auth:
             mocked_auth.return_value = UserInfo(False)
 
             with self.assertRaises(AuthFailedError):
