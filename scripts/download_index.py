@@ -2,7 +2,7 @@ import argparse
 import json
 import sys
 
-import requests
+from enstaller.vendor import requests
 
 import enstaller.config
 import enstaller.plat
