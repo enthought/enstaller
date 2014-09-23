@@ -1,9 +1,11 @@
+from __future__ import absolute_import
+
 import itertools
 import json
 import pkgutil
 import re
 
-from jsonschema.compat import str_types, MutableMapping, urlsplit
+from .compat import str_types, MutableMapping, urlsplit
 
 
 class URIDict(MutableMapping):

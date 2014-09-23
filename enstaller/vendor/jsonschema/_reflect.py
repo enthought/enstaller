@@ -6,10 +6,11 @@
 Standardized versions of various cool and/or strange things that you can do
 with Python's reflection capabilities.
 """
+from __future__ import absolute_import
 
 import sys
 
-from jsonschema.compat import PY3
+from .compat import PY3
 
 
 class _NoModuleFound(Exception):
