@@ -185,7 +185,8 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
     return msg, auth_error
 
 
-def ensure_authenticated_config(config, config_filename, verify=True):
+def ensure_authenticated_config(config, config_filename, verify=True,
+                                use_new_format=False):
     try:
         user = authenticate(config, verify=verify)
     except AuthFailedError as e:
@@ -198,7 +199,8 @@ def ensure_authenticated_config(config, config_filename, verify=True):
                   "'enpkg --userpass'.")
         sys.exit(-1)
     else:
-        convert_auth_if_required(config_filename)
+        if not use_new_format:
+            convert_auth_if_required(config_filename)
         return user
 
 
@@ -392,6 +394,9 @@ def _create_parser():
                    help="Disable SSL cert verification")
     p.add_argument("--config", action="store_true",
                    help="display the configuration and exit")
+    p.add_argument("-c", "--config-path",
+                   help="Alternative configuration location (must be in the "
+                        "new YAML-based format).")
     p.add_argument('-f', "--force", action="store_true",
                    help="force install the main package "
                         "(not its dependencies, see --forceall)")
@@ -552,8 +557,17 @@ def main(argv=None):
     if (args.list or args.search) and args.cnames:
         pat = re.compile(args.cnames[0], re.I)
 
-    config_filename = get_config_filename(args.sys_config)
-    config = _ensure_config_or_die(config_filename)
+    if args.config_path:
+        config_filename = args.config_path
+        config = Configuration.from_yaml_filename(config_filename)
+        if not config.is_auth_configured:
+            print("Authentication missing from {0!r}".format(config_filename))
+            sys.exit(-1)
+        use_new_format = True
+    else:
+        config_filename = get_config_filename(args.sys_config)
+        config = _ensure_config_or_die(config_filename)
+        use_new_format = False
 
     setup_proxy_or_die(config, args.proxy)
 
@@ -580,7 +594,8 @@ def main(argv=None):
     verify = not args.insecure
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename, verify)
-    user = ensure_authenticated_config(config, config_filename, verify)
+    user = ensure_authenticated_config(config, config_filename, verify,
+                                       use_new_format=use_new_format)
 
     repository = repository_factory(config, args.quiet, verify)
     fetcher = URLFetcher(config.repository_cache, config.auth,
