@@ -970,6 +970,17 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertEqual(config.repository_cache, os.path.join(sys.prefix,
                                                                "LOCAL-REPO"))
 
+    def test_invalid_format(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            repositoriess:
+              - enthought/commercial
+        """)
+
+        # When/Then
+        with self.assertRaises(InvalidConfiguration):
+            Configuration.from_yaml_filename(StringIO(yaml_string))
+
     def test_load_from_path(self):
         # Given
         yaml_string = textwrap.dedent("""\

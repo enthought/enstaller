@@ -85,7 +85,11 @@ def load_configuration_from_yaml(cls, filename_or_fp):
     if data is None:
         data = {}
     else:
-        jsonschema.validate(data, _SCHEMA)
+        try:
+            jsonschema.validate(data, _SCHEMA)
+        except jsonschema.ValidationError as e:
+            msg = "Invalid configuration: {0!r}".format(e.message)
+            raise InvalidConfiguration(msg)
 
     config = cls()
 
