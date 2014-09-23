@@ -111,6 +111,7 @@ packages = [
     'enstaller.vendor.sqlite_cache',
     'enstaller.vendor.win32ctypes',
     'enstaller.vendor.yaml',
+    'enstaller.vendor.yaml_py3',
 ]
 
 package_data = {"enstaller.vendor.requests": ["cacert.pem"],

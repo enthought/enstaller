@@ -1,11 +1,16 @@
 import os.path
 
-from egginst._compat import string_types
+from egginst._compat import PY2, string_types
 
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
 from enstaller.utils import fill_url
-from enstaller.vendor import jsonschema, yaml
+from enstaller.vendor import jsonschema
+
+if PY2:
+    from enstaller.vendor import yaml
+else:
+    from enstaller.vendor import yaml_py3 as yaml
 
 
 _AUTHENTICATION = "authentication"
