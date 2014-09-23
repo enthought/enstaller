@@ -30,6 +30,7 @@ from enstaller.proxy_info import ProxyInfo
 from enstaller.utils import real_prefix
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
+from ._yaml_config import load_configuration_from_yaml
 
 logger = logging.getLogger(__name__)
 
@@ -268,6 +269,10 @@ class Configuration(object):
             raise InvalidConfiguration("No default configuration found.")
         else:
             return cls.from_file(config_filename)
+
+    @classmethod
+    def from_yaml_filename(cls, filename):
+        return load_configuration_from_yaml(cls, filename)
 
     @classmethod
     def from_file(cls, filename):

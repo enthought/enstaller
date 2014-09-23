@@ -957,3 +957,133 @@ class TestPrependUrl(unittest.TestCase):
 
         with self.assertRaises(SystemExit):
             prepend_url(self.filename, "url1")
+
+
+class TestYamlConfiguration(unittest.TestCase):
+    def test_default(self):
+        # Given/When
+        config = Configuration.from_yaml_filename(StringIO(""))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertFalse(config.indices, [])
+        self.assertEqual(config.repository_cache, os.path.join(sys.prefix,
+                                                               "LOCAL-REPO"))
+
+    def test_invalid_format(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            repositoriess:
+              - enthought/commercial
+        """)
+
+        # When/Then
+        with self.assertRaises(InvalidConfiguration):
+            Configuration.from_yaml_filename(StringIO(yaml_string))
+
+    def test_load_from_path(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            repositories:
+              - enthought/free
+              - enthought/commercial
+        """)
+        r_indices = [
+            ('https://api.enthought.com/repo/enthought/free/rh5-64/index.json',
+             'https://api.enthought.com/repo/enthought/free/rh5-64/index.json'),
+            ('https://api.enthought.com/repo/enthought/commercial/rh5-64/index.json',
+             'https://api.enthought.com/repo/enthought/commercial/rh5-64/index.json')
+        ]
+
+        with mkdtemp() as prefix:
+            path = os.path.join(prefix, "enstaller.yaml")
+            with open(path, "wt") as fp:
+                fp.write(yaml_string)
+
+            # When
+            config = Configuration.from_yaml_filename(path)
+
+            # Then
+            self.assertFalse(config.use_webservice)
+            self.assertEqual(config.store_url, "https://api.enthought.com")
+            self.assertEqual(config.indices, r_indices)
+
+    def test_simple(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            store_url: "http://acme.com"
+
+            repositories:
+              - enthought/free
+              - enthought/commercial
+        """)
+        r_indices = [
+            ('http://acme.com/repo/enthought/free/rh5-64/index.json',
+             'http://acme.com/repo/enthought/free/rh5-64/index.json'),
+            ('http://acme.com/repo/enthought/commercial/rh5-64/index.json',
+             'http://acme.com/repo/enthought/commercial/rh5-64/index.json')
+        ]
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.store_url, "http://acme.com")
+        self.assertEqual(config.indices, r_indices)
+
+    def test_basic_authentication(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            authentication:
+              username: nono@acme.com
+              password: ulysse
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.auth, ("nono@acme.com", "ulysse"))
+
+    def test_digest_authentication(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            authentication:
+              type: digest
+              auth: {0}
+        """.format(_encode_auth("nono@acme.com", "ulysse")))
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.auth, ("nono@acme.com", "ulysse"))
+
+    def test_files_cache(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            files_cache: "/foo/bar"
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.repository_cache, "/foo/bar")
+
+        # Given
+        yaml_string = textwrap.dedent("""\
+            files_cache: "~/foo/bar/{PLATFORM}"
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.repository_cache,
+                         os.path.expanduser("~/foo/bar/{}".format(custom_plat)))
