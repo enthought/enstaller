@@ -19,6 +19,7 @@ _AUTHENTICATION_TYPE_BASIC = "basic"
 _AUTHENTICATION_TYPE_DIGEST = "digest"
 _USERNAME = "username"
 _PASSWORD = "password"
+_AUTH_STRING = "auth"
 _REPOSITORIES = "repositories"
 _FILES_CACHE = "files_cache"
 _STORE_URL = "store_url"
@@ -54,19 +55,22 @@ _SCHEMA = {
     "definitions": {
         "simple_authentication": {
             "properties": {
-                "type": { "enum": [ "basic" ], "default": "basic" },
-                "username": {"type": "string" },
-                "password": {"type": "string"}
+                "type": {
+                    "enum": [ _AUTHENTICATION_TYPE_BASIC ],
+                    "default": _AUTHENTICATION_TYPE_BASIC
+                },
+                _USERNAME: {"type": "string" },
+                _PASSWORD: {"type": "string"}
             },
-            "required": [ "username", "password" ],
+            "required": [ _USERNAME, _PASSWORD ],
             "additionalProperties": False
         },
         "digest_authentication": {
             "properties": {
-                "type": { "enum": [ "digest" ]},
-                "auth": {"type": "string" }
+                "type": { "enum": [ _AUTHENTICATION_TYPE_DIGEST ]},
+                _AUTH_STRING: {"type": "string" }
             },
-            "required": [ "type", "auth" ],
+            "required": [ "type", _AUTH_STRING ],
             "additionalProperties": False
         }
     },
@@ -101,7 +105,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
             username = authentication[_USERNAME]
             password = authentication[_PASSWORD]
         elif authentication_type == _AUTHENTICATION_TYPE_DIGEST:
-            username, password = _decode_auth(authentication["auth"])
+            username, password = _decode_auth(authentication[_AUTH_STRING])
         else:
             msg = "Unknown authentication type {0!r}".format(authentication_type)
             raise InvalidConfiguration(msg)
