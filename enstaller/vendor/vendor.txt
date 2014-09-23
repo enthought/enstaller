@@ -5,3 +5,4 @@ pyyaml==3.10
 sqlite_cache==0.0.1
 requests==2.3.0
 responses==0.2.2
+jsonschema==2.4.0
