@@ -25,13 +25,13 @@ _FILES_CACHE = "files_cache"
 _STORE_URL = "store_url"
 
 _SCHEMA = {
-   "$schema": "http://json-schema.org/draft-04/schema#",
+    "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "EnstallerConfiguration",
     "description": "Enstaller >= 4.8.0 configuration",
     "type": "object",
     "properties": {
         "store_url": {
-            "description": "The url (schema + hostname only of the store to connect to).",
+            "description": "The url (schema + hostname only of the store to connect to).",  # noqa
             "type": "string"
         },
         "files_cache": {
@@ -56,26 +56,29 @@ _SCHEMA = {
         "simple_authentication": {
             "properties": {
                 "type": {
-                    "enum": [ _AUTHENTICATION_TYPE_BASIC ],
+                    "enum": [_AUTHENTICATION_TYPE_BASIC],
                     "default": _AUTHENTICATION_TYPE_BASIC
                 },
-                _USERNAME: {"type": "string" },
+                _USERNAME: {"type": "string"},
                 _PASSWORD: {"type": "string"}
             },
-            "required": [ _USERNAME, _PASSWORD ],
+            "required": [_USERNAME, _PASSWORD],
             "additionalProperties": False
         },
         "digest_authentication": {
             "properties": {
-                "type": { "enum": [ _AUTHENTICATION_TYPE_DIGEST ]},
-                _AUTH_STRING: {"type": "string" }
+                "type": {
+                    "enum": [_AUTHENTICATION_TYPE_DIGEST]
+                },
+                _AUTH_STRING: {"type": "string"}
             },
-            "required": [ "type", _AUTH_STRING ],
+            "required": ["type", _AUTH_STRING],
             "additionalProperties": False
         }
     },
     "additionalProperties": False,
 }
+
 
 def load_configuration_from_yaml(cls, filename_or_fp):
     # FIXME: local import to workaround circular import
@@ -107,21 +110,24 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         elif authentication_type == _AUTHENTICATION_TYPE_DIGEST:
             username, password = _decode_auth(authentication[_AUTH_STRING])
         else:
-            msg = "Unknown authentication type {0!r}".format(authentication_type)
+            msg = "Unknown authentication type {0!r}". \
+                  format(authentication_type)
             raise InvalidConfiguration(msg)
         config.set_auth(username, password)
 
     if _STORE_URL in data:
         config.set_store_url(data[_STORE_URL])
     if _REPOSITORIES in data:
-        repository_urls = [config.store_url + "/repo/{}/{{PLATFORM}}".format(repository)
-                           for repository in data[_REPOSITORIES]]
+        repository_urls = [
+            config.store_url + "/repo/{}/{{PLATFORM}}".format(repository)
+            for repository in data[_REPOSITORIES]
+        ]
         config.set_indexed_repositories(repository_urls)
     if _FILES_CACHE in data:
         files_cache = os.path.expanduser(data[_FILES_CACHE]). \
-                         replace("{PLATFORM}", custom_plat)
+            replace("{PLATFORM}", custom_plat)
         config._repository_cache = files_cache
- 
+
     config.disable_webservice()
 
     if isinstance(filename_or_fp, string_types):
