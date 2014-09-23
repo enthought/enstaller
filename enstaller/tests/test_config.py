@@ -1086,4 +1086,4 @@ class TestYamlConfiguration(unittest.TestCase):
         # Then
         self.assertFalse(config.use_webservice)
         self.assertEqual(config.repository_cache,
-                         os.path.expanduser("~/foo/bar/{}".format(custom_plat)))
+                         os.path.expanduser("~/foo/bar/{0}".format(custom_plat)))
