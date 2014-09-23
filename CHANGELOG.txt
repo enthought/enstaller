@@ -3,15 +3,16 @@
 
 Main highlights:
 
-  * Support for python 3 (>= 3.3) and pypy
+  * Added support for python 3 (>= 3.3) and pypy
   * Add -k/--insecure option to ignore CA certification checks.
+  * Add a new YAML-based configuration (not enabled yet).
 
 Internals:
 
   * Dependency resolution is now in enstaller.solver. The new Solver class only
     resolve dependencies (install/remove action, no fetch action anymore)
 
-2014-00-00   4.7.0:
+2014-08-29   4.7.0:
 -------------------
 
 Main highlights:
