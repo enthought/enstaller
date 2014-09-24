@@ -29,8 +29,8 @@ script:
    - if [ "${TEST_INPLACE_UPGRADE}" == "1" ]; then
        fab -f tests/inplace_upgrade/test_update.py run_enstaller_upgrade;
        fi;
-       coverage run --source=enstaller,egginst -a -m haas enstaller egginst;
-       coverage run --source=enstaller,egginst -a -m haas tests/functional;
+   - coverage run --source=enstaller,egginst -a -m haas enstaller egginst
+   - coverage run --source=enstaller,egginst -a -m haas tests/functional
 
 after_success:
     coveralls

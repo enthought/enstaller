@@ -119,7 +119,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         config.set_store_url(data[_STORE_URL])
     if _REPOSITORIES in data:
         repository_urls = [
-            config.store_url + "/repo/{}/{{PLATFORM}}".format(repository)
+            config.store_url + "/repo/{0}/{{PLATFORM}}".format(repository)
             for repository in data[_REPOSITORIES]
         ]
         config.set_indexed_repositories(repository_urls)
