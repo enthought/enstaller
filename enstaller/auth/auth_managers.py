@@ -16,6 +16,13 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
         """
 
     @abc.abstractproperty
+    def user_info(self):
+        """ A UserInfo instance. Only valid once authenticated.
+
+        Will be cached, and raise an RuntimeError if not authenticated
+        """
+
+    @abc.abstractproperty
     def authenticate(self):
         """ Authenticate.
 
@@ -37,10 +44,18 @@ class LegacyCanopyAuthManager(object):
         self.url = url
         self._raw_auth = auth
         self._auth = None
+        self._user_info = None
 
     @property
     def auth(self):
         return self._auth
+
+    @property
+    def user_info(self):
+        if self._auth is None:
+            raise RuntimeError("Not authenticated yet")
+        else:
+            return self._user_info
 
     def authenticate(self, session):
         try:
@@ -58,9 +73,10 @@ class LegacyCanopyAuthManager(object):
         if not user.is_authenticated:
             msg = 'Authentication error: Invalid user login.'
             raise AuthFailedError(msg)
+        else:
+            self._user_info = user
 
         self._auth = self._raw_auth
-        return user
 
 
 class OldRepoAuthManager(object):
@@ -72,6 +88,10 @@ class OldRepoAuthManager(object):
     @property
     def auth(self):
         return self._auth
+
+    @property
+    def user_info(self):
+        return UserInfo(is_authenticated=True)
 
     def authenticate(self, session):
         for index_url, _ in self.index_urls:
@@ -91,9 +111,7 @@ class OldRepoAuthManager(object):
                         raise AuthFailedError(msg)
                     else:
                         raise AuthFailedError(str(e))
-        user = UserInfo(is_authenticated=True)
         self._auth = self._raw_auth
-        return UserInfo(is_authenticated=True)
 
 
 IAuthManager.register(LegacyCanopyAuthManager)

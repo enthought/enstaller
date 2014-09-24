@@ -7,6 +7,7 @@ from egginst._compat import urlparse
 from enstaller.errors import AuthFailedError, EnstallerException
 
 from .auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
+from .user_info import UserInfo
 
 
 def authenticate(session, configuration):
@@ -46,7 +47,8 @@ def authenticate(session, configuration):
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         authenticator = OldRepoAuthManager(configuration.indices, auth)
-        user = authenticator.authenticate(session)
+        authenticator.authenticate(session)
+        user = authenticator.user_info
 
     return user
 
@@ -94,4 +96,5 @@ def _web_auth(auth, api_url, session):
         raise AuthFailedError("Authentication error: User login is required.")
 
     authenticator = LegacyCanopyAuthManager(api_url, auth)
-    return authenticator.authenticate(session)
+    authenticator.authenticate(session)
+    return authenticator.user_info
