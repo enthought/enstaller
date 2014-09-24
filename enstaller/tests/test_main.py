@@ -36,6 +36,7 @@ from enstaller.main import (check_prefixes,
                             get_config_filename, get_package_path,
                             imports_option,
                             install_from_requirements, install_req,
+                            main,
                             needs_to_downgrade_enstaller,
                             repository_factory,
                             search, update_all,
@@ -512,3 +513,27 @@ class TestInstallRequirement(unittest.TestCase):
         self.assertMultiLineEqual(mocked_print.value, r_message)
         m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
                               ('install', 'nose-1.3.0-1.egg')])
+
+
+class TestCustomConfigPath(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_simple(self):
+        # Given
+        path = os.path.join(self.prefix, "enstaller.yaml")
+
+        with open(path, "wt") as fp:
+            fp.write(textwrap.dedent("""\
+                    store_url: "http://acme.com"
+                    authentication:
+                      username: "foo@acme.com"
+                      password: "bar"
+            """))
+
+        # When
+        # Then No exception
+        main(["-s", "numpy", "-c", path])
