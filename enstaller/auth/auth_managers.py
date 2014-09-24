@@ -77,7 +77,7 @@ class OldRepoAuthManager(object):
         for index_url, _ in self.index_urls:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = session.head(index_url, auth=self.auth)
+                resp = session.head(index_url, auth=self._raw_auth)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
