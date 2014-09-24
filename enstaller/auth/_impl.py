@@ -9,14 +9,14 @@ from enstaller.errors import AuthFailedError, EnstallerException
 from .auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
 
 
-def authenticate(connection_handler, configuration):
+def authenticate(session, configuration):
     """
     Attempt to authenticate the user's credentials by the appropriate
     means.
 
     Parameters
     ----------
-    connection_handler : ConnectionHandler
+    session : Session
         The connection handler used for actual network connections.
     configuration : Configuration_like
         A Configuration instance. The authentication information need to be set
@@ -41,12 +41,12 @@ def authenticate(connection_handler, configuration):
     auth = configuration.auth
 
     if configuration.use_webservice:
-        user = _web_auth(auth, configuration.api_url, connection_handler)
+        user = _web_auth(auth, configuration.api_url, session)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
         authenticator = OldRepoAuthManager(configuration.indices, auth)
-        user = authenticator.authenticate(connection_handler)
+        user = authenticator.authenticate(session)
 
     return user
 
@@ -83,7 +83,7 @@ def subscription_message(config, user):
     return message
 
 
-def _web_auth(auth, api_url, connection_handler):
+def _web_auth(auth, api_url, session):
     """
     Authenticate a user's credentials (an `auth` tuple of username, password)
     using the web API.
@@ -94,4 +94,4 @@ def _web_auth(auth, api_url, connection_handler):
         raise AuthFailedError("Authentication error: User login is required.")
 
     authenticator = LegacyCanopyAuthManager(api_url, auth)
-    return authenticator.authenticate(connection_handler)
+    return authenticator.authenticate(session)

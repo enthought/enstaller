@@ -35,7 +35,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
-from enstaller.connection_handler import ConnectionHandler
+from enstaller.session import Session
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
@@ -186,10 +186,10 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
     return msg, auth_error
 
 
-def ensure_authenticated_config(config, config_filename, connection_handler,
+def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
-        user = authenticate(connection_handler, config)
+        user = authenticate(session, config)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,
@@ -206,7 +206,7 @@ def ensure_authenticated_config(config, config_filename, connection_handler,
 
 
 def configure_authentication_or_exit(config, config_filename,
-                                     connection_handler):
+                                     session):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -222,7 +222,7 @@ def configure_authentication_or_exit(config, config_filename,
 
     config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename, connection_handler)
+        config._checked_change_auth(config_filename, session)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
@@ -241,7 +241,7 @@ def setup_proxy_or_die(config, proxy):
 
 
 def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                    prefix, pat, connection_handler):
+                                    prefix, pat, session):
     """
     Returns True if a command has been executed.
     """
@@ -271,7 +271,7 @@ def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
 
     if args.userpass:                             # --userpass
         configure_authentication_or_exit(config, config_filename,
-                                         connection_handler)
+                                         session)
         return True
 
 
@@ -591,17 +591,17 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     verify = not args.insecure
-    connection_handler = ConnectionHandler(verify=verify)
+    session = Session(verify=verify)
 
     if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                       prefix, pat, connection_handler):
+                                       prefix, pat, session):
         return
 
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename,
-                                         connection_handler)
+                                         session)
     user = ensure_authenticated_config(config, config_filename,
-                                       connection_handler,
+                                       session,
                                        use_new_format=use_new_format)
 
     repository = repository_factory(config, args.quiet, verify)

@@ -13,7 +13,7 @@ import enstaller.config
 from enstaller.auth import DUMMY_USER, UserInfo, authenticate
 from enstaller.auth._impl import _web_auth
 from enstaller.config import Configuration, write_default_config
-from enstaller.connection_handler import ConnectionHandler
+from enstaller.session import Session
 from enstaller.errors import (AuthFailedError, EnstallerException,
                               InvalidConfiguration)
 from enstaller.tests.common import fake_keyring
@@ -54,7 +54,7 @@ class CheckedChangeAuthTestCase(TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.f = os.path.join(self.d, "enstaller4rc")
-        self.connection_handler = ConnectionHandler()
+        self.session = Session()
 
     def tearDown(self):
         shutil.rmtree(self.d)
@@ -64,7 +64,7 @@ class CheckedChangeAuthTestCase(TestCase):
         config = Configuration()
         config.set_auth('usr', 'password')
         write_default_config(self.f)
-        config._checked_change_auth(self.f, self.connection_handler)
+        config._checked_change_auth(self.f, self.session)
 
         new_config = Configuration.from_file(self.f)
         usr = enstaller.config.authenticate(new_config)
@@ -73,7 +73,7 @@ class CheckedChangeAuthTestCase(TestCase):
         self.assertTrue(usr.has_subscription)
 
     def test_no_acct(self):
-        def mocked_authenticate(connection_handler, configuration):
+        def mocked_authenticate(session, configuration):
             if configuration.auth != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
@@ -86,11 +86,11 @@ class CheckedChangeAuthTestCase(TestCase):
 
             with self.assertRaises(AuthFailedError):
                 usr = config._checked_change_auth(self.f,
-                                                  self.connection_handler)
+                                                  self.session)
 
             config = Configuration()
             config.set_auth("valid_user", "valid_password")
-            usr = config._checked_change_auth(self.f, self.connection_handler)
+            usr = config._checked_change_auth(self.f, self.session)
 
             self.assertTrue(usr.is_authenticated)
 
@@ -101,7 +101,7 @@ class CheckedChangeAuthTestCase(TestCase):
         config = Configuration()
         config.set_auth("usr", "password")
 
-        usr = config._checked_change_auth(self.f, ConnectionHandler())
+        usr = config._checked_change_auth(self.f, Session())
         self.assertEqual(usr, DUMMY_USER)
 
     def test_nones(self):
@@ -115,7 +115,7 @@ class CheckedChangeAuthTestCase(TestCase):
         config.set_auth("", "")
 
         with self.assertRaises(InvalidConfiguration):
-            config._checked_change_auth(self.f, self.connection_handler)
+            config._checked_change_auth(self.f, self.session)
 
 
 class TestSubscriptionLevel(TestCase):
@@ -140,12 +140,12 @@ class TestSubscriptionLevel(TestCase):
 class TestWebAuth(TestCase):
     def setUp(self):
         self.config = Configuration()
-        self.connection_handler = ConnectionHandler(self.config.proxy_dict)
+        self.session = Session(self.config.proxy_dict)
 
     def test_invalid_auth_args(self):
         with self.assertRaises(AuthFailedError):
             _web_auth((None, None), self.config.api_url,
-                      self.connection_handler)
+                      self.session)
 
     @responses.activate
     def test_simple(self):
@@ -155,7 +155,7 @@ class TestWebAuth(TestCase):
 
         self.assertEqual(_web_auth((FAKE_USER, FAKE_PASSWORD),
                                    self.config.api_url,
-                                   self.connection_handler),
+                                   self.session),
                          UserInfo.from_json(R_JSON_AUTH_RESP))
 
     def test_connection_failure(self):
@@ -163,7 +163,7 @@ class TestWebAuth(TestCase):
                    side_effect=requests.exceptions.ConnectionError):
             with self.assertRaises(AuthFailedError):
                 _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url,
-                          self.connection_handler)
+                          self.session)
 
     @responses.activate
     def test_http_failure(self):
@@ -175,7 +175,7 @@ class TestWebAuth(TestCase):
         # When/Then
         with self.assertRaises(AuthFailedError):
             _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url,
-                      self.connection_handler)
+                      self.session)
 
     def _no_webservice_config(self):
         config = Configuration()
@@ -195,7 +195,7 @@ class TestWebAuth(TestCase):
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.connection_handler, config)
+            authenticate(self.session, config)
 
     @responses.activate
     def test_auth_failure_50x(self):
@@ -206,7 +206,7 @@ class TestWebAuth(TestCase):
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.connection_handler, config)
+            authenticate(self.session, config)
 
     @responses.activate
     def test_auth_failure_401(self):
@@ -218,7 +218,7 @@ class TestWebAuth(TestCase):
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.connection_handler, config)
+            authenticate(self.session, config)
 
     @responses.activate
     def test_unauthenticated_user(self):
@@ -227,12 +227,12 @@ class TestWebAuth(TestCase):
                       content_type='application/json')
         with self.assertRaises(AuthFailedError):
             _web_auth((FAKE_USER, FAKE_PASSWORD), self.config.api_url,
-                      self.connection_handler)
+                      self.session)
 
 
 class TestAuthenticate(TestCase):
     def setUp(self):
-        self.connection_handler = ConnectionHandler()
+        self.session = Session()
 
     @fake_keyring
     def test_use_webservice_valid_user(self):
@@ -240,7 +240,7 @@ class TestAuthenticate(TestCase):
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
         with patch("enstaller.auth._impl._web_auth") as mocked_auth:
-            authenticate(self.connection_handler, config)
+            authenticate(self.session, config)
             self.assertTrue(mocked_auth.called)
 
     @fake_keyring
@@ -252,7 +252,7 @@ class TestAuthenticate(TestCase):
             mocked_auth.return_value = UserInfo(False)
 
             with self.assertRaises(AuthFailedError):
-                authenticate(self.connection_handler, config)
+                authenticate(self.session, config)
 
     @fake_keyring
     def test_use_remote(self):
@@ -260,7 +260,7 @@ class TestAuthenticate(TestCase):
         config.disable_webservice()
         config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
-        user = authenticate(self.connection_handler, config)
+        user = authenticate(self.session, config)
         self.assertEqual(user, UserInfo(True))
 
     @fake_keyring
@@ -276,7 +276,7 @@ class TestAuthenticate(TestCase):
                       body="", status=404,
                       content_type='application/json')
         with self.assertRaises(EnstallerException):
-            authenticate(self.connection_handler, config)
+            authenticate(self.session, config)
 
 
 class SearchTestCase(TestCase):

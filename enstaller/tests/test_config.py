@@ -29,7 +29,7 @@ from enstaller.config import (abs_expanduser,
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url, _encode_auth, _encode_string_base64)
-from enstaller.connection_handler import ConnectionHandler
+from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
@@ -544,7 +544,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, ConnectionHandler())
+            print_config(config, config.prefix, Session())
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -582,7 +582,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, ConnectionHandler())
+            print_config(config, config.prefix, Session())
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -617,7 +617,7 @@ class TestConfigurationPrint(unittest.TestCase):
         config.disable_webservice()
 
         with mock_print() as m:
-            print_config(config, config.prefix, ConnectionHandler())
+            print_config(config, config.prefix, Session())
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):

@@ -23,7 +23,7 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
 
         Parameters
         ----------
-        connection_handler : ConnectionHandler
+        session : Session
             The connection handled used to manage http connections(s).
 
         Returns
@@ -42,9 +42,9 @@ class LegacyCanopyAuthManager(object):
     def auth(self):
         return self._auth
 
-    def authenticate(self, connection_handler):
+    def authenticate(self, session):
         try:
-            resp = connection_handler.get(self.url, auth=self._raw_auth)
+            resp = session.get(self.url, auth=self._raw_auth)
         except requests.exceptions.ConnectionError as e:
             raise AuthFailedError(e)
 
@@ -73,11 +73,11 @@ class OldRepoAuthManager(object):
     def auth(self):
         return self._auth
 
-    def authenticate(self, connection_handler):
+    def authenticate(self, session):
         for index_url, _ in self.index_urls:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = connection_handler.head(index_url, auth=self.auth)
+                resp = session.head(index_url, auth=self.auth)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
