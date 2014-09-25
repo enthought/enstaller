@@ -595,7 +595,7 @@ def main(argv=None):
     else:
         authenticator = OldRepoAuthManager(config.indices)
 
-    session = Session(authenticator, verify=verify)
+    session = Session(authenticator, config.proxy_dict, verify=verify)
 
     if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
                                        prefix, pat, session):
