@@ -321,7 +321,8 @@ class TestMisc(unittest.TestCase):
         self._mock_index(entries)
 
         # When
-        repository = repository_factory(Session(DummyAuthenticator()),
+        repository = repository_factory(Session(DummyAuthenticator(),
+                                                self.tempdir),
                                         config.indices)
 
         # Then

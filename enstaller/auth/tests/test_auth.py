@@ -55,7 +55,7 @@ class CheckedChangeAuthTestCase(TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.f = os.path.join(self.d, "enstaller4rc")
-        self.session = Session(DummyAuthenticator())
+        self.session = Session(DummyAuthenticator(), self.d)
 
     def tearDown(self):
         shutil.rmtree(self.d)
@@ -85,7 +85,7 @@ class CheckedChangeAuthTestCase(TestCase):
 
         config = Configuration()
         auth = ("usr", "password")
-        session = Session(DummyAuthenticator(old_auth_user))
+        session = Session(DummyAuthenticator(old_auth_user), self.d)
 
         usr = config._checked_change_auth(auth, session, self.f)
         self.assertEqual(usr, DUMMY_USER)
@@ -118,10 +118,16 @@ class TestSubscriptionLevel(TestCase):
 
 class TestOldReposAuthManager(TestCase):
     def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
         self.config = Configuration()
         self.config.disable_webservice()
         self.config.set_indexed_repositories(["http://acme.com"])
-        self.session = Session(OldRepoAuthManager(self.config.indices))
+        self.session = Session(OldRepoAuthManager(self.config.indices),
+                               self.prefix)
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
 
     @responses.activate
     def test_simple(self):
@@ -179,8 +185,14 @@ class TestOldReposAuthManager(TestCase):
 
 class TestLegacyCanopyAuthManager(TestCase):
     def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
         self.config = Configuration()
-        self.session = Session(LegacyCanopyAuthManager(self.config.api_url))
+        self.session = Session(LegacyCanopyAuthManager(self.config.api_url),
+                               self.prefix)
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
 
     def test_invalid_auth_args(self):
         with self.assertRaises(AuthFailedError):
@@ -229,12 +241,18 @@ class TestLegacyCanopyAuthManager(TestCase):
 
 
 class TestAuthenticate(TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     @fake_keyring
     @responses.activate
     def test_use_webservice_invalid_user(self):
         # Given
         config = Configuration()
-        session = Session(LegacyCanopyAuthManager(config.api_url))
+        session = Session(LegacyCanopyAuthManager(config.api_url), self.prefix)
         responses.add(responses.GET, config.api_url,
                       body=json.dumps(R_JSON_NOAUTH_RESP),
                       content_type='application/json')

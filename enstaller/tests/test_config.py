@@ -517,6 +517,12 @@ class TestConfigurationParsing(unittest.TestCase):
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
 
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_simple_in_memory(self):
         output_template = textwrap.dedent("""\
             Python version: {pyver}
@@ -544,7 +550,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator()))
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -582,7 +589,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator()))
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -617,7 +625,8 @@ class TestConfigurationPrint(unittest.TestCase):
         config.disable_webservice()
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator()))
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):

@@ -11,13 +11,15 @@ class Session(object):
     ----------
     authenticator : IAuthManager
         An authenticator instance
+    cache_directory : str
+        A writeable directory to cache data and eggs.
     proxies : dict
         A proxy dict as expected by requests (and provided by
         Configuration.proxy_dict).
     verify : bool
         If True, SSL CA are verified (default).
     """
-    def __init__(self, authenticator, proxies=None, verify=True):
+    def __init__(self, authenticator, cache_directory, proxies=None, verify=True):
         self.proxies = proxies
         self.verify = verify
 

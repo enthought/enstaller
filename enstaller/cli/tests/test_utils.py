@@ -218,7 +218,7 @@ class TestInstallReq(TestCase):
     def test_install_not_available(self):
         # Given
         config = Configuration()
-        session = Session(DummyAuthenticator())
+        session = Session(DummyAuthenticator(), self.prefix)
 
         nose = dummy_repository_package_factory("nose", "1.3.0", 1)
         nose.available = False
@@ -284,7 +284,7 @@ class TestInstallReq(TestCase):
 
     def test_recursive_install_unavailable_dependency(self):
         config = Configuration()
-        session = Session(DummyAuthenticator())
+        session = Session(DummyAuthenticator(), self.prefix)
 
         auth = ("nono", "le gros robot")
         session.authenticate(auth)
