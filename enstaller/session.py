@@ -11,6 +11,9 @@ class Session(object):
 
         self._authenticator = authenticator
         self._session = requests.Session()
+        if proxies is not None:
+            self._session.proxies = proxies
+        self._session.verify = verify
 
     @property
     def user_info(self):
@@ -21,20 +24,16 @@ class Session(object):
         self._session.auth = auth
 
     def get(self, url):
-        return self._session.get(url, proxies=self.proxies, verify=self.verify)
+        return self._session.get(url)
 
     def head(self, url):
-        return self._session.head(url, proxies=self.proxies,
-                                  verify=self.verify)
+        return self._session.head(url)
 
     def _raw_get(self, url, auth=None):
-        return self._session.get(url, auth=auth, proxies=self.proxies,
-                                 verify=self.verify)
+        return self._session.get(url, auth=auth)
 
     def _raw_head(self, url, auth=None):
-        return self._session.head(url, auth=auth, proxies=self.proxies,
-                                  verify=self.verify)
+        return self._session.head(url, auth=auth)
 
     def _raw_post(self, url, auth=None):
-        return self._session.post(url, auth=auth, proxies=self.proxies,
-                                  verify=self.verify)
+        return self._session.post(url, auth=auth)
