@@ -26,7 +26,7 @@ from enstaller._version import is_released as IS_RELEASED
 
 import enstaller
 
-from enstaller.auth import authenticate
+from enstaller.auth.auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
@@ -189,7 +189,7 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
 def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
-        user = authenticate(config.auth, session, config)
+        session.authenticate(config.auth)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,
@@ -202,7 +202,7 @@ def ensure_authenticated_config(config, config_filename, session,
     else:
         if not use_new_format:
             convert_auth_if_required(config_filename)
-        return user
+        return session.user_info
 
 
 def configure_authentication_or_exit(config, config_filename,
@@ -220,9 +220,8 @@ def configure_authentication_or_exit(config, config_filename,
         print("No valid username entered (no modification was written).")
         sys.exit(-1)
 
-    config.set_auth(username, password)
     try:
-        config._checked_change_auth(config.auth, config_filename, session)
+        config._checked_change_auth((username, password), session, config_filename)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
@@ -591,7 +590,12 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     verify = not args.insecure
-    session = Session(verify=verify)
+    if config.use_webservice:
+        authenticator = LegacyCanopyAuthManager(config.api_url)
+    else:
+        authenticator = OldRepoAuthManager(config.indices)
+
+    session = Session(authenticator, verify=verify)
 
     if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
                                        prefix, pat, session):
@@ -613,6 +617,10 @@ def main(argv=None):
         progress_bar_context = ProgressBarContext(console_progress_manager_factory)
     enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
                   args.force or args.forceall)
+    # XXX: temporary hack to allow user info retrieval from inside install_req.
+    # To be removed ASAP once URLFetcher/Session/_DownloadManager mess is
+    # consolidated.
+    enpkg.session = session
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                  pat)

@@ -18,11 +18,11 @@ import mock
 from enstaller.vendor import responses
 
 from enstaller.main import main, main_noexc
-from enstaller.config import _encode_auth, _set_keyring_password
+from enstaller.config import _encode_auth, _set_keyring_password, Configuration
 
-from enstaller.tests.common import (
-    fake_keyring, mock_print, fail_authenticate, mock_input_auth,
-    mock_raw_input, succeed_authenticate)
+from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
+                                    mock_raw_input)
+from enstaller.auth.tests.test_auth import R_JSON_AUTH_RESP
 
 from .common import (
     empty_index, mock_install_req, use_given_config_context,
@@ -78,15 +78,19 @@ class TestAuth(unittest.TestCase):
 
         self.assertEqual(m.call_count, 3)
 
-    @fail_authenticate
+    @responses.activate
     def test_userpass_with_config(self):
         """
         Ensure enpkg --userpass doesn't crash when creds are invalid
         """
+        responses.add(responses.GET,
+                      "https://api.enthought.com/accounts/user/info/",
+                      status=401,
+                      content_type='application/json')
         r_output = textwrap.dedent("""\
         Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
         your credentials/configuration and try again (original error is:
-        'Dummy auth error').
+        "Authentication error: '401 Client Error: None'").
 
 
         No modification was written.
@@ -126,16 +130,20 @@ class TestAuth(unittest.TestCase):
         with use_given_config_context(self.config):
             main(["nono"])
 
-    @fail_authenticate
+    @responses.activate
     def test_enpkg_req_with_invalid_auth(self):
         """
         Ensure 'enpkg req' doesn't crash when creds are invalid
         """
         self.maxDiff = None
+        responses.add(responses.GET,
+                      "https://api.enthought.com/accounts/user/info/",
+                      status=401,
+                      content_type='application/json')
         r_output = textwrap.dedent("""\
             Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
             your credentials/configuration and try again (original error is:
-            'Dummy auth error').
+            "Authentication error: '401 Client Error: None'").
 
 
             You can change your authentication details with 'enpkg --userpass'.
@@ -151,10 +159,10 @@ class TestAuth(unittest.TestCase):
 
         self.assertMultiLineEqual(m.value, r_output)
 
-    @succeed_authenticate
     @empty_index
     @mock_install_req
     @fake_keyring
+    @responses.activate
     def test_no_keyring_to_no_keyring_conversion(self):
         """
         Ensure the config file is not converted when configured not to use
@@ -163,6 +171,9 @@ class TestAuth(unittest.TestCase):
         # Given
         with open(self.config, "w") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
+        config = Configuration.from_file(self.config)
+        responses.add(responses.GET, config.api_url, status=200,
+                      body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
         self._run_main_with_dummy_req()
@@ -172,9 +183,9 @@ class TestAuth(unittest.TestCase):
             self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
 
     @empty_index
-    @succeed_authenticate
     @mock_install_req
     @fake_keyring
+    @responses.activate
     def test_keyring_to_no_keyring_conversion(self):
         """
         Ensure the config file is automatically converted to use keyring.
@@ -183,6 +194,9 @@ class TestAuth(unittest.TestCase):
         _set_keyring_password(FAKE_USER, FAKE_PASSWORD)
         with open(self.config, "w") as fp:
             fp.write("EPD_username = '{0}'".format(FAKE_USER))
+        config = Configuration.from_file(self.config)
+        responses.add(responses.GET, config.api_url, status=200,
+                      body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
         self._run_main_with_dummy_req()

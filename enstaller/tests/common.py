@@ -21,6 +21,23 @@ FAKE_MD5 = "a" * 32
 FAKE_SIZE = -1
 
 
+class DummyAuthenticator(object):
+    def __init__(self, user_info=None):
+        self._auth = None
+        self._user_info = user_info or UserInfo(True)
+
+    @property
+    def auth(self):
+        return self._auth
+
+    @property
+    def user_info(self):
+        return self._user_info
+
+    def authenticate(self, session, auth):
+        self._auth = auth
+
+
 def dummy_installed_package_factory(name, version, build, key=None,
                                     py_ver=PY_VER, store_location=""):
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
@@ -85,34 +102,8 @@ def mock_input(input_string):
 
 
 # Decorators to force a certain configuration
-def is_authenticated(f):
-    w1 = mock.patch("enstaller.cli.utils.authenticate",
-                     lambda ignored: UserInfo(True))
-    w2 = mock.patch("enstaller.config.authenticate",
-                     lambda ignored: UserInfo(True))
-    return w1(w2(f))
-
-
-def is_not_authenticated(f):
-    return mock.patch("enstaller.main.authenticate",
-                      lambda ignored: UserInfo(False))(f)
-
 def make_keyring_unavailable(f):
     return mock.patch("enstaller.config.keyring", None)(f)
-
-def fail_authenticate(f):
-    m = mock.Mock(side_effect=AuthFailedError("Dummy auth error"))
-    main = mock.patch("enstaller.main.authenticate", m)
-    config = mock.patch("enstaller.config.authenticate", m)
-    return main(config(f))
-
-def succeed_authenticate(f):
-    fake_user = {"first_name": "John", "last_name": "Doe",
-                 "has_subscription": True}
-    m = mock.Mock(return_value=fake_user)
-    main = mock.patch("enstaller.main.authenticate", m)
-    config = mock.patch("enstaller.config.authenticate", m)
-    return main(config(f))
 
 # Context managers to force certain configuration
 @contextlib.contextmanager

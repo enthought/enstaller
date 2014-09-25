@@ -36,7 +36,7 @@ from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
                      mock_input, mock_print, fake_keyring_context,
-                     fake_keyring)
+                     fake_keyring, DummyAuthenticator)
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
@@ -544,7 +544,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session())
+            print_config(config, config.prefix, Session(DummyAuthenticator()))
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -582,7 +582,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session())
+            print_config(config, config.prefix, Session(DummyAuthenticator()))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -617,7 +617,7 @@ class TestConfigurationPrint(unittest.TestCase):
         config.disable_webservice()
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session())
+            print_config(config, config.prefix, Session(DummyAuthenticator()))
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):

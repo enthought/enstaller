@@ -22,8 +22,7 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, DUMMY_USER, authenticate,
-                            subscription_message)
+from enstaller.auth import _INDEX_NAME, DUMMY_USER, subscription_message
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
@@ -581,9 +580,11 @@ class Configuration(object):
     def _checked_change_auth(self, auth, session, filename):
         user = {}
 
-        user = authenticate(auth, session, self)
+        session.authenticate(auth)
         self.set_auth(*auth)
         self._change_auth(filename)
+
+        user = session.user_info
         print(subscription_message(self, user))
         return user
 
@@ -711,7 +712,8 @@ def print_config(config, prefix, session):
               "authenticate.")
     else:
         try:
-            user = authenticate(config.auth, session, config)
+            session.authenticate(config.auth)
+            user = session.user_info
         except Exception as e:
             print(e)
     print(subscription_message(config, user))

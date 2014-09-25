@@ -52,7 +52,7 @@ import enstaller.tests.common
 from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     mock_raw_input, fake_keyring, is_authenticated,
+                     mock_raw_input, fake_keyring,
                      mock_fetcher_factory, unconnected_enpkg_factory,
                      FakeOptions, FAKE_MD5, FAKE_SIZE)
 

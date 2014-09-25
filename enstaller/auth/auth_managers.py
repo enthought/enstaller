@@ -60,7 +60,7 @@ class LegacyCanopyAuthManager(object):
 
     def authenticate(self, session, auth):
         try:
-            resp = session.get(self.url, auth=auth)
+            resp = session._raw_get(self.url, auth=auth)
         except requests.exceptions.ConnectionError as e:
             raise AuthFailedError(e)
 
@@ -97,7 +97,11 @@ class OldRepoAuthManager(object):
         for index_url, _ in self.index_urls:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = session.head(index_url, auth=auth)
+                try:
+                    resp = session._raw_head(index_url, auth=auth)
+                except requests.exceptions.ConnectionError as e:
+                    raise AuthFailedError(e)
+
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
