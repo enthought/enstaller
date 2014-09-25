@@ -10,18 +10,19 @@ from .auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
 from .user_info import UserInfo
 
 
-def authenticate(session, configuration):
+def authenticate(auth, session, configuration):
     """
     Attempt to authenticate the user's credentials by the appropriate
     means.
 
     Parameters
     ----------
+    auth : tuple
+        Authentication pair.
     session : Session
         The connection handler used for actual network connections.
     configuration : Configuration_like
-        A Configuration instance. The authentication information need to be set
-        up.
+        A Configuration instance.
 
     Returns
     -------
@@ -35,19 +36,13 @@ def authenticate(session, configuration):
 
     If authentication fails, raise an exception.
     """
-    if not configuration.is_auth_configured:
-        raise EnstallerException("No valid auth information in "
-                                 "configuration, cannot authenticate.")
-
-    auth = configuration.auth
-
     if configuration.use_webservice:
         user = _web_auth(auth, configuration.api_url, session)
         if not user.is_authenticated:
             raise AuthFailedError('Authentication failed: could not authenticate')
     else:
-        authenticator = OldRepoAuthManager(configuration.indices, auth)
-        authenticator.authenticate(session)
+        authenticator = OldRepoAuthManager(configuration.indices)
+        authenticator.authenticate(session, auth)
         user = authenticator.user_info
 
     return user
@@ -95,6 +90,6 @@ def _web_auth(auth, api_url, session):
     if username is None or password is None:
         raise AuthFailedError("Authentication error: User login is required.")
 
-    authenticator = LegacyCanopyAuthManager(api_url, auth)
-    authenticator.authenticate(session)
+    authenticator = LegacyCanopyAuthManager(api_url)
+    authenticator.authenticate(session, auth)
     return authenticator.user_info

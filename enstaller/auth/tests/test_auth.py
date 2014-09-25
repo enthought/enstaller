@@ -62,9 +62,10 @@ class CheckedChangeAuthTestCase(TestCase):
     @patch('enstaller.config.authenticate', return_value=basic_user)
     def test_simple(self, mock1):
         config = Configuration()
-        config.set_auth('usr', 'password')
         write_default_config(self.f)
-        config._checked_change_auth(self.f, self.session)
+
+        auth = ('usr', 'password')
+        config._checked_change_auth(auth, self.session, self.f)
 
         new_config = Configuration.from_file(self.f)
         usr = enstaller.config.authenticate(new_config)
@@ -73,8 +74,8 @@ class CheckedChangeAuthTestCase(TestCase):
         self.assertTrue(usr.has_subscription)
 
     def test_no_acct(self):
-        def mocked_authenticate(session, configuration):
-            if configuration.auth != ("valid_user", "valid_password"):
+        def mocked_authenticate(auth, session, configuration):
+            if auth != ("valid_user", "valid_password"):
                 raise AuthFailedError()
             else:
                 return UserInfo(is_authenticated=True)
@@ -82,26 +83,26 @@ class CheckedChangeAuthTestCase(TestCase):
         write_default_config(self.f)
         with patch('enstaller.config.authenticate', mocked_authenticate):
             config = Configuration()
-            config.set_auth("invalid_user", "invalid_password")
+            auth = ("invalid_user", "invalid_password")
 
             with self.assertRaises(AuthFailedError):
-                usr = config._checked_change_auth(self.f,
-                                                  self.session)
+                usr = config._checked_change_auth(auth, self.session, self.f)
 
             config = Configuration()
-            config.set_auth("valid_user", "valid_password")
-            usr = config._checked_change_auth(self.f, self.session)
+            auth = ("valid_user", "valid_password")
+            usr = config._checked_change_auth(auth, self.session, self.f)
 
             self.assertTrue(usr.is_authenticated)
+            self.assertEqual(config.auth, ("valid_user", "valid_password"))
 
     @patch('enstaller.config.authenticate', return_value=old_auth_user)
     def test_remote_success(self, mock1):
         write_default_config(self.f)
 
         config = Configuration()
-        config.set_auth("usr", "password")
+        auth = ("usr", "password")
 
-        usr = config._checked_change_auth(self.f, Session())
+        usr = config._checked_change_auth(auth, Session(), self.f)
         self.assertEqual(usr, DUMMY_USER)
 
     def test_nones(self):
@@ -109,13 +110,6 @@ class CheckedChangeAuthTestCase(TestCase):
 
         with self.assertRaises(InvalidConfiguration):
             config.set_auth(None, None)
-
-    def test_empty_strings(self):
-        config = Configuration()
-        config.set_auth("", "")
-
-        with self.assertRaises(InvalidConfiguration):
-            config._checked_change_auth(self.f, self.session)
 
 
 class TestSubscriptionLevel(TestCase):
@@ -188,6 +182,7 @@ class TestWebAuth(TestCase):
     @responses.activate
     def test_auth_failure_404(self):
         # Given
+        auth = ("nono", "le petit robot")
         config = self._no_webservice_config()
         responses.add(responses.HEAD, config.indices[0][0],
                       body="", status=404,
@@ -195,22 +190,24 @@ class TestWebAuth(TestCase):
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.session, config)
+            authenticate(auth, self.session, config)
 
     @responses.activate
     def test_auth_failure_50x(self):
         # Given
+        auth = ("nono", "le petit robot")
         config = self._no_webservice_config()
         responses.add(responses.HEAD, config.indices[0][0],
                       status=503, content_type='application/json')
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.session, config)
+            authenticate(auth, self.session, config)
 
     @responses.activate
     def test_auth_failure_401(self):
         # Given
+        auth = ("nono", "le petit robot")
         config = self._no_webservice_config()
         responses.add(responses.HEAD, config.indices[0][0],
                       body="", status=401,
@@ -218,7 +215,7 @@ class TestWebAuth(TestCase):
 
         # When/Given
         with self.assertRaises(AuthFailedError):
-            authenticate(self.session, config)
+            authenticate(auth, self.session, config)
 
     @responses.activate
     def test_unauthenticated_user(self):
@@ -237,30 +234,30 @@ class TestAuthenticate(TestCase):
     @fake_keyring
     def test_use_webservice_valid_user(self):
         config = Configuration()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        auth = (FAKE_USER, FAKE_PASSWORD)
 
         with patch("enstaller.auth._impl._web_auth") as mocked_auth:
-            authenticate(self.session, config)
+            authenticate(auth, self.session, config)
             self.assertTrue(mocked_auth.called)
 
     @fake_keyring
     def test_use_webservice_invalid_user(self):
         config = Configuration()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        auth = (FAKE_USER, FAKE_PASSWORD)
 
         with patch("enstaller.auth._impl._web_auth") as mocked_auth:
             mocked_auth.return_value = UserInfo(False)
 
             with self.assertRaises(AuthFailedError):
-                authenticate(self.session, config)
+                authenticate(auth, self.session, config)
 
     @fake_keyring
     def test_use_remote(self):
         config = Configuration()
         config.disable_webservice()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
+        auth = (FAKE_USER, FAKE_PASSWORD)
 
-        user = authenticate(self.session, config)
+        user = authenticate(auth, self.session, config)
         self.assertEqual(user, UserInfo(True))
 
     @fake_keyring
@@ -269,14 +266,14 @@ class TestAuthenticate(TestCase):
         repo_url = "http://api.enthought.com/dummy/repo"
         config = Configuration()
         config.disable_webservice()
-        config.set_auth(FAKE_USER, FAKE_PASSWORD)
         config.set_indexed_repositories([repo_url])
+        auth = (FAKE_USER, FAKE_PASSWORD)
 
         responses.add(responses.HEAD, repo_url + "/index.json",
                       body="", status=404,
                       content_type='application/json')
         with self.assertRaises(EnstallerException):
-            authenticate(self.session, config)
+            authenticate(auth, self.session, config)
 
 
 class SearchTestCase(TestCase):

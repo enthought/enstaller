@@ -23,7 +23,7 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
         """
 
     @abc.abstractproperty
-    def authenticate(self):
+    def authenticate(self, session, auth):
         """ Authenticate.
 
         If successfull, the auth property is sets up
@@ -32,6 +32,8 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
         ----------
         session : Session
             The connection handled used to manage http connections(s).
+        auth : tuple
+            The (username, password) pair for authentication.
 
         Returns
         -------
@@ -40,9 +42,8 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
 
 
 class LegacyCanopyAuthManager(object):
-    def __init__(self, url, auth):
+    def __init__(self, url):
         self.url = url
-        self._raw_auth = auth
         self._auth = None
         self._user_info = None
 
@@ -57,9 +58,9 @@ class LegacyCanopyAuthManager(object):
         else:
             return self._user_info
 
-    def authenticate(self, session):
+    def authenticate(self, session, auth):
         try:
-            resp = session.get(self.url, auth=self._raw_auth)
+            resp = session.get(self.url, auth=auth)
         except requests.exceptions.ConnectionError as e:
             raise AuthFailedError(e)
 
@@ -76,13 +77,12 @@ class LegacyCanopyAuthManager(object):
         else:
             self._user_info = user
 
-        self._auth = self._raw_auth
+        self._auth = auth
 
 
 class OldRepoAuthManager(object):
-    def __init__(self, index_urls, auth):
+    def __init__(self, index_urls):
         self.index_urls = index_urls
-        self._raw_auth = auth
         self._auth = None
 
     @property
@@ -93,11 +93,11 @@ class OldRepoAuthManager(object):
     def user_info(self):
         return UserInfo(is_authenticated=True)
 
-    def authenticate(self, session):
+    def authenticate(self, session, auth):
         for index_url, _ in self.index_urls:
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                resp = session.head(index_url, auth=self._raw_auth)
+                resp = session.head(index_url, auth=auth)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
@@ -111,7 +111,7 @@ class OldRepoAuthManager(object):
                         raise AuthFailedError(msg)
                     else:
                         raise AuthFailedError(str(e))
-        self._auth = self._raw_auth
+        self._auth = auth
 
 
 IAuthManager.register(LegacyCanopyAuthManager)

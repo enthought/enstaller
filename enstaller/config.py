@@ -578,13 +578,11 @@ class Configuration(object):
         with open(filename, 'w') as fo:
             fo.write(data)
 
-    def _checked_change_auth(self, filename, session):
-        if not self.is_auth_configured:
-            raise InvalidConfiguration("No auth configured: cannot "
-                                       "change auth.")
+    def _checked_change_auth(self, auth, session, filename):
         user = {}
 
-        user = authenticate(session, self)
+        user = authenticate(auth, session, self)
+        self.set_auth(*auth)
         self._change_auth(filename)
         print(subscription_message(self, user))
         return user
@@ -707,8 +705,13 @@ def print_config(config, prefix, session):
             print('        %r' % repo)
 
     user = DUMMY_USER
-    try:
-        user = authenticate(session, config)
-    except Exception as e:
-        print(e)
+
+    if not config.is_auth_configured:
+        print("No valid auth information in configuration, cannot "
+              "authenticate.")
+    else:
+        try:
+            user = authenticate(config.auth, session, config)
+        except Exception as e:
+            print(e)
     print(subscription_message(config, user))

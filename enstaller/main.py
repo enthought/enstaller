@@ -189,7 +189,7 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
 def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
-        user = authenticate(session, config)
+        user = authenticate(config.auth, session, config)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,
@@ -222,7 +222,7 @@ def configure_authentication_or_exit(config, config_filename,
 
     config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename, session)
+        config._checked_change_auth(config.auth, config_filename, session)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
