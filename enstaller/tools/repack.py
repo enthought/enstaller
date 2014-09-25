@@ -52,6 +52,9 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     elif _looks_like_enthought_egg(source_egg_path):
         name, version, _ = split_egg_name(os.path.basename(source_egg_path))
         pyver = None
+    else:
+        msg = "Unrecognized format: {0!r}".format(source_egg_path)
+        raise EnstallerException(msg)
 
     data = {"build": build_number, "packages": [], "name": name,
             "version": version}
