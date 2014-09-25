@@ -11,11 +11,6 @@ from .user_info import UserInfo
 
 class IAuthManager(with_metaclass(abc.ABCMeta)):
     @abc.abstractproperty
-    def auth(self):
-        """ A (username, password) pair. Only valid once authenticated.
-        """
-
-    @abc.abstractproperty
     def user_info(self):
         """ A UserInfo instance. Only valid once authenticated.
 
@@ -46,10 +41,6 @@ class LegacyCanopyAuthManager(object):
         self.url = url
         self._auth = None
         self._user_info = None
-
-    @property
-    def auth(self):
-        return self._auth
 
     @property
     def user_info(self):
@@ -84,10 +75,6 @@ class OldRepoAuthManager(object):
     def __init__(self, index_urls):
         self.index_urls = index_urls
         self._auth = None
-
-    @property
-    def auth(self):
-        return self._auth
 
     @property
     def user_info(self):
