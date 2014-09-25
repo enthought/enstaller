@@ -54,7 +54,7 @@ from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring,
-                     mock_fetcher_factory, unconnected_enpkg_factory,
+                     mocked_session_factory, unconnected_enpkg_factory,
                      FakeOptions, FAKE_MD5, FAKE_SIZE, DummyAuthenticator)
 
 class TestEnstallerUpdate(unittest.TestCase):
@@ -76,7 +76,7 @@ class TestEnstallerUpdate(unittest.TestCase):
         with mock_raw_input("yes"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
                 enpkg = Enpkg(repository,
-                              mock_fetcher_factory(config.repository_cache))
+                              mocked_session_factory(config.repository_cache))
                 opts = mock.Mock()
                 opts.no_deps = False
                 return update_enstaller(enpkg, config, config.autoupdate, opts)

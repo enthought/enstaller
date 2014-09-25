@@ -610,18 +610,12 @@ def main(argv=None):
                                        use_new_format=use_new_format)
 
     repository = repository_factory(session, config.indices, args.quiet)
-    fetcher = URLFetcher(config.repository_cache, config.auth,
-                         config.proxy_dict, verify)
     if args.quiet:
         progress_bar_context = None
     else:
         progress_bar_context = ProgressBarContext(console_progress_manager_factory)
-    enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
+    enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                   args.force or args.forceall)
-    # XXX: temporary hack to allow user info retrieval from inside install_req.
-    # To be removed ASAP once URLFetcher/Session/_DownloadManager mess is
-    # consolidated.
-    enpkg.session = session
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                  pat)

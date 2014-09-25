@@ -21,7 +21,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     create_prefix_with_eggs,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
-                                    mock_fetcher_factory,
+                                    mocked_session_factory,
                                     mock_print)
 
 from ..utils import (disp_store_info, install_req, install_time_string,
@@ -226,10 +226,8 @@ class TestInstallReq(TestCase):
         repository.add_package(nose)
 
         enpkg = Enpkg(repository,
-                      mock_fetcher_factory(config.repository_cache),
+                      mocked_session_factory(config.repository_cache),
                       [self.prefix])
-        # XXX: see temporary hack in enstaller.main
-        enpkg.session = session
         enpkg.execute = mock.Mock()
 
         # When/Then
@@ -306,8 +304,6 @@ class TestInstallReq(TestCase):
 
         with mock.patch("enstaller.main.Enpkg.execute"):
             enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-            # XXX: see temporary hack in enstaller.main
-            enpkg.session = session
             with mock_print() as m:
                 with self.assertRaises(SystemExit):
                     install_req(enpkg, config, "scipy", FakeOptions())

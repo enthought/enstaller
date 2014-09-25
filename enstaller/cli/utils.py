@@ -119,7 +119,7 @@ def install_req(enpkg, config, req, opts):
         actions = [("fetch", egg) for egg in installed] + actions
 
         if _is_any_package_unavailable(enpkg._remote_repository, actions):
-            _notify_unavailable_package(config, req, enpkg.session)
+            _notify_unavailable_package(config, req, enpkg._session)
             _done(FAILURE)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)

@@ -1,5 +1,7 @@
 from enstaller.vendor import requests
 
+from enstaller.requests_utils import LocalFileAdapter
+
 
 class Session(object):
     """ Simple class to handle http session management
@@ -22,12 +24,15 @@ class Session(object):
     def __init__(self, authenticator, cache_directory, proxies=None, verify=True):
         self.proxies = proxies
         self.verify = verify
+        self.cache_directory = cache_directory
 
         self._authenticator = authenticator
         self._session = requests.Session()
         if proxies is not None:
             self._session.proxies = proxies
         self._session.verify = verify
+
+        self._session.mount("file://", LocalFileAdapter())
 
     @property
     def user_info(self):

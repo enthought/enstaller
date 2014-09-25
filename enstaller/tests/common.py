@@ -14,6 +14,7 @@ from enstaller.enpkg import Enpkg
 from enstaller.errors import AuthFailedError
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
+from enstaller.session import Session
 from enstaller.utils import PY_VER
 
 
@@ -189,13 +190,11 @@ def unconnected_enpkg_factory(prefixes=None):
         prefixes = [sys.prefix]
     config = Configuration()
     repository = Repository()
-    return Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+    return Enpkg(repository, mocked_session_factory(config.repository_cache),
                  prefixes=prefixes)
 
-def mock_fetcher_factory(repository_cache):
-    mocked_fetcher = mock.Mock()
-    mocked_fetcher.cache_dir = repository_cache
-    return mocked_fetcher
+def mocked_session_factory(repository_cache):
+    return Session(DummyAuthenticator(), repository_cache)
 
 
 def create_repositories(remote_entries=None, installed_entries=None):
@@ -231,7 +230,7 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
 
     repository = repository_factory(remote_entries)
 
-    enpkg = Enpkg(repository, mock_fetcher_factory(config.repository_cache),
+    enpkg = Enpkg(repository, mocked_session_factory(config.repository_cache),
                   prefixes=[prefix])
     for package in installed_entries:
         package.store_location = prefix
