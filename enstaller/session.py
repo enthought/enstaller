@@ -2,8 +2,20 @@ from enstaller.vendor import requests
 
 
 class Session(object):
-    """ Simple class to handle http requests configuration (proxy, ssl
-    certification settings, etc...) as well as various authentication schemas.
+    """ Simple class to handle http session management
+
+    It also ensures connection settings such as proxy, SSL CA certification,
+    etc... are handled consistently).
+
+    Parameters
+    ----------
+    authenticator : IAuthManager
+        An authenticator instance
+    proxies : dict
+        A proxy dict as expected by requests (and provided by
+        Configuration.proxy_dict).
+    verify : bool
+        If True, SSL CA are verified (default).
     """
     def __init__(self, authenticator, proxies=None, verify=True):
         self.proxies = proxies
