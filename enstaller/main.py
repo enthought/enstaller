@@ -736,15 +736,15 @@ def main(argv=None):
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename, verify)
 
-    user = ensure_authenticated_config(config, config_filename)
+    user = ensure_authenticated_config(config, config_filename, verify)
 
     index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict)
+                               config.proxy_dict, verify)
     index_fetcher._enable_etag_support()
     repository = repository_factory(index_fetcher, config, args.quiet)
 
     fetcher = URLFetcher(config.repository_cache, config.auth,
-                         config.proxy_dict)
+                         config.proxy_dict, verify)
     downloader = DownloadManager(fetcher, repository)
 
     if args.quiet:
