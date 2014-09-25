@@ -35,6 +35,11 @@ class Session(object):
         self._authenticator.authenticate(self, auth)
         self._session.auth = auth
 
+    def fetch(self, url):
+        resp = self._session.get(url, stream=True)
+        resp.raise_for_status()
+        return resp
+
     def get(self, url):
         return self._session.get(url)
 

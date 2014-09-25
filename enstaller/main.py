@@ -608,7 +608,7 @@ def main(argv=None):
                                        session,
                                        use_new_format=use_new_format)
 
-    repository = repository_factory(config, args.quiet, verify)
+    repository = repository_factory(session, config.indices, args.quiet)
     fetcher = URLFetcher(config.repository_cache, config.auth,
                          config.proxy_dict, verify)
     if args.quiet:

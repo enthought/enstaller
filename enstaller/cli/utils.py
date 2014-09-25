@@ -157,16 +157,10 @@ def print_installed(repository, pat=None):
               disp_store_info(info)))
 
 
-def repository_factory(config, quiet=False, verify=True):
-    index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict, verify)
-    index_fetcher._enable_etag_support()
-
+def repository_factory(session, indices, quiet=False):
     repository = Repository()
-    for url, store_location in config.indices:
-        resp = index_fetcher.fetch(url)
-        resp.raise_for_status()
-
+    for url, store_location in indices:
+        resp = session.fetch(url)
         for package in parse_index(_fetch_json_with_progress(resp,
                                                              store_location,
                                                              quiet),

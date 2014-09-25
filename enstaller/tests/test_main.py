@@ -44,6 +44,7 @@ from enstaller.main import (check_prefixes,
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
+from enstaller.session import Session
 from enstaller.solver import Requirement
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
@@ -54,7 +55,7 @@ from .common import (create_prefix_with_eggs,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring,
                      mock_fetcher_factory, unconnected_enpkg_factory,
-                     FakeOptions, FAKE_MD5, FAKE_SIZE)
+                     FakeOptions, FAKE_MD5, FAKE_SIZE, DummyAuthenticator)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -320,7 +321,8 @@ class TestMisc(unittest.TestCase):
         self._mock_index(entries)
 
         # When
-        repository = repository_factory(config)
+        repository = repository_factory(Session(DummyAuthenticator()),
+                                        config.indices)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")
