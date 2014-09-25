@@ -2,7 +2,7 @@ appinst>=2.1.4
 coverage
 machotools>=0.0.2
 mock
--e git://github.com/enthought/okonomiyaki@c3d01e48425c3e9baee5fb41de7eb02dbdef9613#egg=okonomiyaki
+okonomiyaki>=0.2.0
 haas
 six
 tox
