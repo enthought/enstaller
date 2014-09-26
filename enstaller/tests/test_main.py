@@ -320,9 +320,8 @@ class TestMisc(unittest.TestCase):
         self._mock_index(entries)
 
         # When
-        repository = repository_factory(Session(DummyAuthenticator(),
-                                                self.tempdir),
-                                        config.indices)
+        with Session(DummyAuthenticator(), self.tempdir) as session:
+            repository = repository_factory(session, config.indices)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")
