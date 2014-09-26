@@ -3,14 +3,10 @@ import logging
 
 from os.path import isfile, join
 
-from egginst.utils import compute_md5, ensure_dir, makedirs
+from egginst.utils import compute_md5, makedirs
 
 from enstaller.fetch_utils import checked_content
 from enstaller.repository import egg_name_to_name_version
-from enstaller.requests_utils import (DBCache, LocalFileAdapter,
-                                      QueryPathOnlyCacheController)
-from enstaller.vendor import requests
-from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
 
 logger = logging.getLogger(__name__)
@@ -63,36 +59,6 @@ class _CancelableResponse(object):
                 needs_to_download = False
 
         return needs_to_download
-
-
-class URLFetcher(object):
-    def __init__(self, cache_dir, auth=None, proxies=None, verify=True):
-        self._auth = auth
-        self.cache_dir= cache_dir
-        self.verify = verify
-
-        self._proxies = proxies or {}
-
-        session = requests.Session()
-        session.mount("file://", LocalFileAdapter())
-
-        self._session = session
-
-    def _enable_etag_support(self):
-        uri = os.path.join(self.cache_dir, "index_cache", "index.db")
-        ensure_dir(uri)
-        cache = DBCache(uri)
-
-        adapter = CacheControlAdapter(
-            cache, controller_class=QueryPathOnlyCacheController)
-        self._session.mount("http://", adapter)
-        self._session.mount("https://", adapter)
-
-    def fetch(self, url):
-        response = self._session.get(url, stream=True, auth=self._auth,
-                                     proxies=self._proxies, verify=self.verify)
-        response.raise_for_status()
-        return response
 
 
 class _DownloadManager(object):

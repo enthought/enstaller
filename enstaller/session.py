@@ -1,6 +1,39 @@
-from enstaller.vendor import requests
+import collections
+import contextlib
+import os.path
 
-from enstaller.requests_utils import LocalFileAdapter
+from egginst.utils import ensure_dir
+
+from enstaller.vendor import requests
+from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
+
+from enstaller.requests_utils import (DBCache, LocalFileAdapter,
+                                      QueryPathOnlyCacheController)
+
+
+class _PatchedRawSession(requests.Session):
+    def __init__(self, *a, **kw):
+        self._adapters_stack = collections.defaultdict(list)
+        super(_PatchedRawSession, self).__init__(*a, **kw)
+
+    def mount(self, prefix, adapter):
+        self._adapters_stack[prefix].append(adapter)
+        super(_PatchedRawSession, self).mount(prefix, adapter)
+
+    def umount(self, prefix):
+        if prefix in self._adapters_stack \
+                and len(self._adapters_stack[prefix]) > 0:
+            self.adapters.pop(prefix)
+            current_adapter = self._adapters_stack[prefix].pop()
+
+            if len(self._adapters_stack[prefix]) > 0:
+                previous_adapter = self._adapters_stack[prefix].pop()
+                self.adapters[prefix] = previous_adapter
+
+            return current_adapter
+        else:
+            msg = "no adapter registered for prefix {0!r}".format(prefix)
+            raise ValueError(msg)
 
 
 class Session(object):
@@ -27,12 +60,41 @@ class Session(object):
         self.cache_directory = cache_directory
 
         self._authenticator = authenticator
-        self._session = requests.Session()
+        self._session = _PatchedRawSession()
         if proxies is not None:
             self._session.proxies = proxies
         self._session.verify = verify
 
         self._session.mount("file://", LocalFileAdapter())
+
+    def close(self):
+        self._session.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a, **kw):
+        self.close()
+
+    @contextlib.contextmanager
+    def etag(self):
+        self._etag_setup()
+        yield
+        self._etag_tear()
+
+    def _etag_setup(self):
+        uri = os.path.join(self.cache_directory, "index_cache", "index.db")
+        ensure_dir(uri)
+        cache = DBCache(uri)
+
+        adapter = CacheControlAdapter(
+            cache, controller_class=QueryPathOnlyCacheController)
+        self._session.mount("http://", adapter)
+        self._session.mount("https://", adapter)
+
+    def _etag_tear(self):
+        self._session.umount("https://")
+        self._session.umount("http://")
 
     @property
     def user_info(self):
