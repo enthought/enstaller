@@ -159,12 +159,13 @@ def print_installed(repository, pat=None):
 def repository_factory(session, indices, quiet=False):
     repository = Repository()
     for url, store_location in indices:
-        resp = session.fetch(url)
-        for package in parse_index(_fetch_json_with_progress(resp,
-                                                             store_location,
-                                                             quiet),
-                                   store_location):
-            repository.add_package(package)
+        with session.etag():
+            resp = session.fetch(url)
+            for package in parse_index(_fetch_json_with_progress(resp,
+                                                                store_location,
+                                                                quiet),
+                                    store_location):
+                repository.add_package(package)
     return repository
 
 
