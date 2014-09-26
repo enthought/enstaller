@@ -76,7 +76,10 @@ class OldRepoAuthManager(object):
 
     @property
     def user_info(self):
-        return UserInfo(is_authenticated=True)
+        if self._auth is None:
+            raise RuntimeError("Not authenticated yet")
+        else:
+            return UserInfo(is_authenticated=True)
 
     def authenticate(self, session, auth):
         for index_url, _ in self.index_urls:
