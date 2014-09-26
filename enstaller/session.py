@@ -94,7 +94,11 @@ class Session(object):
 
     def _etag_tear(self):
         self._session.umount("https://")
-        self._session.umount("http://")
+        adapter = self._session.umount("http://")
+        # XXX: This close is ugly, but I am not sure how one can link a cache
+        # controller to a http adapter in cachecontrol. See issue #42 on
+        # ionrock/cachecontrol @ github.
+        adapter.cache.close()
 
     @property
     def user_info(self):
