@@ -16,11 +16,12 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository
-from enstaller.tests.common import (FakeOptions,
+from enstaller.session import Session
+from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     create_prefix_with_eggs,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
-                                    is_authenticated, mock_fetcher_factory,
+                                    mocked_session_factory,
                                     mock_print)
 
 from ..utils import (disp_store_info, install_req, install_time_string,
@@ -214,10 +215,10 @@ class TestInstallReq(TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    @is_authenticated
     def test_install_not_available(self):
         # Given
         config = Configuration()
+        session = Session(DummyAuthenticator(), self.prefix)
 
         nose = dummy_repository_package_factory("nose", "1.3.0", 1)
         nose.available = False
@@ -225,7 +226,7 @@ class TestInstallReq(TestCase):
         repository.add_package(nose)
 
         enpkg = Enpkg(repository,
-                      mock_fetcher_factory(config.repository_cache),
+                      mocked_session_factory(config.repository_cache),
                       [self.prefix])
         enpkg.execute = mock.Mock()
 
@@ -279,10 +280,13 @@ class TestInstallReq(TestCase):
             install_req(enpkg, config, "nose", FakeOptions())
             m.assert_called_with([])
 
-    @is_authenticated
     def test_recursive_install_unavailable_dependency(self):
         config = Configuration()
-        config.set_auth("nono", "le gros robot")
+        session = Session(DummyAuthenticator(), self.prefix)
+
+        auth = ("nono", "le gros robot")
+        session.authenticate(auth)
+        config.set_auth(*auth)
 
         r_output = textwrap.dedent("""
         Cannot install 'scipy', as this package (or some of its requirements) are not

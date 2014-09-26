@@ -20,13 +20,14 @@ from enstaller.fetch import _DownloadManager, URLFetcher
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
+from enstaller.session import Session
 from enstaller.utils import PY_VER, path_to_uri
 from enstaller.vendor import responses
 
 from .common import (dummy_repository_package_factory,
-                     mock_fetcher_factory,
+                     mocked_session_factory,
                      mock_history_get_state_context, repository_factory,
-                     unconnected_enpkg_factory)
+                     unconnected_enpkg_factory, DummyAuthenticator)
 
 
 class TestEnpkgActions(unittest.TestCase):
@@ -90,9 +91,8 @@ class TestEnpkgExecute(unittest.TestCase):
 
         with mock.patch("enstaller.enpkg.FetchAction.execute") as mocked_fetch:
             with mock.patch("enstaller.enpkg.InstallAction.execute") as mocked_install:
-                mocked_fetcher = mock.Mock()
-                mocked_fetcher.cache_dir = config.repository_cache
-                enpkg = Enpkg(repository, mocked_fetcher,
+                enpkg = Enpkg(repository,
+                              mocked_session_factory(config.repository_cache),
                               prefixes=self.prefixes)
                 actions = [("install", "dummy-1.0.1-1.egg")]
                 enpkg.execute(actions)
@@ -122,7 +122,7 @@ class TestEnpkgRevert(unittest.TestCase):
         repository = Repository()
 
         enpkg = Enpkg(repository,
-                      mock_fetcher_factory(Configuration().repository_cache),
+                      mocked_session_factory(Configuration().repository_cache),
                       prefixes=self.prefixes)
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions([])
@@ -130,7 +130,7 @@ class TestEnpkgRevert(unittest.TestCase):
     def test_revert_missing_unavailable_egg(self):
         egg = "non_existing_dummy_egg-1.0.0-1.egg"
         enpkg = Enpkg(Repository(),
-                      mock_fetcher_factory(Configuration().repository_cache),
+                      mocked_session_factory(Configuration().repository_cache),
                       prefixes=self.prefixes)
         with self.assertRaises(EnpkgError):
             enpkg.revert_actions(set([egg]))
@@ -151,9 +151,9 @@ class TestEnpkgRevert(unittest.TestCase):
                          body=fp.read(), status=200,
                          content_type='application/json')
 
-        fetcher = URLFetcher(config.repository_cache)
+        session = Session(DummyAuthenticator(), config.repository_cache)
 
-        enpkg = Enpkg(repository, fetcher, prefixes=self.prefixes)
+        enpkg = Enpkg(repository, session, prefixes=self.prefixes)
         actions = [("fetch", os.path.basename(egg)),
                    ("install", os.path.basename(egg))]
         enpkg.execute(actions)
@@ -223,7 +223,7 @@ class TestFetchAction(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             repository.add_package(package)
 
-        return (_DownloadManager(URLFetcher(self.tempdir), repository),
+        return (_DownloadManager(Session(DummyAuthenticator(), self.tempdir), repository),
                 repository)
 
     def _add_response_for_path(self, path):

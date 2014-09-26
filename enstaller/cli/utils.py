@@ -11,7 +11,6 @@ from egginst._compat import urlparse
 from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)
 
-from enstaller.auth import authenticate
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import NoPackageFound, UnavailablePackage
 from enstaller.fetch import URLFetcher
@@ -49,9 +48,9 @@ def _is_any_package_unavailable(remote_repository, actions):
     return len(unavailables) > 0
 
 
-def _notify_unavailable_package(config, requirement):
+def _notify_unavailable_package(config, requirement, session):
     username, __ = config.auth
-    user_info = authenticate(config)
+    user_info = session.user_info
     subscription = user_info.subscription_level
     msg = textwrap.dedent("""\
         Cannot install {0!r}, as this package (or some of its requirements)
@@ -120,7 +119,7 @@ def install_req(enpkg, config, req, opts):
         actions = [("fetch", egg) for egg in installed] + actions
 
         if _is_any_package_unavailable(enpkg._remote_repository, actions):
-            _notify_unavailable_package(config, req)
+            _notify_unavailable_package(config, req, enpkg._session)
             _done(FAILURE)
         _ask_pypi_confirmation(actions)
         enpkg.execute(actions)
@@ -158,16 +157,10 @@ def print_installed(repository, pat=None):
               disp_store_info(info)))
 
 
-def repository_factory(config, quiet=False, verify=True):
-    index_fetcher = URLFetcher(config.repository_cache, config.auth,
-                               config.proxy_dict, verify)
-    index_fetcher._enable_etag_support()
-
+def repository_factory(session, indices, quiet=False):
     repository = Repository()
-    for url, store_location in config.indices:
-        resp = index_fetcher.fetch(url)
-        resp.raise_for_status()
-
+    for url, store_location in indices:
+        resp = session.fetch(url)
         for package in parse_index(_fetch_json_with_progress(resp,
                                                              store_location,
                                                              quiet),

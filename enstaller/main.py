@@ -26,7 +26,7 @@ from enstaller._version import is_released as IS_RELEASED
 
 import enstaller
 
-from enstaller.auth import authenticate
+from enstaller.auth.auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
 from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
@@ -35,6 +35,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               configuration_read_search_order,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
+from enstaller.session import Session
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.fetch import URLFetcher
@@ -185,10 +186,10 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
     return msg, auth_error
 
 
-def ensure_authenticated_config(config, config_filename, verify=True,
+def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
-        user = authenticate(config, verify=verify)
+        session.authenticate(config.auth)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,
@@ -201,10 +202,11 @@ def ensure_authenticated_config(config, config_filename, verify=True,
     else:
         if not use_new_format:
             convert_auth_if_required(config_filename)
-        return user
+        return session.user_info
 
 
-def configure_authentication_or_exit(config, config_filename, verify=True):
+def configure_authentication_or_exit(config, config_filename,
+                                     session):
     n_trials = 3
     for i in range(n_trials):
         username, password = input_auth()
@@ -218,9 +220,8 @@ def configure_authentication_or_exit(config, config_filename, verify=True):
         print("No valid username entered (no modification was written).")
         sys.exit(-1)
 
-    config.set_auth(username, password)
     try:
-        config._checked_change_auth(config_filename, verify)
+        config._checked_change_auth((username, password), session, config_filename)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
@@ -239,7 +240,7 @@ def setup_proxy_or_die(config, proxy):
 
 
 def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                    prefix, pat):
+                                    prefix, pat, session):
     """
     Returns True if a command has been executed.
     """
@@ -268,7 +269,8 @@ def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
         return True
 
     if args.userpass:                             # --userpass
-        configure_authentication_or_exit(config, config_filename)
+        configure_authentication_or_exit(config, config_filename,
+                                         session)
         return True
 
 
@@ -587,24 +589,32 @@ def main(argv=None):
     for prefix in prefixes:
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
+    verify = not args.insecure
+    if config.use_webservice:
+        authenticator = LegacyCanopyAuthManager(config.api_url)
+    else:
+        authenticator = OldRepoAuthManager(config.indices)
+
+    session = Session(authenticator, config.repository_cache,
+                      config.proxy_dict, verify=verify)
+
     if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                       prefix, pat):
+                                       prefix, pat, session):
         return
 
-    verify = not args.insecure
     if not config.is_auth_configured:
-        configure_authentication_or_exit(config, config_filename, verify)
-    user = ensure_authenticated_config(config, config_filename, verify,
+        configure_authentication_or_exit(config, config_filename,
+                                         session)
+    user = ensure_authenticated_config(config, config_filename,
+                                       session,
                                        use_new_format=use_new_format)
 
-    repository = repository_factory(config, args.quiet, verify)
-    fetcher = URLFetcher(config.repository_cache, config.auth,
-                         config.proxy_dict, verify)
+    repository = repository_factory(session, config.indices, args.quiet)
     if args.quiet:
         progress_bar_context = None
     else:
         progress_bar_context = ProgressBarContext(console_progress_manager_factory)
-    enpkg = Enpkg(repository, fetcher, prefixes, progress_bar_context,
+    enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                   args.force or args.forceall)
 
     dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,

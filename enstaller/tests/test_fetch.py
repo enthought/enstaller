@@ -19,7 +19,10 @@ from enstaller.errors import EnstallerException
 from enstaller.fetch import _DownloadManager, URLFetcher
 from enstaller.proxy_info import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.session import Session
 from enstaller.utils import compute_md5
+
+from enstaller.tests.common import mocked_session_factory
 
 
 class TestURLFetcher(unittest.TestCase):
@@ -73,7 +76,8 @@ class Test_DownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
         downloader.fetch(filename)
 
         # Then
@@ -92,7 +96,8 @@ class Test_DownloadManager(unittest.TestCase):
         package.md5 = "a" * 32
         repository.add_package(package)
 
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
         with self.assertRaises(EnstallerException):
             downloader.fetch(filename)
 
@@ -101,7 +106,8 @@ class Test_DownloadManager(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
 
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
         target = os.path.join(self.tempdir, filename)
 
         # When
@@ -121,7 +127,8 @@ class Test_DownloadManager(unittest.TestCase):
         repository = self._create_store_and_repository([egg])
 
         # When
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
         downloader.fetch(egg)
 
         # Then
@@ -140,7 +147,8 @@ class Test_DownloadManager(unittest.TestCase):
                 fo.write(b"")
 
         # When
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
         downloader.fetch(egg)
 
         # Then
@@ -179,7 +187,8 @@ class Test_DownloadManager(unittest.TestCase):
         responses.add(responses.GET, url + filename,
                       body='{"error": "forbidden"}',
                       status=403)
-        downloader = _DownloadManager(URLFetcher(self.tempdir), repository)
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
 
         # When/Then
         with self.assertRaises(requests.exceptions.HTTPError):

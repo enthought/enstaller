@@ -272,8 +272,9 @@ class Enpkg(object):
     repository : Repository
         This is the remote repository which enpkg will use to resolve
         dependencies.
-    fetcher : URLFetcher
-        The url fetcher used to fetch eggs.
+    session : Session
+        The session used to connect to the remote server (fetching indices,
+        eggs, etc...).
     prefixes : list of paths -- default: [sys.prefix]
         Each path, is an install "prefix" (such as, e.g. /usr/local) in which
         things get installed. Eggs are installed or removed from the first
@@ -282,7 +283,7 @@ class Enpkg(object):
         If specified, will be used for progress bar management across all
         executed actions. If None, use dummy (do nothing) progress bars.
     """
-    def __init__(self, remote_repository, url_fetcher,
+    def __init__(self, remote_repository, session,
                  prefixes=[sys.prefix], progress_context=None,
                  force=False):
         self.prefixes = prefixes
@@ -294,7 +295,8 @@ class Enpkg(object):
         self._top_installed_repository = \
                 Repository._from_prefixes([self.top_prefix])
 
-        self._downloader = _DownloadManager(url_fetcher, remote_repository)
+        self._session = session
+        self._downloader = _DownloadManager(session, remote_repository)
 
         self._progress_context = progress_context or \
                 ProgressBarContext(dummy_progress_bar_factory)

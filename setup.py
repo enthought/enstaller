@@ -90,6 +90,7 @@ packages = [
     'egginst',
     'egginst.console',
     'enstaller',
+    'enstaller.auth',
     'enstaller.cli',
     'enstaller.indexed_repo',
     'enstaller.solver',
@@ -120,6 +121,7 @@ package_data = {"enstaller.vendor.requests": ["cacert.pem"],
 if include_testing:
     packages += [
         'egginst.tests',
+        'enstaller.auth.tests',
         'enstaller.indexed_repo.tests',
         'enstaller.tests',
     ]

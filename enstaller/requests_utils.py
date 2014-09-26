@@ -117,8 +117,9 @@ class DBCache(BaseCache):
     """
     A Sqlite-backed cache.
 
-    Using sqlite guarantees data consistency without much overhead and without the need
-    of usually brittle file locks, or external services (impractical in many cases)
+    Using sqlite guarantees data consistency without much overhead and
+    without the need of usually brittle file locks, or external services
+    (impractical in many cases)
     """
     def __init__(self, uri=":memory:", capacity=10):
         try:

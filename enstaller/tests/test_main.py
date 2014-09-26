@@ -44,6 +44,7 @@ from enstaller.main import (check_prefixes,
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
+from enstaller.session import Session
 from enstaller.solver import Requirement
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
@@ -52,9 +53,9 @@ import enstaller.tests.common
 from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     mock_raw_input, fake_keyring, is_authenticated,
-                     mock_fetcher_factory, unconnected_enpkg_factory,
-                     FakeOptions, FAKE_MD5, FAKE_SIZE)
+                     mock_raw_input, fake_keyring,
+                     mocked_session_factory, unconnected_enpkg_factory,
+                     FakeOptions, FAKE_MD5, FAKE_SIZE, DummyAuthenticator)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -75,7 +76,7 @@ class TestEnstallerUpdate(unittest.TestCase):
         with mock_raw_input("yes"):
             with mock.patch("enstaller.main.install_req", lambda *args: None):
                 enpkg = Enpkg(repository,
-                              mock_fetcher_factory(config.repository_cache))
+                              mocked_session_factory(config.repository_cache))
                 opts = mock.Mock()
                 opts.no_deps = False
                 return update_enstaller(enpkg, config, config.autoupdate, opts)
@@ -320,7 +321,9 @@ class TestMisc(unittest.TestCase):
         self._mock_index(entries)
 
         # When
-        repository = repository_factory(config)
+        repository = repository_factory(Session(DummyAuthenticator(),
+                                                self.tempdir),
+                                        config.indices)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")

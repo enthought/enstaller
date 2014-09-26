@@ -99,7 +99,7 @@ class _DownloadManager(object):
     def __init__(self, url_fetcher, repository, auth=None):
         self._repository = repository
         self._fetcher = url_fetcher
-        self.cache_directory = url_fetcher.cache_dir
+        self.cache_directory = url_fetcher.cache_directory
 
         makedirs(self.cache_directory)
 

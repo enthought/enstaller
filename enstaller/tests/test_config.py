@@ -29,13 +29,14 @@ from enstaller.config import (abs_expanduser,
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
     Configuration, add_url, _encode_auth, _encode_string_base64)
+from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
                      mock_input, mock_print, fake_keyring_context,
-                     fake_keyring)
+                     fake_keyring, DummyAuthenticator)
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
@@ -516,6 +517,12 @@ class TestConfigurationParsing(unittest.TestCase):
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
 
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_simple_in_memory(self):
         output_template = textwrap.dedent("""\
             Python version: {pyver}
@@ -543,7 +550,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix)
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -581,7 +589,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix)
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -616,7 +625,8 @@ class TestConfigurationPrint(unittest.TestCase):
         config.disable_webservice()
 
         with mock_print() as m:
-            print_config(config, config.prefix)
+            print_config(config, config.prefix, Session(DummyAuthenticator(),
+                                                        self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 class TestConfiguration(unittest.TestCase):

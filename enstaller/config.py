@@ -22,8 +22,7 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, DUMMY_USER, authenticate,
-                            subscription_message)
+from enstaller.auth import _INDEX_NAME, DUMMY_USER, subscription_message
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
@@ -578,14 +577,14 @@ class Configuration(object):
         with open(filename, 'w') as fo:
             fo.write(data)
 
-    def _checked_change_auth(self, filename, verify=True):
-        if not self.is_auth_configured:
-            raise InvalidConfiguration("No auth configured: cannot "
-                                       "change auth.")
+    def _checked_change_auth(self, auth, session, filename):
         user = {}
 
-        user = authenticate(self, verify)
+        session.authenticate(auth)
+        self.set_auth(*auth)
         self._change_auth(filename)
+
+        user = session.user_info
         print(subscription_message(self, user))
         return user
 
@@ -686,7 +685,7 @@ def prepend_url(filename, url):
         fp.write(data)
 
 
-def print_config(config, prefix):
+def print_config(config, prefix, session):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
     print("sys.prefix:", sys.prefix)
@@ -707,8 +706,14 @@ def print_config(config, prefix):
             print('        %r' % repo)
 
     user = DUMMY_USER
-    try:
-        user = authenticate(config)
-    except Exception as e:
-        print(e)
+
+    if not config.is_auth_configured:
+        print("No valid auth information in configuration, cannot "
+              "authenticate.")
+    else:
+        try:
+            session.authenticate(config.auth)
+            user = session.user_info
+        except Exception as e:
+            print(e)
     print(subscription_message(config, user))
