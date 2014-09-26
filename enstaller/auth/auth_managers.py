@@ -21,8 +21,6 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
     def authenticate(self, session, auth):
         """ Authenticate.
 
-        If successfull, the auth property is sets up
-
         Parameters
         ----------
         session : Session
@@ -30,9 +28,9 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
         auth : tuple
             The (username, password) pair for authentication.
 
-        Returns
-        -------
-        a UserInfo object.
+        Raises
+        ------
+        an AuthFailedError if authentication failed.
         """
 
 
