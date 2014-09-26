@@ -38,7 +38,6 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError
 from enstaller.enpkg import Enpkg, ProgressBarContext
-from enstaller.fetch import URLFetcher
 from enstaller.repository import Repository
 from enstaller.solver import Request, Requirement
 from enstaller.solver.core import (create_enstaller_update_repository,

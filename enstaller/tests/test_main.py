@@ -30,7 +30,6 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.fetch import URLFetcher
 from enstaller.main import (check_prefixes,
                             epd_install_confirm, env_option,
                             get_config_filename, get_package_path,

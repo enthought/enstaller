@@ -13,7 +13,6 @@ from egginst.progress import (console_progress_manager_factory,
 
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import NoPackageFound, UnavailablePackage
-from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
