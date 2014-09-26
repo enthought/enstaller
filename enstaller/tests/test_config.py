@@ -988,11 +988,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/free
               - enthought/commercial
         """)
+        platform = custom_plat
         r_indices = [
-            ('https://api.enthought.com/repo/enthought/free/rh5-64/index.json',
-             'https://api.enthought.com/repo/enthought/free/rh5-64/index.json'),
-            ('https://api.enthought.com/repo/enthought/commercial/rh5-64/index.json',
-             'https://api.enthought.com/repo/enthought/commercial/rh5-64/index.json')
+            ('https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform),
+             'https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform)),
+            ('https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform),
+             'https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform))
         ]
 
         with mkdtemp() as prefix:
@@ -1017,11 +1018,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/free
               - enthought/commercial
         """)
+        platform = custom_plat
         r_indices = [
-            ('http://acme.com/repo/enthought/free/rh5-64/index.json',
-             'http://acme.com/repo/enthought/free/rh5-64/index.json'),
-            ('http://acme.com/repo/enthought/commercial/rh5-64/index.json',
-             'http://acme.com/repo/enthought/commercial/rh5-64/index.json')
+            ('http://acme.com/repo/enthought/free/{0}/index.json'.format(platform),
+             'http://acme.com/repo/enthought/free/{0}/index.json'.format(platform)),
+            ('http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform),
+             'http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform))
         ]
 
         # When
