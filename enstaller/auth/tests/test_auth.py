@@ -17,7 +17,8 @@ from enstaller.config import Configuration, write_default_config
 from enstaller.session import Session
 from enstaller.errors import (AuthFailedError, EnstallerException,
                               InvalidConfiguration)
-from enstaller.tests.common import DummyAuthenticator, fake_keyring
+from enstaller.tests.common import (DummyAuthenticator, fake_keyring,
+                                    R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
 
 
@@ -35,19 +36,6 @@ AUTH_API_URL = 'https://api.enthought.com/accounts/user/info/'
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_CREDS = compute_creds(FAKE_USER, FAKE_PASSWORD)
-
-R_JSON_AUTH_RESP = {'first_name': u'David',
-        'has_subscription': True,
-        'is_active': True,
-        'is_authenticated': True,
-        'last_name': u'Cournapeau',
-        'subscription_level': u'basic'}
-
-R_JSON_NOAUTH_RESP = {'is_authenticated': False,
-        'last_name': u'Cournapeau',
-        'first_name': u'David',
-        'has_subscription': True,
-        'subscription_level': u'basic'}
 
 
 @fake_keyring

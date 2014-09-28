@@ -22,6 +22,22 @@ FAKE_MD5 = "a" * 32
 FAKE_SIZE = -1
 
 
+R_JSON_AUTH_RESP = {
+    'first_name': u'David',
+    'has_subscription': True,
+    'is_active': True,
+    'is_authenticated': True,
+    'last_name': u'Cournapeau',
+    'subscription_level': u'basic'
+}
+
+R_JSON_NOAUTH_RESP = {'is_authenticated': False,
+        'last_name': u'Cournapeau',
+        'first_name': u'David',
+        'has_subscription': True,
+        'subscription_level': u'basic'}
+
+
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
         self._auth = None
