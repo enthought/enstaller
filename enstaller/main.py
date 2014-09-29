@@ -594,30 +594,32 @@ def main(argv=None):
     else:
         authenticator = OldRepoAuthManager(config.indices)
 
-    session = Session(authenticator, config.repository_cache,
-                      config.proxy_dict, verify=verify)
+    with Session(authenticator, config.repository_cache,
+                 config.proxy_dict, verify=verify) as session:
 
-    if dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
-                                       prefix, pat, session):
-        return
+        if dispatch_commands_without_enpkg(args, config, config_filename,
+                                           prefixes, prefix, pat,
+                                           session):
+            return
 
-    if not config.is_auth_configured:
-        configure_authentication_or_exit(config, config_filename,
-                                         session)
-    user = ensure_authenticated_config(config, config_filename,
-                                       session,
-                                       use_new_format=use_new_format)
+        if not config.is_auth_configured:
+            configure_authentication_or_exit(config, config_filename,
+                                             session)
+        user = ensure_authenticated_config(config, config_filename,
+                                           session,
+                                           use_new_format=use_new_format)
 
-    repository = repository_factory(session, config.indices, args.quiet)
-    if args.quiet:
-        progress_bar_context = None
-    else:
-        progress_bar_context = ProgressBarContext(console_progress_manager_factory)
-    enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
-                  args.force or args.forceall)
+        repository = repository_factory(session, config.indices, args.quiet)
+        if args.quiet:
+            progress_bar_context = None
+        else:
+            progress_bar_context = ProgressBarContext(
+                    console_progress_manager_factory)
+        enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
+                      args.force or args.forceall)
 
-    dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
-                                 pat)
+        dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
+                                     pat)
 
 
 def main_noexc(argv=None):
