@@ -130,6 +130,20 @@ class TestOldReposAuthManager(TestCase):
         shutil.rmtree(self.prefix)
 
     @responses.activate
+    def test_from_configuration(self):
+        # Given
+        responses.add(responses.HEAD, self.config.indices[0][0], status=200,
+                      body=json.dumps(R_JSON_AUTH_RESP))
+        authenticator = OldRepoAuthManager.from_configuration(self.config)
+        session = Session(authenticator, self.prefix)
+
+        # When
+        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+        # Then
+        self.assertEqual(self.session.user_info, UserInfo(True))
+
+    @responses.activate
     def test_simple(self):
         # Given
         responses.add(responses.HEAD, self.config.indices[0][0], status=200,
@@ -197,6 +211,21 @@ class TestLegacyCanopyAuthManager(TestCase):
     def test_invalid_auth_args(self):
         with self.assertRaises(AuthFailedError):
             self.session.authenticate((None, None))
+
+    @responses.activate
+    def test_from_configuration(self):
+        # Given
+        responses.add(responses.GET, self.config.api_url, status=200,
+                      body=json.dumps(R_JSON_AUTH_RESP))
+        authenticator = LegacyCanopyAuthManager.from_configuration(self.config)
+        session = Session(authenticator, self.prefix)
+
+        # When
+        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+        # Then
+        self.assertEqual(self.session.user_info,
+                         UserInfo.from_json(R_JSON_AUTH_RESP))
 
     @responses.activate
     def test_simple(self):

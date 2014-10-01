@@ -35,6 +35,13 @@ class IAuthManager(with_metaclass(abc.ABCMeta)):
 
 
 class LegacyCanopyAuthManager(object):
+    @classmethod
+    def from_configuration(cls, configuration):
+        """ Create a LegacyCanopyAuthManager instance from an enstaller config
+        object.
+        """
+        return cls(configuration.api_url)
+
     def __init__(self, url):
         self.url = url
         self._auth = None
@@ -70,6 +77,13 @@ class LegacyCanopyAuthManager(object):
 
 
 class OldRepoAuthManager(object):
+    @classmethod
+    def from_configuration(cls, configuration):
+        """ Create a OldRepoAuthManager instance from an enstaller config
+        object.
+        """
+        return cls(configuration.indices)
+
     def __init__(self, index_urls):
         self.index_urls = index_urls
         self._auth = None

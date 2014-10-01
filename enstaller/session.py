@@ -4,6 +4,8 @@ import os.path
 
 from egginst.utils import ensure_dir
 
+from enstaller.auth.auth_managers import (LegacyCanopyAuthManager,
+                                          OldRepoAuthManager)
 from enstaller.vendor import requests
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
@@ -66,6 +68,25 @@ class Session(object):
         self._session.verify = verify
 
         self._session.mount("file://", LocalFileAdapter())
+
+    @classmethod
+    def from_configuration(cls, configuration, verify=True):
+        """ Create a new session from a configuration.
+
+        Parameters
+        ----------
+        configuration : Configuration
+            The configuration to use.
+        verify : Bool
+            Whether to verify SSL CA.
+        """
+        if configuration.use_webservice:
+            klass = LegacyCanopyAuthManager
+        else:
+            klass = OldRepoAuthManager
+        authenticator = klass.from_configuration(configuration)
+        return cls(authenticator, configuration.repository_cache,
+                   configuration.proxy_dict, verify=verify)
 
     def close(self):
         self._session.close()

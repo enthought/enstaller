@@ -589,14 +589,7 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     verify = not args.insecure
-    if config.use_webservice:
-        authenticator = LegacyCanopyAuthManager(config.api_url)
-    else:
-        authenticator = OldRepoAuthManager(config.indices)
-
-    with Session(authenticator, config.repository_cache,
-                 config.proxy_dict, verify=verify) as session:
-
+    with Session.from_configuration(config, verify=verify) as session:
         if dispatch_commands_without_enpkg(args, config, config_filename,
                                            prefixes, prefix, pat,
                                            session):
