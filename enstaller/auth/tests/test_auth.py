@@ -156,7 +156,7 @@ class TestOldReposAuthManager(TestCase):
         self.assertEqual(self.session.user_info, UserInfo(True))
 
     def test_connection_failure(self):
-        with patch.object(self.session._session, "head",
+        with patch.object(self.session._raw, "head",
                           side_effect=requests.exceptions.ConnectionError):
             with self.assertRaises(AuthFailedError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
@@ -241,7 +241,7 @@ class TestLegacyCanopyAuthManager(TestCase):
                          UserInfo.from_json(R_JSON_AUTH_RESP))
 
     def test_connection_failure(self):
-        with patch.object(self.session._session, "get",
+        with patch.object(self.session._raw, "get",
                           side_effect=requests.exceptions.ConnectionError):
             with self.assertRaises(AuthFailedError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))

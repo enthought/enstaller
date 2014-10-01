@@ -11,16 +11,16 @@ class TestSession(TestCase):
         # Given
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
-        old_adapters = session._session.adapters.copy()
+        old_adapters = session._raw.adapters.copy()
 
         # When
         with session.etag():
             pass
 
         # Then
-        self.assertFalse(isinstance(session._session.adapters["http://"],
+        self.assertFalse(isinstance(session._raw.adapters["http://"],
                                     CacheControlAdapter))
-        self.assertFalse(isinstance(session._session.adapters["https://"],
+        self.assertFalse(isinstance(session._raw.adapters["https://"],
                                     CacheControlAdapter))
 
     def test_from_configuration(self):
@@ -29,8 +29,8 @@ class TestSession(TestCase):
 
         # When/Then
         with Session.from_configuration(config) as session:
-            self.assertTrue(session._session.verify)
+            self.assertTrue(session._raw.verify)
 
         # When/Then
         with Session.from_configuration(config, verify=False) as session:
-            self.assertFalse(session._session.verify)
+            self.assertFalse(session._raw.verify)
