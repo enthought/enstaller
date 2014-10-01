@@ -7,11 +7,23 @@ The fundamental concepts in enstaller are repositories, solvers and installers.
 Repositories are containers of metadata, and may be used to query package
 information. Repositories may be created from remote locations (e.g. our
 packages on api.enthought.com), or local locations (e.g. eggs installed in
-sys.prefix)
+sys.prefix)::
+
+    # List the most recent version of each package in the repository
+    repository = Repository(...)
+    for package in repository.iter_most_recent_packages():
+        print package.name, package.version
 
 Solvers transform a request (e.g. 'install scipy') into a set of actions
 required to fullfill that request. It resolve dependencies and so on to keep
-the system consistent.
+the system consistent::
+
+    request = Request()
+    request.install(Requirement("numpy"))
+    request.install(Requirement("enable"))
+
+    solver = Solver(...)
+    print solver.resolve(request)
 
 An installer's responsibility is to transform a binary artefact (e.g. an egg
 file) into its installed form: it extract files, apply pre/post install
@@ -46,18 +58,15 @@ RepositoryPackageMetadata class::
         package = RepositoryPackageMetadata.from_egg(path)
         repository.add_package(package)
 
-To create a repository from our legacy repositories on api.e.com, there is a
-helper ``legacy_index_parser`` which generates ``RepositoryPackageMetadata``
-instances::
+To create a repository from our legacy repositories on api.e.com::
 
     # Create a configuration from an existing '~/.enstaller4rc'
     config = Configuration._from_legacy_locations()
-    index_fetcher = URLFetcher(config.repository_cache)
 
-    repository = Repository()
-    for index_url, store_location in config.indices:
-        for package in legacy_index_parser(fetcher, (index_url, store_location)):
-            repository.add_package(package)
+    session = Session.from_configuration(config)
+    session.authenticate(config.auth)
+
+    remote_repository = Repository._from_legacy_indices(session, config.indices)
 
 .. note:: the package metadata returned by repositories are not always consistent.
    For example, if you create a repository with _from_prefixes, the repository
@@ -96,12 +105,10 @@ main one is checked_content context manager::
     numpy = repository.find_sorted_packages("numpy")[-1]
 
     with checked_content("some_file.egg", numpy.md5) as target:
-        response = requests.get(numpy.source_url, auth=config.auth,
-                                stream=True)
-        response.raise_for_status()
+        response = session.fetch(numpy.source_url)
+
         for chunk in response.iter_content(1024):
             target.write(chunk)
 
 This will ensure checksums match (if given), and will not write stalled data
-(safe to abort). Note that the API allows seamless integration with 3rd-party
-libraries like requests.
+(safe to asynchronus cancellations).
