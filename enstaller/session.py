@@ -79,8 +79,10 @@ class Session(object):
     @contextlib.contextmanager
     def etag(self):
         self._etag_setup()
-        yield
-        self._etag_tear()
+        try:
+            yield
+        finally:
+            self._etag_tear()
 
     def _etag_setup(self):
         uri = os.path.join(self.cache_directory, "index_cache", "index.db")
