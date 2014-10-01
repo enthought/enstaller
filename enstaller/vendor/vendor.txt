@@ -4,5 +4,5 @@ pywin32-ctypes==0.0.1
 pyyaml==3.10
 sqlite_cache==0.0.1
 requests==2.3.0
-responses==0.2.2
+-e git+https://github.com/dropbox/responses@eb8a964b6e34c4fde52f7c4f2b81cea038802513#egg=responses
 jsonschema==2.4.0

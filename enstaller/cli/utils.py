@@ -13,7 +13,6 @@ from egginst.progress import (console_progress_manager_factory,
 
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import NoPackageFound, UnavailablePackage
-from enstaller.fetch import URLFetcher
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
@@ -160,12 +159,13 @@ def print_installed(repository, pat=None):
 def repository_factory(session, indices, quiet=False):
     repository = Repository()
     for url, store_location in indices:
-        resp = session.fetch(url)
-        for package in parse_index(_fetch_json_with_progress(resp,
-                                                             store_location,
-                                                             quiet),
-                                   store_location):
-            repository.add_package(package)
+        with session.etag():
+            resp = session.fetch(url)
+            for package in parse_index(_fetch_json_with_progress(resp,
+                                                                store_location,
+                                                                quiet),
+                                    store_location):
+                repository.add_package(package)
     return repository
 
 

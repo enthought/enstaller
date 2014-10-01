@@ -16,7 +16,7 @@ from egginst.utils import compute_md5, makedirs
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError
-from enstaller.fetch import _DownloadManager, URLFetcher
+from enstaller.fetch import _DownloadManager
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)

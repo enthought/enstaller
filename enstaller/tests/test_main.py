@@ -30,7 +30,6 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.fetch import URLFetcher
 from enstaller.main import (check_prefixes,
                             epd_install_confirm, env_option,
                             get_config_filename, get_package_path,
@@ -321,9 +320,8 @@ class TestMisc(unittest.TestCase):
         self._mock_index(entries)
 
         # When
-        repository = repository_factory(Session(DummyAuthenticator(),
-                                                self.tempdir),
-                                        config.indices)
+        with Session(DummyAuthenticator(), self.tempdir) as session:
+            repository = repository_factory(session, config.indices)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")

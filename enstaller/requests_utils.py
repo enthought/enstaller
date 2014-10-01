@@ -127,6 +127,12 @@ class DBCache(BaseCache):
         except sqlite3.Error as e:
             logger.warn("Could not create sqlite cache: %r", e)
             self._cache = _NullCache()
+        self.closed = False
+
+    def close(self):
+        if not self.closed:
+            self._cache.close()
+            self.closed = True
 
     def _encode_key(self, key):
         return base64.b64encode(key.encode("utf8")).decode("utf8")

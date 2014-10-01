@@ -31,7 +31,6 @@ else:
 
 from collections import namedtuple, Sequence, Sized
 from functools import wraps
-from enstaller.vendor.requests.adapters import HTTPAdapter
 from enstaller.vendor.requests.exceptions import ConnectionError
 try:
     from enstaller.vendor.requests.packages.urllib3.response import HTTPResponse
@@ -86,8 +85,9 @@ class RequestsMock(object):
     def add(self, method, url, body='', match_querystring=False,
             status=200, adding_headers=None, stream=False,
             content_type='text/plain'):
-        # ensure the url has a default path set
-        if url.count('/') == 2:
+
+        # ensure the url has a default path set if the url is a string
+        if self._is_string(url) and url.count('/') == 2:
             url = url.replace('?', '/?', 1) if match_querystring \
                 else url + '/'
 
@@ -106,6 +106,17 @@ class RequestsMock(object):
             'stream': stream,
         })
 
+    def add_callback(self, method, url, callback, match_querystring=False,
+                     content_type='text/plain'):
+
+        self._urls.append({
+            'url': url,
+            'method': method,
+            'callback': callback,
+            'content_type': content_type,
+            'match_querystring': match_querystring,
+        })
+
     @property
     def calls(self):
         return self._calls
@@ -122,25 +133,32 @@ class RequestsMock(object):
         return wrapped
 
     def _find_match(self, request):
-        url = request.url
-        url_without_qs = url.split('?', 1)[0]
-
         for match in self._urls:
             if request.method != match['method']:
                 continue
 
-            if match['match_querystring']:
-                if not self._has_url_match(match['url'], url):
-                    continue
-            else:
-                if match['url'] != url_without_qs:
-                    continue
+            if not self._has_url_match(match, request.url):
+                continue
 
             return match
 
         return None
 
-    def _has_url_match(self, url, other):
+    def _has_url_match(self, match, request_url):
+        url = match['url']
+
+        if self._is_string(url):
+            if match['match_querystring']:
+                return self._has_strict_url_match(url, request_url)
+            else:
+                url_without_qs = request_url.split('?', 1)[0]
+                return url == url_without_qs
+        elif isinstance(url, re._pattern_type) and url.match(request_url):
+            return True
+        else:
+            return False
+
+    def _has_strict_url_match(self, url, other):
         url_parsed = urlparse(url)
         other_parsed = urlparse(other)
 
@@ -151,7 +169,10 @@ class RequestsMock(object):
         other_qsl = sorted(parse_qsl(other_parsed.query))
         return url_qsl == other_qsl
 
-    def _on_request(self, request, **kwargs):
+    def _is_string(self, s):
+        return isinstance(s, (six.string_types, six.text_type))
+
+    def _on_request(self, session, request, **kwargs):
         match = self._find_match(request)
 
         # TODO(dcramer): find the correct class for this
@@ -165,20 +186,29 @@ class RequestsMock(object):
         headers = {
             'Content-Type': match['content_type'],
         }
-        if match['adding_headers']:
-            headers.update(match['adding_headers'])
+
+        if 'callback' in match:  # use callback
+            status, r_headers, body = match['callback'](request)
+            body = BufferIO(body.encode('utf-8'))
+            headers.update(r_headers)
+
+        elif 'body' in match:
+            if match['adding_headers']:
+                headers.update(match['adding_headers'])
+            status = match['status']
+            body = BufferIO(match['body'])
 
         response = HTTPResponse(
-            status=match['status'],
-            body=BufferIO(match['body']),
+            status=status,
+            body=body,
             headers=headers,
             preload_content=False,
         )
 
-        adapter = HTTPAdapter()
+        adapter = session.get_adapter(request.url)
 
         response = adapter.build_response(request, response)
-        if not match['stream']:
+        if not match.get('stream'):
             response.content  # NOQA
 
         self._calls.add(request, response)
@@ -187,7 +217,10 @@ class RequestsMock(object):
 
     def start(self):
         import mock
-        self._patcher = mock.patch('enstaller.vendor.requests.Session.send', self._on_request)
+
+        def unbound_on_send(session, requests, *a, **kwargs):
+            return self._on_request(session, requests, *a, **kwargs)
+        self._patcher = mock.patch('enstaller.vendor.requests.Session.send', unbound_on_send)
         self._patcher.start()
 
     def stop(self):

@@ -11,6 +11,8 @@ Internals:
 
   * Dependency resolution is now in enstaller.solver. The new Solver class only
     resolve dependencies (install/remove action, no fetch action anymore)
+  * Http handling has been consolidated in the Session class. Authentication is
+    now pluggable through the IAuthManager.
 
 2014-08-29   4.7.0:
 -------------------
