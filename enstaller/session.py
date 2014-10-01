@@ -4,6 +4,7 @@ import os.path
 
 from egginst.utils import ensure_dir
 
+from enstaller import __version__
 from enstaller.auth.auth_managers import (LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.vendor import requests
@@ -68,6 +69,10 @@ class Session(object):
         self._raw.verify = verify
 
         self._raw.mount("file://", LocalFileAdapter())
+
+        user_agent = "enstaller-{0} {1}".format(__version__,
+                                                self._raw.headers["user-agent"])
+        self._raw.headers["user-agent"] = user_agent
 
     @classmethod
     def from_configuration(cls, configuration, verify=True):
