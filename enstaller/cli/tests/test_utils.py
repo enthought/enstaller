@@ -16,6 +16,7 @@ from egginst.tests.common import DUMMY_EGG, mkdtemp
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
+from enstaller.plat import custom_plat
 from enstaller.repository import Repository
 from enstaller.session import Session
 from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
@@ -219,8 +220,9 @@ def mock_index(index_data):
             responses.add(responses.GET,
                           "https://api.enthought.com/accounts/user/info/",
                           body=json.dumps(R_JSON_AUTH_RESP))
+            url = "https://api.enthought.com/eggs/{0}/index.json"
             responses.add(responses.GET,
-                          "https://api.enthought.com/eggs/osx-64/index.json",
+                          url.format(custom_plat),
                           body=json.dumps(index_data))
             return f(*a, **kw)
         return wrapped
