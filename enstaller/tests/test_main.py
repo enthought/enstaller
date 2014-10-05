@@ -480,14 +480,16 @@ class TestInstallRequirement(unittest.TestCase):
                 install_req(enpkg, config, "nose", FakeOptions())
 
     def test_simple_install_pypi(self):
+        self.maxDiff = None
+
         # Given
         entry = dummy_repository_package_factory("nose", "1.3.0", 1)
         entry.product = "pypi"
         remote_entries = [entry]
         r_message = textwrap.dedent("""\
-        The following packages are coming from the PyPi repo:
+        The following packages/requirements are coming from the PyPi repo:
 
-        'nose-1.3.0-1'
+        nose
 
         The PyPi repository which contains >10,000 untested ("as is")
         packages. Some packages are licensed under GPL or other licenses
@@ -498,7 +500,7 @@ class TestInstallRequirement(unittest.TestCase):
         (https://support.enthought.com/entries/23389761) may help you with
         installing it.
 
-        Are you sure that you wish to proceed?  (y/[n]) 
+        Are you sure that you wish to proceed?  (y/[n])
         """)
 
         # When

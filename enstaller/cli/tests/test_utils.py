@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import json
 import re
 import shutil
 import sys
@@ -22,10 +23,13 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
                                     mocked_session_factory,
-                                    mock_print)
+                                    mock_print, mock_raw_input,
+                                    R_JSON_AUTH_RESP)
+from enstaller.vendor import responses
 
 from ..utils import (disp_store_info, install_req, install_time_string,
-                     name_egg, print_installed, updates_check)
+                     name_egg, print_installed, repository_factory,
+                     updates_check)
 
 if sys.version_info < (2, 7):
     # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
@@ -208,6 +212,21 @@ class TestUpdatesCheck(TestCase):
         self.assertEqual(epd_update0["update"].version, "7.3")
 
 
+def mock_index(index_data):
+    def decorator(f):
+        @responses.activate
+        def wrapped(*a, **kw):
+            responses.add(responses.GET,
+                          "https://api.enthought.com/accounts/user/info/",
+                          body=json.dumps(R_JSON_AUTH_RESP))
+            responses.add(responses.GET,
+                          "https://api.enthought.com/eggs/osx-64/index.json",
+                          body=json.dumps(index_data))
+            return f(*a, **kw)
+        return wrapped
+    return decorator
+
+
 class TestInstallReq(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
@@ -308,3 +327,54 @@ class TestInstallReq(TestCase):
                 with self.assertRaises(SystemExit):
                     install_req(enpkg, config, "scipy", FakeOptions())
                 self.assertMultiLineEqual(m.value, r_output)
+
+    @mock_index({
+        "rednose-0.2.3-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "rednose",
+            "packages": [],
+            "product": "pypi",
+            "python": "2.7",
+            "size": 9227,
+            "type": "egg",
+            "version": "0.2.3"
+    }})
+    def test_install_pypi_requirement(self):
+        self.maxDiff = None
+
+        # Given
+        r_message = textwrap.dedent("""\
+        The following packages/requirements are coming from the PyPi repo:
+
+        rednose
+
+        The PyPi repository which contains >10,000 untested ("as is")
+        packages. Some packages are licensed under GPL or other licenses
+        which are prohibited for some users. Dependencies may not be
+        provided. If you need an updated version or if the installation
+        fails due to unmet dependencies, the Knowledge Base article
+        Installing external packages into Canopy Python
+        (https://support.enthought.com/entries/23389761) may help you with
+        installing it.
+
+        Are you sure that you wish to proceed?  (y/[n])
+        """)
+
+        config = Configuration()
+        session = Session.from_configuration(config)
+        session.authenticate(("nono", "le petit robot"))
+        repository = repository_factory(session, config.indices)
+
+        enpkg = Enpkg(repository, session, [self.prefix])
+        enpkg.execute = mock.Mock()
+
+        # When
+        with mock_print() as mocked_print:
+            with mock_raw_input("yes"):
+                install_req(enpkg, config, "rednose", FakeOptions())
+
+        # Then
+        self.assertMultiLineEqual(mocked_print.value, r_message)
