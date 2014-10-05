@@ -23,6 +23,10 @@ def query_platform(session, indices, requirement, platform):
         for r in resolve._dependencies_from_egg(parent):
             print("{0}{1}".format(level * " ", r))
             egg = resolve._latest_egg(r)
+            if egg is None:
+                msg = "Error: Could not find egg for requirement {0!r}"
+                print(msg.format(r))
+                sys.exit(-1)
             print_level(egg, level)
 
     root = resolve._latest_egg(requirement)
