@@ -1,6 +1,8 @@
 import json
 import textwrap
 
+import mock
+
 from egginst._compat import TestCase
 
 from enstaller.config import Configuration
@@ -48,6 +50,12 @@ class TestListDependencies(TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
+
+def _mock_list_dependencies_configuration(f):
+    return mock.patch("enstaller.main.Configuration._from_legacy_locations",
+                      return_value=Configuration())(f)
+
+
 class TestMainListDependencies(TestCase):
     def _mock_auth(self):
         responses.add(responses.GET,
@@ -56,7 +64,8 @@ class TestMainListDependencies(TestCase):
                       content_type='application/json')
 
     @responses.activate
-    def test_another_platform(self):
+    @_mock_list_dependencies_configuration
+    def test_another_platform(self, config):
         # Given
         self._mock_auth()
         entries = [
@@ -87,7 +96,9 @@ class TestMainListDependencies(TestCase):
         self.assertMultiLineEqual(m.value, r_output)
 
     @responses.activate
-    def test_simple(self):
+    @mock.patch("enstaller.main.Configuration._from_legacy_locations",
+                return_value=Configuration())
+    def test_simple(self, config):
         # Given
         self._mock_auth()
         entries = [
