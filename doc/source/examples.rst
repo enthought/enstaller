@@ -98,7 +98,7 @@ The dependency solver has a simple API to resolve dependencies::
     # represents the set of packages available
     remote_repository = Repository(...)
     # represents the set of packages currently installed
-    remote_repository = Repository(...)
+    installed_repository = Repository(...)
 
     solver = Solver(remote_repository, installed_repository)
 
