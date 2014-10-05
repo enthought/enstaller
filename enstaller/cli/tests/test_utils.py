@@ -25,7 +25,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     dummy_repository_package_factory,
                                     mocked_session_factory,
                                     mock_print, mock_raw_input,
-                                    R_JSON_AUTH_RESP)
+                                    PY_VER, R_JSON_AUTH_RESP)
 from enstaller.vendor import responses
 
 from ..utils import (disp_store_info, install_req, install_time_string,
@@ -339,7 +339,7 @@ class TestInstallReq(TestCase):
             "name": "rednose",
             "packages": [],
             "product": "pypi",
-            "python": "2.7",
+            "python": PY_VER,
             "size": 9227,
             "type": "egg",
             "version": "0.2.3"
