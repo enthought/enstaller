@@ -44,7 +44,7 @@ class TestSession(TestCase):
         url = "http://acme.com"
         responses.add(responses.GET, url)
         config = Configuration()
-        r_user_agent = "enstaller-{0}".format(enstaller.__version__)
+        r_user_agent = "enstaller/{0}".format(enstaller.__version__)
 
         # When/Then
         with Session.from_configuration(config) as session:

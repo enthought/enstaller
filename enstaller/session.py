@@ -70,7 +70,7 @@ class Session(object):
 
         self._raw.mount("file://", LocalFileAdapter())
 
-        user_agent = "enstaller-{0} {1}".format(__version__,
+        user_agent = "enstaller/{0} {1}".format(__version__,
                                                 self._raw.headers["user-agent"])
         self._raw.headers["user-agent"] = user_agent
 
