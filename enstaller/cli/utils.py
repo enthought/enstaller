@@ -132,9 +132,9 @@ def install_req(enpkg, config, req, opts):
         pypi_requirements = _requirement_from_pypi(request,
                                                    enpkg._remote_repository)
         if len(pypi_requirements) > 0:
-            pypi_asked = True
             package_list = sorted(str(p) for p in pypi_requirements)
             _ask_pypi_confirmation("\n".join(package_list))
+            pypi_asked = True
 
         actions = solver.resolve(request)
         installed = (egg for opcode, egg in actions if opcode == "install")
