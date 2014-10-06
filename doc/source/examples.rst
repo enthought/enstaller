@@ -39,7 +39,7 @@ the package metadata origin.
 Connecting and authenticating
 =============================
 
-Http connections are handled through ``Session` objects. To start a
+Http connections are handled through ``Session`` objects. To start a
 session, one may simply do::
 
     from enstaller.configuration import Configuration
@@ -71,22 +71,37 @@ if an HTTP error occurs::
 Creating remote repositories
 ============================
 
-There is a tentative API, still marked as private, to create repositories
-from our index.json formats::
+To create repositories from our index.json formats, one can do as follows::
 
     config = Configuration._from_legacy_locations()
 
     session = Session.from_configuration(config)
     session.authenticate(config.auth)
 
-    remote_repository = Repository._from_legacy_indices(session, config.indices)
+    def repository_factory(session, indices):
+        repository = Repository()
+        for url, store_location in indices:
+            resp = session.fetch(url)
+            data = resp.json()
+            for package in parse_index(data, store_location):
+                repository.add_package(package)
+        return repository
+
+    remote_repository = repository_factory(session, config.indices)
 
     # Same, with etag-based caching:
     with session.etag():
-        remote_repository = Repository._from_legacy_indices(session,
-                                                            config.indices)
+        remote_repository = repository_factory(session, config.indices)
 
-.. note:: this works for both use_webservice enabled and disabled.
+Some API similar to repository_factory will appear at some point, once brood
+integration is implemented.
+
+.. note:: this works for both use_webservice enabled and disabled:
+
+        * when enabled, config.indices returns a one item-list of (index,
+          store) pair corresponding to the canopy-style index, whereas
+        * when disabled, config.indices returns a list of pairs (index, store),
+          one pair per entry in IndexedRepos.
 
 Solving dependencies
 ====================
@@ -107,7 +122,7 @@ The dependency solver has a simple API to resolve dependencies::
     request.install(Requirement.from_anything("ipython"))
 
     # actions are (opcode, egg) pairs
-    # XXX: this is likely to change
+    # WARNING: this is likely to change
     actions = solver.resolve(request)
 
 .. note:: actions returned by the solver are only of the install/remove

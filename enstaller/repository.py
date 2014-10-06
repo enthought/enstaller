@@ -301,21 +301,6 @@ class Repository(object):
         repository._populate_from_prefixes(prefixes)
         return repository
 
-    @classmethod
-    def _from_legacy_indices(cls, session, indices, python_version=None,
-                             store_info=""):
-        # XXX: fix circular import
-        from enstaller.legacy_stores import parse_index
-        python_version = python_version or PY_VER
-        repository = cls()
-
-        for url, store_location in indices:
-            resp = session.fetch(url)
-            data = resp.json()
-            for package in parse_index(data, store_location, python_version):
-                repository.add_package(package)
-        return repository
-
     def __init__(self, store_info=""):
         self._name_to_packages = collections.defaultdict(list)
 
