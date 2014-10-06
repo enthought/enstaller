@@ -66,7 +66,18 @@ To create a repository from our legacy repositories on api.e.com::
     session = Session.from_configuration(config)
     session.authenticate(config.auth)
 
-    remote_repository = Repository._from_legacy_indices(session, config.indices)
+    def repository_factory(session, indices):
+        repository = Repository()
+        for url, store_location in indices:
+            resp = session.fetch(url)
+            data = resp.json()
+            for package in parse_index(data, store_location):
+                repository.add_package(package)
+        return repository
+
+    # Same, with etag-based caching:
+    with session.etag():
+        remote_repository = repository_factory(session, config.indices)
 
 .. note:: the package metadata returned by repositories are not always consistent.
    For example, if you create a repository with _from_prefixes, the repository
