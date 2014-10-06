@@ -6,6 +6,11 @@ Main highlights:
   * Added support for python 3 (>= 3.3) and pypy
   * Add -k/--insecure option to ignore CA certification checks.
   * Add a new YAML-based configuration (not enabled yet).
+  * enstaller now provides a proper user-agent when accessing a remote server
+
+Bug fixes:
+
+  * pypi confirmation is asked before resolving dependencies (#323)
 
 Internals:
 
