@@ -60,6 +60,18 @@ def _notify_unavailable_package(config, requirement, session):
     print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
 
 
+def _requirement_from_pypi(request, repository):
+    are_pypi = []
+    for job in request.jobs:
+        if job.kind in ("install", "update", "upgrade"):
+            candidates = repository.find_packages(job.requirement.name)
+            if len(candidates) > 0 \
+                    and any(candidate.product == "pypi"
+                            for candidate in candidates):
+                are_pypi.append(job.requirement)
+    return are_pypi
+
+
 def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
@@ -83,36 +95,47 @@ def install_req(enpkg, config, req, opts):
                     ret.append(package)
         return ret
 
-    def _ask_pypi_confirmation(actions):
+    def _ask_pypi_confirmation(package_list_string):
+        msg = textwrap.dedent("""\
+        The following packages/requirements are coming from the PyPi repo:
+
+        {0}
+
+        The PyPi repository which contains >10,000 untested ("as is")
+        packages. Some packages are licensed under GPL or other licenses
+        which are prohibited for some users. Dependencies may not be
+        provided. If you need an updated version or if the installation
+        fails due to unmet dependencies, the Knowledge Base article
+        Installing external packages into Canopy Python
+        (https://support.enthought.com/entries/23389761) may help you with
+        installing it.
+        """.format(package_list_string))
+        print(msg)
+
+        msg = "Are you sure that you wish to proceed?  (y/[n])"
+        if not prompt_yes_no(msg, opts.yes):
+            sys.exit(0)
+
+    def _ask_pypi_confirmation_from_actions(actions):
         unsupported_packages = _get_unsupported_packages(actions)
         if len(unsupported_packages) > 0:
             package_list = sorted("'{0}-{1}'".format(p.name, p.full_version)
                                   for p in unsupported_packages)
             package_list_string = "\n".join(package_list)
-
-            msg = textwrap.dedent("""\
-            The following packages are coming from the PyPi repo:
-
-            {0}
-
-            The PyPi repository which contains >10,000 untested ("as is")
-            packages. Some packages are licensed under GPL or other licenses
-            which are prohibited for some users. Dependencies may not be
-            provided. If you need an updated version or if the installation
-            fails due to unmet dependencies, the Knowledge Base article
-            Installing external packages into Canopy Python
-            (https://support.enthought.com/entries/23389761) may help you with
-            installing it.
-            """.format(package_list_string))
-            print(msg)
-
-            msg = "Are you sure that you wish to proceed?  (y/[n]) "
-            if not prompt_yes_no(msg, opts.yes):
-                sys.exit(0)
+            _ask_pypi_confirmation(package_list_string)
 
     try:
         mode = 'root' if opts.no_deps else 'recur'
+        pypi_asked = False
         solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
+
+        pypi_requirements = _requirement_from_pypi(request,
+                                                   enpkg._remote_repository)
+        if len(pypi_requirements) > 0:
+            package_list = sorted(str(p) for p in pypi_requirements)
+            _ask_pypi_confirmation("\n".join(package_list))
+            pypi_asked = True
+
         actions = solver.resolve(request)
         installed = (egg for opcode, egg in actions if opcode == "install")
         actions = [("fetch", egg) for egg in installed] + actions
@@ -120,7 +143,8 @@ def install_req(enpkg, config, req, opts):
         if _is_any_package_unavailable(enpkg._remote_repository, actions):
             _notify_unavailable_package(config, req, enpkg._session)
             _done(FAILURE)
-        _ask_pypi_confirmation(actions)
+        if not pypi_asked:
+            _ask_pypi_confirmation_from_actions(actions)
         enpkg.execute(actions)
         if len(actions) == 0:
             print("No update necessary, %r is up-to-date." % req.name)
