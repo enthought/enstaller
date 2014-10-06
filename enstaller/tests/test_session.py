@@ -1,8 +1,11 @@
+import enstaller
+
 from egginst._compat import TestCase
 
 from enstaller.config import Configuration
 from enstaller.session import Session
 from enstaller.tests.common import mocked_session_factory
+from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
 
@@ -11,16 +14,16 @@ class TestSession(TestCase):
         # Given
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
-        old_adapters = session._session.adapters.copy()
+        old_adapters = session._raw.adapters.copy()
 
         # When
         with session.etag():
             pass
 
         # Then
-        self.assertFalse(isinstance(session._session.adapters["http://"],
+        self.assertFalse(isinstance(session._raw.adapters["http://"],
                                     CacheControlAdapter))
-        self.assertFalse(isinstance(session._session.adapters["https://"],
+        self.assertFalse(isinstance(session._raw.adapters["https://"],
                                     CacheControlAdapter))
 
     def test_from_configuration(self):
@@ -29,8 +32,22 @@ class TestSession(TestCase):
 
         # When/Then
         with Session.from_configuration(config) as session:
-            self.assertTrue(session._session.verify)
+            self.assertTrue(session._raw.verify)
 
         # When/Then
         with Session.from_configuration(config, verify=False) as session:
-            self.assertFalse(session._session.verify)
+            self.assertFalse(session._raw.verify)
+
+    @responses.activate
+    def test_agent(self):
+        # Given
+        url = "http://acme.com"
+        responses.add(responses.GET, url)
+        config = Configuration()
+        r_user_agent = "enstaller/{0}".format(enstaller.__version__)
+
+        # When/Then
+        with Session.from_configuration(config) as session:
+            resp = session._raw_get(url)
+            self.assertTrue(resp.request.headers["user-agent"]. \
+                            startswith(r_user_agent))

@@ -4,6 +4,7 @@ import os.path
 
 from egginst.utils import ensure_dir
 
+from enstaller import __version__
 from enstaller.auth.auth_managers import (LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.vendor import requests
@@ -62,12 +63,16 @@ class Session(object):
         self.cache_directory = cache_directory
 
         self._authenticator = authenticator
-        self._session = _PatchedRawSession()
+        self._raw = _PatchedRawSession()
         if proxies is not None:
-            self._session.proxies = proxies
-        self._session.verify = verify
+            self._raw.proxies = proxies
+        self._raw.verify = verify
 
-        self._session.mount("file://", LocalFileAdapter())
+        self._raw.mount("file://", LocalFileAdapter())
+
+        user_agent = "enstaller/{0} {1}".format(__version__,
+                                                self._raw.headers["user-agent"])
+        self._raw.headers["user-agent"] = user_agent
 
     @classmethod
     def from_configuration(cls, configuration, verify=True):
@@ -89,7 +94,7 @@ class Session(object):
                    configuration.proxy_dict, verify=verify)
 
     def close(self):
-        self._session.close()
+        self._raw.close()
 
     def __enter__(self):
         return self
@@ -112,12 +117,12 @@ class Session(object):
 
         adapter = CacheControlAdapter(
             cache, controller_class=QueryPathOnlyCacheController)
-        self._session.mount("http://", adapter)
-        self._session.mount("https://", adapter)
+        self._raw.mount("http://", adapter)
+        self._raw.mount("https://", adapter)
 
     def _etag_tear(self):
-        self._session.umount("https://")
-        adapter = self._session.umount("http://")
+        self._raw.umount("https://")
+        adapter = self._raw.umount("http://")
         # XXX: This close is ugly, but I am not sure how one can link a cache
         # controller to a http adapter in cachecontrol. See issue #42 on
         # ionrock/cachecontrol @ github.
@@ -129,24 +134,24 @@ class Session(object):
 
     def authenticate(self, auth):
         self._authenticator.authenticate(self, auth)
-        self._session.auth = auth
+        self._raw.auth = auth
 
     def fetch(self, url):
-        resp = self._session.get(url, stream=True)
+        resp = self._raw.get(url, stream=True)
         resp.raise_for_status()
         return resp
 
     def get(self, url):
-        return self._session.get(url)
+        return self._raw.get(url)
 
     def head(self, url):
-        return self._session.head(url)
+        return self._raw.head(url)
 
     def _raw_get(self, url, auth=None):
-        return self._session.get(url, auth=auth)
+        return self._raw.get(url, auth=auth)
 
     def _raw_head(self, url, auth=None):
-        return self._session.head(url, auth=auth)
+        return self._raw.head(url, auth=auth)
 
     def _raw_post(self, url, auth=None):
-        return self._session.post(url, auth=auth)
+        return self._raw.post(url, auth=auth)
