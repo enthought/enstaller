@@ -15,6 +15,7 @@ setuptools. In particular, it can be used to install eggs directly in our
 masters.
 """
 import contextlib
+import hashlib
 import logging
 import optparse
 import os.path
@@ -27,7 +28,7 @@ from distutils import log
 
 
 DEFAULT_VERSION = "4.7.5"
-DEFAULT_URL = "https://s3.amazonaws.com/archive.enthought.com/enstaller/"
+DEFAULT_URL = "https://s3.amazonaws.com/enstaller-assets/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
 VERSION_RE = re.compile(r'''
@@ -35,6 +36,10 @@ VERSION_RE = re.compile(r'''
     (?P<version>\d+\.\d+)          # minimum 'N.N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
     ''', re.VERBOSE)
+
+VERSION_TO_SHA256 = {
+    ("4.7.5", "2.7"): "9d027c5998a30510ca0731b41e6c71fbbc99bf7f6adac9a812d04497c7816961",
+}
 
 
 ###################################
@@ -174,6 +179,17 @@ def get_best_downloader():
 ##############################################
 
 
+def sha256(path):
+    with open(path, "rb") as fp:
+        m = hashlib.sha256()
+        while True:
+            chunk = fp.read(2 ** 16)
+            if not chunk:
+                break
+            m.update(chunk)
+    return m.hexdigest()
+
+
 def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
                        to_dir=os.curdir, delay=15,
                        downloader_factory=get_best_downloader):
@@ -184,6 +200,12 @@ def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
     version : str
         The version to fetch.
     """
+    if not (version, PYTHON_VERSION) in VERSION_TO_SHA256:
+        msg = "Version {0!r} for {1!r} is not known, aborting...". \
+              format(version, PYTHON_VERSION)
+        raise ValueError(msg)
+    expected_sha256 = VERSION_TO_SHA256[(version, PYTHON_VERSION)]
+
     # making sure we use the absolute path
     to_dir = os.path.abspath(to_dir)
     egg_name = "enstaller-%s-py%s.egg" % (version, PYTHON_VERSION)
@@ -193,6 +215,9 @@ def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
         log.warn("Downloading %s", url)
         downloader = downloader_factory()
         downloader(url, saveto)
+        if not sha256(saveto) == expected_sha256:
+            os.unlink(saveto)
+            raise ValueError("Checksum mismatch, aborting...")
     return os.path.realpath(saveto)
 
 
