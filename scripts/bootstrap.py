@@ -1,7 +1,6 @@
-"""
-Simple script to bootstrap enstaller into an existing python.
+"""Simple script to bootstrap enstaller into an existing python.
 
-Usage::
+Example::
 
     # Fetch the latest released enstaller
     python bootstrap.py
@@ -238,7 +237,8 @@ def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
 def main(argv=None):
     argv = argv or sys.argv[1:]
 
-    p = optparse.OptionParser()
+    p = optparse.OptionParser(description="Simple script to bootstrap " \
+                                          "enstaller into a master.")
 
     (options, args) = p.parse_args(argv)
     if len(args) == 1:
