@@ -243,7 +243,7 @@ def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
         main_version = d["version"]
         major, minor = [int(i) for i in main_version.split(".")]
 
-        if (major, minor) <= (4, 8) and hasattr(egginst.main, "object_code"):
+        if (major, minor) < (4, 8) and hasattr(egginst.main, "object_code"):
             # HACK: avoiding error warning for old versions of enstaller when
             # trying to replace PLACEHOLDER hack in tests data. enstaller does
             # not have C code, so we don't need any replacement
