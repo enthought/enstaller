@@ -24,7 +24,7 @@ DEFAULT_URL = "https://s3.amazonaws.com/archive.enthought.com/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
 ###################################
-# Copied verbatime from ez_setup.py
+# Copied verbatim from ez_setup.py
 ###################################
 
 
