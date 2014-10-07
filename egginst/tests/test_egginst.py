@@ -32,6 +32,16 @@ def _create_egg_with_symlink(filename, name):
         fp.writestr("EGG-INFO/usr/include/foo.h", "/* header */")
         zip_write_symlink(fp, "EGG-INFO/usr/HEADERS", "include")
 
+
+def _create_dummy_enstaller_egg(prefix):
+    path = os.path.join(prefix, "enstaller-4.8.0-1.egg")
+    with ZipFile(path, "w") as fp:
+        # We write a dummy file as empty zip files are not properly handled by
+        # zipfile in python 2.6
+        fp.writestr("EGG-INFO/dummy", "")
+    return path
+
+
 class TestEggInst(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()
@@ -71,6 +81,19 @@ class TestEggInst(unittest.TestCase):
         # When
         installer = EggInst(path, prefix=self.prefix)
         installer.install()
+
+    def test_enstaller_no_placeholder_hack(self):
+        # Given
+        path = _create_dummy_enstaller_egg(self.base_dir)
+
+        # When
+        with mock.patch("egginst.main.object_code.apply_placeholder_hack") \
+                as m:
+            installer = EggInst(path, prefix=self.prefix)
+            installer.install()
+
+        # Then
+        self.assertFalse(m.called)
 
 
 class TestEggInstMain(unittest.TestCase):
