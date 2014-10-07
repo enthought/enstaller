@@ -1,8 +1,13 @@
 import os
 import subprocess
+import textwrap
+import zipfile
 
 from setuptools import setup
+
 from distutils.util import convert_path
+
+from setuptools.command.bdist_egg import bdist_egg as old_bdist_egg
 
 MAJOR = 4
 MINOR = 8
@@ -71,6 +76,32 @@ if not is_released:
                                  full_version=fullversion,
                                  git_revision=git_rev,
                                  is_released=IS_RELEASED))
+
+class bdist_egg(old_bdist_egg):
+    def _write_spec_depend(self, spec_depend):
+        zp = zipfile.ZipFile(self.egg_output, "a",
+                             compression=zipfile.ZIP_DEFLATED)
+        try:
+            zp.writestr("EGG-INFO/spec/depend", spec_depend)
+        finally:
+            zp.close()
+
+    def run(self):
+        old_bdist_egg.run(self)
+        spec_depend = textwrap.dedent("""\
+            metadata_version = '1.1'
+            name = 'enstaller'
+            version = '{0}'
+            build = 1
+
+            arch = None
+            platform = None
+            osdist = None
+            python = None
+            packages = []
+        """.format(VERSION))
+        self._write_spec_depend(spec_depend)
+
 
 write_version_py()
 
@@ -168,5 +199,6 @@ setup(
         "Topic :: System :: Systems Administration",
     ],
     test_suite="nose.collector",
+    cmdclass={"bdist_egg": bdist_egg},
     **kwds
 )
