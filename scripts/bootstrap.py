@@ -212,15 +212,20 @@ def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
         main_version = d["version"]
         major, minor = [int(i) for i in main_version.split(".")]
 
-        if (major, minor) <= (4, 8):
+        if (major, minor) <= (4, 8) and hasattr(egginst.main, "object_code"):
             # HACK: avoiding error warning for old versions of enstaller when
             # trying to replace PLACEHOLDER hack in tests data. enstaller does
             # not have C code, so we don't need any replacement
             egginst.main.object_code.apply_placeholder_hack = lambda *a, **kw: None
 
+    # HACK: we patch argv to handle old enstallers whose main functions did not
+    # take an argument
     with disable_egginst_logging():
-        egginst.main.main(["--remove", egg])
-    egginst.main.main([egg])
+        sys.argv[1:] = ["--remove", egg]
+        egginst.main.main()
+
+    sys.argv[1:] = [egg]
+    egginst.main.main()
 
 
 def main(argv=None):
