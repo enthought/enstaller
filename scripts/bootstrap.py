@@ -13,6 +13,7 @@ import logging
 import optparse
 import os.path
 import platform
+import re
 import subprocess
 import sys
 
@@ -22,6 +23,13 @@ from distutils import log
 DEFAULT_VERSION = "4.7.5"
 DEFAULT_URL = "https://s3.amazonaws.com/archive.enthought.com/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
+
+VERSION_RE = re.compile(r'''
+    ^
+    (?P<version>\d+\.\d+)          # minimum 'N.N'
+    (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
+    ''', re.VERBOSE)
+
 
 ###################################
 # Copied verbatim from ez_setup.py
@@ -198,11 +206,17 @@ def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
     sys.path.insert(0, egg)
     import egginst.main
 
-    if version in ("4.7.5",):
-        # HACK: avoiding error warning for old versions of enstaller when
-        # trying to replace PLACEHOLDER hack in tests data. enstaller does
-        # not have C code, so we don't need any replacement
-        egginst.main.object_code.apply_placeholder_hack = lambda *a, **kw: None
+    m = VERSION_RE.match(version)
+    if m is not None:
+        d = m.groupdict()
+        main_version = d["version"]
+        major, minor = [int(i) for i in main_version.split(".")]
+
+        if (major, minor) <= (4, 8):
+            # HACK: avoiding error warning for old versions of enstaller when
+            # trying to replace PLACEHOLDER hack in tests data. enstaller does
+            # not have C code, so we don't need any replacement
+            egginst.main.object_code.apply_placeholder_hack = lambda *a, **kw: None
 
     with disable_egginst_logging():
         egginst.main.main(["--remove", egg])
