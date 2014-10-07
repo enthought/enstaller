@@ -9,7 +9,6 @@ Configuration
 .. autoclass:: Configuration
     :members:
 .. autofunction:: write_default_config
-.. autofunction:: authenticate
 
 Repository
 ==========

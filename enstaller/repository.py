@@ -12,7 +12,7 @@ from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir
-from enstaller.utils import comparable_version, compute_md5
+from enstaller.utils import comparable_version, compute_md5, PY_VER
 
 
 class PackageVersionInfo(object):
