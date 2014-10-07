@@ -64,7 +64,7 @@ def download_file_powershell(url, target):
     cmd = [
         'powershell',
         '-Command',
-        "(new-object System.Net.WebClient).DownloadFile(%(url)r, %(target)r)"
+        "(new-object System.Net.WebClient).DownloadFile(%r, %r)"
         % (url, target),
     ]
     _clean_check(cmd, target)
