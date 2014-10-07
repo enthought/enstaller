@@ -1,0 +1,280 @@
+"""Simple script to bootstrap enstaller into an existing python.
+
+Example::
+
+    # Fetch the latest released enstaller
+    python bootstrap.py
+
+one can also force a specific version of enstaller from a local egg built
+through bdist_egg::
+
+    python bootstrap.py egg_path
+
+It only assumes python >= 2.6 or python >= 3.3, nothing else, not even
+setuptools. In particular, it can be used to install eggs directly in our
+masters.
+"""
+import contextlib
+import hashlib
+import logging
+import optparse
+import os.path
+import platform
+import re
+import subprocess
+import sys
+
+from distutils import log
+
+
+DEFAULT_VERSION = "4.7.5"
+DEFAULT_URL = "https://s3.amazonaws.com/enstaller-assets/enstaller/"
+PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
+
+VERSION_RE = re.compile(r'''
+    ^
+    (?P<version>\d+\.\d+)          # minimum 'N.N'
+    (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
+    ''', re.VERBOSE)
+
+VERSION_TO_SHA256 = {
+    ("4.7.5", "2.7"): "9d027c5998a30510ca0731b41e6c71fbbc99bf7f6adac9a812d04497c7816961",
+}
+
+
+###################################
+# Copied verbatim from ez_setup.py
+###################################
+
+
+def _clean_check(cmd, target):
+    """
+    Run the command to download target. If the command fails, clean up before
+    re-raising the error.
+    """
+    try:
+        subprocess.check_call(cmd)
+    except subprocess.CalledProcessError:
+        if os.access(target, os.F_OK):
+            os.unlink(target)
+        raise
+
+
+def download_file_powershell(url, target):
+    """
+    Download the file at url to target using Powershell (which will validate
+    trust). Raise an exception if the command cannot complete.
+    """
+    target = os.path.abspath(target)
+    cmd = [
+        'powershell',
+        '-Command',
+        "(new-object System.Net.WebClient).DownloadFile(%r, %r)"
+        % (url, target),
+    ]
+    _clean_check(cmd, target)
+
+
+def has_powershell():
+    if platform.system() != 'Windows':
+        return False
+    cmd = ['powershell', '-Command', 'echo test']
+    devnull = open(os.path.devnull, 'wb')
+    try:
+        try:
+            subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
+        except:
+            return False
+    finally:
+        devnull.close()
+    return True
+
+
+download_file_powershell.viable = has_powershell
+
+
+def download_file_curl(url, target):
+    cmd = ['curl', url, '--silent', '--output', target]
+    _clean_check(cmd, target)
+
+
+def has_curl():
+    cmd = ['curl', '--version']
+    devnull = open(os.path.devnull, 'wb')
+    try:
+        try:
+            subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
+        except:
+            return False
+    finally:
+        devnull.close()
+    return True
+
+
+download_file_curl.viable = has_curl
+
+
+def download_file_wget(url, target):
+    cmd = ['wget', url, '--quiet', '--output-document', target]
+    _clean_check(cmd, target)
+
+
+def has_wget():
+    cmd = ['wget', '--version']
+    devnull = open(os.path.devnull, 'wb')
+    try:
+        try:
+            subprocess.check_call(cmd, stdout=devnull, stderr=devnull)
+        except:
+            return False
+    finally:
+        devnull.close()
+    return True
+
+
+download_file_wget.viable = has_wget
+
+
+def download_file_insecure(url, target):
+    """
+    Use Python to download the file, even though it cannot authenticate the
+    connection.
+    """
+    try:
+        from urllib.request import urlopen
+    except ImportError:
+        from urllib2 import urlopen
+    src = dst = None
+    try:
+        src = urlopen(url)
+        # Read/write all in one block, so we don't create a corrupt file
+        # if the download is interrupted.
+        data = src.read()
+        dst = open(target, "wb")
+        dst.write(data)
+    finally:
+        if src:
+            src.close()
+        if dst:
+            dst.close()
+
+
+download_file_insecure.viable = lambda: True
+
+
+def get_best_downloader():
+    downloaders = [
+        download_file_powershell,
+        download_file_curl,
+        download_file_wget,
+        download_file_insecure,
+    ]
+
+    for dl in downloaders:
+        if dl.viable():
+            return dl
+
+##############################################
+# End of code copied verbatim from ez_setup.py
+##############################################
+
+
+def sha256(path):
+    with open(path, "rb") as fp:
+        m = hashlib.sha256()
+        while True:
+            chunk = fp.read(2 ** 16)
+            if not chunk:
+                break
+            m.update(chunk)
+    return m.hexdigest()
+
+
+def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
+                       to_dir=os.curdir, delay=15,
+                       downloader_factory=get_best_downloader):
+    """Download enstaller egg from a specified location and return its filename
+
+    Parameters
+    ----------
+    version : str
+        The version to fetch.
+    """
+    if not (version, PYTHON_VERSION) in VERSION_TO_SHA256:
+        msg = "Version {0!r} for {1!r} is not known, aborting...". \
+              format(version, PYTHON_VERSION)
+        raise ValueError(msg)
+    expected_sha256 = VERSION_TO_SHA256[(version, PYTHON_VERSION)]
+
+    # making sure we use the absolute path
+    to_dir = os.path.abspath(to_dir)
+    egg_name = "enstaller-%s-py%s.egg" % (version, PYTHON_VERSION)
+    url = download_base + egg_name
+    saveto = os.path.join(to_dir, egg_name)
+    if not os.path.exists(saveto):  # Avoid repeated downloads
+        log.warn("Downloading %s", url)
+        downloader = downloader_factory()
+        downloader(url, saveto)
+        if not sha256(saveto) == expected_sha256:
+            os.unlink(saveto)
+            raise ValueError("Checksum mismatch, aborting...")
+    return os.path.realpath(saveto)
+
+
+@contextlib.contextmanager
+def disable_egginst_logging():
+    logger = logging.getLogger("egginst")
+
+    old = logger.propagate
+    logger.propagate = False
+    try:
+        yield
+    finally:
+        logger.propagate = old
+
+
+def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
+    sys.path.insert(0, egg)
+    import egginst.main
+
+    m = VERSION_RE.match(version)
+    if m is not None:
+        d = m.groupdict()
+        main_version = d["version"]
+        major, minor = [int(i) for i in main_version.split(".")]
+
+        if (major, minor) < (4, 8) and hasattr(egginst.main, "object_code"):
+            # HACK: avoiding error warning for old versions of enstaller when
+            # trying to replace PLACEHOLDER hack in tests data. enstaller does
+            # not have C code, so we don't need any replacement
+            egginst.main.object_code.apply_placeholder_hack = lambda *a, **kw: None
+
+    # HACK: we patch argv to handle old enstallers whose main functions did not
+    # take an argument
+    with disable_egginst_logging():
+        sys.argv[1:] = ["--remove", egg]
+        egginst.main.main()
+
+    sys.argv[1:] = [egg]
+    egginst.main.main()
+
+
+def main(argv=None):
+    argv = argv or sys.argv[1:]
+
+    p = optparse.OptionParser(description="Simple script to bootstrap " \
+                                          "enstaller into a master.")
+
+    (options, args) = p.parse_args(argv)
+    if len(args) == 1:
+        egg = args[0]
+    elif len(args) > 1:
+        p.error("Only accept up to one argument.")
+    else:
+        egg = download_enstaller()
+
+    bootstrap_enstaller(egg)
+
+
+if __name__ == "__main__":
+    main()
