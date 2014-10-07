@@ -3,10 +3,17 @@ Simple script to bootstrap enstaller into an existing python.
 
 Usage::
 
+    # Fetch the latest released enstaller
     python bootstrap.py
 
+one can also force a specific version of enstaller from a local egg built
+through bdist_egg::
+
+    python bootstrap.py egg_path
+
 It only assumes python >= 2.6 or python >= 3.3, nothing else, not even
-setuptools.
+setuptools. In particular, it can be used to install eggs directly in our
+masters.
 """
 import contextlib
 import logging
