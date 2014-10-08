@@ -59,6 +59,7 @@ class TestEnstallerMainActions(unittest.TestCase):
                 main_noexc()
                 self.assertEqual(exception_code(e), EXIT_ABORTED)
 
+    @unittest.expectedFailure
     @without_any_configuration
     def test_crash_handling_default(self):
         r_output = textwrap.dedent("""\
