@@ -18,7 +18,7 @@ from egginst.utils import makedirs
 
 
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import EnpkgError, NoPackageFound
+from enstaller.errors import EnpkgError, MissingDependency, NoPackageFound
 from enstaller.repository import Repository
 
 from ..core import (Solver, create_enstaller_update_repository,
@@ -75,6 +75,24 @@ class TestSolverNoDependencies(unittest.TestCase):
 
         # When/Then
         with self.assertRaises(NoPackageFound):
+            solver.resolve(request)
+
+    def test_install_missing_dependency(self):
+        # Given
+        entries = [
+            dummy_repository_package_factory("numpy", "1.8.0", 2,
+                                             dependencies=["MKL 10.3"]),
+        ]
+
+        repository = repository_factory(entries)
+        installed_repository = Repository._from_prefixes([self.prefix])
+        solver = Solver(repository, installed_repository)
+
+        request = Request()
+        request.install(Requirement("numpy"))
+
+        # When/Then
+        with self.assertRaises(MissingDependency):
             solver.resolve(request)
 
     def test_remove_actions(self):

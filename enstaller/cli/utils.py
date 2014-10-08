@@ -12,7 +12,7 @@ from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)
 
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import NoPackageFound, UnavailablePackage
+from enstaller.errors import MissingDependency, NoPackageFound, UnavailablePackage
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
@@ -136,7 +136,16 @@ def install_req(enpkg, config, req, opts):
             _ask_pypi_confirmation("\n".join(package_list))
             pypi_asked = True
 
-        actions = solver.resolve(request)
+        try:
+            actions = solver.resolve(request)
+        except MissingDependency as e:
+            if len(pypi_requirements) > 0:
+                print("Broken pypi package {0!r}: missing dependency '{1}'". \
+                      format(e.requester, e.requirement))
+            else:
+                print("Dependency solving error: {0}".format(e))
+            _done(FAILURE)
+
         installed = (egg for opcode, egg in actions if opcode == "install")
         actions = [("fetch", egg) for egg in installed] + actions
 

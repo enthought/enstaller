@@ -53,4 +53,11 @@ class UnavailablePackage(EnstallerException):
     def __init__(self, requirement):
         self.requirement = requirement
 
+class MissingDependency(SolverException):
+    """Exception thrown when a dependency for package is not available."""
+    def __init__(self, msg, requester, requirement):
+        super(MissingDependency, self).__init__(msg)
+        self.requirement = requirement
+        self.requester = requester
+
 EXIT_ABORTED = 130
