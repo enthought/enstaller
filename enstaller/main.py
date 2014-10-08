@@ -22,7 +22,6 @@ from argparse import ArgumentParser
 from os.path import isfile
 
 from egginst.progress import console_progress_manager_factory
-from enstaller._version import is_released as IS_RELEASED
 
 import enstaller
 
@@ -77,7 +76,7 @@ def update_enstaller(enpkg, config, autoupdate, opts):
     updated = False
     if not autoupdate:
         return updated
-    if not IS_RELEASED:
+    if not enstaller.__is_released__:
         return updated
     new_repository = create_enstaller_update_repository(
         enpkg._remote_repository, enstaller.__version__)

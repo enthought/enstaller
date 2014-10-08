@@ -81,14 +81,14 @@ class TestEnstallerUpdate(unittest.TestCase):
                 return update_enstaller(enpkg, config, config.autoupdate, opts)
 
     @mock.patch("enstaller.__version__", "4.6.3")
-    @mock.patch("enstaller.main.IS_RELEASED", True)
+    @mock.patch("enstaller.__is_released__", True)
     def test_update_enstaller_higher_available(self):
         # low/high versions are below/above any realistic enstaller version
         low_version, high_version = "1.0.0", "666.0.0"
         self.assertTrue(self._test_update_enstaller(low_version, high_version))
 
     @mock.patch("enstaller.__version__", "4.6.3")
-    @mock.patch("enstaller.main.IS_RELEASED", True)
+    @mock.patch("enstaller.__is_released__", True)
     def test_update_enstaller_higher_unavailable(self):
         # both low/high versions are below current enstaller version
         low_version, high_version = "1.0.0", "2.0.0"
