@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 
-from enstaller.errors import NoPackageFound
+from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.repository import egg_name_to_name_version
 from enstaller.utils import comparable_version
 
@@ -153,11 +153,9 @@ class Resolve(object):
                     continue
                 d = self._latest_egg(r)
                 if d is None:
-                    from enstaller.enpkg import EnpkgError
-                    err = EnpkgError(('Error: could not resolve "%s" ' +
-                                     'required by "%s"') % (str(r), egg))
-                    err.req = r
-                    raise err
+                    msg = "Could not resolve \"%s\" " \
+                          "required by \"%s\"" % (str(r), egg)
+                    raise MissingDependency(msg, egg, r)
                 eggs.add(d)
                 if not d in visited:
                     add_dependents(d, visited)
