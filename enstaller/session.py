@@ -77,7 +77,7 @@ class Session(object):
                                                 self._raw.headers["user-agent"])
         self._raw.headers["user-agent"] = user_agent
 
-        self._in_etag_context = False
+        self._in_etag_context = 0
 
     @classmethod
     def from_configuration(cls, configuration, verify=True):
@@ -116,8 +116,7 @@ class Session(object):
             self._etag_tear()
 
     def _etag_setup(self):
-        if not self._in_etag_context:
-            self._in_etag_context = True
+        if self._in_etag_context == 0:
             uri = os.path.join(self.cache_directory, "index_cache", "index.db")
             ensure_dir(uri)
             cache = DBCache(uri)
@@ -127,15 +126,17 @@ class Session(object):
             self._raw.mount("http://", adapter)
             self._raw.mount("https://", adapter)
 
+        self._in_etag_context += 1
+
     def _etag_tear(self):
-        if self._in_etag_context:
+        if self._in_etag_context == 1:
             self._raw.umount("https://")
             adapter = self._raw.umount("http://")
             # XXX: This close is ugly, but I am not sure how one can link a cache
             # controller to a http adapter in cachecontrol. See issue #42 on
             # ionrock/cachecontrol @ github.
             adapter.cache.close()
-            self._in_etag_context = False
+        self._in_etag_context -= 1
 
     @property
     def user_info(self):
