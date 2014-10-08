@@ -104,6 +104,26 @@ class TestSession(TestCase):
                                     CacheControlAdapter))
         self.assertEqual(m.call_count, 1)
 
+    def test_multiple_etag(self):
+        # Given
+        config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
+        old_adapters = session._raw.adapters.copy()
+
+        # When
+        with mock.patch("enstaller.session.CacheControlAdapter") as m:
+            with session.etag():
+                pass
+            with session.etag():
+                pass
+
+        # Then
+        self.assertFalse(isinstance(session._raw.adapters["http://"],
+                                    CacheControlAdapter))
+        self.assertFalse(isinstance(session._raw.adapters["https://"],
+                                    CacheControlAdapter))
+        self.assertEqual(m.call_count, 2)
+
     def test_from_configuration(self):
         # Given
         config = Configuration()

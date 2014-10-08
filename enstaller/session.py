@@ -109,11 +109,6 @@ class Session(object):
 
     @contextlib.contextmanager
     def etag(self):
-        if self._in_etag_context:
-            yield
-            return
-
-        self._in_etag_context = True
         self._etag_setup()
         try:
             yield
@@ -121,22 +116,26 @@ class Session(object):
             self._etag_tear()
 
     def _etag_setup(self):
-        uri = os.path.join(self.cache_directory, "index_cache", "index.db")
-        ensure_dir(uri)
-        cache = DBCache(uri)
+        if not self._in_etag_context:
+            self._in_etag_context = True
+            uri = os.path.join(self.cache_directory, "index_cache", "index.db")
+            ensure_dir(uri)
+            cache = DBCache(uri)
 
-        adapter = CacheControlAdapter(
-            cache, controller_class=QueryPathOnlyCacheController)
-        self._raw.mount("http://", adapter)
-        self._raw.mount("https://", adapter)
+            adapter = CacheControlAdapter(
+                cache, controller_class=QueryPathOnlyCacheController)
+            self._raw.mount("http://", adapter)
+            self._raw.mount("https://", adapter)
 
     def _etag_tear(self):
-        self._raw.umount("https://")
-        adapter = self._raw.umount("http://")
-        # XXX: This close is ugly, but I am not sure how one can link a cache
-        # controller to a http adapter in cachecontrol. See issue #42 on
-        # ionrock/cachecontrol @ github.
-        adapter.cache.close()
+        if self._in_etag_context:
+            self._raw.umount("https://")
+            adapter = self._raw.umount("http://")
+            # XXX: This close is ugly, but I am not sure how one can link a cache
+            # controller to a http adapter in cachecontrol. See issue #42 on
+            # ionrock/cachecontrol @ github.
+            adapter.cache.close()
+            self._in_etag_context = False
 
     @property
     def user_info(self):
