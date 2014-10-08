@@ -109,7 +109,7 @@ def fake_configuration_and_auth(f):
 
 def enstaller_version(version, is_released=True):
     wrap1 = mock.patch("enstaller.__version__", version)
-    wrap2 = mock.patch("enstaller.main.IS_RELEASED", is_released)
+    wrap2 = mock.patch("enstaller.__is_released__", is_released)
     def dec(f):
         return wrap1(wrap2(f))
     return dec
