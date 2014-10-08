@@ -339,9 +339,13 @@ class EggInst(object):
             if on_win:
                 scripts.create_proxies(self)
             else:
-                object_code.apply_placeholder_hack(self.files,
-                                                   list(self.iter_targets()),
-                                                   self.prefix)
+                # XXX: we ignore placeholder hack for enstaller, to avoid error
+                # messages related to tests data when updating enstaller
+                # (enstaller test data contain some osx/linux binaries)
+                if self.cname != "enstaller":
+                    object_code.apply_placeholder_hack(self.files,
+                                                    list(self.iter_targets()),
+                                                    self.prefix)
 
                 self._create_links()
 
