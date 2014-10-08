@@ -19,6 +19,7 @@ from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
 from enstaller.tests.common import dummy_installed_package_factory
+from enstaller.utils import PY_VER
 
 
 class TestParseVersion(unittest.TestCase):
@@ -183,6 +184,25 @@ class TestInstalledPackage(unittest.TestCase):
 
         # Then
         self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
+        self.assertEqual(metadata.packages, [])
+
+    def test_from_old_meta_dir(self):
+        # Given
+        json_dict = {
+            "build": 1,
+            "ctime": "Thu Feb 14 11:20:43 2013",
+            "hook": False,
+            "key": "appinst-2.1.2-1.egg",
+            "name": "appinst",
+            "version": "2.1.2"
+        }
+
+        # When
+        metadata = InstalledPackageMetadata.from_installed_meta_dict(json_dict)
+
+        # Then
+        self.assertEqual(metadata.key, "appinst-2.1.2-1.egg")
+        self.assertEqual(metadata.python, PY_VER)
         self.assertEqual(metadata.packages, [])
 
 
