@@ -77,6 +77,8 @@ class Session(object):
                                                 self._raw.headers["user-agent"])
         self._raw.headers["user-agent"] = user_agent
 
+        self._in_etag_context = False
+
     @classmethod
     def from_configuration(cls, configuration, verify=True):
         """ Create a new session from a configuration.
@@ -107,6 +109,11 @@ class Session(object):
 
     @contextlib.contextmanager
     def etag(self):
+        if self._in_etag_context:
+            yield
+            return
+
+        self._in_etag_context = True
         self._etag_setup()
         try:
             yield
@@ -137,7 +144,7 @@ class Session(object):
 
     def authenticate(self, auth):
         self._authenticator.authenticate(self, auth)
-        self._raw.auth = auth
+        self._raw.auth = self._authenticator._auth
 
     def fetch(self, url):
         resp = self._raw.get(url, stream=True)
