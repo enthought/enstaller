@@ -616,10 +616,9 @@ def main(argv=None):
 
 
 def main_noexc(argv=None):
-    if "ENSTALLER_DEBUG" in os.environ:
-        enstaller_debug = True
-    else:
-        enstaller_debug = False
+    # FIXME: re-enable traceback hiding (aka enstaller_debug=False) once
+    # we have enstaller logs
+    enstaller_debug = True
 
     try:
         main(argv)
