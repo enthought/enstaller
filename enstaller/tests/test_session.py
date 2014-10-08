@@ -1,12 +1,71 @@
+import mock
+
 import enstaller
 
 from egginst._compat import TestCase
 
 from enstaller.config import Configuration
-from enstaller.session import Session
+from enstaller.session import _PatchedRawSession, Session
 from enstaller.tests.common import mocked_session_factory
 from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
+
+
+class Test_PatchedRawSession(TestCase):
+    def test_mount_simple(self):
+        # Given
+        session = _PatchedRawSession()
+        fake_adapter = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter)
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter)
+        self.assertIsNot(session.adapters["https://"], fake_adapter)
+
+    def test_umount_simple(self):
+        # Given
+        session = _PatchedRawSession()
+        old_adapters = session.adapters.copy()
+        fake_adapter = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter)
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(adapter, fake_adapter)
+        self.assertIsNot(session.adapters["http://"], fake_adapter)
+        self.assertIs(session.adapters["http://"], old_adapters["http://"])
+
+    def test_nested_umount(self):
+        # Given
+        session = _PatchedRawSession()
+        old_adapters = session.adapters.copy()
+        fake_adapter1 = mock.Mock()
+        fake_adapter2 = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter1)
+        session.mount("http://", fake_adapter2)
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter2)
+
+        # When
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter1)
+        self.assertIs(adapter, fake_adapter2)
+
+        # When
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(adapter, fake_adapter1)
+        self.assertIs(session.adapters["http://"], old_adapters["http://"])
 
 
 class TestSession(TestCase):

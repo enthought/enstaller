@@ -15,6 +15,9 @@ from enstaller.requests_utils import (DBCache, LocalFileAdapter,
 
 
 class _PatchedRawSession(requests.Session):
+    """ Like requests.Session, but supporting (nested) umounting of
+    adapters.
+    """
     def __init__(self, *a, **kw):
         self._adapters_stack = collections.defaultdict(list)
         super(_PatchedRawSession, self).__init__(*a, **kw)
@@ -30,7 +33,7 @@ class _PatchedRawSession(requests.Session):
             current_adapter = self._adapters_stack[prefix].pop()
 
             if len(self._adapters_stack[prefix]) > 0:
-                previous_adapter = self._adapters_stack[prefix].pop()
+                previous_adapter = self._adapters_stack[prefix][-1]
                 self.adapters[prefix] = previous_adapter
 
             return current_adapter
