@@ -196,10 +196,6 @@ class TestLegacyCanopyAuthManager(TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    def test_invalid_auth_args(self):
-        with self.assertRaises(AuthFailedError):
-            self.session.authenticate((None, None))
-
     @responses.activate
     def test_from_configuration(self):
         # Given
