@@ -11,7 +11,8 @@ from mock import patch
 import enstaller.config
 
 from enstaller.auth import DUMMY_USER, UserInfo
-from enstaller.auth.auth_managers import (LegacyCanopyAuthManager,
+from enstaller.auth.auth_managers import (BroodAuthenticator,
+                                          LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.config import Configuration, write_default_config
 from enstaller.session import Session
@@ -245,6 +246,58 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
         # Given
         responses.add(responses.GET, self.config.api_url,
                       body=json.dumps(R_JSON_NOAUTH_RESP),
+                      content_type='application/json')
+
+        # When/Then
+        with self.assertRaises(AuthFailedError):
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+
+class TestBroodAuthManager(AuthManagerBase):
+    klass = BroodAuthenticator
+
+    def setUp(self):
+        AuthManagerBase.setUp(self)
+        self.token_url = self.config.store_url + "/api/v0/json/auth/tokens"
+
+    @responses.activate
+    def test_from_configuration(self):
+        # Given
+        responses.add(responses.POST, self.token_url, status=200,
+                      body=json.dumps({"token": "dummy token"}))
+        authenticator = BroodAuthenticator.from_configuration(self.config)
+        session = Session(authenticator, self.prefix)
+
+        # When
+        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+        # Then
+        self.assertEqual(self.session.user_info, UserInfo(True))
+
+    @responses.activate
+    def test_simple(self):
+        # Given
+        responses.add(responses.POST, self.token_url, status=200,
+                      body=json.dumps({"token": "dummy token"}))
+
+        # When
+        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+        # Then
+        self.assertEqual(self.session._raw.auth, ("dummy token", None))
+        self.assertEqual(self.session.user_info, UserInfo(True))
+
+    def test_connection_failure(self):
+        with patch.object(self.session._raw, "post",
+                          side_effect=requests.exceptions.ConnectionError):
+            with self.assertRaises(AuthFailedError):
+                self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+    @responses.activate
+    def test_http_failure(self):
+        # Given
+        config = Configuration()
+        responses.add(responses.POST, self.token_url, body="", status=403,
                       content_type='application/json')
 
         # When/Then
