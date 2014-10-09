@@ -1,6 +1,7 @@
 import operator
 import os.path
 import sys
+import time
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -190,7 +191,6 @@ class TestInstalledPackage(unittest.TestCase):
         # Given
         json_dict = {
             "build": 1,
-            "ctime": "Thu Feb 14 11:20:43 2013",
             "hook": False,
             "key": "appinst-2.1.2-1.egg",
             "name": "appinst",
@@ -204,6 +204,7 @@ class TestInstalledPackage(unittest.TestCase):
         self.assertEqual(metadata.key, "appinst-2.1.2-1.egg")
         self.assertEqual(metadata.python, PY_VER)
         self.assertEqual(metadata.packages, [])
+        self.assertEqual(metadata.ctime, time.ctime(0.0))
 
 
 class TestRepository(unittest.TestCase):

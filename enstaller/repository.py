@@ -5,6 +5,8 @@ import operator
 import os
 import os.path
 import sys
+import time
+
 
 from egginst._compat import pathname2url
 from egginst.eggmeta import info_from_z
@@ -199,7 +201,7 @@ class InstalledPackageMetadata(PackageMetadata):
         build = json_dict.get("build", 1)
         packages = json_dict.get("packages", [])
         python = json_dict.get("python", PY_VER)
-        ctime = json_dict.get("ctime", 0.0)
+        ctime = json_dict.get("ctime", time.ctime(0.0))
         store_location = json_dict.get("store_location", "")
         return cls(key, name, version, build, packages, python, ctime,
                    store_location)
