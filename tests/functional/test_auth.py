@@ -3,6 +3,7 @@ from __future__ import absolute_import
 import contextlib
 import json
 import os.path
+import re
 import shutil
 import sys
 import tempfile
@@ -204,3 +205,37 @@ class TestAuth(unittest.TestCase):
         # Then
         with open(self.config) as fp:
             self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
+
+
+    @mock_install_req
+    @fake_keyring
+    @responses.activate
+    def test_401_index_handling(self):
+        # Given
+        repo = "http://acme.com/repo/ets/"
+        config = Configuration()
+        config.disable_webservice()
+        config.set_indexed_repositories([repo])
+        config.set_auth("nono", "le petit robot")
+        config.write(self.config)
+
+        responses.add(responses.GET, re.compile(config.api_url + "*"),
+                      status=401)
+
+        error_message = textwrap.dedent("""\
+            Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
+            your credentials/configuration and try again (original error is:
+            "Authentication error: '401 Client Error: None'").
+
+
+            You can change your authentication details with 'enpkg --userpass'.
+        """)
+
+        # When
+        with use_given_config_context(self.config):
+            with mock_print() as m:
+                with self.assertRaises(SystemExit):
+                    main(["dummy_requirement"])
+
+        # Then
+        self.assertMultiLineEqual(m.value, error_message)
