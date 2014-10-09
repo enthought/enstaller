@@ -120,5 +120,42 @@ class OldRepoAuthManager(object):
         self._auth = auth
 
 
+class BroodAuthenticator(object):
+    """ Token-based authenticator for brood stores."""
+    @classmethod
+    def from_configuration(cls, configuration):
+        """ Create a BroodAuthenticator instance from an enstaller config
+        object.
+        """
+        return cls(configuration.store_url)
+
+    def __init__(self, url):
+        self.url = url
+        self._auth = None
+
+    @property
+    def user_info(self):
+        if self._auth is None:
+            raise RuntimeError("Not authenticated yet")
+        else:
+            return UserInfo(True)
+
+    def authenticate(self, session, auth):
+        url = self.url + "/api/v0/json/auth/tokens"
+        try:
+            resp = session._raw_post(url, auth=auth)
+        except requests.exceptions.ConnectionError as e:
+            raise AuthFailedError(e)
+
+        try:
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError as e:
+            raise AuthFailedError("Authentication error: %r" % str(e))
+
+        token = resp.json()["token"]
+        self._auth = (token, None)
+
+
 IAuthManager.register(LegacyCanopyAuthManager)
 IAuthManager.register(OldRepoAuthManager)
+IAuthManager.register(BroodAuthenticator)

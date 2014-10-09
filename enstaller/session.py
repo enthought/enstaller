@@ -5,8 +5,10 @@ import os.path
 from egginst.utils import ensure_dir
 
 from enstaller import __version__
-from enstaller.auth.auth_managers import (LegacyCanopyAuthManager,
+from enstaller.auth.auth_managers import (BroodAuthenticator,
+                                          LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
+from enstaller.config import STORE_KIND_BROOD
 from enstaller.vendor import requests
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
@@ -90,7 +92,9 @@ class Session(object):
         verify : Bool
             Whether to verify SSL CA.
         """
-        if configuration.use_webservice:
+        if configuration.store_kind == STORE_KIND_BROOD:
+            klass = BroodAuthenticator
+        elif configuration.use_webservice:
             klass = LegacyCanopyAuthManager
         else:
             klass = OldRepoAuthManager

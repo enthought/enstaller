@@ -514,6 +514,51 @@ class TestConfigurationParsing(unittest.TestCase):
         self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
+    def test_store_kind(self):
+        """
+        Ensure config auth information is properly set-up when using EPD_auth
+        """
+        # Given
+        config = Configuration()
+
+        # When
+        config.set_store_url("http://acme.com")
+
+        # Then
+        self.assertEqual(config.store_kind, "legacy")
+        self.assertEqual(config.store_url, "http://acme.com")
+
+        # Given
+        config = Configuration()
+
+        # When
+        config.set_store_url("brood+http://acme.com")
+
+        # Then
+        self.assertEqual(config.store_kind, "brood")
+        self.assertEqual(config.store_url, "http://acme.com")
+
+        # Given
+        s = StringIO("store_url = 'http://acme.com'")
+
+        # When
+        config = Configuration.from_file(s)
+
+        # Then
+        self.assertEqual(config.store_kind, "legacy")
+        self.assertEqual(config.store_url, "http://acme.com")
+
+        # Given
+        s = StringIO("store_url = 'brood+http://acme.com'")
+
+        # When
+        config = Configuration.from_file(s)
+
+        # Then
+        self.assertEqual(config.store_kind, "brood")
+        self.assertEqual(config.store_url, "http://acme.com")
+
+
 class TestConfigurationPrint(unittest.TestCase):
     maxDiff = None
 
@@ -979,6 +1024,7 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertFalse(config.indices, [])
         self.assertEqual(config.repository_cache, os.path.join(sys.prefix,
                                                                "LOCAL-REPO"))
+        self.assertEqual(config.store_kind, "brood")
 
     def test_invalid_format(self):
         # Given
