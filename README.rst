@@ -14,9 +14,10 @@ Installation
 ============
 
 The preferred and easiest way to install enstaller on any platform is to
-download
-`bootstrap.py <http://s3.amazonaws.com/enstaller-assets/enstaller/bootstrap.py>`_
- and then execute it with the python interpreter::
+download the
+`bootstrap.py
+<http://s3.amazonaws.com/enstaller-assets/enstaller/bootstrap.py>`_
+ script and then execute it with the python interpreter::
 
    $ python bootstrap.py
    enstaller-4.7.5-py2.7.egg                          [installing egg]
