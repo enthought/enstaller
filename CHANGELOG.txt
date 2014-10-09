@@ -3,21 +3,32 @@
 
 Main highlights:
 
-  * Added support for python 3 (>= 3.3) and pypy
+  * added support for python 3 (>= 3.3) and pypy
+  * http connections consolidated, CA certificates validated everywhere by
+    default.
   * Add -k/--insecure option to ignore CA certification checks.
-  * Add a new YAML-based configuration (not enabled yet).
   * enstaller now provides a proper user-agent when accessing a remote server
+  * token-based authentication when using brood store
+  * enpkg now retries downloading eggs when checksum mismatch occurs
+    before bailing out.
+  * new bootstrap script that works on every platform and is more reliable
+    than the old build.sh hack
 
 Bug fixes:
 
   * pypi confirmation is asked before resolving dependencies (#323)
+  * fix enpkg crash when atom is installed over gdata
+  * enpkg --info "last modified" output has been restored
 
 Internals:
 
-  * Dependency resolution is now in enstaller.solver. The new Solver class only
+  * dependency resolution is now in enstaller.solver. The new Solver class only
     resolve dependencies (install/remove action, no fetch action anymore)
-  * Http handling has been consolidated in the Session class. Authentication is
+  * http handling has been consolidated in the Session class. Authentication is
     now pluggable through the IAuthManager.
+  * test suite does not access network anymore. Http tests handled through
+    the response library
+  * Add a new YAML-based configuration (not enabled yet).
 
 2014-08-29   4.7.0:
 -------------------
