@@ -5,10 +5,10 @@ import os.path
 from egginst.utils import ensure_dir
 
 from enstaller import __version__
-from enstaller.config import STORE_KIND_BROOD
 from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
+from enstaller.config import STORE_KIND_BROOD
 from enstaller.vendor import requests
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
