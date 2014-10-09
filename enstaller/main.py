@@ -21,6 +21,7 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
+from egginst._compat import http_client
 from egginst.progress import console_progress_manager_factory
 
 import enstaller
@@ -451,8 +452,9 @@ def _create_parser():
                    help="prompt for Enthought authentication, and save in "
                    "configuration file .enstaller4rc")
     p.add_argument('-v', "--verbose", action="count", default=0,
-                   help="Verbose output if specified once, very verbose if "
-                        "specified twice.")
+                   help="Verbose output if specified once, more verbose if "
+                        "specified twice, logs sent/received http headers if "
+                        "specified thrice.")
     p.add_argument('--version', action="version",
                    version='enstaller version: ' + enstaller.__version__)
     p.add_argument("--whats-new", action="store_true",
@@ -472,6 +474,18 @@ def _compute_reqs(cnames):
         else:
             reqs.append(Requirement(arg))
     return reqs
+
+
+def _enable_logging(verbosity_level):
+    if verbosity_level >= 2:
+        level = logging.DEBUG
+    elif verbosity_level == 1:
+        level = logging.INFO
+    else:
+        level = logging.WARN
+    logging.basicConfig(level=level, format="%(message)s")
+    if verbosity_level >= 3:
+        http_client.HTTPConnection.debuglevel = 1
 
 
 def _preprocess_options(argv):
@@ -496,13 +510,7 @@ def _preprocess_options(argv):
     if count_simple_actions > 0 and len(args.cnames) > 0:
         p.error("Option takes no arguments")
 
-    if args.verbose >= 2:
-        level = logging.DEBUG
-    elif args.verbose == 1:
-        level = logging.INFO
-    else:
-        level = logging.WARN
-    logging.basicConfig(level=level, format="%(message)s")
+    _enable_logging(args.verbose)
 
     if args.user:
         args.prefix = _user_base()
