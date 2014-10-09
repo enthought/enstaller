@@ -104,18 +104,24 @@ class TestSubscriptionLevel(TestCase):
         self.assertIsNone(user_info.subscription_level)
 
 
-class TestOldReposAuthManager(TestCase):
+class AuthManagerBase(TestCase):
+    klass = None
+
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
         self.config = Configuration()
         self.config.disable_webservice()
         self.config.set_indexed_repositories(["http://acme.com"])
-        self.session = Session(OldRepoAuthManager(self.config.indices),
+        self.session = Session(self.klass.from_configuration(self.config),
                                self.prefix)
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
+
+
+class TestOldReposAuthManager(AuthManagerBase):
+    klass = OldRepoAuthManager
 
     @responses.activate
     def test_from_configuration(self):
@@ -185,16 +191,8 @@ class TestOldReposAuthManager(TestCase):
             self.session.authenticate(auth)
 
 
-class TestLegacyCanopyAuthManager(TestCase):
-    def setUp(self):
-        self.prefix = tempfile.mkdtemp()
-
-        self.config = Configuration()
-        self.session = Session(LegacyCanopyAuthManager(self.config.api_url),
-                               self.prefix)
-
-    def tearDown(self):
-        shutil.rmtree(self.prefix)
+class TestLegacyCanopyAuthManager(AuthManagerBase):
+    klass = LegacyCanopyAuthManager
 
     @responses.activate
     def test_from_configuration(self):
