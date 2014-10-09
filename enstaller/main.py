@@ -37,7 +37,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               print_config, write_default_config)
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError
-from enstaller.enpkg import Enpkg, ProgressBarContext
+from enstaller.enpkg import _DEFAULT_MAX_RETRIES, Enpkg, ProgressBarContext
 from enstaller.repository import Repository
 from enstaller.solver import Request, Requirement
 from enstaller.solver.core import (create_enstaller_update_repository,
@@ -412,6 +412,9 @@ def _create_parser():
     p.add_argument("--log", action="store_true", help="print revision log")
     p.add_argument('-l', "--list", action="store_true",
                    help="list the packages currently installed on the system")
+    p.add_argument("--max-retries", type=int, default=_DEFAULT_MAX_RETRIES,
+                   help="Maximum number of retries for a failed egg download "
+                        "(default: %(default)r).")
     p.add_argument('-n', "--dry-run", action="store_true",
                    help="show what would have been downloaded/removed/installed")
     p.add_argument('-N', "--no-deps", action="store_true",
@@ -616,7 +619,8 @@ def main(argv=None):
             progress_bar_context = ProgressBarContext(
                     console_progress_manager_factory)
         enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
-                      args.force or args.forceall)
+                      args.force or args.forceall,
+                      max_retries=args.max_retries)
 
         dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                      pat)
