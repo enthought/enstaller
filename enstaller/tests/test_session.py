@@ -6,6 +6,9 @@ import enstaller
 
 from egginst._compat import TestCase
 
+from enstaller.auth.auth_managers import (BroodAuthenticator,
+                                          LegacyCanopyAuthManager,
+                                          OldRepoAuthManager)
 from enstaller.config import Configuration
 from enstaller.session import _PatchedRawSession, Session
 from enstaller.tests.common import mocked_session_factory
@@ -149,10 +152,29 @@ class TestSession(TestCase):
         # When/Then
         with Session.from_configuration(config) as session:
             self.assertTrue(session._raw.verify)
+            self.assertIsInstance(session._authenticator, LegacyCanopyAuthManager)
 
         # When/Then
         with Session.from_configuration(config, verify=False) as session:
             self.assertFalse(session._raw.verify)
+
+        # Given
+        config = Configuration()
+        config.disable_webservice()
+
+        # When/Then
+        with Session.from_configuration(config, verify=False) as session:
+            self.assertFalse(session._raw.verify)
+            self.assertIsInstance(session._authenticator, OldRepoAuthManager)
+
+        # Given
+        config = Configuration()
+        config.set_store_url("brood+http://acme.com")
+
+        # When/Then
+        with Session.from_configuration(config, verify=False) as session:
+            self.assertFalse(session._raw.verify)
+            self.assertIsInstance(session._authenticator, BroodAuthenticator)
 
     @responses.activate
     def test_agent(self):
