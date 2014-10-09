@@ -9,7 +9,7 @@ from os.path import isfile, join
 from egginst.main import EggInst
 from egginst.progress import dummy_progress_bar_factory
 
-from enstaller.errors import EnpkgError, MissingPackage
+from enstaller.errors import EnpkgError, InvalidChecksum, MissingPackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.fetch import _DownloadManager
 from enstaller.repository import (InstalledPackageMetadata, Repository,
@@ -18,6 +18,8 @@ from enstaller.repository import (InstalledPackageMetadata, Repository,
 from enstaller.history import History
 from enstaller.solver import Solver
 
+
+_DEFAULT_MAX_RETRIES = 2
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +56,8 @@ class _BaseAction(object):
 
 class FetchAction(_BaseAction):
     def __init__(self, egg, downloader, remote_repository, force=True,
-                 progress_bar_factory=dummy_progress_bar_factory):
+                 progress_bar_factory=dummy_progress_bar_factory,
+                 max_retries=_DEFAULT_MAX_RETRIES):
         super(FetchAction, self).__init__()
         self._downloader = downloader
         self._egg = egg
@@ -65,6 +68,7 @@ class FetchAction(_BaseAction):
         self._progress = None
 
         self._current_context = None
+        self._retries = max_retries + 1
 
     def cancel(self):
         super(FetchAction, self).cancel()
@@ -91,8 +95,15 @@ class FetchAction(_BaseAction):
                 yield len(chunk_size)
 
     def execute(self):
-        for chunk_size in self.iter_execute():
-            self.progress_update(chunk_size)
+        for i in range(self._retries):
+            try:
+                for chunk_size in self.iter_execute():
+                    self.progress_update(chunk_size)
+            except InvalidChecksum:
+                if i >= self._retries - 1:
+                    raise
+            else:
+                return
 
 
 class InstallAction(_BaseAction):

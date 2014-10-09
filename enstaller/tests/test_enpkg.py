@@ -15,7 +15,7 @@ from egginst.utils import compute_md5, makedirs
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
-from enstaller.errors import EnpkgError
+from enstaller.errors import EnpkgError, InvalidChecksum
 from enstaller.fetch import _DownloadManager
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
@@ -336,6 +336,75 @@ class TestFetchAction(unittest.TestCase):
 
         # Then
         self.assertTrue(progress.called)
+
+    def _add_failing_checksum_response(self, url, payload, n_invalid=2):
+        counter = [0]
+        def request_callback(request):
+            counter[0] += 1
+
+            headers = {}
+
+            if counter[0] > n_invalid:
+                return (200, headers, payload)
+            else:
+                return (200, headers, b"")
+
+        responses.add_callback(responses.GET, url,
+            callback=request_callback,
+            content_type='application/octet-stream',
+        )
+
+    def _retry_common_setup(self):
+        store_location = "http://acme.com/"
+        filename = "nose-1.3.0-1.egg"
+
+        url = store_location + filename
+        path = os.path.join(_EGGINST_COMMON_DATA, filename)
+
+        repository = Repository()
+        package = RepositoryPackageMetadata.from_egg(path,
+                store_location=store_location)
+        repository.add_package(package)
+
+        downloader = _DownloadManager(mocked_session_factory(self.tempdir),
+                                      repository)
+        return path, downloader, repository
+
+    @responses.activate
+    def test_not_enough_retry(self):
+        # Given
+        path, downloader, repository = self._retry_common_setup()
+
+        url = "http://acme.com/{0}".format(os.path.basename(path))
+        with open(path, "rb") as fp:
+            payload = fp.read()
+
+        max_retries = 2
+        self._add_failing_checksum_response(url, payload, max_retries)
+
+        # When/Then
+        action = FetchAction(path, downloader, repository,
+                             max_retries=max_retries-1)
+        with self.assertRaises(InvalidChecksum):
+            action.execute()
+
+    @responses.activate
+    def test_retry(self):
+        # Given
+        path, downloader, repository = self._retry_common_setup()
+
+        url = "http://acme.com/{0}".format(os.path.basename(path))
+        with open(path, "rb") as fp:
+            payload = fp.read()
+
+        max_retries = 4
+        self._add_failing_checksum_response(url, payload, max_retries)
+
+        # When/Then
+        action = FetchAction(path, downloader, repository,
+                             max_retries=max_retries)
+        # No exception
+        action.execute()
 
 
 class TestRemoveAction(unittest.TestCase):
