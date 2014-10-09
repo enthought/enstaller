@@ -525,9 +525,12 @@ class TestCustomConfigPath(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
+    @responses.activate
     def test_simple(self):
         # Given
         path = os.path.join(self.prefix, "enstaller.yaml")
+        responses.add(responses.POST, "http://acme.com/api/v0/json/auth/tokens",
+                      body=json.dumps({"token": "dummy token"}))
 
         with open(path, "wt") as fp:
             fp.write(textwrap.dedent("""\
