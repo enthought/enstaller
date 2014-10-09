@@ -1,15 +1,83 @@
+import mock
+import shutil
+import tempfile
+
 import enstaller
 
 from egginst._compat import TestCase
 
 from enstaller.config import Configuration
-from enstaller.session import Session
+from enstaller.session import _PatchedRawSession, Session
 from enstaller.tests.common import mocked_session_factory
 from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
+from enstaller.vendor.requests.adapters import HTTPAdapter
+
+
+class Test_PatchedRawSession(TestCase):
+    def test_mount_simple(self):
+        # Given
+        session = _PatchedRawSession()
+        fake_adapter = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter)
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter)
+        self.assertIsNot(session.adapters["https://"], fake_adapter)
+
+    def test_umount_simple(self):
+        # Given
+        session = _PatchedRawSession()
+        old_adapters = session.adapters.copy()
+        fake_adapter = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter)
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(adapter, fake_adapter)
+        self.assertIsNot(session.adapters["http://"], fake_adapter)
+        self.assertIs(session.adapters["http://"], old_adapters["http://"])
+
+    def test_nested_umount(self):
+        # Given
+        session = _PatchedRawSession()
+        old_adapters = session.adapters.copy()
+        fake_adapter1 = mock.Mock()
+        fake_adapter2 = mock.Mock()
+
+        # When
+        session.mount("http://", fake_adapter1)
+        session.mount("http://", fake_adapter2)
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter2)
+
+        # When
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(session.adapters["http://"], fake_adapter1)
+        self.assertIs(adapter, fake_adapter2)
+
+        # When
+        adapter = session.umount("http://")
+
+        # Then
+        self.assertIs(adapter, fake_adapter1)
+        self.assertIs(session.adapters["http://"], old_adapters["http://"])
 
 
 class TestSession(TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_etag(self):
         # Given
         config = Configuration()
@@ -25,6 +93,54 @@ class TestSession(TestCase):
                                     CacheControlAdapter))
         self.assertFalse(isinstance(session._raw.adapters["https://"],
                                     CacheControlAdapter))
+
+    def _assert_use_etag_cache_controller(self, session):
+        for prefix in ("http://", "https://"):
+            self.assertTrue(isinstance(session._raw.adapters[prefix],
+                                       CacheControlAdapter))
+
+    def _assert_use_default_adapter(self, session):
+        for prefix in ("http://", "https://"):
+            self.assertTrue(isinstance(session._raw.adapters[prefix],
+                                       HTTPAdapter))
+
+    def test_nested_etag(self):
+        # Given
+        session = mocked_session_factory(self.prefix)
+
+        # When/Then
+        with session.etag():
+            self._assert_use_etag_cache_controller(session)
+            with session.etag():
+                self._assert_use_etag_cache_controller(session)
+            self._assert_use_etag_cache_controller(session)
+
+            with session.etag():
+                self._assert_use_etag_cache_controller(session)
+                with session.etag():
+                    self._assert_use_etag_cache_controller(session)
+                self._assert_use_etag_cache_controller(session)
+        self._assert_use_default_adapter(session)
+
+    def test_multiple_etag(self):
+        # Given
+        config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
+        old_adapters = session._raw.adapters.copy()
+
+        # When
+        with mock.patch("enstaller.session.CacheControlAdapter") as m:
+            with session.etag():
+                pass
+            with session.etag():
+                pass
+
+        # Then
+        self.assertFalse(isinstance(session._raw.adapters["http://"],
+                                    CacheControlAdapter))
+        self.assertFalse(isinstance(session._raw.adapters["https://"],
+                                    CacheControlAdapter))
+        self.assertEqual(m.call_count, 2)
 
     def test_from_configuration(self):
         # Given

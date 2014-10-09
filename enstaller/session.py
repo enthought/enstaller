@@ -15,6 +15,9 @@ from enstaller.requests_utils import (DBCache, LocalFileAdapter,
 
 
 class _PatchedRawSession(requests.Session):
+    """ Like requests.Session, but supporting (nested) umounting of
+    adapters.
+    """
     def __init__(self, *a, **kw):
         self._adapters_stack = collections.defaultdict(list)
         super(_PatchedRawSession, self).__init__(*a, **kw)
@@ -30,7 +33,7 @@ class _PatchedRawSession(requests.Session):
             current_adapter = self._adapters_stack[prefix].pop()
 
             if len(self._adapters_stack[prefix]) > 0:
-                previous_adapter = self._adapters_stack[prefix].pop()
+                previous_adapter = self._adapters_stack[prefix][-1]
                 self.adapters[prefix] = previous_adapter
 
             return current_adapter
@@ -74,6 +77,8 @@ class Session(object):
                                                 self._raw.headers["user-agent"])
         self._raw.headers["user-agent"] = user_agent
 
+        self._in_etag_context = 0
+
     @classmethod
     def from_configuration(cls, configuration, verify=True):
         """ Create a new session from a configuration.
@@ -111,22 +116,27 @@ class Session(object):
             self._etag_tear()
 
     def _etag_setup(self):
-        uri = os.path.join(self.cache_directory, "index_cache", "index.db")
-        ensure_dir(uri)
-        cache = DBCache(uri)
+        if self._in_etag_context == 0:
+            uri = os.path.join(self.cache_directory, "index_cache", "index.db")
+            ensure_dir(uri)
+            cache = DBCache(uri)
 
-        adapter = CacheControlAdapter(
-            cache, controller_class=QueryPathOnlyCacheController)
-        self._raw.mount("http://", adapter)
-        self._raw.mount("https://", adapter)
+            adapter = CacheControlAdapter(
+                cache, controller_class=QueryPathOnlyCacheController)
+            self._raw.mount("http://", adapter)
+            self._raw.mount("https://", adapter)
+
+        self._in_etag_context += 1
 
     def _etag_tear(self):
-        self._raw.umount("https://")
-        adapter = self._raw.umount("http://")
-        # XXX: This close is ugly, but I am not sure how one can link a cache
-        # controller to a http adapter in cachecontrol. See issue #42 on
-        # ionrock/cachecontrol @ github.
-        adapter.cache.close()
+        if self._in_etag_context == 1:
+            self._raw.umount("https://")
+            adapter = self._raw.umount("http://")
+            # XXX: This close is ugly, but I am not sure how one can link a cache
+            # controller to a http adapter in cachecontrol. See issue #42 on
+            # ionrock/cachecontrol @ github.
+            adapter.cache.close()
+        self._in_etag_context -= 1
 
     @property
     def user_info(self):
@@ -134,7 +144,7 @@ class Session(object):
 
     def authenticate(self, auth):
         self._authenticator.authenticate(self, auth)
-        self._raw.auth = auth
+        self._raw.auth = self._authenticator._auth
 
     def fetch(self, url):
         resp = self._raw.get(url, stream=True)
