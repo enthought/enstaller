@@ -9,7 +9,7 @@ import io
 
 try:
     import gdata.docs.service
-except ImportError:
+except Exception:
     pass
 
 from . import keyczar
