@@ -118,6 +118,7 @@ class AuthManagerBase(TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
+        self.session.close()
 
 
 class TestOldReposAuthManager(AuthManagerBase):
