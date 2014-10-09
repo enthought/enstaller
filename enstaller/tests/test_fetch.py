@@ -15,7 +15,7 @@ from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.vendor import requests, responses
 
-from enstaller.errors import EnstallerException
+from enstaller.errors import InvalidChecksum
 from enstaller.fetch import _DownloadManager
 from enstaller.proxy_info import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
@@ -68,7 +68,7 @@ class Test_DownloadManager(unittest.TestCase):
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
-        with self.assertRaises(EnstallerException):
+        with self.assertRaises(InvalidChecksum):
             downloader.fetch(filename)
 
     def test_fetch_abort(self):
