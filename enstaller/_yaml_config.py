@@ -82,7 +82,7 @@ _SCHEMA = {
 
 def load_configuration_from_yaml(cls, filename_or_fp):
     # FIXME: local import to workaround circular import
-    from enstaller.config import _decode_auth
+    from enstaller.config import _decode_auth, STORE_KIND_BROOD
     if isinstance(filename_or_fp, string_types):
         with open(filename_or_fp, "rt") as fp:
             data = yaml.load(fp)
@@ -132,4 +132,6 @@ def load_configuration_from_yaml(cls, filename_or_fp):
 
     if isinstance(filename_or_fp, string_types):
         config._filename = filename_or_fp
+
+    config._store_kind = STORE_KIND_BROOD
     return config

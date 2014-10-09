@@ -15,7 +15,7 @@ import warnings
 from getpass import getpass
 from os.path import isfile, join
 
-from egginst._compat import input, string_types
+from egginst._compat import input, string_types, urlparse
 from egginst.utils import parse_assignments
 
 from enstaller.vendor import keyring
@@ -38,6 +38,10 @@ KEYRING_SERVICE_NAME = 'Enthought.com'
 ENSTALLER4RC_FILENAME = ".enstaller4rc"
 SYS_PREFIX_ENSTALLER4RC = os.path.join(real_prefix(), ENSTALLER4RC_FILENAME)
 HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
+
+STORE_KIND_LEGACY = "legacy"
+STORE_KIND_BROOD = "brood"
+_BROOD_PREFIX = "brood+"
 
 
 def _setup_keyring():
@@ -367,6 +371,7 @@ class Configuration(object):
         self._prefix = sys.prefix
         self._indexed_repositories = []
         self._store_url = "https://api.enthought.com"
+        self._store_kind = STORE_KIND_LEGACY
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
 
@@ -435,7 +440,15 @@ class Configuration(object):
     def store_url(self):
         return self._store_url
 
+    @property
+    def store_kind(self):
+        return self._store_kind
+
     def set_store_url(self, url):
+        p = urlparse.urlparse(url)
+        if p.scheme.startswith(_BROOD_PREFIX):
+            url = url[len(_BROOD_PREFIX):]
+            self._store_kind = STORE_KIND_BROOD
         self._store_url = url
 
     @property
