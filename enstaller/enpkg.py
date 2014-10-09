@@ -235,7 +235,8 @@ class ProgressBarContext(object):
 
 
 class _ExecuteContext(object):
-    def __init__(self, actions, enpkg, progress_bar_context, force=False):
+    def __init__(self, actions, enpkg, progress_bar_context, force=False,
+                 max_retries=_DEFAULT_MAX_RETRIES):
         self._top_prefix = enpkg.top_prefix
         self._actions = actions
         self._remote_repository = enpkg._remote_repository
@@ -245,13 +246,16 @@ class _ExecuteContext(object):
 
         self._pbar_context = progress_bar_context
 
+        self._max_retries = max_retries
+
     def _action_factory(self, action):
         opcode, egg = action
 
         if opcode.startswith('fetch'):
             return FetchAction(egg, self._enpkg._downloader,
                                self._remote_repository, self._force,
-                               self._pbar_context.fetch_progress)
+                               self._pbar_context.fetch_progress,
+                               self._max_retries)
         elif opcode.startswith("install"):
             return InstallAction(egg, self._enpkg.top_prefix,
                                  self._enpkg._remote_repository,
@@ -293,10 +297,13 @@ class Enpkg(object):
     progress_context : ProgressBarContext
         If specified, will be used for progress bar management across all
         executed actions. If None, use dummy (do nothing) progress bars.
+    max_retries : int
+        Maximum number of retries to fetch an egg when checksum mismatchs
+        occur.
     """
     def __init__(self, remote_repository, session,
                  prefixes=[sys.prefix], progress_context=None,
-                 force=False):
+                 force=False, max_retries=_DEFAULT_MAX_RETRIES):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
 
@@ -313,6 +320,7 @@ class Enpkg(object):
                 ProgressBarContext(dummy_progress_bar_factory)
 
         self._force = force
+        self.max_retries = max_retries
 
     def _solver_factory(self, mode='recur', force=False, forceall=False):
         solver = Solver(self._remote_repository,
