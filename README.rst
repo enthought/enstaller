@@ -13,17 +13,19 @@ It supports python >= 2.6 and python >= 3.3.
 Installation
 ============
 
-The preferred and easiest way to install Enstaller is from the executable egg,
-i.e. the Enstaller egg contains a bash header and on Unix systems you can
-download the egg and type::
+The preferred and easiest way to install enstaller on any platform is to
+download
+`bootstrap.py <http://s3.amazonaws.com/enstaller-assets/enstaller/bootstrap.py>`_
+ and then execute it with the python interpreter::
 
-   $ bash enstaller-4.6.1-1.egg
-   Bootstrapping: ...
-   283 KB [.................................................................]
+   $ python bootstrap.py
+   enstaller-4.7.5-py2.7.egg                          [installing egg]
+      4.34 MB [......................................................]
 
 Once Enstaller is installed, it can update itself.  Note that,
-as Enstaller is the install tool for the Enthought Python Distribution (EPD),
-all EPD installers already include Enstaller.
+as Enstaller is the install tool for Canopy and EPD, those products
+already include enstaller. The bootstrap script may be used to repair
+broken environments where enpkg is not usable.
 
 Available features
 ==================
