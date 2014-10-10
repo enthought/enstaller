@@ -413,8 +413,8 @@ def _create_parser():
     p.add_argument('-l', "--list", action="store_true",
                    help="list the packages currently installed on the system")
     p.add_argument("--max-retries", type=int, default=_DEFAULT_MAX_RETRIES,
-                   help="Maximum number of retries for a failed egg download "
-                        "(default: %(default)r).")
+                   help="Maximum number of retries for a checksum mismatch or "
+                        "a connection error (default: %(default)r).")
     p.add_argument('-n', "--dry-run", action="store_true",
                    help="show what would have been downloaded/removed/installed")
     p.add_argument('-N', "--no-deps", action="store_true",
@@ -599,7 +599,9 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     verify = not args.insecure
-    with Session.from_configuration(config, verify=verify) as session:
+    max_retries = args.max_retries
+    with Session.from_configuration(config, verify=verify,
+                                    max_retries=max_retries) as session:
         if dispatch_commands_without_enpkg(args, config, config_filename,
                                            prefixes, prefix, pat,
                                            session):
