@@ -380,3 +380,53 @@ class TestInstallReq(TestCase):
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
+
+    @mock_index({
+        "rednose-0.2.3-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "rednose",
+            "packages": ["python_termstyle"],
+            "product": "pypi",
+            "python": PY_VER,
+            "size": 9227,
+            "type": "egg",
+            "version": "0.2.3"
+    }})
+    def test_install_broken_pypi_requirement(self):
+        self.maxDiff = None
+
+        # Given
+        r_message = textwrap.dedent("""
+Broken pypi package 'rednose-0.2.3-1.egg': missing dependency 'python_termstyle'
+
+Pypi packages are not officially supported. If this package is important to
+you, please contact Enthought support to request its inclusion in our
+officially supported repository.
+
+In the mean time, you may want to try installing 'rednose-0.2.3-1.egg' from sources
+with pip as follows:
+
+    $ enpkg pip
+    $ pip install <requested_package>
+
+""")
+
+        config = Configuration()
+        session = Session.from_configuration(config)
+        session.authenticate(("nono", "le petit robot"))
+        repository = repository_factory(session, config.indices)
+
+        enpkg = Enpkg(repository, session, [self.prefix])
+        enpkg.execute = mock.Mock()
+
+        # When
+        with self.assertRaises(SystemExit):
+            with mock_print() as mocked_print:
+                with mock_raw_input("yes"):
+                    install_req(enpkg, config, "rednose", FakeOptions())
+
+        # Then
+        self.assertMultiLineEqual(mocked_print.value, r_message)
