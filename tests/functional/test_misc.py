@@ -1,4 +1,7 @@
+import json
+import platform
 import sys
+import textwrap
 
 if sys.version_info[:2] < (2, 7):
     import unittest2 as unittest
@@ -7,14 +10,64 @@ else:
 
 import mock
 
+from enstaller import __version__
+
+from enstaller.config import _keyring_backend_name, Configuration
 from enstaller.history import History
 from enstaller.main import main_noexc
+from enstaller.vendor import responses
+from enstaller.utils import PY_VER
 
-from enstaller.tests.common import mock_print
+from enstaller.tests.common import mock_print, R_JSON_AUTH_RESP
 
 from .common import authenticated_config
 
 class TestMisc(unittest.TestCase):
+    @authenticated_config
+    @responses.activate
+    def test_print_config(self):
+        self.maxDiff = None
+
+        # Given
+        config = Configuration()
+        config.set_prefix(sys.prefix)
+
+        template = textwrap.dedent("""\
+Python version: {pyver}
+enstaller version: {version}
+sys.prefix: {sys_prefix}
+platform: {platform}
+architecture: {arch}
+use_webservice: True
+keyring backend: {keyring_backend}
+settings:
+    prefix = {prefix}
+    repository_cache = {repository_cache}
+    noapp = False
+    proxy = None
+You are logged in as dummy (David Cournapeau).
+Subscription level: Canopy / EPD Basic or above
+""")
+        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+                                   platform=platform.platform(),
+                                   arch=platform.architecture()[0],
+                                   keyring_backend=_keyring_backend_name(),
+                                   prefix=config.prefix,
+                                   repository_cache=config.repository_cache)
+
+        responses.add(responses.GET,
+                      "https://api.enthought.com/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_RESP))
+
+        # When
+        with self.assertRaises(SystemExit) as e:
+            with mock_print() as m:
+                main_noexc(["--config"])
+
+        # Then
+        self.assertEqual(e.exception.code, 0)
+        self.assertMultiLineEqual(m.value, r_output)
+
     @authenticated_config
     def test_list_bare(self):
         with mock.patch("enstaller.cli.commands.print_installed"):
