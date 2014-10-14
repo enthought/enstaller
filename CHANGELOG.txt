@@ -11,7 +11,7 @@ Main highlights:
     server (#319)
   * token-based authentication when using brood store (#266)
   * enpkg now retries downloading eggs when checksum mismatch occurs
-    before bailing out. (#278)
+    before bailing out (#278), and retry connection failures as well (#350)
   * new bootstrap script that works on every platform and is more reliable
     than the old build.sh hack (#320)
 
