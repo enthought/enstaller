@@ -15,10 +15,12 @@ from egginst.tests.common import mkdtemp
 
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
-from enstaller.legacy_stores import parse_index
+from enstaller.legacy_stores import parse_index, repository_factory
 from enstaller.plat import custom_plat
 
-from enstaller.tests.common import (dummy_repository_package_factory,
+from enstaller.tests.common import (SIMPLE_INDEX,
+                                    dummy_repository_package_factory,
+                                    mock_index,
                                     mocked_session_factory)
 from enstaller.vendor import responses
 
@@ -118,3 +120,16 @@ class TestLegacyStores(unittest.TestCase):
 
         # Then
         self.assertEqual(len(packages), 1)
+
+    @mock_index(SIMPLE_INDEX)
+    def test_repository_factory(self):
+        # Given
+        config = Configuration()
+        session = mocked_session_factory(self.tempdir)
+
+        # When
+        repository = repository_factory(session, config.indices)
+
+        # Then
+        self.assertEqual(len(list(repository.iter_packages())), 1)
+        self.assertEqual(len(list(repository.find_packages("nose", "1.3.4-1"))), 1)

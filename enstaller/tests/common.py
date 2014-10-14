@@ -4,6 +4,7 @@ from egginst._compat import PY2, StringIO
 
 import collections
 import contextlib
+import json
 import sys
 
 import mock
@@ -12,10 +13,12 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.errors import AuthFailedError
+from enstaller.plat import custom_plat
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
 from enstaller.session import Session
 from enstaller.utils import PY_VER
+from enstaller.vendor import responses
 
 
 FAKE_MD5 = "a" * 32
@@ -36,6 +39,21 @@ R_JSON_NOAUTH_RESP = {'is_authenticated': False,
         'first_name': u'David',
         'has_subscription': True,
         'subscription_level': u'basic'}
+
+SIMPLE_INDEX = {
+    "nose-1.3.4-1.egg": {
+        "available": True,
+        "build": 1,
+        "md5": "7fbd5a7c83ebbb14c42141ed734505ef",
+        "mtime": 1409944509.0,
+        "name": "nose",
+        "product": "free",
+        "python": None,
+        "size": 334992,
+        "type": "egg",
+        "version": "1.3.4"
+    },
+}
 
 
 class DummyAuthenticator(object):
@@ -253,3 +271,19 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
         enpkg._top_installed_repository.add_package(package)
         enpkg._installed_repository.add_package(package)
     return enpkg
+
+
+def mock_index(index_data, store_url="https://api.enthought.com"):
+    def decorator(f):
+        @responses.activate
+        def wrapped(*a, **kw):
+            responses.add(responses.GET,
+                          "{0}/accounts/user/info/".format(store_url),
+                          body=json.dumps(R_JSON_AUTH_RESP))
+            url = "{0}/eggs/{1}/index.json"
+            responses.add(responses.GET,
+                          url.format(store_url, custom_plat),
+                          body=json.dumps(index_data))
+            return f(*a, **kw)
+        return wrapped
+    return decorator

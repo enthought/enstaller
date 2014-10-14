@@ -71,21 +71,13 @@ if an HTTP error occurs::
 Creating remote repositories
 ============================
 
-To create repositories from our index.json formats, one can do as follows::
+To create repositories from our legacy index.json formats, one can use the
+repository_factory method from enstaller.legacy_stores::
 
     config = Configuration._from_legacy_locations()
 
     session = Session.from_configuration(config)
     session.authenticate(config.auth)
-
-    def repository_factory(session, indices):
-        repository = Repository()
-        for url, store_location in indices:
-            resp = session.fetch(url)
-            data = resp.json()
-            for package in parse_index(data, store_location):
-                repository.add_package(package)
-        return repository
 
     remote_repository = repository_factory(session, config.indices)
 
