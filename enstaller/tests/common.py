@@ -48,7 +48,7 @@ SIMPLE_INDEX = {
         "mtime": 1409944509.0,
         "name": "nose",
         "product": "free",
-        "python": "2.7",
+        "python": None,
         "size": 334992,
         "type": "egg",
         "version": "1.3.4"
