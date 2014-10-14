@@ -1,4 +1,11 @@
-2014-09-26   4.7.4:
+0000-00-00   4.7.6:
+-------------------
+
+Bug fixes:
+
+  * Fix --userpass when -k/--insecure option is used.
+
+2014-09-26   4.7.5:
 -------------------
 
 Bug fixes:
