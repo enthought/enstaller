@@ -62,16 +62,17 @@ def main(argv=None):
         userpass = tuple(namespace.auth.split(":"))
 
     session = Session.from_configuration(config)
-    session.authenticate(userpass)
+    with session:
+        session.authenticate(userpass)
 
-    if namespace.platform == "all":
-        platforms = ["rh5-32", "rh5-64", "osx-32", "osx-64", "win-32", "win-64"]
-        for platform in platforms:
+        if namespace.platform == "all":
+            platforms = ["rh5-32", "rh5-64", "osx-32", "osx-64", "win-32", "win-64"]
+            for platform in platforms:
+                query_platform(session, config.indices, namespace.requirement,
+                               platform)
+        else:
             query_platform(session, config.indices, namespace.requirement,
-                           platform)
-    else:
-        query_platform(session, config.indices, namespace.requirement,
-                       namespace.platform)
+                           namespace.platform)
 
 
 if __name__ == "__main__": #  pragma: nocover

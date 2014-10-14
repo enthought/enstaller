@@ -80,6 +80,7 @@ class Session(object):
         self._raw.headers["user-agent"] = user_agent
 
         self._in_etag_context = 0
+        self._etag_adapter = None
 
     @classmethod
     def from_configuration(cls, configuration, verify=True):
