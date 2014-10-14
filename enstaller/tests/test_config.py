@@ -591,7 +591,7 @@ class TestConfigurationPrint(unittest.TestCase):
         config = Configuration()
         prefix = config.prefix
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
-        r_output = output_template.format(prefix=prefix,
+        r_output = output_template.format(prefix=os.path.normpath(prefix),
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
@@ -630,7 +630,8 @@ class TestConfigurationPrint(unittest.TestCase):
 
         prefix = config.prefix
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
-        r_output = output_template.format(prefix=prefix, config_file=fp.name,
+        r_output = output_template.format(prefix=os.path.normpath(prefix),
+                                          config_file=fp.name,
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
@@ -662,7 +663,7 @@ class TestConfigurationPrint(unittest.TestCase):
 
         prefix = sys.prefix
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
-        r_output = output_template.format(prefix=prefix,
+        r_output = output_template.format(prefix=os.path.normpath(prefix),
                                           repository_cache=repository_cache)
 
         config = Configuration()
