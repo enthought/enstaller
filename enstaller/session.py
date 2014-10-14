@@ -62,10 +62,12 @@ class Session(object):
     verify : bool
         If True, SSL CA are verified (default).
     """
-    def __init__(self, authenticator, cache_directory, proxies=None, verify=True):
+    def __init__(self, authenticator, cache_directory, proxies=None,
+            verify=True, max_retries=0):
         self.proxies = proxies
         self.verify = verify
         self.cache_directory = cache_directory
+        self.max_retries = max_retries
 
         self._authenticator = authenticator
         self._raw = _PatchedRawSession()
@@ -75,15 +77,19 @@ class Session(object):
 
         self._raw.mount("file://", LocalFileAdapter())
 
+        adapter = requests.adapters.HTTPAdapter(max_retries=self.max_retries)
+        for prefix in ("http://", "https://"):
+            self._raw.mount(prefix, adapter)
+
         user_agent = "enstaller/{0} {1}".format(__version__,
                                                 self._raw.headers["user-agent"])
         self._raw.headers["user-agent"] = user_agent
 
         self._in_etag_context = 0
-        self._etag_adapter = None
 
     @classmethod
-    def from_configuration(cls, configuration, verify=True):
+    def from_configuration(cls, configuration, verify=True,
+                           max_retries=0):
         """ Create a new session from a configuration.
 
         Parameters
@@ -92,6 +98,8 @@ class Session(object):
             The configuration to use.
         verify : Bool
             Whether to verify SSL CA.
+        max_retries : int
+            Max number of retries to connect to a remote server.
         """
         if configuration.store_kind == STORE_KIND_BROOD:
             klass = BroodAuthenticator
@@ -101,7 +109,8 @@ class Session(object):
             klass = OldRepoAuthManager
         authenticator = klass.from_configuration(configuration)
         return cls(authenticator, configuration.repository_cache,
-                   configuration.proxy_dict, verify=verify)
+                   configuration.proxy_dict, verify=verify,
+                   max_retries=max_retries)
 
     def close(self):
         self._raw.close()
@@ -128,7 +137,8 @@ class Session(object):
 
             for prefix in ("http://", "https://"):
                 adapter = CacheControlAdapter(
-                    cache, controller_class=QueryPathOnlyCacheController)
+                    cache, controller_class=QueryPathOnlyCacheController,
+                    max_retries=self.max_retries)
                 self._raw.mount(prefix, adapter)
 
         self._in_etag_context += 1

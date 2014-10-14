@@ -145,6 +145,38 @@ class TestSession(TestCase):
                                     CacheControlAdapter))
         self.assertEqual(m.call_count, 4)
 
+    def test_max_retries(self):
+        # Given
+        config = Configuration()
+
+        # When/Then
+        with Session.from_configuration(config) as session:
+            for prefix in ("http://", "https://"):
+                self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+
+        # When/Then
+        with Session.from_configuration(config, max_retries=3) as session:
+            for prefix in ("http://", "https://"):
+                self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
+
+
+    def test_max_retries_with_etag(self):
+        # Given
+        config = Configuration()
+
+        # When/Then
+        with Session.from_configuration(config) as session:
+            with session.etag():
+                for prefix in ("http://", "https://"):
+                    self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+
+        # When/Then
+        with Session.from_configuration(config, max_retries=3) as session:
+            with session.etag():
+                for prefix in ("http://", "https://"):
+                    self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
+
+
     def test_from_configuration(self):
         # Given
         config = Configuration()
