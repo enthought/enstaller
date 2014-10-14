@@ -47,6 +47,7 @@ class CheckedChangeAuthTestCase(TestCase):
         self.session = Session(DummyAuthenticator(), self.d)
 
     def tearDown(self):
+        self.session.close()
         shutil.rmtree(self.d)
 
     def test_no_acct(self):
@@ -76,8 +77,9 @@ class CheckedChangeAuthTestCase(TestCase):
         auth = ("usr", "password")
         session = Session(DummyAuthenticator(old_auth_user), self.d)
 
-        usr = config._checked_change_auth(auth, session, self.f)
-        self.assertEqual(usr, DUMMY_USER)
+        with session:
+            usr = config._checked_change_auth(auth, session, self.f)
+            self.assertEqual(usr, DUMMY_USER)
 
     def test_nones(self):
         config = Configuration()
@@ -134,10 +136,11 @@ class TestOldReposAuthManager(AuthManagerBase):
         session = Session(authenticator, self.prefix)
 
         # When
-        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+        with session:
+            session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
-        # Then
-        self.assertEqual(self.session.user_info, UserInfo(True))
+            # Then
+            self.assertEqual(session.user_info, UserInfo(True))
 
     @responses.activate
     def test_simple(self):
@@ -205,11 +208,12 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
         session = Session(authenticator, self.prefix)
 
         # When
-        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+        with session:
+            session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
-        # Then
-        self.assertEqual(self.session.user_info,
-                         UserInfo.from_json(R_JSON_AUTH_RESP))
+            # Then
+            self.assertEqual(session.user_info,
+                             UserInfo.from_json(R_JSON_AUTH_RESP))
 
     @responses.activate
     def test_simple(self):
@@ -269,10 +273,11 @@ class TestBroodAuthManager(AuthManagerBase):
         session = Session(authenticator, self.prefix)
 
         # When
-        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+        with session:
+            session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
         # Then
-        self.assertEqual(self.session.user_info, UserInfo(True))
+        self.assertEqual(session.user_info, UserInfo(True))
 
     @responses.activate
     def test_simple(self):
@@ -317,14 +322,15 @@ class TestAuthenticate(TestCase):
     def test_use_webservice_invalid_user(self):
         # Given
         config = Configuration()
-        session = Session(LegacyCanopyAuthManager(config.api_url), self.prefix)
         responses.add(responses.GET, config.api_url,
                       body=json.dumps(R_JSON_NOAUTH_RESP),
                       content_type='application/json')
 
         # When/Then
-        with self.assertRaises(AuthFailedError):
-            session.authenticate((FAKE_USER, FAKE_PASSWORD))
+        session = Session(LegacyCanopyAuthManager(config.api_url), self.prefix)
+        with session:
+            with self.assertRaises(AuthFailedError):
+                session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
 
 class SearchTestCase(TestCase):

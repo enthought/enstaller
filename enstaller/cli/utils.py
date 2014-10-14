@@ -72,6 +72,20 @@ def _requirement_from_pypi(request, repository):
     return are_pypi
 
 
+_BROKEN_PYPI_TEMPLATE = """
+Broken pypi package '{requested}': missing dependency '{dependency}'
+
+Pypi packages are not officially supported. If this package is important to
+you, please contact Enthought support to request its inclusion in our
+officially supported repository.
+
+In the mean time, you may want to try installing '{requested}' from sources
+with pip as follows:
+
+    $ enpkg pip
+    $ pip install <requested_package>
+"""
+
 def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
@@ -131,20 +145,23 @@ def install_req(enpkg, config, req, opts):
 
         pypi_requirements = _requirement_from_pypi(request,
                                                    enpkg._remote_repository)
-        if len(pypi_requirements) > 0:
-            package_list = sorted(str(p) for p in pypi_requirements)
-            _ask_pypi_confirmation("\n".join(package_list))
-            pypi_asked = True
 
         try:
             actions = solver.resolve(request)
         except MissingDependency as e:
             if len(pypi_requirements) > 0:
-                print("Broken pypi package {0!r}: missing dependency '{1}'". \
-                      format(e.requester, e.requirement))
+                msg = _BROKEN_PYPI_TEMPLATE.format(requested=e.requester,
+                        dependency=e.requirement)
+                print(msg)
             else:
-                print("Dependency solving error: {0}".format(e))
+                print("One of the requested package has broken dependencies")
+                print("(Dependency solving error: {0})".format(e))
             _done(FAILURE)
+
+        if len(pypi_requirements) > 0:
+            package_list = sorted(str(p) for p in pypi_requirements)
+            _ask_pypi_confirmation("\n".join(package_list))
+            pypi_asked = True
 
         installed = (egg for opcode, egg in actions if opcode == "install")
         actions = [("fetch", egg) for egg in installed] + actions

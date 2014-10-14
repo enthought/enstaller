@@ -143,7 +143,7 @@ class TestSession(TestCase):
                                     CacheControlAdapter))
         self.assertFalse(isinstance(session._raw.adapters["https://"],
                                     CacheControlAdapter))
-        self.assertEqual(m.call_count, 2)
+        self.assertEqual(m.call_count, 4)
 
     def test_max_retries(self):
         # Given
