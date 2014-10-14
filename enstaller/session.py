@@ -125,21 +125,21 @@ class Session(object):
             ensure_dir(uri)
             cache = DBCache(uri)
 
-            adapter = CacheControlAdapter(
-                cache, controller_class=QueryPathOnlyCacheController)
-            self._raw.mount("http://", adapter)
-            self._raw.mount("https://", adapter)
+            for prefix in ("http://", "https://"):
+                adapter = CacheControlAdapter(
+                    cache, controller_class=QueryPathOnlyCacheController)
+                self._raw.mount(prefix, adapter)
 
         self._in_etag_context += 1
 
     def _etag_tear(self):
         if self._in_etag_context == 1:
-            self._raw.umount("https://")
-            adapter = self._raw.umount("http://")
-            # XXX: This close is ugly, but I am not sure how one can link a cache
-            # controller to a http adapter in cachecontrol. See issue #42 on
-            # ionrock/cachecontrol @ github.
-            adapter.cache.close()
+            for prefix in ("https://", "http://"):
+                # XXX: This close is ugly, but I am not sure how one can link a cache
+                # controller to a http adapter in cachecontrol. See issue #42 on
+                # ionrock/cachecontrol @ github.
+                adapter = self._raw.umount(prefix)
+                adapter.cache.close()
         self._in_etag_context -= 1
 
     @property
