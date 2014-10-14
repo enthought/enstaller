@@ -728,11 +728,11 @@ def main(argv=None):
         add_url(config_filename, config, args.add_url)
         return
 
+    verify = not args.insecure
     if args.userpass:                             # --userpass
-        configure_authentication_or_exit(config, config_filename)
+        configure_authentication_or_exit(config, config_filename, verify)
         return
 
-    verify = not args.insecure
     if not config.is_auth_configured:
         configure_authentication_or_exit(config, config_filename, verify)
 
