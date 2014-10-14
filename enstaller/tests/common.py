@@ -40,6 +40,21 @@ R_JSON_NOAUTH_RESP = {'is_authenticated': False,
         'has_subscription': True,
         'subscription_level': u'basic'}
 
+SIMPLE_INDEX = {
+    "nose-1.3.4-1.egg": {
+        "available": True,
+        "build": 1,
+        "md5": "7fbd5a7c83ebbb14c42141ed734505ef",
+        "mtime": 1409944509.0,
+        "name": "nose",
+        "product": "free",
+        "python": "2.7",
+        "size": 334992,
+        "type": "egg",
+        "version": "1.3.4"
+    },
+}
+
 
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
