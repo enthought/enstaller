@@ -27,7 +27,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     mocked_session_factory,
                                     mock_print, mock_raw_input,
                                     PY_VER, R_JSON_AUTH_RESP)
-from enstaller.vendor import responses
+from enstaller.vendor import requests, responses
 
 from ..utils import (disp_store_info, install_req, install_time_string,
                      name_egg, print_installed, repository_factory,
@@ -487,3 +487,24 @@ class TestFetchJsonWithProgress(TestCase):
 
         # Then
         self.assertEqual(data, {})
+
+    @responses.activate
+    def test_handle_stripped_header_incomplete_data(self):
+        # Given
+        def callback(request):
+            self.assertTrue("gzip" in
+                            request.headers.get("Accept-Encoding", ""))
+
+            headers = {"Content-Encoding": ""}
+            incomplete_body = self._gzip_compress(b"{}")[:-1]
+            return (200, headers, incomplete_body)
+
+        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
+
+        config = Configuration()
+
+        # When/Then
+        session = Session.from_configuration(config)
+        resp = session.fetch("https://acme.com/index.json")
+        with self.assertRaises(requests.exceptions.ContentDecodingError):
+            data = _fetch_json_with_progress(resp, "acme.com", quiet=False)

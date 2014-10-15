@@ -12,6 +12,7 @@ from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 
 from egginst.utils import compute_md5
 
+from enstaller.vendor import requests
 from enstaller.verlib import NormalizedVersion, IrrationalVersionError
 from enstaller import plat
 
@@ -234,7 +235,15 @@ def decode_json_from_buffer(data):
         # compressed data. We try to detect this case here, and decompress it
         # as requests would do if gzip format is detected.
         logging.debug("Detected compressed data with stripped header")
-        data = zlib.decompress(data, 16 + zlib.MAX_WBITS)
+        try:
+            data = zlib.decompress(data, 16 + zlib.MAX_WBITS)
+        except (IOError, zlib.error) as e:
+            # ContentDecodingError is the exception raised by requests when
+            # urllib3 fails to decompress.
+            raise requests.exceptions.ContentDecodingError(
+                "Detected gzip-compressed response, but failed to decode it.",
+                 e)
+
     try:
         decoded_data = data.decode("utf8")
     except UnicodeDecodeError as e:
