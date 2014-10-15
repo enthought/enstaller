@@ -59,14 +59,13 @@ integration with :py:class:`~enstaller.config.Configuration` instances for
 settings (proxy, etc...).
 
 In addition to head/get/post methods, :py:class:`~enstaller.session.Session`
-instances have a slighly higher-level fetch method, which enables streaming and
-raises an exception if an HTTP error occurs::
+instances have a slighly higher-level download method, which enables streaming
+and raises an exception if an HTTP error occurs, and is robust against
+stalled/cancelled downloads::
 
-    resp = session.fetch(some_url)
-
-    with open("foo.bin", "wb") as fp:
-        for chunk in resp.iter_content(1024):
-            fp.write(chunk)
+    # target is the path for the created file. Will not exist if download fails
+    # (including cancelled by e.g. `Ctr+C`).
+    target = session.download(some_url)
 
 Creating remote repositories
 ============================
