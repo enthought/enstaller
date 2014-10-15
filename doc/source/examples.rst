@@ -8,10 +8,11 @@ Package search/listing
 =======================
 
 Most search, listing operations in enstaller are done through
-``Repository`` instances, which are containers of package metadata. For
-example, to list every egg installed in sys.prefix::
+:py:class:`~enstaller.repository.Repository` instances, which are
+containers of package metadata. For example, to list every egg installed
+in sys.prefix::
 
-    from enstaller.repository import Repository
+    from enstaller import Repository
 
     repository = Repository._from_prefixes([sys.prefix])
     for package in repository.iter_packages():
@@ -22,9 +23,11 @@ one can also list the most recent version for each package::
     for package in repository.iter_most_recent_packages():
         print("{0}-{1}".format(package.name, package.version))
 
-``Repository`` instances are "dumb" containers, and don't handle network
-connections, authentication, etc... A simple way to create a "real"
-repository is to start from a set of eggs::
+:py:class:`~.enstaller.repository.Repository` instances are "dumb" containers,
+and don't handle network connections, authentication, etc... A simple way to
+create a "real" repository is to start from a set of eggs::
+
+    from enstaller import Repository, RepositoryPackageMetadata
 
     repository = Repository()
     for path in glob.glob("*.egg"):
@@ -39,8 +42,8 @@ the package metadata origin.
 Connecting and authenticating
 =============================
 
-Http connections are handled through ``Session`` objects. To start a
-session, one may simply do::
+Http connections are handled through :py:class:`~enstaller.session.Session`
+objects. To start a session, one may simply do::
 
     from enstaller.configuration import Configuration
     from enstaller.session import Session
@@ -49,30 +52,29 @@ session, one may simply do::
     session = Session.from_configuration(configuration)
     session.authenticate(configuration.auth)
 
-``Session`` are thin wrappers around requests' Session. Its main features
-over requests' Session are etag handling, ``file://`` uri handling,
-pluggable authentication method as well as integration with
-``Configuration`` instances for settings (proxy, etc...).
+:py:class:`~enstaller.session.Session` are thin wrappers around requests'
+Session. Its main features over requests' Session are etag handling,
+``file://`` uri handling, pluggable authentication method as well as
+integration with :py:class:`~enstaller.config.Configuration` instances for
+settings (proxy, etc...).
 
-In addition to head/get/post methods, ``Session`` instances have a slighly
-higher-level fetch method, which enables streaming and raises an exception
-if an HTTP error occurs::
+In addition to head/get/post methods, :py:class:`~enstaller.session.Session`
+instances have a slighly higher-level download method, which enables streaming
+and raises an exception if an HTTP error occurs, and is robust against
+stalled/cancelled downloads::
 
-    from enstaller.fetch_utils import checked_content
-
-    resp = session.fetch(some_url)
-    # checked_content will automatically remove "foo.bin" if for any
-    # reason the block within the context manager is interrupted
-    # (exception, Ctrl+C)
-    with checked_content("foo.bin", "wb") as fp:
-        for chunk in resp.iter_content(1024):
-            fp.write(chunk)
+    # target is the path for the created file. Will not exist if download fails
+    # (including cancelled by e.g. `Ctr+C`).
+    target = session.download(some_url)
 
 Creating remote repositories
 ============================
 
 To create repositories from our legacy index.json formats, one can use the
 repository_factory method from enstaller.legacy_stores::
+
+    from enstaller import Configuration, Session
+    from enstaller.legacy_stores import repository_factory
 
     config = Configuration._from_legacy_locations()
 
@@ -81,12 +83,9 @@ repository_factory method from enstaller.legacy_stores::
 
     remote_repository = repository_factory(session, config.indices)
 
-    # Same, with etag-based caching:
+    # Same, with etag-based caching
     with session.etag():
         remote_repository = repository_factory(session, config.indices)
-
-Some API similar to repository_factory will appear at some point, once brood
-integration is implemented.
 
 .. note:: this works for both use_webservice enabled and disabled:
 

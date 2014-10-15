@@ -16,7 +16,7 @@ import zipfile
 
 from os.path import basename, isdir, isfile, islink, join
 
-from enstaller.errors import InvalidFormat
+from egginst.errors import InvalidFormat
 
 from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
 

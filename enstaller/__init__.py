@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 import logging
 
 import egginst._compat
@@ -11,3 +13,7 @@ try:
 except ImportError as e: # pragma: no cover
     __version__ = "no-built"
     __is_released__ = False
+
+from enstaller.config import Configuration
+from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.session import Session

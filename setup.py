@@ -108,7 +108,10 @@ write_version_py()
 kwds = {} # Additional keyword arguments for setup
 
 d = {}
-exec(compile(open(convert_path('enstaller/__init__.py')).read(), convert_path('enstaller/__init__.py'), 'exec'), d)
+exec(compile(open(convert_path('enstaller/__init__.py')).read(),
+             convert_path('enstaller/__init__.py'),
+             'exec'),
+     d)
 kwds['version'] = d['__version__']
 
 f = open('README.rst')

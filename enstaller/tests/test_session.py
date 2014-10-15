@@ -1,4 +1,5 @@
 import mock
+import os
 import shutil
 import tempfile
 
@@ -225,3 +226,39 @@ class TestSession(TestCase):
             resp = session._raw_get(url)
             self.assertTrue(resp.request.headers["user-agent"]. \
                             startswith(r_user_agent))
+
+    @responses.activate
+    def test_download(self):
+        # Given
+        url = "http://acme.com/foo.bin"
+        responses.add(responses.GET, url, body=b"some data")
+
+        config = Configuration()
+
+        # When
+        with Session.from_configuration(config) as session:
+            target = session.download(url)
+
+        # Then
+        try:
+            self.assertTrue(os.path.exists(target))
+            with open(target, "rb") as fp:
+                self.assertEqual(fp.read(), b"some data")
+        finally:
+            os.unlink(target)
+
+        self.assertEqual(target, "foo.bin")
+
+        # When
+        with Session.from_configuration(config) as session:
+            target = session.download(url, "foo.baz")
+
+        # Then
+        try:
+            self.assertTrue(os.path.exists(target))
+            with open(target, "rb") as fp:
+                self.assertEqual(fp.read(), b"some data")
+        finally:
+            os.unlink(target)
+
+        self.assertEqual(target, "foo.baz")
