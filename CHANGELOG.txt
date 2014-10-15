@@ -4,6 +4,7 @@
 Bug fixes:
 
   * Fix --userpass when -k/--insecure option is used.
+  * Fix backport for last modified entry in enpkg --info output
 
 2014-09-26   4.7.5:
 -------------------
