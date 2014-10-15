@@ -17,8 +17,9 @@ Repository
 .. autoclass:: Repository
     :members:
 
-Fetching eggs
-=============
+Session
+==========
 
-.. py:module:: enstaller.fetch
-.. autofunction:: checked_content
+.. py:module:: enstaller.session
+.. autoclass:: Session
+    :members:
