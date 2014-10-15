@@ -8,6 +8,7 @@ enpkg can access eggs from both local and HTTP repositories.
 from __future__ import print_function
 
 import argparse
+import datetime
 import errno
 import io
 import json
@@ -104,6 +105,8 @@ def info_option(remote_repository, installed_repository, name):
         print(pad + 'Available: %s' % metadata.available)
         print(pad + 'Python version: %s' % metadata.python)
         print(pad + 'Store location: %s' % metadata.store_location)
+        last_mtime = datetime.datetime.fromtimestamp(metadata.mtime)
+        print(pad + 'Last modified: %s' % last_mtime)
         print(pad + 'MD5: %s' % metadata.md5)
         print(pad + 'Size: %s' % metadata.size)
         reqs = set(r for r in metadata.packages)
