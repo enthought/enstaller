@@ -8,8 +8,9 @@ Package search/listing
 =======================
 
 Most search, listing operations in enstaller are done through
-``Repository`` instances, which are containers of package metadata. For
-example, to list every egg installed in sys.prefix::
+:py:class:`~enstaller.repository.Repository` instances, which are
+containers of package metadata. For example, to list every egg installed
+in sys.prefix::
 
     from enstaller import Repository
 
@@ -22,7 +23,7 @@ one can also list the most recent version for each package::
     for package in repository.iter_most_recent_packages():
         print("{0}-{1}".format(package.name, package.version))
 
-``Repository`` instances are "dumb" containers, and don't handle network
+`Repository` instances are "dumb" containers, and don't handle network
 connections, authentication, etc... A simple way to create a "real"
 repository is to start from a set of eggs::
 
@@ -41,8 +42,9 @@ the package metadata origin.
 Connecting and authenticating
 =============================
 
-Http connections are handled through ``Session`` objects. To start a
-session, one may simply do::
+Http connections are handled through
+:py:class:`~enstaller.session.Session` objects. To start a session, one
+may simply do::
 
     from enstaller.configuration import Configuration
     from enstaller.session import Session

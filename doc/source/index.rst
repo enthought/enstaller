@@ -1,14 +1,26 @@
 Welcome to enstaller's documentation!
 =====================================
 
-Enstaller is Enthought's package manager. It is currently being rewritten
-as a library with enpkg being a CLI on top of it.
+Enstaller is Enthought's package manager.
 
 User Guide
 ----------
 
+This part of the documentations describes the usage of enpkg and egginst,
+the main tools available from enstaller.
+
+Dev Guide
+---------
+
+This part of the documentation explains the main concepts of enstaller
+from a developer POV, that is people willing to use/extend enstaller in
+their application.
+
+Enstaller is currently being rewritten as a library with enpkg being a
+CLI on top of it, so the API is still in flux.
+
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
 
    examples
 
