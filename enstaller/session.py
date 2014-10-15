@@ -2,7 +2,8 @@ import collections
 import contextlib
 import os.path
 
-from egginst.utils import ensure_dir
+from egginst._compat import urlparse
+from egginst.utils import atomic_file, ensure_dir
 
 from enstaller import __version__
 from enstaller.auth.auth_managers import (BroodAuthenticator,
@@ -160,6 +161,25 @@ class Session(object):
     def authenticate(self, auth):
         self._authenticator.authenticate(self, auth)
         self._raw.auth = self._authenticator._auth
+
+    def download(self, url, target=None):
+        """ Safely download the content at the give url.
+
+        Safely here is understood as not leaving stalled content if the
+        download fails or is canceled. It uses streaming as so not to use too
+        much memory.
+        """
+        resp = self._raw.get(url, stream=True)
+        resp.raise_for_status()
+
+        if target is None:
+            target = os.path.basename(urlparse.urlparse(url).path)
+
+        with atomic_file(target) as fp:
+            for chunk in resp.iter_content(1024):
+                fp.write(chunk)
+
+        return target
 
     def fetch(self, url):
         resp = self._raw.get(url, stream=True)
