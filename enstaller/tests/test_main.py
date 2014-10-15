@@ -54,7 +54,8 @@ from .common import (create_prefix_with_eggs,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring,
                      mocked_session_factory, unconnected_enpkg_factory,
-                     FakeOptions, FAKE_MD5, FAKE_SIZE, DummyAuthenticator)
+                     FakeOptions, FAKE_MD5, FAKE_SIZE, R_JSON_AUTH_FREE_RESP,
+                     DummyAuthenticator)
 
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
@@ -412,8 +413,13 @@ class TestSearch(unittest.TestCase):
                        UserInfo(True), pat=re.compile(".*"))
                 self.assertMultiLineEqual(m.value, r_output)
 
+    @responses.activate
     def test_not_available(self):
+        responses.add(responses.GET,
+                      "https://acme.com/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_FREE_RESP))
         config = Configuration()
+        config.set_store_url("https://acme.com")
 
         r_output = textwrap.dedent("""\
             Name                   Versions           Product              Note
@@ -431,11 +437,12 @@ class TestSearch(unittest.TestCase):
                    dummy_repository_package_factory("dummy", "0.9.8", 1),
                    another_entry]
 
-        with mkdtemp() as d:
-            with mock_print() as m:
-                enpkg = create_prefix_with_eggs(config, d, remote_entries=entries)
-                search(enpkg._remote_repository,
-                       enpkg._installed_repository, config, UserInfo(True))
+        with Session.from_configuration(config) as session:
+            with mkdtemp() as d:
+                with mock_print() as m:
+                    enpkg = create_prefix_with_eggs(config, d, remote_entries=entries)
+                    search(enpkg._remote_repository,
+                           enpkg._installed_repository, config, session)
 
                 self.assertMultiLineEqual(m.value, r_output)
 

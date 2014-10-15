@@ -71,3 +71,22 @@ class TestUserInfo(TestCase):
 
         # Then
         self.assertTrue(user_info.is_authenticated)
+
+
+class TestSubscriptionLevel(TestCase):
+    def test_unsubscribed_user(self):
+        user_info = UserInfo(True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
+
+        user_info = UserInfo(False)
+        self.assertIsNone(user_info.subscription_level)
+
+    def test_subscribed_user(self):
+        user_info = UserInfo(True, has_subscription=True)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Basic or above")
+
+        user_info = UserInfo(True, has_subscription=False)
+        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
+
+        user_info = UserInfo(False, has_subscription=False)
+        self.assertIsNone(user_info.subscription_level)

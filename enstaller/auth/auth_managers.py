@@ -11,13 +11,6 @@ from .user_info import UserInfo
 
 class IAuthManager(with_metaclass(abc.ABCMeta)):
     @abc.abstractproperty
-    def user_info(self):
-        """ A UserInfo instance. Only valid once authenticated.
-
-        Will be cached, and raise an RuntimeError if not authenticated
-        """
-
-    @abc.abstractproperty
     def authenticate(self, session, auth):
         """ Authenticate.
 
@@ -45,14 +38,6 @@ class LegacyCanopyAuthManager(object):
     def __init__(self, url):
         self.url = url
         self._auth = None
-        self._user_info = None
-
-    @property
-    def user_info(self):
-        if self._auth is None:
-            raise RuntimeError("Not authenticated yet")
-        else:
-            return self._user_info
 
     def authenticate(self, session, auth):
         try:
@@ -70,8 +55,6 @@ class LegacyCanopyAuthManager(object):
         if not user.is_authenticated:
             msg = 'Authentication error: Invalid user login.'
             raise AuthFailedError(msg)
-        else:
-            self._user_info = user
 
         self._auth = auth
 
@@ -87,13 +70,6 @@ class OldRepoAuthManager(object):
     def __init__(self, index_urls):
         self.index_urls = index_urls
         self._auth = None
-
-    @property
-    def user_info(self):
-        if self._auth is None:
-            raise RuntimeError("Not authenticated yet")
-        else:
-            return UserInfo(is_authenticated=True)
 
     def authenticate(self, session, auth):
         for index_url, _ in self.index_urls:
@@ -132,13 +108,6 @@ class BroodAuthenticator(object):
     def __init__(self, url):
         self.url = url
         self._auth = None
-
-    @property
-    def user_info(self):
-        if self._auth is None:
-            raise RuntimeError("Not authenticated yet")
-        else:
-            return UserInfo(True)
 
     def authenticate(self, session, auth):
         url = self.url + "/api/v0/json/auth/tokens"

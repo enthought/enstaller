@@ -50,22 +50,36 @@ class CheckedChangeAuthTestCase(TestCase):
         self.session.close()
         shutil.rmtree(self.d)
 
+    @responses.activate
     def test_no_acct(self):
-        def mocked_authenticate(auth):
+        # Given
+        url = "https://acme.com"
+        auth_url = url + "/accounts/user/info/"
+
+        config = Configuration()
+        config.set_store_url(url)
+
+        def callback(request):
             if auth != ("valid_user", "valid_password"):
-                raise AuthFailedError()
+                return (403, {}, "")
+            return (200, {}, json.dumps(R_JSON_AUTH_RESP))
+
+        responses.add_callback(responses.GET, auth_url, callback)
 
         write_default_config(self.f)
-        with patch.object(self.session, 'authenticate', mocked_authenticate):
+
+        with Session.from_configuration(config) as session:
             config = Configuration()
+            config.set_store_url(url)
+
             auth = ("invalid_user", "invalid_password")
 
             with self.assertRaises(AuthFailedError):
-                usr = config._checked_change_auth(auth, self.session, self.f)
+                usr = config._checked_change_auth(auth, session, self.f)
 
             config = Configuration()
             auth = ("valid_user", "valid_password")
-            usr = config._checked_change_auth(auth, self.session, self.f)
+            usr = config._checked_change_auth(auth, session, self.f)
 
             self.assertTrue(usr.is_authenticated)
             self.assertEqual(config.auth, ("valid_user", "valid_password"))
@@ -79,32 +93,13 @@ class CheckedChangeAuthTestCase(TestCase):
 
         with session:
             usr = config._checked_change_auth(auth, session, self.f)
-            self.assertEqual(usr, DUMMY_USER)
+            self.assertEqual(usr, UserInfo(True))
 
     def test_nones(self):
         config = Configuration()
 
         with self.assertRaises(InvalidConfiguration):
             config.set_auth(None, None)
-
-
-class TestSubscriptionLevel(TestCase):
-    def test_unsubscribed_user(self):
-        user_info = UserInfo(True)
-        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
-
-        user_info = UserInfo(False)
-        self.assertIsNone(user_info.subscription_level)
-
-    def test_subscribed_user(self):
-        user_info = UserInfo(True, has_subscription=True)
-        self.assertEqual(user_info.subscription_level, "Canopy / EPD Basic or above")
-
-        user_info = UserInfo(True, has_subscription=False)
-        self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")
-
-        user_info = UserInfo(False, has_subscription=False)
-        self.assertIsNone(user_info.subscription_level)
 
 
 class AuthManagerBase(TestCase):
@@ -139,8 +134,8 @@ class TestOldReposAuthManager(AuthManagerBase):
         with session:
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
-            # Then
-            self.assertEqual(session.user_info, UserInfo(True))
+        # Then
+        self.assertEqual(session._raw.auth, (FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
     def test_simple(self):
@@ -149,10 +144,8 @@ class TestOldReposAuthManager(AuthManagerBase):
                       body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
+        # Then no exception
         self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
-
-        # Then
-        self.assertEqual(self.session.user_info, UserInfo(True))
 
     def test_connection_failure(self):
         with patch.object(self.session._raw, "head",
@@ -209,11 +202,8 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
 
         # When
         with session:
+            # Then no exception
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
-
-            # Then
-            self.assertEqual(session.user_info,
-                             UserInfo.from_json(R_JSON_AUTH_RESP))
 
     @responses.activate
     def test_simple(self):
@@ -222,11 +212,8 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
                       body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
+        # Then no exception
         self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
-
-        # Then
-        self.assertEqual(self.session.user_info,
-                         UserInfo.from_json(R_JSON_AUTH_RESP))
 
     def test_connection_failure(self):
         with patch.object(self.session._raw, "get",
@@ -276,8 +263,8 @@ class TestBroodAuthManager(AuthManagerBase):
         with session:
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
-        # Then
-        self.assertEqual(session.user_info, UserInfo(True))
+            # Then
+            self.assertEqual(session._raw.auth, ("dummy token", None))
 
     @responses.activate
     def test_simple(self):
@@ -290,7 +277,6 @@ class TestBroodAuthManager(AuthManagerBase):
 
         # Then
         self.assertEqual(self.session._raw.auth, ("dummy token", None))
-        self.assertEqual(self.session.user_info, UserInfo(True))
 
     def test_connection_failure(self):
         with patch.object(self.session._raw, "post",

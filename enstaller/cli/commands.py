@@ -4,6 +4,7 @@ import datetime
 import sys
 import textwrap
 
+from enstaller.auth import UserInfo
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
@@ -86,7 +87,7 @@ def revert(enpkg, revert_arg):
         print("Nothing to do")
 
 
-def search(remote_repository, installed_repository, config, user, pat=None):
+def search(remote_repository, installed_repository, config, session, pat=None):
     """
     Print the packages that are available in the (remote) repository.
 
@@ -125,6 +126,7 @@ def search(remote_repository, installed_repository, config, user, pat=None):
             disp_name = ''
 
     if config.use_webservice and not subscribed:
+        user = UserInfo.from_session(session)
         msg = textwrap.dedent("""\
             Note: some of those packages are not available at your current
             subscription level ({0!r}).""".format(user.subscription_level))
