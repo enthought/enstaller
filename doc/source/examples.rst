@@ -23,9 +23,9 @@ one can also list the most recent version for each package::
     for package in repository.iter_most_recent_packages():
         print("{0}-{1}".format(package.name, package.version))
 
-`Repository` instances are "dumb" containers, and don't handle network
-connections, authentication, etc... A simple way to create a "real"
-repository is to start from a set of eggs::
+:py:class:`~.enstaller.repository.Repository` instances are "dumb" containers,
+and don't handle network connections, authentication, etc... A simple way to
+create a "real" repository is to start from a set of eggs::
 
     from enstaller import Repository, RepositoryPackageMetadata
 
@@ -42,9 +42,8 @@ the package metadata origin.
 Connecting and authenticating
 =============================
 
-Http connections are handled through
-:py:class:`~enstaller.session.Session` objects. To start a session, one
-may simply do::
+Http connections are handled through :py:class:`~enstaller.session.Session`
+objects. To start a session, one may simply do::
 
     from enstaller.configuration import Configuration
     from enstaller.session import Session
@@ -53,14 +52,15 @@ may simply do::
     session = Session.from_configuration(configuration)
     session.authenticate(configuration.auth)
 
-``Session`` are thin wrappers around requests' Session. Its main features
-over requests' Session are etag handling, ``file://`` uri handling,
-pluggable authentication method as well as integration with
-``Configuration`` instances for settings (proxy, etc...).
+:py:class:`~enstaller.session.Session` are thin wrappers around requests'
+Session. Its main features over requests' Session are etag handling,
+``file://`` uri handling, pluggable authentication method as well as
+integration with :py:class:`~enstaller.config.Configuration` instances for
+settings (proxy, etc...).
 
-In addition to head/get/post methods, ``Session`` instances have a slighly
-higher-level fetch method, which enables streaming and raises an exception
-if an HTTP error occurs::
+In addition to head/get/post methods, :py:class:`~enstaller.session.Session`
+instances have a slighly higher-level fetch method, which enables streaming and
+raises an exception if an HTTP error occurs::
 
     resp = session.fetch(some_url)
 
