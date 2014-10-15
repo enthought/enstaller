@@ -11,7 +11,6 @@ User Guide
    :maxdepth: 1
 
    examples
-   dev_guide
 
 Reference
 ---------
