@@ -155,7 +155,8 @@ class TestSession(TestCase):
                 self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
 
         # When/Then
-        with Session.from_configuration(config, max_retries=3) as session:
+        config.set_max_retries(3)
+        with Session.from_configuration(config) as session:
             for prefix in ("http://", "https://"):
                 self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
 
@@ -171,7 +172,8 @@ class TestSession(TestCase):
                     self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
 
         # When/Then
-        with Session.from_configuration(config, max_retries=3) as session:
+        config.set_max_retries(3)
+        with Session.from_configuration(config) as session:
             with session.etag():
                 for prefix in ("http://", "https://"):
                     self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
@@ -187,15 +189,18 @@ class TestSession(TestCase):
             self.assertIsInstance(session._authenticator, LegacyCanopyAuthManager)
 
         # When/Then
-        with Session.from_configuration(config, verify=False) as session:
+        config = Configuration()
+        config.disable_ssl_verify()
+        with Session.from_configuration(config) as session:
             self.assertFalse(session._raw.verify)
 
         # Given
         config = Configuration()
         config.disable_webservice()
+        config.disable_ssl_verify()
 
         # When/Then
-        with Session.from_configuration(config, verify=False) as session:
+        with Session.from_configuration(config) as session:
             self.assertFalse(session._raw.verify)
             self.assertIsInstance(session._authenticator, OldRepoAuthManager)
 
@@ -204,8 +209,7 @@ class TestSession(TestCase):
         config.set_store_url("brood+http://acme.com")
 
         # When/Then
-        with Session.from_configuration(config, verify=False) as session:
-            self.assertFalse(session._raw.verify)
+        with Session.from_configuration(config) as session:
             self.assertIsInstance(session._authenticator, BroodAuthenticator)
 
     @responses.activate

@@ -88,18 +88,13 @@ class Session(object):
         self._in_etag_context = 0
 
     @classmethod
-    def from_configuration(cls, configuration, verify=True,
-                           max_retries=0):
+    def from_configuration(cls, configuration):
         """ Create a new session from a configuration.
 
         Parameters
         ----------
         configuration : Configuration
             The configuration to use.
-        verify : Bool
-            Whether to verify SSL CA.
-        max_retries : int
-            Max number of retries to connect to a remote server.
         """
         if configuration.store_kind == STORE_KIND_BROOD:
             klass = BroodAuthenticator
@@ -109,8 +104,8 @@ class Session(object):
             klass = OldRepoAuthManager
         authenticator = klass.from_configuration(configuration)
         return cls(authenticator, configuration.repository_cache,
-                   configuration.proxy_dict, verify=verify,
-                   max_retries=max_retries)
+                   configuration.proxy_dict, verify=configuration.ssl_verify,
+                   max_retries=configuration.max_retries)
 
     def close(self):
         self._raw.close()
