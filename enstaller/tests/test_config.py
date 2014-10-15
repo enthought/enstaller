@@ -730,6 +730,63 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(str(config.proxy), "http://acme.com:3128")
 
+    def test_ssl_verify_setup(self):
+        # When
+        config = Configuration()
+
+        # Then
+        self.assertTrue(config.ssl_verify)
+
+        # Given
+        data = StringIO("ssl_verify = True")
+
+        # When
+        config = Configuration.from_file(data)
+
+        # Then
+        self.assertTrue(config.ssl_verify)
+
+        # Given
+        data = StringIO("ssl_verify = False")
+
+        # When
+        config = Configuration.from_file(data)
+
+        # Then
+        self.assertFalse(config.ssl_verify)
+
+    def test_max_retries_setup(self):
+        # When
+        config = Configuration()
+
+        # Then
+        self.assertEqual(config.max_retries, 0)
+
+        # Given
+        data = StringIO("max_retries = 1")
+
+        # When
+        config = Configuration.from_file(data)
+
+        # Then
+        self.assertEqual(config.max_retries, 1)
+
+        # Given
+        data = StringIO("max_retries = 0")
+
+        # When
+        config = Configuration.from_file(data)
+
+        # Then
+        self.assertEqual(config.max_retries, 0)
+
+        # Given
+        data = StringIO("max_retries = 'a'")
+
+        # When/Then
+        with self.assertRaises(InvalidConfiguration):
+            Configuration.from_file(data)
+
     def test_parse_simple_unsupported_entry(self):
         # XXX: ideally, we would like to check for the warning, but doing so is
         # a bit too painful as it has not been backported to unittest2
@@ -1090,6 +1147,8 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertFalse(config.use_webservice)
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.indices, r_indices)
+        self.assertEqual(config.max_retries, 0)
+        self.assertTrue(config.ssl_verify)
 
     def test_basic_authentication(self):
         # Given
@@ -1146,3 +1205,38 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertFalse(config.use_webservice)
         self.assertEqual(config.repository_cache,
                          os.path.expanduser("~/foo/bar/{0}".format(custom_plat)))
+
+    def test_max_retries(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            max_retries: 1
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertEqual(config.max_retries, 1)
+
+    def test_ssl_verify(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            ssl_verify: True
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertTrue(config.ssl_verify)
+
+        # Given
+        yaml_string = textwrap.dedent("""\
+            ssl_verify: False
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.ssl_verify)

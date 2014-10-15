@@ -17,6 +17,8 @@ _AUTHENTICATION = "authentication"
 _AUTHENTICATION_TYPE = "type"
 _AUTHENTICATION_TYPE_BASIC = "basic"
 _AUTHENTICATION_TYPE_DIGEST = "digest"
+_MAX_RETRIES = "max_retries"
+_SSL_VERIFY = "ssl_verify"
 _USERNAME = "username"
 _PASSWORD = "password"
 _AUTH_STRING = "auth"
@@ -30,6 +32,17 @@ _SCHEMA = {
     "description": "Enstaller >= 4.8.0 configuration",
     "type": "object",
     "properties": {
+        "max_retries": {
+            "description": "Max number of time to retry connecting to a "
+                           "remote server or re-fetching data with invalid "
+                           "checksum",
+            "type": "integer"
+        },
+        "ssl_verify": {
+            "description": "Whether to actually check SSL CA certificate or "
+                           "not",
+            "type": "boolean"
+        },
         "store_url": {
             "description": "The url (schema + hostname only of the store to connect to).",  # noqa
             "type": "string"
@@ -127,6 +140,10 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         files_cache = os.path.expanduser(data[_FILES_CACHE]). \
             replace("{PLATFORM}", custom_plat)
         config._repository_cache = files_cache
+    if _MAX_RETRIES in data:
+        config.set_max_retries(int(data[_MAX_RETRIES]))
+    if _SSL_VERIFY in data and not data[_SSL_VERIFY]:
+        config.disable_ssl_verify()
 
     config.disable_webservice()
 
