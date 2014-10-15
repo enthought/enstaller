@@ -326,8 +326,24 @@ class Configuration(object):
                 else:
                     ret.disable_webservice()
 
+            def setup_ssl_verify(ssl_verify):
+                if ssl_verify:
+                    ret.enable_ssl_verify()
+                else:
+                    ret.disable_ssl_verify()
+
+            def setup_max_retries(raw_max_retries):
+                try:
+                    max_retries = int(raw_max_retries)
+                except ValueError as e:
+                    msg = "Invalid type for 'max_retries': {0!r}"
+                    raise InvalidConfiguration(msg.format(raw_max_retries))
+                else:
+                    ret.set_max_retries(max_retries)
+
             translator = {
                 "autoupdate": setup_autoupdate,
+                "max_retries": setup_max_retries,
                 "noapp": setup_noapp,
                 "prefix": ret.set_prefix,
                 "proxy": ret.set_proxy_from_string,
@@ -336,6 +352,7 @@ class Configuration(object):
                 "IndexedRepos": ret.set_indexed_repositories,
                 "EPD_auth": epd_auth_to_auth,
                 "EPD_username": epd_username_to_auth,
+                "ssl_verify": setup_ssl_verify,
                 "use_webservice": setup_webservice,
                 "use_pypi": setup_pypi,
             }
@@ -381,6 +398,9 @@ class Configuration(object):
         self._filename = None
         self._platform = plat.custom_plat
 
+        self._max_retries = 0
+        self._ssl_verify = True
+
     # Properties
     @property
     def autoupdate(self):
@@ -391,6 +411,13 @@ class Configuration(object):
 
     def disable_autoupdate(self):
         self._autoupdate = False
+
+    @property
+    def max_retries(self):
+        return self._max_retries
+
+    def set_max_retries(self, max_retries):
+        self._max_retries = max_retries
 
     @property
     def noapp(self):
@@ -411,6 +438,16 @@ class Configuration(object):
 
     def disable_pypi(self):
         self._use_pypi = False
+
+    @property
+    def ssl_verify(self):
+        return self._ssl_verify
+
+    def disable_ssl_verify(self):
+        self._ssl_verify = False
+
+    def enable_ssl_verify(self):
+        self._ssl_verify = True
 
     @property
     def use_webservice(self):

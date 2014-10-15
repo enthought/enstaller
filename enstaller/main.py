@@ -392,6 +392,7 @@ def _create_parser():
     p.add_argument("--add-url", metavar='URL',
                    help="add a repository URL to the configuration file")
     p.add_argument("--insecure", "-k", action="store_true",
+                   default=argparse.SUPPRESS,
                    help="Disable SSL cert verification")
     p.add_argument("--config", action="store_true",
                    help="display the configuration and exit")
@@ -412,9 +413,10 @@ def _create_parser():
     p.add_argument("--log", action="store_true", help="print revision log")
     p.add_argument('-l', "--list", action="store_true",
                    help="list the packages currently installed on the system")
-    p.add_argument("--max-retries", type=int, default=_DEFAULT_MAX_RETRIES,
+    p.add_argument("--max-retries", type=int,
+                   default=argparse.SUPPRESS,
                    help="Maximum number of retries for a checksum mismatch or "
-                        "a connection error (default: %(default)r).")
+                        "a connection error.")
     p.add_argument('-n', "--dry-run", action="store_true",
                    help="show what would have been downloaded/removed/installed")
     p.add_argument('-N', "--no-deps", action="store_true",
@@ -598,10 +600,16 @@ def main(argv=None):
     for prefix in prefixes:
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
-    verify = not args.insecure
-    max_retries = args.max_retries
-    with Session.from_configuration(config, verify=verify,
-                                    max_retries=max_retries) as session:
+    if hasattr(args, "insecure"):
+        if args.insecure:
+            config.disable_ssl_verify()
+        else:
+            config.enable_ssl_verify()
+
+    if hasattr(args, "max_retries"):
+        config.set_max_retries(args.max_retries)
+
+    with Session.from_configuration(config) as session:
         if dispatch_commands_without_enpkg(args, config, config_filename,
                                            prefixes, prefix, pat,
                                            session):
@@ -622,7 +630,7 @@ def main(argv=None):
                     console_progress_manager_factory)
         enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                       args.force or args.forceall,
-                      max_retries=args.max_retries)
+                      max_retries=config.max_retries)
 
         dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
                                      pat)
