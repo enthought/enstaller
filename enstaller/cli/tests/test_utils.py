@@ -17,7 +17,6 @@ from egginst.tests.common import DUMMY_EGG, mkdtemp
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
-from enstaller.plat import custom_plat
 from enstaller.repository import Repository
 from enstaller.session import Session
 from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
@@ -25,7 +24,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
                                     mocked_session_factory,
-                                    mock_print, mock_raw_input,
+                                    mock_index, mock_print, mock_raw_input,
                                     PY_VER, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
 
@@ -214,22 +213,6 @@ class TestUpdatesCheck(TestCase):
         self.assertItemsEqual(epd_update0.keys(), ["current", "update"])
         self.assertEqual(epd_update0["current"]["version"], "7.2")
         self.assertEqual(epd_update0["update"].version, "7.3")
-
-
-def mock_index(index_data):
-    def decorator(f):
-        @responses.activate
-        def wrapped(*a, **kw):
-            responses.add(responses.GET,
-                          "https://api.enthought.com/accounts/user/info/",
-                          body=json.dumps(R_JSON_AUTH_RESP))
-            url = "https://api.enthought.com/eggs/{0}/index.json"
-            responses.add(responses.GET,
-                          url.format(custom_plat),
-                          body=json.dumps(index_data))
-            return f(*a, **kw)
-        return wrapped
-    return decorator
 
 
 class TestInstallReq(TestCase):

@@ -1,4 +1,5 @@
 import json
+import os.path
 import platform
 import sys
 import textwrap
@@ -48,11 +49,12 @@ settings:
 You are logged in as dummy (David Cournapeau).
 Subscription level: Canopy / EPD Basic or above
 """)
-        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
+        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix,
+                                   version=__version__,
                                    platform=platform.platform(),
                                    arch=platform.architecture()[0],
                                    keyring_backend=_keyring_backend_name(),
-                                   prefix=config.prefix,
+                                   prefix=os.path.normpath(config.prefix),
                                    repository_cache=config.repository_cache)
 
         responses.add(responses.GET,

@@ -709,7 +709,7 @@ def print_config(config, prefix, session):
         print("config file:", config.filename)
     print("keyring backend: %s" % (_keyring_backend_name(), ))
     print("settings:")
-    print("    prefix = %s" % prefix)
+    print("    prefix = %s" % os.path.normpath(prefix))
     print("    %s = %s" % ("repository_cache", config.repository_cache))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))
