@@ -1,18 +1,23 @@
 from __future__ import print_function
 
 from egginst._compat import urlparse
-from egginst._compat import input, pathname2url, unquote, url2pathname
+from egginst._compat import PY2, input, pathname2url, unquote, url2pathname
 
+import json
+import logging
 import sys
+import zlib
 
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 
 from egginst.utils import compute_md5
 
+from enstaller.vendor import requests
 from enstaller.verlib import NormalizedVersion, IrrationalVersionError
 from enstaller import plat
 
 
+_GZIP_MAGIC = "1f8b"
 
 PY_VER = '%i.%i' % sys.version_info[:2]
 
@@ -208,3 +213,40 @@ def prompt_yes_no(message, force_yes=False):
     else:
         yn = input(message)
         return yn.lower() in set(['y', 'yes'])
+
+
+def _bytes_to_hex(bdata):
+    # Only use for tiny strings
+    if PY2:
+        return "".join("%02x" % (ord(c),) for c in bdata)
+    else:
+        return "".join("%02x" % c for c in bdata)
+
+
+def decode_json_from_buffer(data):
+    """
+    Returns the decoded json dictionary contained in data. Optionally
+    decompress the data if the buffer's data are detected as gzip-encoded.
+    """
+    if len(data) >= 2 and _bytes_to_hex(data[:2]) == _GZIP_MAGIC:
+        # Some firewall/gateway has the "feature" of stripping Content-Encoding
+        # from the response headers, without actually uncompressing the data,
+        # in which case requests will give use a response object with
+        # compressed data. We try to detect this case here, and decompress it
+        # as requests would do if gzip format is detected.
+        logging.debug("Detected compressed data with stripped header")
+        try:
+            data = zlib.decompress(data, 16 + zlib.MAX_WBITS)
+        except (IOError, zlib.error) as e:
+            # ContentDecodingError is the exception raised by requests when
+            # urllib3 fails to decompress.
+            raise requests.exceptions.ContentDecodingError(
+                "Detected gzip-compressed response, but failed to decode it.",
+                 e)
+
+    try:
+        decoded_data = data.decode("utf8")
+    except UnicodeDecodeError as e:
+        raise ValueError("Invalid index data, try again ({0!r})".format(e))
+
+    return json.loads(decoded_data)

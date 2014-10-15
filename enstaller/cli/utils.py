@@ -17,7 +17,7 @@ from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.solver import Request, Requirement, comparable_info
-from enstaller.utils import prompt_yes_no
+from enstaller.utils import decode_json_from_buffer, prompt_yes_no
 
 
 FMT = '%-20s %-20s %s'
@@ -244,7 +244,6 @@ def updates_check(remote_repository, installed_repository):
 
 
 # Private functions
-
 def _fetch_json_with_progress(resp, store_location, quiet=False):
     data = io.BytesIO()
 
@@ -260,7 +259,8 @@ def _fetch_json_with_progress(resp, store_location, quiet=False):
             data.write(chunk)
             progress.update(len(chunk))
 
-    return json.loads(data.getvalue().decode("utf-8"))
+    data = data.getvalue()
+    return decode_json_from_buffer(data)
 
 
 def _display_store_name(store_location):
