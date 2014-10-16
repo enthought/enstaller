@@ -1,3 +1,4 @@
+import datetime
 import errno
 import json
 import ntpath
@@ -8,6 +9,7 @@ import shutil
 import sys
 import tempfile
 import textwrap
+import time
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -399,6 +401,7 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {2}
             Store location: {3}
+            Last modified: {4}
             MD5: {0}
             Size: {1}
             Requirements: None
@@ -407,10 +410,12 @@ class TestInfoStrings(unittest.TestCase):
             Available: True
             Python version: {2}
             Store location: {3}
+            Last modified: {4}
             MD5: {0}
             Size: {1}
             Requirements: None
-        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, ""))
+        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, "",
+                   datetime.datetime.fromtimestamp(0.)))
 
         entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
                    dummy_repository_package_factory("enstaller", "4.6.3", 1)]
