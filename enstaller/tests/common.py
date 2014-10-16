@@ -34,6 +34,15 @@ R_JSON_AUTH_RESP = {
     'subscription_level': u'basic'
 }
 
+R_JSON_AUTH_FREE_RESP = {
+    'first_name': u'David',
+    'has_subscription': False,
+    'is_active': True,
+    'is_authenticated': True,
+    'last_name': u'Cournapeau',
+    'subscription_level': u'free'
+}
+
 R_JSON_NOAUTH_RESP = {'is_authenticated': False,
         'last_name': u'Cournapeau',
         'first_name': u'David',
@@ -59,15 +68,10 @@ SIMPLE_INDEX = {
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
         self._auth = None
-        self._user_info = user_info or UserInfo(True)
 
     @property
     def auth(self):
         return self._auth
-
-    @property
-    def user_info(self):
-        return self._user_info
 
     def authenticate(self, session, auth):
         self._auth = auth
