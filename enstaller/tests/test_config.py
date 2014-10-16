@@ -23,7 +23,7 @@ from enstaller.plat import custom_plat
 from enstaller import __version__
 
 from enstaller.config import (abs_expanduser,
-    configuration_read_search_order, get_path,
+    configuration_read_search_order,
     input_auth, prepend_url, print_config, _is_using_epd_username,
     convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
@@ -42,47 +42,6 @@ FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
 
-
-@contextlib.contextmanager
-def mock_default_filename_context(ret):
-    with mock.patch("enstaller.config.Configuration._default_filename") as m:
-        m.configure_mock(**{"return_value": ret})
-        yield m
-
-
-class TestGetPath(unittest.TestCase):
-    def test_home_config_exists(self):
-        home_dir = abs_expanduser("~")
-        def mocked_isfile(p):
-            if os.path.dirname(p) == home_dir:
-                return True
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), HOME_ENSTALLER4RC)
-
-    def test_home_config_doesnt_exist(self):
-        def mocked_isfile(p):
-            if p == HOME_ENSTALLER4RC:
-                return False
-            elif p == SYS_PREFIX_ENSTALLER4RC:
-                return True
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), SYS_PREFIX_ENSTALLER4RC)
-
-    def test_no_config(self):
-        def mocked_isfile(p):
-            if os.path.dirname(p) in configuration_read_search_order():
-                return False
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), None)
 
 class TestInputAuth(unittest.TestCase):
     @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
@@ -784,8 +743,8 @@ class TestConfiguration(unittest.TestCase):
             fp.write("store_url = \"http://acme.com\"")
 
         # When
-        with mock.patch("enstaller.config.get_path",
-                        return_value=default_config_file):
+        with mock.patch("enstaller.config.configuration_read_search_order",
+                        return_value=[self.prefix]):
             config = Configuration._from_legacy_locations()
 
         # Then
@@ -793,7 +752,8 @@ class TestConfiguration(unittest.TestCase):
 
     def test__from_legacy_locations_non_existing_path(self):
         # When/Then
-        with mock.patch("enstaller.config.get_path", return_value=None):
+        with mock.patch("enstaller.config.configuration_read_search_order",
+                        return_value=[self.prefix]):
             with self.assertRaises(InvalidConfiguration):
                 Configuration._from_legacy_locations()
 
