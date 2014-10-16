@@ -267,8 +267,9 @@ def _create_error_message(fp, exc):
 class Configuration(object):
     @classmethod
     def _from_legacy_locations(cls):
-        warnings.warn("get_path deprecated, use Configuration.from_filename "
-                    "with an explicit filename", DeprecationWarning)
+        warnings.warn("Using legacy location is deprecated, use "
+                      "Configuration.from_filename with an explicit "
+                      "filename instead", DeprecationWarning)
         config_path = None
         for p in configuration_read_search_order():
             candidate = os.path.join(p, ENSTALLER4RC_FILENAME)
