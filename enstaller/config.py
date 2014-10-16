@@ -268,11 +268,20 @@ def _create_error_message(fp, exc):
 class Configuration(object):
     @classmethod
     def _from_legacy_locations(cls):
-        config_filename = get_path()
-        if config_filename is None:
+        warnings.warn("Using legacy location is deprecated, use "
+                      "Configuration.from_filename with an explicit "
+                      "filename instead", DeprecationWarning)
+        config_path = None
+        for p in configuration_read_search_order():
+            candidate = os.path.join(p, ENSTALLER4RC_FILENAME)
+            if isfile(candidate):
+                config_path = candidate
+                break
+
+        if config_path is None:
             raise InvalidConfiguration("No default configuration found.")
         else:
-            return cls.from_file(config_filename)
+            return cls.from_file(config_path)
 
     @classmethod
     def from_yaml_filename(cls, filename):
@@ -293,82 +302,36 @@ class Configuration(object):
             ret = cls()
             def epd_auth_to_auth(epd_auth):
                 username, password = _decode_auth(epd_auth)
-                ret._username = username
-                ret._password = password
+                ret.set_auth(username, password)
 
             def epd_username_to_auth(username):
-                ret.set_username(username)
+                ret._username = username
                 if keyring is None:
                     ret._password = None
                 else:
                     ret._password = _get_keyring_password(username)
 
-            def setup_autoupdate(use_autoupdate):
-                if use_autoupdate:
-                    ret.enable_autoupdate()
-                else:
-                    ret.disable_autoupdate()
-
-            def setup_noapp(use_noapp):
-                if use_noapp:
-                    ret.disable_appinst()
-                else:
-                    ret.enable_appinst()
-
-            def setup_pypi(use_pypi):
-                if use_pypi:
-                    ret.enable_pypi()
-                else:
-                    ret.disable_pypi()
-
-            def setup_webservice(use_webservice):
-                if use_webservice:
-                    ret.enable_webservice()
-                else:
-                    ret.disable_webservice()
-
-            def setup_ssl_verify(ssl_verify):
-                if ssl_verify:
-                    ret.enable_ssl_verify()
-                else:
-                    ret.disable_ssl_verify()
-
-            def setup_max_retries(raw_max_retries):
-                try:
-                    max_retries = int(raw_max_retries)
-                except ValueError as e:
-                    msg = "Invalid type for 'max_retries': {0!r}"
-                    raise InvalidConfiguration(msg.format(raw_max_retries))
-                else:
-                    ret.set_max_retries(max_retries)
-
-            translator = {
-                "autoupdate": setup_autoupdate,
-                "max_retries": setup_max_retries,
-                "noapp": setup_noapp,
-                "prefix": ret.set_prefix,
-                "proxy": ret.set_proxy_from_string,
-                "repository_cache": ret.set_repository_cache,
-                "store_url": ret.set_store_url,
-                "IndexedRepos": ret.set_indexed_repositories,
-                "EPD_auth": epd_auth_to_auth,
-                "EPD_username": epd_username_to_auth,
-                "ssl_verify": setup_ssl_verify,
-                "use_webservice": setup_webservice,
-                "use_pypi": setup_pypi,
-            }
             try:
                 parsed = parse_assignments(fp)
             except (InvalidFormat, SyntaxError) as e:
                 msg = _create_error_message(fp, e)
                 raise InvalidConfiguration(msg)
 
-            for k, v in parsed.items():
-                if k in translator:
-                    translator[k](v)
+            # We need a custom translator to manage attributes in the
+            # configuration file without polluting the config class
+            translator = ret._name_to_setter.copy()
+            translator.update({
+                "EPD_auth": epd_auth_to_auth,
+                "EPD_username": epd_username_to_auth,
+                "IndexedRepos": translator["indexed_repositories"],
+            })
+
+            for name, value in parsed.items():
+                if name in translator:
+                    translator[name](value)
                 else:
                     warnings.warn("Unsupported configuration setting {0}, "
-                                  "ignored".format(k))
+                                  "ignored".format(name))
             return ret
 
         if isinstance(filename, string_types):
@@ -402,129 +365,132 @@ class Configuration(object):
         self._max_retries = 0
         self._ssl_verify = True
 
+        self._name_to_setter = {}
+        simple_attributes = [
+            ("autoupdate", "_autoupdate"),
+            ("noapp", "_noapp"),
+            ("ssl_verify", "_ssl_verify"),
+            ("use_pypi", "_use_pypi"),
+            ("use_webservice", "_use_webservice"),
+            ("username", "_username"),
+        ]
+        for name, private_attribute in simple_attributes:
+            self._name_to_setter[name] = \
+                self._simple_attribute_set_factory(private_attribute)
+
+        self._name_to_setter.update({
+            "indexed_repositories": self._set_indexed_repositories,
+            "max_retries": self._set_max_retries,
+            "prefix": self._set_prefix,
+            "proxy": self._set_proxy,
+            "repository_cache": self._set_repository_cache,
+            "store_url": self._set_store_url,
+        })
+
+    #-----------
     # Properties
-    @property
-    def autoupdate(self):
-        return self._autoupdate
-
-    def enable_autoupdate(self):
-        self._autoupdate = True
-
-    def disable_autoupdate(self):
-        self._autoupdate = False
-
-    @property
-    def max_retries(self):
-        return self._max_retries
-
-    def set_max_retries(self, max_retries):
-        self._max_retries = max_retries
-
-    @property
-    def noapp(self):
-        return self._noapp
-
-    def enable_appinst(self):
-        self._noapp = False
-
-    def disable_appinst(self):
-        self._noapp = True
-
-    @property
-    def use_pypi(self):
-        return self._use_pypi
-
-    def enable_pypi(self):
-        self._use_pypi = True
-
-    def disable_pypi(self):
-        self._use_pypi = False
-
-    @property
-    def ssl_verify(self):
-        return self._ssl_verify
-
-    def disable_ssl_verify(self):
-        self._ssl_verify = False
-
-    def enable_ssl_verify(self):
-        self._ssl_verify = True
-
-    @property
-    def use_webservice(self):
-        return self._use_webservice
-
-    def enable_webservice(self):
-        self._use_webservice = True
-
-    def disable_webservice(self):
-        self._use_webservice = False
-
-    @property
-    def prefix(self):
-        return self._prefix
-
-    def set_prefix(self, value):
-        self._prefix = abs_expanduser(value)
-
-    @property
-    def indexed_repositories(self):
-        return self._indexed_repositories
-
-    def set_indexed_repositories(self, urls):
-        self._indexed_repositories = [fill_url(url) for url in urls]
-
-    @property
-    def store_url(self):
-        return self._store_url
-
-    @property
-    def store_kind(self):
-        return self._store_kind
-
-    def set_store_url(self, url):
-        p = urlparse.urlparse(url)
-        if p.scheme.startswith(_BROOD_PREFIX):
-            url = url[len(_BROOD_PREFIX):]
-            self._store_kind = STORE_KIND_BROOD
-        self._store_url = url
-
-    @property
-    def repository_cache(self):
-        """ Absolute path where eggs will be cached."""
-        return self._repository_cache
-
-    def set_repository_cache(self, value):
-        """ Change the value of repository_cache."""
-        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
-
-    @property
-    def username(self):
-        return self._username
-
-    def set_username(self, value):
-        self._username = value
-
-    @property
-    def webservice_entry_point(self):
-        return fill_url("{0}/eggs/{1}/".
-                        format(self.store_url, self._platform))
-
+    #-----------
     @property
     def api_url(self):
+        """
+        Url to hit to get user information on api.e.com.
+        """
         return fill_url("{0}/accounts/user/info/".format(self.store_url))
+
+    @property
+    def auth(self):
+        """
+        (username, password) pair.
+        """
+        return (self._username, self._password)
+
+    @property
+    def autoupdate(self):
+        """
+        Whether enpkg should attempt updating itself.
+        """
+        return self._autoupdate
+
+    @property
+    def encoded_auth(self):
+        """
+        Auth information, encoded as expected by EPD_auth.
+        """
+        if not self.is_auth_configured:
+            raise InvalidConfiguration("EPD_auth is not available when "
+                                       "auth has not been configured.")
+        return _encode_auth(self._username, self._password)
 
     @property
     def filename(self):
         """
-        The filename this configuration was created from.
-
-        May be None if the configuration was not created from a file.
+        The filename this configuration was created from. May be None if the
+        configuration was not created from a file.
         """
         return self._filename
 
-    def set_proxy_from_string(self, s):
-        self._proxy = ProxyInfo.from_string(s)
+    @property
+    def indexed_repositories(self):
+        """
+        List of (old-style) repositories. Only actually used when
+        use_webservice is False.
+        """
+        return self._indexed_repositories
+
+    @property
+    def indices(self):
+        """
+        Returns a list of pair (index_url, store_location) for this given
+        configuration.
+
+        Takes into account webservice/no webservice and pypi True/False
+        """
+        if self.use_webservice:
+            index_url = store_url = self.webservice_entry_point + _INDEX_NAME
+            if self.use_pypi:
+                index_url +=  "?pypi=true"
+            else:
+                index_url +=  "?pypi=false"
+            return tuple([(index_url, store_url)])
+        else:
+            return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
+                         for url in self.indexed_repositories)
+
+    @property
+    def is_auth_configured(self):
+        """ Returns True if authentication is set up for this configuration
+        object.
+
+        Note: this only checks whether the auth is configured, not whether the
+        authentication information is correct.
+
+        """
+        if self._username and self._password is not None:
+            return True
+        else:
+            return False
+
+    @property
+    def max_retries(self):
+        """
+        Max attempts to retry an http connection or re-fetching data whose
+        checksum failed.
+        """
+        return self._max_retries
+
+    @property
+    def noapp(self):
+        """
+        Ignore appinst entries.
+        """
+        return self._noapp
+
+    @property
+    def prefix(self):
+        """
+        Prefix in which enpkg operates.
+        """
+        return self._prefix
 
     @property
     def proxy(self):
@@ -545,9 +511,65 @@ class Configuration(object):
             return {}
 
     @property
-    def auth(self):
-        return (self._username, self._password)
+    def repository_cache(self):
+        """
+        Absolute path where eggs will be cached.
+        """
+        return self._repository_cache
 
+    @property
+    def store_kind(self):
+        """
+        Store kind (brood, legacy canopy, old-repo style).
+        """
+        return self._store_kind
+
+    @property
+    def store_url(self):
+        """
+        The store url to hit for indices and eggs.
+        """
+        return self._store_url
+
+    @property
+    def ssl_verify(self):
+        """
+        Whether to verify SSL CA or not.
+        """
+        return self._ssl_verify
+
+    @property
+    def username(self):
+        """
+        Username
+        """
+        return self._username
+
+    @property
+    def use_pypi(self):
+        """
+        Whether to load pypi repositories (in `webservice` mode).
+        """
+        return self._use_pypi
+
+    @property
+    def use_webservice(self):
+        """
+        Whether to use canopy legacy or not.
+        """
+        return self._use_webservice
+
+    @property
+    def webservice_entry_point(self):
+        """
+        Whether to fetch indices and data (in `webservice` mode).
+        """
+        return fill_url("{0}/eggs/{1}/".
+                        format(self.store_url, self._platform))
+
+    #---------------
+    # Public methods
+    #---------------
     def set_auth(self, username, password):
         """ Set the internal authentication information.
 
@@ -558,7 +580,6 @@ class Configuration(object):
         password : str
             The password
         """
-
         if username is None or password is None:
             raise InvalidConfiguration(
                 "invalid authentication arguments: "
@@ -570,6 +591,23 @@ class Configuration(object):
     def reset_auth(self):
         self._username = None
         self._password = None
+
+    def set_auth_from_encoded(self, value):
+        try:
+            username, password = _decode_auth(value)
+        except Exception:
+            raise InvalidConfiguration("Invalid EPD_auth value")
+        else:
+            self.set_auth(username, password)
+
+    def update(self, **kw):
+        """ Set configuration attributes given as keyword arguments."""
+        for name, value  in kw.items():
+            setter = self._name_to_setter.get(name, None)
+            if name is None:
+                raise ValueError("Invalid setting name: {0!r}".format(name))
+            else:
+                setter(value)
 
     def write(self, filename):
         """ Write this configuration to the given filename.
@@ -604,6 +642,9 @@ class Configuration(object):
         with open(filename, "w") as fo:
             fo.write(RC_TMPL % variables)
 
+    #----------------
+    # Private methods
+    #----------------
     def _change_auth(self, filename):
         pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
         with open(filename, 'r') as fi:
@@ -639,76 +680,36 @@ class Configuration(object):
         print(subscription_message(self, user))
         return user
 
-    @property
-    def is_auth_configured(self):
-        """ Returns True if authentication is set up for this configuration
-        object.
+    def _set_indexed_repositories(self, urls):
+        self._indexed_repositories = tuple(fill_url(url) for url in urls)
 
-        Note: this only checks whether the auth is configured, not whether the
-        authentication information is correct.
-
-        """
-        if self._username and self._password is not None:
-            return True
-        else:
-            return False
-
-    @property
-    def encoded_auth(self):
-        if not self.is_auth_configured:
-            raise InvalidConfiguration("EPD_auth is not available when "
-                                       "auth has not been configured.")
-        return _encode_auth(self._username, self._password)
-
-    def set_auth_from_encoded(self, value):
+    def _set_max_retries(self, raw_max_retries):
         try:
-            username, password = _decode_auth(value)
-        except Exception:
-            raise InvalidConfiguration("Invalid EPD_auth value")
+            max_retries = int(raw_max_retries)
+        except ValueError as e:
+            msg = "Invalid type for 'max_retries': {0!r}"
+            raise InvalidConfiguration(msg.format(raw_max_retries))
         else:
-            self.set_auth(username, password)
+            self._max_retries = max_retries
 
-    @property
-    def indices(self):
-        """
-        Returns a list of pair (index_url, store_location) for this given
-        configuration.
+    def _set_prefix(self, prefix):
+        self._prefix = abs_expanduser(prefix)
 
-        Takes into account webservice/no webservice and pypi True/False
-        """
-        if self.use_webservice:
-            index_url = store_url = self.webservice_entry_point + _INDEX_NAME
-            if self.use_pypi:
-                index_url +=  "?pypi=true"
-            else:
-                index_url +=  "?pypi=false"
-            return [(index_url, store_url)]
-        else:
-            return [(url + _INDEX_NAME, url + _INDEX_NAME)
-                    for url in self.indexed_repositories]
+    def _set_proxy(self, proxy_string):
+        self._proxy = ProxyInfo.from_string(proxy_string)
 
+    def _set_store_url(self, url):
+        p = urlparse.urlparse(url)
+        if p.scheme.startswith(_BROOD_PREFIX):
+            url = url[len(_BROOD_PREFIX):]
+            self._store_kind = STORE_KIND_BROOD
+        self._store_url = url
 
-def get_auth():
-    warnings.warn("get_auth deprecated, use Configuration.get_auth instead",
-                  DeprecationWarning)
-    if get_path() is None:
-        raise InvalidConfiguration(
-            "No enstaller configuration found, no "
-            "authentication information available")
-    return Configuration._from_legacy_locations().auth
+    def _set_repository_cache(self, value):
+        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
 
-
-def get_path():
-    """
-    Return the absolute path to the config file.
-    """
-    warnings.warn("get_path deprecated, use Configuration.from_filename "
-                  "with an explicit filename", DeprecationWarning)
-    for p in configuration_read_search_order():
-        path = os.path.join(p, ENSTALLER4RC_FILENAME)
-        if isfile(path):
-            return path
-    return None
+    def _simple_attribute_set_factory(self, attribute_name):
+        return lambda value: setattr(self, attribute_name, value)
 
 
 def input_auth():

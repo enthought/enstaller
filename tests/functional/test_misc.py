@@ -31,7 +31,7 @@ class TestMisc(unittest.TestCase):
 
         # Given
         config = Configuration()
-        config.set_prefix(sys.prefix)
+        config.update(prefix=sys.prefix)
 
         template = textwrap.dedent("""\
 Python version: {pyver}

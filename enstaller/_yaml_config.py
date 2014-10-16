@@ -129,23 +129,23 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         config.set_auth(username, password)
 
     if _STORE_URL in data:
-        config.set_store_url(data[_STORE_URL])
+        config.update(store_url=data[_STORE_URL])
     if _REPOSITORIES in data:
         repository_urls = [
             config.store_url + "/repo/{0}/{{PLATFORM}}".format(repository)
             for repository in data[_REPOSITORIES]
         ]
-        config.set_indexed_repositories(repository_urls)
+        config.update(indexed_repositories=repository_urls)
     if _FILES_CACHE in data:
         files_cache = os.path.expanduser(data[_FILES_CACHE]). \
             replace("{PLATFORM}", custom_plat)
         config._repository_cache = files_cache
     if _MAX_RETRIES in data:
-        config.set_max_retries(int(data[_MAX_RETRIES]))
+        config.update(max_retries=data[_MAX_RETRIES])
     if _SSL_VERIFY in data and not data[_SSL_VERIFY]:
-        config.disable_ssl_verify()
+        config.update(ssl_verify=data[_SSL_VERIFY])
 
-    config.disable_webservice()
+    config.update(use_webservice=False)
 
     if isinstance(filename_or_fp, string_types):
         config._filename = filename_or_fp

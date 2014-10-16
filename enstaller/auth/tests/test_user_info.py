@@ -16,7 +16,7 @@ class TestUserInfo(TestCase):
         url = "https://api.enthought.com"
 
         config = Configuration()
-        config.set_store_url(url)
+        config.update(store_url=url)
 
         responses.add(responses.GET, url + "/accounts/user/info/", status=200,
                       body=json.dumps(R_JSON_AUTH_RESP))
@@ -36,8 +36,8 @@ class TestUserInfo(TestCase):
         url = "https://acme.com"
 
         config = Configuration()
-        config.disable_webservice()
-        config.set_indexed_repositories([url])
+        config.update(use_webservice=False)
+        config.update(indexed_repositories=[url])
 
         responses.add(responses.HEAD, config.indices[0][0], status=200)
 
@@ -58,7 +58,7 @@ class TestUserInfo(TestCase):
 
 
         config = Configuration()
-        config.set_store_url("brood+" + url)
+        config.update(store_url="brood+" + url)
 
         responses.add(responses.POST, token_url, status=200,
                       body=json.dumps({"token": "dummy token"}))

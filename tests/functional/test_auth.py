@@ -214,8 +214,7 @@ class TestAuth(unittest.TestCase):
         # Given
         repo = "http://acme.com/repo/ets/"
         config = Configuration()
-        config.disable_webservice()
-        config.set_indexed_repositories([repo])
+        config.update(use_webservice=False, indexed_repositories=[repo])
         config.set_auth("nono", "le petit robot")
         config.write(self.config)
 

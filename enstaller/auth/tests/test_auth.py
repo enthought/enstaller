@@ -57,7 +57,7 @@ class CheckedChangeAuthTestCase(TestCase):
         auth_url = url + "/accounts/user/info/"
 
         config = Configuration()
-        config.set_store_url(url)
+        config.update(store_url=url)
 
         def callback(request):
             if auth != ("valid_user", "valid_password"):
@@ -70,7 +70,7 @@ class CheckedChangeAuthTestCase(TestCase):
 
         with Session.from_configuration(config) as session:
             config = Configuration()
-            config.set_store_url(url)
+            config.update(store_url=url)
 
             auth = ("invalid_user", "invalid_password")
 
@@ -109,8 +109,8 @@ class AuthManagerBase(TestCase):
         self.prefix = tempfile.mkdtemp()
 
         self.config = Configuration()
-        self.config.disable_webservice()
-        self.config.set_indexed_repositories(["http://acme.com"])
+        self.config.update(use_webservice=False,
+                           indexed_repositories=["http://acme.com"])
         self.session = Session(self.klass.from_configuration(self.config),
                                self.prefix)
 

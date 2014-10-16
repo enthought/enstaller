@@ -156,7 +156,7 @@ class TestSession(TestCase):
                 self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
 
         # When/Then
-        config.set_max_retries(3)
+        config.update(max_retries=3)
         with Session.from_configuration(config) as session:
             for prefix in ("http://", "https://"):
                 self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
@@ -173,7 +173,7 @@ class TestSession(TestCase):
                     self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
 
         # When/Then
-        config.set_max_retries(3)
+        config.update(max_retries=3)
         with Session.from_configuration(config) as session:
             with session.etag():
                 for prefix in ("http://", "https://"):
@@ -191,14 +191,13 @@ class TestSession(TestCase):
 
         # When/Then
         config = Configuration()
-        config.disable_ssl_verify()
+        config.update(ssl_verify=False)
         with Session.from_configuration(config) as session:
             self.assertFalse(session._raw.verify)
 
         # Given
         config = Configuration()
-        config.disable_webservice()
-        config.disable_ssl_verify()
+        config.update(ssl_verify=False, use_webservice=False)
 
         # When/Then
         with Session.from_configuration(config) as session:
@@ -207,7 +206,7 @@ class TestSession(TestCase):
 
         # Given
         config = Configuration()
-        config.set_store_url("brood+http://acme.com")
+        config.update(store_url="brood+http://acme.com")
 
         # When/Then
         with Session.from_configuration(config) as session:

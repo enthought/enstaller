@@ -23,7 +23,7 @@ from enstaller.plat import custom_plat
 from enstaller import __version__
 
 from enstaller.config import (abs_expanduser,
-    configuration_read_search_order, get_auth, get_path,
+    configuration_read_search_order,
     input_auth, prepend_url, print_config, _is_using_epd_username,
     convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
@@ -42,47 +42,6 @@ FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
 
-
-@contextlib.contextmanager
-def mock_default_filename_context(ret):
-    with mock.patch("enstaller.config.Configuration._default_filename") as m:
-        m.configure_mock(**{"return_value": ret})
-        yield m
-
-
-class TestGetPath(unittest.TestCase):
-    def test_home_config_exists(self):
-        home_dir = abs_expanduser("~")
-        def mocked_isfile(p):
-            if os.path.dirname(p) == home_dir:
-                return True
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), HOME_ENSTALLER4RC)
-
-    def test_home_config_doesnt_exist(self):
-        def mocked_isfile(p):
-            if p == HOME_ENSTALLER4RC:
-                return False
-            elif p == SYS_PREFIX_ENSTALLER4RC:
-                return True
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), SYS_PREFIX_ENSTALLER4RC)
-
-    def test_no_config(self):
-        def mocked_isfile(p):
-            if os.path.dirname(p) in configuration_read_search_order():
-                return False
-            else:
-                return os.path.isfile(p)
-
-        with mock.patch("enstaller.config.isfile", mocked_isfile):
-            self.assertEqual(get_path(), None)
 
 class TestInputAuth(unittest.TestCase):
     @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
@@ -126,7 +85,7 @@ class TestWriteConfig(unittest.TestCase):
         proxystr = "http://acme.com:3128"
 
         config = Configuration()
-        config.set_proxy_from_string(proxystr)
+        config.update(proxy=proxystr)
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
@@ -157,7 +116,7 @@ class TestWriteConfig(unittest.TestCase):
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
-        config.set_store_url("https://acme.com")
+        config.update(store_url="https://acme.com")
 
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
@@ -271,7 +230,7 @@ class TestGetAuth(unittest.TestCase):
         attrs = {"get_password.return_value": FAKE_PASSWORD}
         mocked_keyring = mock.Mock(**attrs)
         with mock.patch("enstaller.config.keyring", mocked_keyring):
-            config.set_username(FAKE_USER)
+            config.update(username=FAKE_USER)
 
             self.assertFalse(mocked_keyring.get_password.called)
             self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
@@ -281,21 +240,6 @@ class TestGetAuth(unittest.TestCase):
         config = Configuration()
         self.assertEqual(config.auth, (None, None))
 
-    @make_keyring_unavailable
-    def test_deprecated_get_auth(self):
-        with mkdtemp() as d:
-            f = os.path.join(d, "enstaller4rc")
-            config = Configuration()
-            config.set_auth(FAKE_USER, FAKE_PASSWORD)
-            config.write(f)
-
-            with mock.patch("enstaller.config.get_path", lambda: f):
-                self.assertEqual(get_auth(), (FAKE_USER, FAKE_PASSWORD))
-
-    def test_without_existing_configuration(self):
-        with mock.patch("enstaller.config.get_path", lambda: None):
-            with self.assertRaises(InvalidConfiguration):
-                get_auth()
 
 class TestWriteAndChangeAuth(unittest.TestCase):
     def test_simple_set_auth(self):
@@ -522,7 +466,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration()
 
         # When
-        config.set_store_url("http://acme.com")
+        config.update(store_url="http://acme.com")
 
         # Then
         self.assertEqual(config.store_kind, "legacy")
@@ -532,7 +476,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration()
 
         # When
-        config.set_store_url("brood+http://acme.com")
+        config.update(store_url="brood+http://acme.com")
 
         # Then
         self.assertEqual(config.store_kind, "brood")
@@ -667,8 +611,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         config = Configuration()
-        config.set_indexed_repositories(["http://acme.com"])
-        config.disable_webservice()
+        config.update(indexed_repositories=["http://acme.com"],
+                      use_webservice=False)
 
         with mock_print() as m:
             print_config(config, config.prefix, Session(DummyAuthenticator(),
@@ -725,7 +669,7 @@ class TestConfiguration(unittest.TestCase):
 
         # When
         config = Configuration()
-        config.set_proxy_from_string(proxy_string)
+        config.update(proxy=proxy_string)
 
         # Then
         self.assertEqual(str(config.proxy), "http://acme.com:3128")
@@ -799,8 +743,8 @@ class TestConfiguration(unittest.TestCase):
             fp.write("store_url = \"http://acme.com\"")
 
         # When
-        with mock.patch("enstaller.config.get_path",
-                        return_value=default_config_file):
+        with mock.patch("enstaller.config.configuration_read_search_order",
+                        return_value=[self.prefix]):
             config = Configuration._from_legacy_locations()
 
         # Then
@@ -808,7 +752,8 @@ class TestConfiguration(unittest.TestCase):
 
     def test__from_legacy_locations_non_existing_path(self):
         # When/Then
-        with mock.patch("enstaller.config.get_path", return_value=None):
+        with mock.patch("enstaller.config.configuration_read_search_order",
+                        return_value=[self.prefix]):
             with self.assertRaises(InvalidConfiguration):
                 Configuration._from_legacy_locations()
 
@@ -827,7 +772,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.set_prefix(os.path.normpath("~/.env"))
+        config.update(prefix=os.path.normpath("~/.env"))
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
@@ -835,7 +780,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.set_repository_cache("~/.env/LOCAL-REPO")
+        config.update(repository_cache="~/.env/LOCAL-REPO")
         self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
 
     def test_set_epd_auth(self):
@@ -873,11 +818,11 @@ class TestConfiguration(unittest.TestCase):
 
     def test_indices_property(self):
         # Given
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(custom_plat),
             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
-        ]
+        ])
         config = Configuration()
 
         # When/Then
@@ -886,11 +831,11 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property_platform(self):
         # Given
         platform = "win-32"
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(platform),
             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
-        ]
+        ])
 
         # When
         config = Configuration()
@@ -901,11 +846,11 @@ class TestConfiguration(unittest.TestCase):
 
         # Given
         platform = "osx-32"
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(platform),
             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
-        ]
+        ])
 
         # When
         config = Configuration()
@@ -916,26 +861,26 @@ class TestConfiguration(unittest.TestCase):
 
     def test_indices_property_no_pypi(self):
         # Given
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
                 format(custom_plat),
              "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
-        ]
+        ])
         config = Configuration()
-        config.disable_pypi()
+        config.update(use_pypi=False)
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
 
     def test_indices_property_no_webservice(self):
         # Given
-        r_indices = [
+        r_indices = tuple((
             ("https://acme.com/{0}/index.json".format(custom_plat),
              "https://acme.com/{0}/index.json".format(custom_plat)),
-        ]
+        ))
         config = Configuration()
-        config.disable_webservice()
-        config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
+        config.update(use_webservice=False,
+                      indexed_repositories=["https://acme.com/{PLATFORM}/"])
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
@@ -1013,7 +958,7 @@ class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
         config = Configuration()
         with mkdtemp() as d:
-            config.set_repository_cache(d)
+            config.update(repository_cache=d)
             self.assertEqual(config.repository_cache, d)
 
     def test_non_writable_repository_cache(self):
@@ -1023,7 +968,7 @@ class TestMisc(unittest.TestCase):
         def mocked_makedirs(d):
             raise OSError("mocked makedirs")
         with mock.patch("os.makedirs", mocked_makedirs):
-            config.set_repository_cache(fake_dir)
+            config.update(repository_cache=fake_dir)
             self.assertNotEqual(config.repository_cache, fake_dir)
 
 
@@ -1103,12 +1048,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = [
+        r_indices = tuple((
             ('https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform),
              'https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform)),
             ('https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform),
              'https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform))
-        ]
+        ))
 
         with mkdtemp() as prefix:
             path = os.path.join(prefix, "enstaller.yaml")
@@ -1133,12 +1078,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = [
+        r_indices = tuple((
             ('http://acme.com/repo/enthought/free/{0}/index.json'.format(platform),
              'http://acme.com/repo/enthought/free/{0}/index.json'.format(platform)),
             ('http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform),
              'http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform))
-        ]
+        ))
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))
