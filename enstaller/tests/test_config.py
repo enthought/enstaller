@@ -23,7 +23,7 @@ from enstaller.plat import custom_plat
 from enstaller import __version__
 
 from enstaller.config import (abs_expanduser,
-    configuration_read_search_order, get_auth, get_path,
+    configuration_read_search_order, get_path,
     input_auth, prepend_url, print_config, _is_using_epd_username,
     convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
@@ -281,21 +281,6 @@ class TestGetAuth(unittest.TestCase):
         config = Configuration()
         self.assertEqual(config.auth, (None, None))
 
-    @make_keyring_unavailable
-    def test_deprecated_get_auth(self):
-        with mkdtemp() as d:
-            f = os.path.join(d, "enstaller4rc")
-            config = Configuration()
-            config.set_auth(FAKE_USER, FAKE_PASSWORD)
-            config.write(f)
-
-            with mock.patch("enstaller.config.get_path", lambda: f):
-                self.assertEqual(get_auth(), (FAKE_USER, FAKE_PASSWORD))
-
-    def test_without_existing_configuration(self):
-        with mock.patch("enstaller.config.get_path", lambda: None):
-            with self.assertRaises(InvalidConfiguration):
-                get_auth()
 
 class TestWriteAndChangeAuth(unittest.TestCase):
     def test_simple_set_auth(self):

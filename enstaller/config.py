@@ -702,16 +702,6 @@ class Configuration(object):
         return lambda value: setattr(self, attribute_name, value)
 
 
-def get_auth():
-    warnings.warn("get_auth deprecated, use Configuration.get_auth instead",
-                  DeprecationWarning)
-    if get_path() is None:
-        raise InvalidConfiguration(
-            "No enstaller configuration found, no "
-            "authentication information available")
-    return Configuration._from_legacy_locations().auth
-
-
 def get_path():
     """
     Return the absolute path to the config file.
