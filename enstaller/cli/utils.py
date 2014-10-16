@@ -11,6 +11,7 @@ from egginst._compat import urlparse
 from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)
 
+from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoPackageFound, UnavailablePackage
 from enstaller.legacy_stores import parse_index
@@ -49,7 +50,7 @@ def _is_any_package_unavailable(remote_repository, actions):
 
 def _notify_unavailable_package(config, requirement, session):
     username, __ = config.auth
-    user_info = session.user_info
+    user_info = UserInfo.from_session(session)
     subscription = user_info.subscription_level
     msg = textwrap.dedent("""\
         Cannot install {0!r}, as this package (or some of its requirements)

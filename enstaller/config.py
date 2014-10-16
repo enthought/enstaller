@@ -22,7 +22,8 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import _INDEX_NAME, DUMMY_USER, subscription_message
+from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
+                            UserInfo)
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
@@ -634,7 +635,7 @@ class Configuration(object):
         self.set_auth(*auth)
         self._change_auth(filename)
 
-        user = session.user_info
+        user = UserInfo.from_session(session)
         print(subscription_message(self, user))
         return user
 
@@ -763,7 +764,7 @@ def print_config(config, prefix, session):
     else:
         try:
             session.authenticate(config.auth)
-            user = session.user_info
+            user = UserInfo.from_session(session)
         except Exception as e:
             print(e)
     print(subscription_message(config, user))

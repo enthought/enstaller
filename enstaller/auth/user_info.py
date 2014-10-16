@@ -1,4 +1,10 @@
+from __future__ import absolute_import
+
 import json
+
+from enstaller.errors import AuthFailedError
+from enstaller.vendor import requests
+
 
 class UserInfo(object):
     @classmethod
@@ -12,6 +18,37 @@ class UserInfo(object):
                    json_data["last_name"],
                    json_data["has_subscription"],
                    json_data["subscription_level"])
+
+    @classmethod
+    def from_session(cls, session):
+        """
+        Returns the user information.
+
+        The session must be authenticated.
+
+        Parameters
+        ----------
+        session : Session
+            An enstaller session, used to connect to the server to get user
+            information.
+        """
+        # FIXME: circular import
+        from .auth_managers import LegacyCanopyAuthManager
+
+        if isinstance(session._authenticator, LegacyCanopyAuthManager):
+            try:
+                resp = session.get(session._authenticator.url)
+            except requests.exceptions.ConnectionError as e:
+                raise AuthFailedError(e)
+
+            try:
+                resp.raise_for_status()
+            except requests.exceptions.HTTPError as e:
+                raise AuthFailedError("Authentication error: %r" % str(e))
+
+            return cls.from_json_string(resp.content.decode("utf8"))
+        else:
+            return cls(True)
 
     def __init__(self, is_authenticated, first_name="", last_name="",
                  has_subscription=False, subscription_level="free"):
@@ -42,5 +79,6 @@ class UserInfo(object):
 
     def __eq__(self, other):
         return self.to_dict() == other.to_dict()
+
 
 DUMMY_USER = UserInfo(False)

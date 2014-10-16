@@ -201,7 +201,6 @@ def ensure_authenticated_config(config, config_filename, session,
     else:
         if not use_new_format:
             convert_auth_if_required(config_filename)
-        return session.user_info
 
 
 def configure_authentication_or_exit(config, config_filename,
@@ -273,7 +272,7 @@ def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
         return True
 
 
-def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
+def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
                                  pat):
     if args.dry_run:
         def print_actions(actions):
@@ -298,7 +297,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
 
     if args.search:                               # --search
         search(enpkg._remote_repository, enpkg._installed_repository,
-               config, user, pat)
+               config, session, pat)
         return
 
     if args.info:                                 # --info
@@ -618,9 +617,8 @@ def main(argv=None):
         if not config.is_auth_configured:
             configure_authentication_or_exit(config, config_filename,
                                              session)
-        user = ensure_authenticated_config(config, config_filename,
-                                           session,
-                                           use_new_format=use_new_format)
+        ensure_authenticated_config(config, config_filename, session,
+                                    use_new_format=use_new_format)
 
         repository = repository_factory(session, config.indices, args.quiet)
         if args.quiet:
@@ -632,7 +630,7 @@ def main(argv=None):
                       args.force or args.forceall,
                       max_retries=config.max_retries)
 
-        dispatch_commands_with_enpkg(args, enpkg, config, prefix, user, parser,
+        dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
                                      pat)
 
 

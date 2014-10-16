@@ -149,10 +149,6 @@ class Session(object):
                 adapter.cache.close()
         self._in_etag_context -= 1
 
-    @property
-    def user_info(self):
-        return self._authenticator.user_info
-
     def authenticate(self, auth):
         self._authenticator.authenticate(self, auth)
         self._raw.auth = self._authenticator._auth
