@@ -25,13 +25,13 @@ class ProxyInfo(object):
 
     def __init__(self, host, scheme="http", port=_DEFAULT_PORT, user=None,
                  password=None):
-        self.host = host
-        self.scheme = scheme
-        self.port = port
-        self.user = user or ""
-        self.password = password or ""
+        self._host = host
+        self._scheme = scheme
+        self._port = port
+        self._user = user or ""
+        self._password = password or ""
 
-        if self.password and not self.user:
+        if self._password and not self._user:
             msg = "One cannot create a proxy setting with a password but " \
                   "without a user "
             raise InvalidConfiguration(msg)
@@ -43,3 +43,23 @@ class ProxyInfo(object):
             netloc = "{0}:{1}@{2}".format(self.user, self.password, netloc)
 
         return urlparse.urlunparse((self.scheme, netloc, "", "", "", ""))
+
+    @property
+    def host(self):
+        return self._host
+
+    @property
+    def password(self):
+        return self._password
+
+    @property
+    def port(self):
+        return self._port
+
+    @property
+    def scheme(self):
+        return self._scheme
+
+    @property
+    def user(self):
+        return self._user
