@@ -601,13 +601,10 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     if hasattr(args, "insecure"):
-        if args.insecure:
-            config.disable_ssl_verify()
-        else:
-            config.enable_ssl_verify()
+        config.update(ssl_verify=not arg.insecure)
 
     if hasattr(args, "max_retries"):
-        config.set_max_retries(args.max_retries)
+        config.update(max_retries=args.max_retries)
 
     with Session.from_configuration(config) as session:
         if dispatch_commands_without_enpkg(args, config, config_filename,

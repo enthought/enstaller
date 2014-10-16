@@ -333,7 +333,7 @@ class TestMisc(unittest.TestCase):
 class TestSearch(unittest.TestCase):
     def test_no_installed(self):
         config = Configuration()
-        config.disable_webservice()
+        config.update(use_webservice=False)
 
         with mkdtemp() as d:
             # XXX: isn't there a better way to ensure ws at the end of a line
@@ -357,7 +357,7 @@ class TestSearch(unittest.TestCase):
 
     def test_installed(self):
         config = Configuration()
-        config.disable_webservice()
+        config.update(use_webservice=False)
 
         with mkdtemp() as d:
             r_output = textwrap.dedent("""\
@@ -378,7 +378,7 @@ class TestSearch(unittest.TestCase):
 
     def test_pattern(self):
         config = Configuration()
-        config.disable_webservice()
+        config.update(use_webservice=False)
         with mkdtemp() as d:
             r_output = textwrap.dedent("""\
                 Name                   Versions           Product              Note

@@ -126,7 +126,7 @@ class TestWriteConfig(unittest.TestCase):
         proxystr = "http://acme.com:3128"
 
         config = Configuration()
-        config.set_proxy_from_string(proxystr)
+        config.update(proxy=proxystr)
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
@@ -157,7 +157,7 @@ class TestWriteConfig(unittest.TestCase):
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
-        config.set_store_url("https://acme.com")
+        config.update(store_url="https://acme.com")
 
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
@@ -271,7 +271,7 @@ class TestGetAuth(unittest.TestCase):
         attrs = {"get_password.return_value": FAKE_PASSWORD}
         mocked_keyring = mock.Mock(**attrs)
         with mock.patch("enstaller.config.keyring", mocked_keyring):
-            config.set_username(FAKE_USER)
+            config.update(username=FAKE_USER)
 
             self.assertFalse(mocked_keyring.get_password.called)
             self.assertEqual(config.auth, (FAKE_USER, FAKE_PASSWORD))
@@ -522,7 +522,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration()
 
         # When
-        config.set_store_url("http://acme.com")
+        config.update(store_url="http://acme.com")
 
         # Then
         self.assertEqual(config.store_kind, "legacy")
@@ -532,7 +532,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration()
 
         # When
-        config.set_store_url("brood+http://acme.com")
+        config.update(store_url="brood+http://acme.com")
 
         # Then
         self.assertEqual(config.store_kind, "brood")
@@ -667,8 +667,8 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         config = Configuration()
-        config.set_indexed_repositories(["http://acme.com"])
-        config.disable_webservice()
+        config.update(indexed_repositories=["http://acme.com"],
+                      use_webservice=False)
 
         with mock_print() as m:
             print_config(config, config.prefix, Session(DummyAuthenticator(),
@@ -725,7 +725,7 @@ class TestConfiguration(unittest.TestCase):
 
         # When
         config = Configuration()
-        config.set_proxy_from_string(proxy_string)
+        config.update(proxy=proxy_string)
 
         # Then
         self.assertEqual(str(config.proxy), "http://acme.com:3128")
@@ -827,7 +827,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.set_prefix(os.path.normpath("~/.env"))
+        config.update(prefix=os.path.normpath("~/.env"))
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
@@ -835,7 +835,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.set_repository_cache("~/.env/LOCAL-REPO")
+        config.update(repository_cache="~/.env/LOCAL-REPO")
         self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
 
     def test_set_epd_auth(self):
@@ -922,7 +922,7 @@ class TestConfiguration(unittest.TestCase):
              "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
-        config.disable_pypi()
+        config.update(use_pypi=False)
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
@@ -934,8 +934,8 @@ class TestConfiguration(unittest.TestCase):
              "https://acme.com/{0}/index.json".format(custom_plat)),
         ]
         config = Configuration()
-        config.disable_webservice()
-        config.set_indexed_repositories(["https://acme.com/{PLATFORM}/"])
+        config.update(use_webservice=False,
+                      indexed_repositories=["https://acme.com/{PLATFORM}/"])
 
         # When/Then
         self.assertEqual(config.indices, r_indices)
@@ -1013,7 +1013,7 @@ class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):
         config = Configuration()
         with mkdtemp() as d:
-            config.set_repository_cache(d)
+            config.update(repository_cache=d)
             self.assertEqual(config.repository_cache, d)
 
     def test_non_writable_repository_cache(self):
@@ -1023,7 +1023,7 @@ class TestMisc(unittest.TestCase):
         def mocked_makedirs(d):
             raise OSError("mocked makedirs")
         with mock.patch("os.makedirs", mocked_makedirs):
-            config.set_repository_cache(fake_dir)
+            config.update(repository_cache=fake_dir)
             self.assertNotEqual(config.repository_cache, fake_dir)
 
 

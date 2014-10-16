@@ -114,8 +114,8 @@ class AuthManagerBase(TestCase):
         self.prefix = tempfile.mkdtemp()
 
         self.config = Configuration()
-        self.config.disable_webservice()
-        self.config.set_indexed_repositories(["http://acme.com"])
+        self.config.update(use_webservice=False,
+                           indexed_repositories=["http://acme.com"])
         self.session = Session(self.klass.from_configuration(self.config),
                                self.prefix)
 
