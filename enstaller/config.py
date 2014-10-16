@@ -481,14 +481,14 @@ class Configuration(object):
     @property
     def noapp(self):
         """
-        Ignore appint entries.
+        Ignore appinst entries.
         """
         return self._noapp
 
     @property
     def prefix(self):
         """
-        Prefix.
+        Prefix in which enpkg operates.
         """
         return self._prefix
 
