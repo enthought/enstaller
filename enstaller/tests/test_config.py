@@ -818,11 +818,11 @@ class TestConfiguration(unittest.TestCase):
 
     def test_indices_property(self):
         # Given
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(custom_plat),
             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
-        ]
+        ])
         config = Configuration()
 
         # When/Then
@@ -831,11 +831,11 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property_platform(self):
         # Given
         platform = "win-32"
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(platform),
             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
-        ]
+        ])
 
         # When
         config = Configuration()
@@ -846,11 +846,11 @@ class TestConfiguration(unittest.TestCase):
 
         # Given
         platform = "osx-32"
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
                 format(platform),
             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
-        ]
+        ])
 
         # When
         config = Configuration()
@@ -861,11 +861,11 @@ class TestConfiguration(unittest.TestCase):
 
     def test_indices_property_no_pypi(self):
         # Given
-        r_indices = [
+        r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
                 format(custom_plat),
              "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
-        ]
+        ])
         config = Configuration()
         config.update(use_pypi=False)
 
@@ -874,10 +874,10 @@ class TestConfiguration(unittest.TestCase):
 
     def test_indices_property_no_webservice(self):
         # Given
-        r_indices = [
+        r_indices = tuple((
             ("https://acme.com/{0}/index.json".format(custom_plat),
              "https://acme.com/{0}/index.json".format(custom_plat)),
-        ]
+        ))
         config = Configuration()
         config.update(use_webservice=False,
                       indexed_repositories=["https://acme.com/{PLATFORM}/"])
@@ -1048,12 +1048,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = [
+        r_indices = tuple((
             ('https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform),
              'https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform)),
             ('https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform),
              'https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform))
-        ]
+        ))
 
         with mkdtemp() as prefix:
             path = os.path.join(prefix, "enstaller.yaml")
@@ -1078,12 +1078,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = [
+        r_indices = tuple((
             ('http://acme.com/repo/enthought/free/{0}/index.json'.format(platform),
              'http://acme.com/repo/enthought/free/{0}/index.json'.format(platform)),
             ('http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform),
              'http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform))
-        ]
+        ))
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))

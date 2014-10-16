@@ -451,10 +451,10 @@ class Configuration(object):
                 index_url +=  "?pypi=true"
             else:
                 index_url +=  "?pypi=false"
-            return [(index_url, store_url)]
+            return tuple([(index_url, store_url)])
         else:
-            return [(url + _INDEX_NAME, url + _INDEX_NAME)
-                    for url in self.indexed_repositories]
+            return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
+                         for url in self.indexed_repositories)
 
     @property
     def is_auth_configured(self):
@@ -681,7 +681,7 @@ class Configuration(object):
         return user
 
     def _set_indexed_repositories(self, urls):
-        self._indexed_repositories = [fill_url(url) for url in urls]
+        self._indexed_repositories = tuple(fill_url(url) for url in urls)
 
     def _set_max_retries(self, raw_max_retries):
         try:
