@@ -600,7 +600,7 @@ def main(argv=None):
         logger.info('    %s%s', prefix, ['', ' (sys)'][prefix == sys.prefix])
 
     if hasattr(args, "insecure"):
-        config.update(ssl_verify=not arg.insecure)
+        config.update(ssl_verify=not args.insecure)
 
     if hasattr(args, "max_retries"):
         config.update(max_retries=args.max_retries)

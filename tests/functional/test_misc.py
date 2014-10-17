@@ -19,7 +19,7 @@ from enstaller.main import main_noexc
 from enstaller.vendor import responses
 from enstaller.utils import PY_VER
 
-from enstaller.tests.common import mock_print, R_JSON_AUTH_RESP
+from enstaller.tests.common import mock_index, mock_print, R_JSON_AUTH_RESP
 
 from .common import authenticated_config
 
@@ -101,3 +101,45 @@ Subscription level: Canopy / EPD Basic or above
             self.assertEqual(e.exception.code, 0)
             self.assertMultiLineEqual(m.value,
                                       "dummy 1.0.0-1\nanother_dummy 1.0.1-1\n")
+
+    @mock_index({
+        "fubar-1.0.0-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mtime": 0.0,
+            "name": "fubar",
+            "packages": [],
+            "product": "nono",
+            "python": PY_VER,
+            "size": 0,
+            "type": "egg",
+            "version": "1.0.0"
+            }}, "https://acme.com")
+    def test_insecure_flag(self):
+        # Given
+        responses.add(responses.GET,
+                      "https://acme.com/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_RESP))
+
+        config = Configuration()
+        config.update(store_url="https://acme.com")
+        config.set_auth("nono", "le gros robot")
+
+        # When
+        with self.assertRaises(SystemExit) as e:
+            with mock.patch("enstaller.main._ensure_config_or_die",
+                            return_value=config):
+                main_noexc(["-s", "fubar"])
+
+        # Then
+        self.assertEqual(e.exception.code, 0)
+
+        # When
+        with self.assertRaises(SystemExit) as e:
+            with mock.patch("enstaller.main._ensure_config_or_die",
+                            return_value=config):
+                main_noexc(["-ks", "fubar"])
+
+        # Then
+        self.assertEqual(e.exception.code, 0)
