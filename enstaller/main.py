@@ -724,7 +724,7 @@ def main(argv=None):
             sys.exit(1)
 
     if args.config:                               # --config
-        print_config(config, prefixes[0])
+        print_config(config, prefixes[0], not args.insecure)
         return
 
     if args.add_url:                              # --add-url
