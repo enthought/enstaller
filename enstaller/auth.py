@@ -97,7 +97,8 @@ def authenticate(configuration, verify=True):
             parse = urlparse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
                 resp = requests.head(index_url, auth=auth,
-                                     proxies=configuration.proxy_dict)
+                                     proxies=configuration.proxy_dict,
+                                     verify=verify)
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
