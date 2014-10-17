@@ -16,6 +16,7 @@ import re
 import site
 import sys
 import textwrap
+import urlparse
 import warnings
 
 from argparse import ArgumentParser
@@ -190,6 +191,12 @@ def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
         session.authenticate(config.auth)
+    except requests.exceptions.SSLError as e:
+        print(str(e))
+        p = urlparse.urlparse(e.request.url)
+        print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
+              "command".format(p.hostname))
+        sys.exit(-1)
     except AuthFailedError as e:
         username, _ = config.auth
         url = config.store_url
