@@ -163,6 +163,8 @@ def _web_auth(auth, api_url, proxies=None, verify=True):
 
     try:
         resp = requests.get(api_url, auth=auth, proxies=proxies, verify=verify)
+    except requests.exceptions.SSLError as e:
+        raise
     except requests.exceptions.ConnectionError as e:
         raise AuthFailedError(e)
     else:

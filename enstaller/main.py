@@ -53,6 +53,7 @@ from enstaller.requests_utils import _ResponseIterator
 from enstaller.resolve import Req, comparable_info
 from enstaller.solver import Solver, create_enstaller_update_repository
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
+from enstaller.vendor import requests
 
 
 logger = logging.getLogger(__name__)
@@ -457,6 +458,12 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
 def ensure_authenticated_config(config, config_filename, verify=True):
     try:
         user = authenticate(config, verify=verify)
+    except requests.exceptions.SSLError as e:
+        print(str(e))
+        p = urlparse.urlparse(e.request.url)
+        print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
+              "command".format(p.hostname))
+        sys.exit(-1)
     except AuthFailedError as e:
         username, _ = config.auth
         msg, is_auth_error = _invalid_authentication_message(config.store_url,

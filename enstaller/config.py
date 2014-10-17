@@ -10,6 +10,7 @@ import sys
 import textwrap
 import platform
 import tempfile
+import urlparse
 import warnings
 
 from getpass import getpass
@@ -26,6 +27,7 @@ from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
 from enstaller.utils import real_prefix
+from enstaller.vendor import requests
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 
@@ -697,6 +699,11 @@ def print_config(config, prefix, verify=True):
     user = DUMMY_USER
     try:
         user = authenticate(config, verify=verify)
-    except Exception as e:
+    except requests.exceptions.SSLError as e:
+        print()
         print(e)
+        p = urlparse.urlparse(e.request.url)
+        print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
+              "command".format(p.hostname))
+        sys.exit(-1)
     print(subscription_message(config, user))
