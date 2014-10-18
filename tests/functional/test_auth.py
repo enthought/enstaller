@@ -23,6 +23,7 @@ from enstaller.config import _encode_auth, _set_keyring_password, Configuration
 
 from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
                                     mock_raw_input)
+from enstaller.vendor import requests
 from enstaller.auth.tests.test_auth import R_JSON_AUTH_RESP
 
 from .common import (
@@ -51,6 +52,10 @@ class TestAuth(unittest.TestCase):
         with use_given_config_context(self.config):
             with self.assertSuccessfulExit():
                 main_noexc(["dummy_requirement"])
+
+    def _dummy_ssl_error_callback(self, request):
+        msg = "Dummy SSL error"
+        raise requests.exceptions.SSLError(msg, request=request)
 
     def test_auth_requested_without_config(self):
         """
@@ -240,3 +245,96 @@ class TestAuth(unittest.TestCase):
 
         # Then
         self.assertMultiLineEqual(m.value, error_message)
+
+    @mock_install_req
+    @fake_keyring
+    @responses.activate
+    def test_invalid_certificate_use_webservice(self):
+        self.maxDiff = None
+
+        # Given
+        url = "http://acme.com"
+        config = Configuration()
+        config.update(store_url=url)
+        config.set_auth("nono", "le petit robot")
+        config.write(self.config)
+
+        def callback(request):
+            msg = "Dummy SSL error"
+            raise requests.exceptions.SSLError(msg, request)
+        responses.add_callback(responses.GET, re.compile(url + "/*"),
+                               callback)
+
+        error_message = textwrap.dedent("""\
+            To connect to 'acme.com' insecurely, add the `-k` flag to enpkg command
+        """)
+
+        # When
+        with use_given_config_context(self.config):
+            with mock_print() as m:
+                with self.assertRaises(SystemExit):
+                    main(["dummy_requirement"])
+
+        # Then
+        self.assertMultiLineEqual(m.value, error_message)
+
+    @mock_install_req
+    @fake_keyring
+    @responses.activate
+    def test_invalid_certificate_dont_webservice(self):
+        self.maxDiff = None
+
+        # Given
+        url = "http://acme.com"
+        config = Configuration()
+        config.update(use_webservice=False,
+                      indexed_repositories=["http://acme.com/repo/"])
+        config.set_auth("nono", "le petit robot")
+        config.write(self.config)
+
+        def callback(request):
+            msg = "Dummy SSL error"
+            raise requests.exceptions.SSLError(msg, request=request)
+        responses.add_callback(responses.HEAD, re.compile(url + "/*"),
+                               callback)
+
+        error_message = textwrap.dedent("""\
+            To connect to 'acme.com' insecurely, add the `-k` flag to enpkg command
+        """)
+
+        # When
+        with use_given_config_context(self.config):
+            with mock_print() as m:
+                with self.assertRaises(SystemExit):
+                    main(["dummy_requirement"])
+
+        # Then
+        self.assertMultiLineEqual(m.value, error_message)
+
+    @fake_keyring
+    @responses.activate
+    def test_invalid_certificate_config(self):
+        self.maxDiff = None
+
+        # Given
+        url = "http://acme.com"
+        config = Configuration()
+        config.update(store_url=url)
+        config.set_auth("nono", "le petit robot")
+        config.write(self.config)
+
+        responses.add_callback(responses.GET, re.compile(url + "/*"),
+                               self._dummy_ssl_error_callback)
+
+        error_message = "To connect to 'acme.com' insecurely, add the `-k` " \
+                        "flag to enpkg command"
+
+        # When
+        with use_given_config_context(self.config):
+            with mock_print() as m:
+                with self.assertRaises(SystemExit):
+                    main(["--config"])
+
+        # Then
+        last_line = m.value.splitlines()[-1]
+        self.assertMultiLineEqual(last_line, error_message)
