@@ -54,7 +54,7 @@ class TestUserInfo(TestCase):
     def test_simple_brood_auth(self):
         # Given
         url = "https://acme.com"
-        token_url = url + "/api/v0/json/auth/tokens"
+        token_url = url + "/api/v0/json/auth/tokens/auth"
 
 
         config = Configuration()
