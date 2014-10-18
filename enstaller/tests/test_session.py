@@ -191,13 +191,13 @@ class TestSession(TestCase):
 
         # When/Then
         config = Configuration()
-        config.update(ssl_verify=False)
+        config.update(verify_ssl=False)
         with Session.from_configuration(config) as session:
             self.assertFalse(session._raw.verify)
 
         # Given
         config = Configuration()
-        config.update(ssl_verify=False, use_webservice=False)
+        config.update(verify_ssl=False, use_webservice=False)
 
         # When/Then
         with Session.from_configuration(config) as session:

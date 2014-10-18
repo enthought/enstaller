@@ -445,13 +445,13 @@ class Configuration(object):
         self._platform = plat.custom_plat
 
         self._max_retries = 0
-        self._ssl_verify = True
+        self._verify_ssl = True
 
         self._name_to_setter = {}
         simple_attributes = [
             ("autoupdate", "_autoupdate"),
             ("noapp", "_noapp"),
-            ("ssl_verify", "_ssl_verify"),
+            ("verify_ssl", "_verify_ssl"),
             ("use_pypi", "_use_pypi"),
             ("use_webservice", "_use_webservice"),
             ("username", "_username"),
@@ -614,11 +614,11 @@ class Configuration(object):
         return self._store_url
 
     @property
-    def ssl_verify(self):
+    def verify_ssl(self):
         """
         Whether to verify SSL CA or not.
         """
-        return self._ssl_verify
+        return self._verify_ssl
 
     @property
     def username(self):
