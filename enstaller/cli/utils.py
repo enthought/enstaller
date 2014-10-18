@@ -250,6 +250,7 @@ def humanize_ssl_error_and_die(ssl_exception, store_url):
     else:
         url = store_url
     p = urlparse.urlparse(url)
+    print("SSL error: {0}".format(str(ssl_exception)))
     print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
           "command".format(p.hostname))
     sys.exit(-1)

@@ -266,6 +266,7 @@ class TestAuth(unittest.TestCase):
                                callback)
 
         error_message = textwrap.dedent("""\
+            SSL error: [Errno Dummy SSL error] <PreparedRequest [GET]>
             To connect to 'acme.com' insecurely, add the `-k` flag to enpkg command
         """)
 
@@ -299,6 +300,7 @@ class TestAuth(unittest.TestCase):
                                callback)
 
         error_message = textwrap.dedent("""\
+            SSL error: Dummy SSL error
             To connect to 'acme.com' insecurely, add the `-k` flag to enpkg command
         """)
 
