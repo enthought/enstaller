@@ -43,12 +43,12 @@ class LegacyCanopyAuthManager(object):
         try:
             resp = session._raw_get(self.url, auth=auth)
         except requests.exceptions.ConnectionError as e:
-            raise AuthFailedError(e)
+            raise AuthFailedError(str(e), e)
 
         try:
             resp.raise_for_status()
         except requests.exceptions.HTTPError as e:
-            raise AuthFailedError("Authentication error: %r" % str(e))
+            raise AuthFailedError("Authentication error: %r" % str(e), e)
 
         # See if web API refused to authenticate
         user = UserInfo.from_json_string(resp.content.decode("utf8"))
@@ -78,7 +78,7 @@ class OldRepoAuthManager(object):
                 try:
                     resp = session._raw_head(index_url, auth=auth)
                 except requests.exceptions.ConnectionError as e:
-                    raise AuthFailedError(e)
+                    raise AuthFailedError(str(e), e)
 
                 try:
                     resp.raise_for_status()
@@ -86,13 +86,13 @@ class OldRepoAuthManager(object):
                     http_code = resp.status_code
                     if http_code in (401, 403):
                         msg = "Authentication error: {0!r}".format(str(e))
-                        raise AuthFailedError(msg)
+                        raise AuthFailedError(msg, e)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
                               format(index_url, str(e))
-                        raise AuthFailedError(msg)
+                        raise AuthFailedError(msg, e)
                     else:
-                        raise AuthFailedError(str(e))
+                        raise AuthFailedError(str(e), e)
         self._auth = auth
 
 
