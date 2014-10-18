@@ -110,7 +110,7 @@ class BroodAuthenticator(object):
         self._auth = None
 
     def authenticate(self, session, auth):
-        url = self.url + "/api/v0/json/auth/tokens"
+        url = self.url + "/api/v0/json/auth/tokens/auth"
         try:
             resp = session._raw_post(url, auth=auth)
         except requests.exceptions.ConnectionError as e:
