@@ -109,7 +109,8 @@ def _get_writable_local_dir(local_dir):
                 format(local_dir))
     return tempfile.mkdtemp()
 
-RC_TMPL = """\
+# Kept for backward compatibility
+RC_DEFAULT_TEMPLATE = """\
 # enstaller configuration file
 # ============================
 #
@@ -171,6 +172,63 @@ IndexedRepos = [
 #use_pypi = False
 """
 
+RC_TEMPLATE = """\
+# enstaller configuration file
+# ============================
+#
+# This file contains the default package repositories and configuration
+# used by enstaller %(version)s for the Python %(py_ver)s environment:
+#
+#   sys.prefix = %(sys_prefix)r
+#
+# This file was initially created by running the enpkg command.
+
+%(auth_section)s
+
+# `use_webservice` refers to using 'https://api.enthought.com/eggs/'.
+# The default is True; that is, the webservice URL is used for fetching
+# eggs.  Uncommenting changes this behavior to using the explicit
+# IndexedRepos listed below.
+use_webservice = %(use_webservice)s
+
+# When use_webservice is True, one can control the store entry point enpkg will
+# talk to. If not specified, a default will be used. Mostly useful for testing
+store_url = "%(store_url)s"
+
+# The enpkg command searches for eggs in the list `IndexedRepos` defined
+# below.  When enpkg searches for an egg, it tries each repository in
+# this list in order and selects the first one that matches, ignoring
+# remaining repositories.  Therefore, the order of this list matters.
+#
+# For local repositories, the index file is optional.  Remember that on
+# Windows systems backslashes in a directory path need to escaped, e.g.:
+# r'file://C:\\repository\\' or 'file://C:\\\\repository\\\\'
+IndexedRepos = [
+%(indexed_repositories)s
+]
+
+# Install prefix (enpkg --prefix and --sys-prefix options overwrite
+# this).  When this variable is not provided, it will default to the
+# value of sys.prefix (within the current interpreter running enpkg).
+prefix = %(sys_prefix)r
+
+# When running enpkg behind a firewall it might be necessary to use a
+# proxy to access the repositories.  The URL for the proxy can be set
+# here.  Note that the enpkg --proxy option will overwrite this setting.
+%(proxy_line)s
+
+# Uncomment the next line to disable application menu-item installation.
+# This only affects the few packages that install menu items, such as
+# IPython.
+#noapp = True
+
+# Uncomment the next line to turn off automatic prompts to update
+# enstaller.
+#autoupdate = False
+
+# Whether to consider pypi eggs
+use_pypi = %(use_pypi)s
+"""
 
 def _decode_auth(s):
     parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
@@ -205,7 +263,31 @@ def write_default_config(filename):
         raise EnstallerException(msg.format(filename))
     else:
         config = Configuration()
-        config.write(filename)
+
+        username, password = config.auth
+        if username and password:
+            authline = 'EPD_auth = %r' % config.encoded_auth
+            auth_section = textwrap.dedent("""
+            # A Canopy / EPD subscriber authentication is required to access the
+            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
+            # --userpass' command, which will ask you for your email address
+            # password.
+            %s
+            """ % authline)
+        else:
+            auth_section = ''
+
+        if config.proxy:
+            proxy_line = 'proxy = %r' % str(config.proxy)
+        else:
+            proxy_line = ('#proxy = <proxy string>  '
+                          '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
+
+        variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version":
+                     __version__, "proxy_line": proxy_line, "auth_section":
+                     auth_section}
+        with open(filename, "w") as fo:
+            fo.write(RC_DEFAULT_TEMPLATE % variables)
 
 
 def _is_using_epd_username(filename_or_fp):
@@ -636,11 +718,31 @@ class Configuration(object):
             proxy_line = ('#proxy = <proxy string>  '
                           '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
 
+        # XXX: because setting indexed repositories use string replacement
+        # (sigh...), we need to write the IndexedRepos section in a very specific
+        # way:
+        #
+        #     IndexedRepos = [
+        #        url1,
+        #        url2
+        #    ]
+        indexed_repos_string = "\n".join("    %r," % (repo,)
+                                         for repo in self.indexed_repositories)
+
+        if self.store_kind == STORE_KIND_BROOD:
+            store_url = _BROOD_PREFIX + self.store_url
+        else:
+            store_url = self.store_url
+
         variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version":
                      __version__, "proxy_line": proxy_line, "auth_section":
-                     auth_section}
+                     auth_section, "store_url": store_url,
+                     "indexed_repositories": indexed_repos_string,
+                     "use_pypi": self.use_pypi,
+                     "use_webservice": self.use_webservice,
+                     }
         with open(filename, "w") as fo:
-            fo.write(RC_TMPL % variables)
+            fo.write(RC_TEMPLATE % variables)
 
     #----------------
     # Private methods

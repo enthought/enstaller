@@ -91,7 +91,7 @@ class TestAuth(unittest.TestCase):
         r_output = textwrap.dedent("""\
         Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
         your credentials/configuration and try again (original error is:
-        "Authentication error: '401 Client Error: None'").
+        '401 Client Error: None').
 
 
         No modification was written.
@@ -144,7 +144,7 @@ class TestAuth(unittest.TestCase):
         r_output = textwrap.dedent("""\
             Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
             your credentials/configuration and try again (original error is:
-            "Authentication error: '401 Client Error: None'").
+            '401 Client Error: None').
 
 
             You can change your authentication details with 'enpkg --userpass'.
@@ -211,6 +211,8 @@ class TestAuth(unittest.TestCase):
     @fake_keyring
     @responses.activate
     def test_401_index_handling(self):
+        self.maxDiff = None
+
         # Given
         repo = "http://acme.com/repo/ets/"
         config = Configuration()
@@ -218,13 +220,13 @@ class TestAuth(unittest.TestCase):
         config.set_auth("nono", "le petit robot")
         config.write(self.config)
 
-        responses.add(responses.GET, re.compile(config.api_url + "*"),
-                      status=401)
+        url = repo + "index.json"
+        responses.add(responses.HEAD, url, status=401)
 
         error_message = textwrap.dedent("""\
-            Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
+            Could not authenticate with user 'nono' against 'http://acme.com/repo/ets/index.json'. Please check
             your credentials/configuration and try again (original error is:
-            "Authentication error: '401 Client Error: None'").
+            '401 Client Error: None').
 
 
             You can change your authentication details with 'enpkg --userpass'.

@@ -30,7 +30,13 @@ class InvalidFormat(InvalidConfiguration):
         return self.message
 
 class AuthFailedError(EnstallerException):
-    pass
+    def __init__(self, *args):
+        super(AuthFailedError, self).__init__(*args)
+        self.message = args[0]
+        if len(args) > 1:
+            self.original_exception = args[1]
+        else:
+            self.original_exception = None
 
 class EnpkgError(EnstallerException):
     # FIXME: why is this a class-level attribute ?

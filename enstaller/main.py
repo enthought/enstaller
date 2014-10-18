@@ -21,7 +21,7 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
-from egginst._compat import http_client
+from egginst._compat import http_client, urlparse
 from egginst.progress import console_progress_manager_factory
 
 import enstaller
@@ -43,6 +43,7 @@ from enstaller.solver import Request, Requirement
 from enstaller.solver.core import (create_enstaller_update_repository,
                                    install_actions_enstaller)
 from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
+from enstaller.vendor import requests
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
@@ -153,9 +154,9 @@ def get_config_filename(use_sys_config):
     return config_filename
 
 
-def _invalid_authentication_message(auth_url, username, original_error_string):
+def _invalid_authentication_message(auth_url, username, original_error):
     if "routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed" \
-            in original_error_string:
+            in str(original_error):
         paragraph1 = textwrap.fill(textwrap.dedent("""\
             Could not authenticate against {0!r} because the underlying SSL
             library used by enpkg could not verify the CA certificate. This
@@ -180,7 +181,7 @@ def _invalid_authentication_message(auth_url, username, original_error_string):
             Could not authenticate with user '{0}' against {1!r}. Please check
             your credentials/configuration and try again (original error is:
             {2!r}).
-            """.format(username, auth_url, original_error_string))
+            """.format(username, auth_url, str(original_error)))
         auth_error = True
     return msg, auth_error
 
@@ -191,8 +192,18 @@ def ensure_authenticated_config(config, config_filename, session,
         session.authenticate(config.auth)
     except AuthFailedError as e:
         username, _ = config.auth
-        msg, is_auth_error = _invalid_authentication_message(config.store_url,
-                                                             username, str(e))
+        url = config.store_url
+        if not config.use_webservice \
+            and isinstance(e.original_exception, requests.exceptions.HTTPError):
+                url = e.original_exception.request.url
+        if e.original_exception is None:
+            msg, is_auth_error = _invalid_authentication_message(url,
+                                                                 username,
+                                                                 e.message)
+        else:
+            msg, is_auth_error = _invalid_authentication_message(url,
+                                                                 username,
+                                                                 str(e.original_exception))
         print(msg)
         if is_auth_error:
             print("\nYou can change your authentication details with "
@@ -221,8 +232,13 @@ def configure_authentication_or_exit(config, config_filename,
     try:
         config._checked_change_auth((username, password), session, config_filename)
     except AuthFailedError as e:
-        msg, _ = _invalid_authentication_message(config.store_url, username,
-                                                 str(e))
+        if e.original_exception is None:
+            msg, _ = _invalid_authentication_message(config.store_url,
+                                                     username, str(e))
+        else:
+            msg, _ = _invalid_authentication_message(config.store_url,
+                                                     username,
+                                                     str(e.original_exception))
         print(msg)
         print("\nNo modification was written.")
         sys.exit(-1)
