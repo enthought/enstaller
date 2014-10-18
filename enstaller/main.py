@@ -16,7 +16,6 @@ import re
 import site
 import sys
 import textwrap
-import urlparse
 import warnings
 
 from argparse import ArgumentParser
