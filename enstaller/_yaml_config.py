@@ -44,7 +44,8 @@ _SCHEMA = {
             "type": "boolean"
         },
         "store_url": {
-            "description": "The url (schema + hostname only of the store to connect to).",  # noqa
+            "description": "The url (schema + hostname only of the store to " \
+                           "connect to).",
             "type": "string"
         },
         "files_cache": {
