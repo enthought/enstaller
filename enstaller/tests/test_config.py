@@ -674,30 +674,30 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(str(config.proxy), "http://acme.com:3128")
 
-    def test_ssl_verify_setup(self):
+    def test_verify_ssl_setup(self):
         # When
         config = Configuration()
 
         # Then
-        self.assertTrue(config.ssl_verify)
+        self.assertTrue(config.verify_ssl)
 
         # Given
-        data = StringIO("ssl_verify = True")
+        data = StringIO("verify_ssl = True")
 
         # When
         config = Configuration.from_file(data)
 
         # Then
-        self.assertTrue(config.ssl_verify)
+        self.assertTrue(config.verify_ssl)
 
         # Given
-        data = StringIO("ssl_verify = False")
+        data = StringIO("verify_ssl = False")
 
         # When
         config = Configuration.from_file(data)
 
         # Then
-        self.assertFalse(config.ssl_verify)
+        self.assertFalse(config.verify_ssl)
 
     def test_max_retries_setup(self):
         # When
@@ -1093,7 +1093,7 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertEqual(config.store_url, "http://acme.com")
         self.assertEqual(config.indices, r_indices)
         self.assertEqual(config.max_retries, 0)
-        self.assertTrue(config.ssl_verify)
+        self.assertTrue(config.verify_ssl)
 
     def test_basic_authentication(self):
         # Given
@@ -1163,25 +1163,25 @@ class TestYamlConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.max_retries, 1)
 
-    def test_ssl_verify(self):
+    def test_verify_ssl(self):
         # Given
         yaml_string = textwrap.dedent("""\
-            ssl_verify: True
+            verify_ssl: True
         """)
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))
 
         # Then
-        self.assertTrue(config.ssl_verify)
+        self.assertTrue(config.verify_ssl)
 
         # Given
         yaml_string = textwrap.dedent("""\
-            ssl_verify: False
+            verify_ssl: False
         """)
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))
 
         # Then
-        self.assertFalse(config.ssl_verify)
+        self.assertFalse(config.verify_ssl)

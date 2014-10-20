@@ -18,7 +18,7 @@ _AUTHENTICATION_TYPE = "type"
 _AUTHENTICATION_TYPE_BASIC = "basic"
 _AUTHENTICATION_TYPE_DIGEST = "digest"
 _MAX_RETRIES = "max_retries"
-_SSL_VERIFY = "ssl_verify"
+_SSL_VERIFY = "verify_ssl"
 _USERNAME = "username"
 _PASSWORD = "password"
 _AUTH_STRING = "auth"
@@ -38,13 +38,14 @@ _SCHEMA = {
                            "checksum",
             "type": "integer"
         },
-        "ssl_verify": {
+        "verify_ssl": {
             "description": "Whether to actually check SSL CA certificate or "
                            "not",
             "type": "boolean"
         },
         "store_url": {
-            "description": "The url (schema + hostname only of the store to connect to).",  # noqa
+            "description": "The url (schema + hostname only of the store to " \
+                           "connect to).",
             "type": "string"
         },
         "files_cache": {
@@ -143,7 +144,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
     if _MAX_RETRIES in data:
         config.update(max_retries=data[_MAX_RETRIES])
     if _SSL_VERIFY in data and not data[_SSL_VERIFY]:
-        config.update(ssl_verify=data[_SSL_VERIFY])
+        config.update(verify_ssl=data[_SSL_VERIFY])
 
     config.update(use_webservice=False)
 

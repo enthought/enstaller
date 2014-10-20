@@ -105,7 +105,7 @@ class Session(object):
             klass = OldRepoAuthManager
         authenticator = klass.from_configuration(configuration)
         return cls(authenticator, configuration.repository_cache,
-                   configuration.proxy_dict, verify=configuration.ssl_verify,
+                   configuration.proxy_dict, verify=configuration.verify_ssl,
                    max_retries=configuration.max_retries)
 
     def close(self):
