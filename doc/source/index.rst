@@ -29,7 +29,6 @@ configuration settings.
 .. toctree::
    :maxdepth: 1
 
-   .. user/yaml_config
 
 Dev Guide
 ---------
