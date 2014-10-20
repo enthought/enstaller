@@ -249,7 +249,7 @@ class TestBroodAuthManager(AuthManagerBase):
 
     def setUp(self):
         AuthManagerBase.setUp(self)
-        self.token_url = self.config.store_url + "/api/v0/json/auth/tokens"
+        self.token_url = self.config.store_url + "/api/v0/json/auth/tokens/auth"
 
     @responses.activate
     def test_from_configuration(self):

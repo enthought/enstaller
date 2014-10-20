@@ -536,7 +536,7 @@ class TestCustomConfigPath(unittest.TestCase):
     def test_simple(self):
         # Given
         path = os.path.join(self.prefix, "enstaller.yaml")
-        responses.add(responses.POST, "http://acme.com/api/v0/json/auth/tokens",
+        responses.add(responses.POST, "http://acme.com/api/v0/json/auth/tokens/auth",
                       body=json.dumps({"token": "dummy token"}))
 
         with open(path, "wt") as fp:
