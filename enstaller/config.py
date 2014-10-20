@@ -28,6 +28,8 @@ from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
 from enstaller.utils import real_prefix
+from enstaller.vendor import requests
+from enstaller.cli.utils import humanize_ssl_error_and_die
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url
 from ._yaml_config import load_configuration_from_yaml
@@ -868,6 +870,8 @@ def print_config(config, prefix, session):
         try:
             session.authenticate(config.auth)
             user = UserInfo.from_session(session)
+        except requests.exceptions.SSLError as e:
+            humanize_ssl_error_and_die(e, config.store_url)
         except Exception as e:
             print(e)
     print(subscription_message(config, user))

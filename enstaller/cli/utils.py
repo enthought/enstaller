@@ -244,6 +244,18 @@ def updates_check(remote_repository, installed_repository):
     return updates, EPD_update
 
 
+def humanize_ssl_error_and_die(ssl_exception, store_url):
+    if ssl_exception.request is not None:
+        url = ssl_exception.request.url
+    else:
+        url = store_url
+    p = urlparse.urlparse(url)
+    print("SSL error: {0}".format(str(ssl_exception)))
+    print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
+          "command".format(p.hostname))
+    sys.exit(-1)
+
+
 # Private functions
 def _fetch_json_with_progress(resp, store_location, quiet=False):
     data = io.BytesIO()

@@ -50,7 +50,8 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     list_option, print_history, revert, search,
                                     update_all, whats_new)
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
-from enstaller.cli.utils import install_req, repository_factory
+from enstaller.cli.utils import (humanize_ssl_error_and_die, install_req,
+                                 repository_factory)
 
 logger = logging.getLogger(__name__)
 
@@ -190,17 +191,20 @@ def ensure_authenticated_config(config, config_filename, session,
                                 use_new_format=False):
     try:
         session.authenticate(config.auth)
+    except requests.exceptions.SSLError as e:
+        humanize_ssl_error_and_die(e, config.store_url)
     except AuthFailedError as e:
         username, _ = config.auth
-        url = config.store_url
-        if not config.use_webservice \
-            and isinstance(e.original_exception, requests.exceptions.HTTPError):
-                url = e.original_exception.request.url
         if e.original_exception is None:
+            url = config.store_url
             msg, is_auth_error = _invalid_authentication_message(url,
                                                                  username,
                                                                  e.message)
         else:
+            if config.use_webservice:
+                url = config.store_url
+            else:
+                url = e.original_exception.request.url
             msg, is_auth_error = _invalid_authentication_message(url,
                                                                  username,
                                                                  str(e.original_exception))
