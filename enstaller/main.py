@@ -541,6 +541,12 @@ def configure_authentication_or_exit(config, config_filename, verify=True):
     config.set_auth(username, password)
     try:
         config._checked_change_auth(config_filename, verify)
+    except requests.exceptions.SSLError as e:
+        print(str(e))
+        p = urlparse.urlparse(e.request.url)
+        print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
+              "command".format(p.hostname))
+        sys.exit(-1)
     except AuthFailedError as e:
         msg, _ = _invalid_authentication_message(config.store_url, username,
                                                  str(e))
