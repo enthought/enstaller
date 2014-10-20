@@ -196,8 +196,7 @@ def sha256(path):
 
 def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
                        to_dir=os.curdir, delay=15,
-                       downloader_factory=get_best_downloader,
-                       expected_sha256=None):
+                       downloader_factory=get_best_downloader)
     """Download enstaller egg from a specified location and return its filename
 
     Parameters
