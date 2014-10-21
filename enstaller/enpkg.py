@@ -227,11 +227,11 @@ class ProgressBarContext(object):
         return self.fetch_progress_factory("fetching", filename, size)
 
     def install_progress(self, filename, size):
-        return self.fetch_progress_factory("installing egg", filename, size)
+        return self.install_progress_factory("installing egg", filename, size)
 
     def remove_progress(self, filename, size, steps):
-        return self.fetch_progress_factory("removing egg", filename, size,
-                                           steps)
+        return self.remove_progress_factory("removing egg", filename, size,
+                                            steps)
 
 
 class _ExecuteContext(object):

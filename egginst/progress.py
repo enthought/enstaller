@@ -8,7 +8,8 @@ def dummy_progress_bar_factory(*a, **kw):
     return _DummyProgressBar()
 
 
-def console_progress_manager_factory(message, filename, size, steps=None):
+def console_progress_manager_factory(message, filename, size, steps=None,
+                                     show_speed=False):
     if steps is None:
         steps = size
     first_line = "%-46s %20s" % (filename, '[%s]' % message)
@@ -21,7 +22,7 @@ def console_progress_manager_factory(message, filename, size, steps=None):
     bar_template += "%(label)s [%(bar)s] %(info)s"
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
-                       fill_char=".", show_percent=False)
+                       fill_char=".", show_speed=show_speed)
 
 
 class _DummyProgressBar(object):
