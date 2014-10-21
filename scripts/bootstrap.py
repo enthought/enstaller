@@ -38,9 +38,12 @@ VERSION_RE = re.compile(r'''
     ''', re.VERBOSE)
 
 VERSION_TO_SHA256 = {
+    ("4.8.0.dev1_a77ddd9", "2.7"): "b0710ed4b2abac1aa1880b29cc061cf0fa19a7b78c476700a506b6ba850b5c5f",
     ("4.7.6", "2.7"): "6736166f1b21fc417c1384c40b7b0716357ce472d1a56e1b8545408211375b57",
     ("4.7.5", "2.7"): "9d027c5998a30510ca0731b41e6c71fbbc99bf7f6adac9a812d04497c7816961",
 }
+
+DEV_VERSION = "4.8.0.dev1_a77ddd9"
 
 
 ###################################
@@ -193,7 +196,7 @@ def sha256(path):
 
 def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
                        to_dir=os.curdir, delay=15,
-                       downloader_factory=get_best_downloader):
+                       downloader_factory=get_best_downloader)
     """Download enstaller egg from a specified location and return its filename
 
     Parameters
@@ -265,6 +268,9 @@ def main(argv=None):
 
     p = optparse.OptionParser(description="Simple script to bootstrap " \
                                           "enstaller into a master.")
+    p.add_option("--dev", action="store_true",
+                 help="If specified, will get a development egg instead of "
+                      "latest. Use at your own risk.")
 
     (options, args) = p.parse_args(argv)
     if len(args) == 1:
@@ -272,7 +278,11 @@ def main(argv=None):
     elif len(args) > 1:
         p.error("Only accept up to one argument.")
     else:
-        egg = download_enstaller()
+        if options.dev:
+            version = DEV_VERSION
+            egg = download_enstaller(version)
+        else:
+            egg = download_enstaller()
 
     bootstrap_enstaller(egg)
 
