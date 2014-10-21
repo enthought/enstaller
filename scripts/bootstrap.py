@@ -269,7 +269,7 @@ def main(argv=None):
     p = optparse.OptionParser(description="Simple script to bootstrap " \
                                           "enstaller into a master.")
     p.add_option("--dev", action="store_true",
-                 help="If specified, will get a download egg instead of "
+                 help="If specified, will get a development egg instead of "
                       "latest. Use at your own risk.")
 
     (options, args) = p.parse_args(argv)
