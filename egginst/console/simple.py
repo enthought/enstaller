@@ -1,4 +1,3 @@
-import math
 import os
 import struct
 import sys
@@ -89,7 +88,7 @@ class ProgressBar(object):
         # We force a render at least 4x / sec
         return (self.relative_bar_pos > self.last_written_bar_pos
                 or self._elapsed_since_last_render >= 0.25) \
-                and self.relative_bar_pos <= self.width
+            and self.relative_bar_pos <= self.width
 
     @property
     def relative_bar_pos(self):
@@ -115,12 +114,10 @@ class ProgressBar(object):
         self._last_pos = self._pos
         self._last = now
 
-
     def _human_speed(self, speed):
         if speed < 1.:
             return "-- b/sec"
         else:
-            power = int(math.log(speed, 1000))
             if speed > 1024 ** 2:
                 speed = speed / 1024 ** 2
                 unit = "Mb"
@@ -152,11 +149,12 @@ class ProgressBar(object):
 
     def _render(self):
         self.last_written_bar_pos = self.relative_bar_pos
+        bar_value = self.fill_char * self.relative_bar_pos + \
+            " " * (self.width - self.relative_bar_pos)
         data = {
-            "bar":  self.fill_char * self.relative_bar_pos + \
-                    " " * (self.width - self.relative_bar_pos),
-            "info":  self.info,
-            "label":  "",
+            "bar": bar_value,
+            "info": self.info,
+            "label": "",
         }
         rendered_bar = self.bar_template % data
         bar = BEFORE_BAR + rendered_bar
@@ -190,8 +188,6 @@ def get_terminal_size():
             sz = shutil_get_terminal_size()
             return sz.columns, sz.lines
 
-    #if get_winterm_size is not None:
-    #    return get_winterm_size()
     DEFAULT_COLUMNS = 80
 
     def ioctl_gwinsz(fd):
@@ -200,7 +196,7 @@ def get_terminal_size():
             import termios
             cr = struct.unpack(
                 'hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-        except Exception as e:
+        except Exception:
             return
         return cr
 
