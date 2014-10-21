@@ -1,3 +1,1 @@
-from .ui import ProgressBar
-
-__all__ = ["ProgressBar"]
+from .simple import ProgressBar

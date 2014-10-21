@@ -641,8 +641,11 @@ def main(argv=None):
         if args.quiet:
             progress_bar_context = None
         else:
+
             progress_bar_context = ProgressBarContext(
-                    console_progress_manager_factory)
+                    console_progress_manager_factory,
+                    fetch=lambda *a, **kw: console_progress_manager_factory(*a,
+                        show_speed=True, **kw))
         enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                       args.force or args.forceall,
                       max_retries=config.max_retries)
