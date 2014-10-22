@@ -91,8 +91,13 @@ if not is_released:
                                  git_revision=git_rev,
                                  is_released=is_released))
 
+class bdist_enegg(old_bdist_egg):
+    def finalize_options(self):
+        old_bdist_egg.finalize_options(self)
 
-class bdist_egg(old_bdist_egg):
+        basename = "enstaller-{0}-1.egg".format(__version__)
+        self.egg_output = os.path.join(self.dist_dir, basename)
+
     def _write_bootstrap_code(self, bootstrap_code):
         zp = zipfile.ZipFile(self.egg_output, "a",
                              compression=zipfile.ZIP_DEFLATED)
@@ -229,6 +234,6 @@ setup(
         "Topic :: System :: Systems Administration",
     ],
     test_suite="nose.collector",
-    cmdclass={"bdist_egg": bdist_egg},
+    cmdclass={"bdist_enegg": bdist_enegg},
     **kwds
 )
