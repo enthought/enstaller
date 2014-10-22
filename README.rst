@@ -20,23 +20,23 @@ download the
 script and then execute it with the python interpreter::
 
    $ python bootstrap.py
-   enstaller-4.7.5-py2.7.egg                          [installing egg]
+   enstaller-4.7.5-1.egg                              [installing egg]
       4.34 MB [......................................................]
 
 You can also use it to install a specific version offline::
 
    $ python bootstrap.py enstaller-4.7.3-py2.7.egg
-   enstaller-4.7.3-py2.7.egg                          [installing egg]
+   enstaller-4.7.3-1.egg                              [installing egg]
       4.31 MB [......................................................]
 
 or request a specific version::
 
    $ python bootstrap.py -l
-   4.6.5
-   4.7.5
-   4.7.6
-   $ python bootstrap.py --version 4.6.5
-   enstaller-4.6.5-py2.7.egg                          [installing egg]
+   4.6.5-1
+   4.7.5-1
+   4.7.6-1
+   $ python bootstrap.py --version 4.6.5-1
+   enstaller-4.6.5-1.egg                             [installing egg]
       766 KB [......................................................]
 
 Once Enstaller is installed, it can update itself.  Note that, as Enstaller is
