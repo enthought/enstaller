@@ -93,6 +93,13 @@ def update_enstaller(enpkg, config, autoupdate, opts):
     return updated
 
 
+def update_enstaller_new(remote_repository):
+    #new_repository = create_enstaller_update_repository(remote_repository,
+    #                                                    enstaller.__version__)
+    latest_available = remote_repository.find_latest_package("enstaller")
+    print(latest_available.full_version)
+
+
 def get_package_path(prefix):
     """Return site-packages path for the given repo prefix.
 

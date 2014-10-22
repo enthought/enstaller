@@ -136,9 +136,8 @@ class PythonEnvironment(object):
     def runenpkg(self, command, capture=False):
         """ Run the given command locally using the current python interpreter.
         """
-        return local(
-            "{0} -m enstaller.main {1}".format(self.python, command),
-            capture=capture)
+        enpkg = os.path.join(self.scriptsdir, "enpkg")
+        return local("{0} {1}".format(enpkg, command), capture=capture)
 
 
     def runpip(self, command):
@@ -340,7 +339,7 @@ def build_enstaller_egg(forced_version, forced_build=1):
     forced_build: int
         The build number to inject in the egg metadata
     """
-    subprocess.check_call(["python", "setup.py", "bdist_egg"])
+    subprocess.check_call([sys.executable, "setup.py", "bdist_egg"])
     repo_dir = op.join(ROOT, "repo")
 
     cmd = ["python", "-c", "import enstaller; print enstaller.__version__"]
@@ -384,18 +383,37 @@ IndexedRepos = [
 use_webservice = False
 """.format(repo_uri))
 
+    return target_egg
+
+
+def _bootstrap_old_enstaller(pyenv, upgrade_from):
+    bootstrap = os.path.join("scripts", "bootstrap.py")
+    pyenv.runpy("{0} --version {1}".format(bootstrap, upgrade_from))
+    m = pyenv.runenpkg("--version", capture=True)
+    out = m.stderr
+    assert upgrade_from in out
+
 
 @task
 def run_enstaller_upgrade(upgrade_from="4.6.5"):
+    upgrade_to = "4.8.0"
+    # XXX: version lower than 4.6.5 do not seem to handle use_webservice=False
+    # correctly when used with --sys-config due to the brain deadness of the
+    # old config-as-module-singleton, so we need to start from 4.6.5. The hope
+    # is that older versions are similar enough to 4.6.5 as far as inplace
+    # upgradeability goes.
     pyenv = PythonEnvironment(ROOT, None)
     pyenv.destroy()
 
     pyenv.init_from_master(DEFAULT_MASTER_VERSION, False)
-    pyenv.bootstrap_pip()
 
-    pyenv.runpip("install enstaller=={}".format(upgrade_from))
+    _bootstrap_old_enstaller(pyenv, upgrade_from)
 
-    build_enstaller_egg("4.8.0")
-
+    build_enstaller_egg(upgrade_to)
     with lcd(ROOT):
         local("echo y | {} -m enstaller.main --sys-config -s enstaller".format(pyenv.python))
+        # We use --list instead of --version because we overrode the metadata
+        # version, not the actualy version in enstaller package
+        m = pyenv.runenpkg("--list", capture=True)
+        out = m.stdout
+        assert upgrade_to in out
