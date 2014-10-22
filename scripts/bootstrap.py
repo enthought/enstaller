@@ -292,6 +292,8 @@ def main(argv=None):
 
     if len(args) == 1:
         egg = args[0]
+        if not os.path.exists(egg):
+            raise ValueError("path {0!r} does not exist !".format(egg))
     elif len(args) > 1:
         p.error("Only accept up to one argument.")
     else:
