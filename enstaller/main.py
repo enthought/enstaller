@@ -88,7 +88,7 @@ def update_enstaller(session, repository, opts):
     except MissingPackage:
         updated = False
     else:
-        if latest.comparable_version >= current_comparable_version:
+        if latest.comparable_version > current_comparable_version:
             if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
                             opts.yes):
                 inplace_update(session, repository, latest)
