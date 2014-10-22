@@ -41,6 +41,10 @@ VERSION_TO_SHA256 = {
     ("4.8.0.dev1_a77ddd9", "2.7"): "b0710ed4b2abac1aa1880b29cc061cf0fa19a7b78c476700a506b6ba850b5c5f",
     ("4.7.6", "2.7"): "6736166f1b21fc417c1384c40b7b0716357ce472d1a56e1b8545408211375b57",
     ("4.7.5", "2.7"): "9d027c5998a30510ca0731b41e6c71fbbc99bf7f6adac9a812d04497c7816961",
+    ("4.6.5", "2.7"): "e2d578ba4fd337392324e2cb087c296275a36c83a11805342784bb9d7c3908eb",
+    ("4.6.2", "2.7"): "3a50e1a96a13bef6b6d5e02486882004cbaa90377b87580b159cc3e88c75f8f3",
+    ("4.5.6", "2.7"): "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c",
+    ("4.5.3", "2.7"): "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85",
 }
 
 DEV_VERSION = "4.8.0.dev1_a77ddd9"
@@ -271,14 +275,30 @@ def main(argv=None):
     p.add_option("--dev", action="store_true",
                  help="If specified, will get a development egg instead of "
                       "latest. Use at your own risk.")
+    p.add_option("--version",
+                 help="If specified, use this specific version instead of "
+                      "latest release.")
+    p.add_option("-l", "--list", action="store_true", dest="list_available",
+                 help="If specified, list the available versions instead of "
+                      "installing anything.")
 
     (options, args) = p.parse_args(argv)
+
+    if options.list_available:
+        for version, python_version in VERSION_TO_SHA256:
+            if version != DEV_VERSION:
+                print version
+        sys.exit(0)
+
     if len(args) == 1:
         egg = args[0]
     elif len(args) > 1:
         p.error("Only accept up to one argument.")
     else:
-        if options.dev:
+        if options.version:
+            version = options.version
+            egg = download_enstaller(version)
+        elif options.dev:
             version = DEV_VERSION
             egg = download_enstaller(version)
         else:

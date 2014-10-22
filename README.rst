@@ -29,6 +29,15 @@ You can also use it to install a specific version offline::
    enstaller-4.7.3-py2.7.egg                          [installing egg]
       4.31 MB [......................................................]
 
+or request a specific version::
+
+   $ python bootstrap.py -l
+   4.6.5
+   4.7.5
+   4.7.6
+   $ python bootstrap.py --version 4.6.5
+   enstaller-4.6.5-py2.7.egg                          [installing egg]
+      766 KB [......................................................]
 
 Once Enstaller is installed, it can update itself.  Note that, as Enstaller is
 the install tool for Canopy and EPD, those products already include enstaller.
