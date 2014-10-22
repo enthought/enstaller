@@ -1,4 +1,5 @@
 import os
+import os.path
 import subprocess
 import textwrap
 import zipfile
@@ -9,6 +10,9 @@ from distutils.util import convert_path
 
 from setuptools.command.bdist_egg import bdist_egg as old_bdist_egg
 
+from egginst.main import BOOTSTRAP_ARCNAME
+
+
 MAJOR = 4
 MINOR = 8
 MICRO = 0
@@ -16,6 +20,9 @@ MICRO = 0
 IS_RELEASED = False
 
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "scripts", "bootstrap.py")
+
 
 # Return the git revision as a string
 def git_version():
@@ -78,6 +85,14 @@ if not is_released:
                                  is_released=IS_RELEASED))
 
 class bdist_egg(old_bdist_egg):
+    def _write_bootstrap_code(self, bootstrap_code):
+        zp = zipfile.ZipFile(self.egg_output, "a",
+                             compression=zipfile.ZIP_DEFLATED)
+        try:
+            zp.writestr(BOOTSTRAP_ARCNAME, bootstrap_code)
+        finally:
+            zp.close()
+
     def _write_spec_depend(self, spec_depend):
         zp = zipfile.ZipFile(self.egg_output, "a",
                              compression=zipfile.ZIP_DEFLATED)
@@ -88,6 +103,7 @@ class bdist_egg(old_bdist_egg):
 
     def run(self):
         old_bdist_egg.run(self)
+
         spec_depend = textwrap.dedent("""\
             metadata_version = '1.1'
             name = 'enstaller'
@@ -101,6 +117,9 @@ class bdist_egg(old_bdist_egg):
             packages = []
         """.format(VERSION))
         self._write_spec_depend(spec_depend)
+
+        with open(BOOTSTRAP_SCRIPT, "rt") as fp:
+            self._write_bootstrap_code(fp.read())
 
 
 write_version_py()
