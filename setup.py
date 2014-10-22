@@ -59,30 +59,38 @@ is_released = {is_released}
 if not is_released:
     version = full_version
 """
-    # Adding the git rev number needs to be done inside write_version_py(),
-    # otherwise the import of numpy.version messes up the build under Python 3.
-    fullversion = VERSION
+    force_mode = os.environ.get("FORCE_ENSTALLER_VERSION", None)
+    if force_mode is not None:
+        assert not IS_RELEASED, \
+                "FORCE_ENSTALLER_VERSION mode in release mode !"
+        version = full_version = force_mode
+        is_released = True
+    else:
+        version = full_version = VERSION
+        is_released = IS_RELEASED
+
     if os.path.exists('.git'):
         git_rev = git_version()
-    elif os.path.exists('numpy/_version.py'):
+    elif os.path.exists('enstaller/_version.py'):
         # must be a source distribution, use existing version file
         try:
             from enstaller._version import git_revision as git_rev
         except ImportError:
             raise ImportError("Unable to import git_revision. Try removing " \
-                              "numpy/version.py and the build directory " \
+                              "enstaller/_version.py and the build directory " \
                               "before building.")
     else:
         git_rev = "Unknown"
 
-    if not IS_RELEASED:
-        fullversion += '.dev1-' + git_rev[:7]
+    if not is_released:
+        full_version += '.dev1_' + git_rev[:7]
 
     with open(filename, "wt") as fp:
-        fp.write(template.format(version=VERSION,
-                                 full_version=fullversion,
+        fp.write(template.format(version=version,
+                                 full_version=full_version,
                                  git_revision=git_rev,
-                                 is_released=IS_RELEASED))
+                                 is_released=is_released))
+
 
 class bdist_egg(old_bdist_egg):
     def _write_bootstrap_code(self, bootstrap_code):
@@ -115,7 +123,7 @@ class bdist_egg(old_bdist_egg):
             osdist = None
             python = None
             packages = []
-        """.format(VERSION))
+        """.format(__version__))
         self._write_spec_depend(spec_depend)
 
         with open(BOOTSTRAP_SCRIPT, "rt") as fp:
@@ -131,7 +139,7 @@ exec(compile(open(convert_path('enstaller/__init__.py')).read(),
              convert_path('enstaller/__init__.py'),
              'exec'),
      d)
-kwds['version'] = d['__version__']
+kwds['version'] = __version__ = d['__version__']
 
 f = open('README.rst')
 kwds['long_description'] = f.read()
