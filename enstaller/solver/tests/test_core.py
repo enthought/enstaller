@@ -21,8 +21,7 @@ from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, MissingDependency, NoPackageFound
 from enstaller.repository import Repository
 
-from ..core import (Solver, create_enstaller_update_repository,
-                    install_actions_enstaller)
+from ..core import Solver
 from ..request import Request
 from ..requirement import Requirement
 
@@ -277,40 +276,3 @@ class TestSolverDependencies(unittest.TestCase):
                               ("remove", "MKL-10.3-1.egg"),
                               ("install", "MKL-10.3-1.egg"),
                               ("install", "numpy-1.8.0-2.egg")])
-
-
-class TestEnstallerUpdateHack(unittest.TestCase):
-    def setUp(self):
-        self.prefix = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.prefix)
-
-    def test_scenario1(self):
-        """Test that we upgrade when remote is more recent than local."""
-        remote_versions = [("4.6.1", 1)]
-        local_version = "4.6.0"
-
-        actions = self._compute_actions(remote_versions, local_version)
-        self.assertNotEqual(actions, [])
-
-    def test_scenario2(self):
-        """Test that we don't upgrade when remote is less recent than local."""
-        remote_versions = [("4.6.1", 1)]
-        local_version = "4.6.2"
-
-        actions = self._compute_actions(remote_versions, local_version)
-        self.assertEqual(actions, [])
-
-    def _compute_actions(self, remote_versions, local_version):
-        entries = [dummy_repository_package_factory("enstaller", version,
-                                                    build)
-                   for version, build in remote_versions]
-        repository = repository_factory(entries)
-
-        new_repository = create_enstaller_update_repository(repository,
-                                                            local_version)
-        install_repository = Repository._from_prefixes()
-        with mock.patch("enstaller.__version__", local_version):
-            return install_actions_enstaller(new_repository,
-                                             install_repository)

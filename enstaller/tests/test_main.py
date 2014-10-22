@@ -60,12 +60,16 @@ from .common import (create_prefix_with_eggs,
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
 
-        enpkg = unconnected_enpkg_factory()
-        self.assertFalse(update_enstaller(enpkg, config, False, {}))
+        opts = mock.Mock()
+        opts.yes = False
+
+        self.assertFalse(update_enstaller(session, Repository(), opts))
 
     def _test_update_enstaller(self, low_version, high_version):
         config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
 
         enstaller_eggs = [
             dummy_repository_package_factory("enstaller", low_version, 1),
@@ -74,12 +78,10 @@ class TestEnstallerUpdate(unittest.TestCase):
         repository = enstaller.tests.common.repository_factory(enstaller_eggs)
 
         with mock_raw_input("yes"):
-            with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(repository,
-                              mocked_session_factory(config.repository_cache))
+            with mock.patch("enstaller.main.inplace_update", lambda *args: None):
                 opts = mock.Mock()
-                opts.no_deps = False
-                return update_enstaller(enpkg, config, config.autoupdate, opts)
+                opts.yes = False
+                return update_enstaller(session, repository, opts)
 
     @mock.patch("enstaller.__version__", "4.6.3")
     @mock.patch("enstaller.__is_released__", True)

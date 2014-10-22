@@ -36,13 +36,12 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
 from enstaller.session import Session
-from enstaller.errors import AuthFailedError
+from enstaller.errors import AuthFailedError, MissingPackage
 from enstaller.enpkg import _DEFAULT_MAX_RETRIES, Enpkg, ProgressBarContext
 from enstaller.repository import Repository
 from enstaller.solver import Request, Requirement
-from enstaller.solver.core import (create_enstaller_update_repository,
-                                   install_actions_enstaller)
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
+from enstaller.utils import (abs_expanduser, comparable_version,
+                             exit_if_sudo_on_venv, prompt_yes_no)
 from enstaller.vendor import requests
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
@@ -52,6 +51,8 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
 from enstaller.cli.utils import (humanize_ssl_error_and_die, install_req,
                                  repository_factory)
+
+from enstaller._update_support import inplace_update
 
 logger = logging.getLogger(__name__)
 
@@ -70,34 +71,30 @@ def epd_install_confirm(force_yes=False):
                          force_yes)
 
 
-def update_enstaller(enpkg, config, autoupdate, opts):
+def update_enstaller(session, repository, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
     wants to update.  Return boolean indicating whether enstaller was
     updated.
     """
     updated = False
-    if not autoupdate:
-        return updated
     if not enstaller.__is_released__:
         return updated
-    new_repository = create_enstaller_update_repository(
-        enpkg._remote_repository, enstaller.__version__)
-    actions = install_actions_enstaller(new_repository,
-                                        enpkg._top_installed_repository)
-    if len(actions) > 0:
-        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
-                         opts.yes):
-            install_req(enpkg, config, 'enstaller', opts)
-            updated = True
+
+    current_comparable_version = (comparable_version(enstaller.__version__), 1)
+
+    try:
+        latest = repository.find_latest_package("enstaller")
+    except MissingPackage:
+        updated = False
+    else:
+        if latest.comparable_version >= current_comparable_version:
+            if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
+                            opts.yes):
+                inplace_update(session, repository, latest)
+                updated = True
+
     return updated
-
-
-def update_enstaller_new(remote_repository):
-    #new_repository = create_enstaller_update_repository(remote_repository,
-    #                                                    enstaller.__version__)
-    latest_available = remote_repository.find_latest_package("enstaller")
-    print(latest_available.full_version)
 
 
 def get_package_path(prefix):
@@ -317,10 +314,11 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
         return
 
     # Try to auto-update enstaller
-    if update_enstaller(enpkg, config, config.autoupdate, args):
-        print("Enstaller has been updated.\n"
-              "Please re-run your previous command.")
-        return
+    if config.autoupdate:
+        if update_enstaller(session, enpkg._remote_repository, args):
+            print("Enstaller has been updated.\n"
+                "Please re-run your previous command.")
+            return
 
     if args.search:                               # --search
         search(enpkg._remote_repository, enpkg._installed_repository,
