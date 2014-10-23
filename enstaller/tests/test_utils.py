@@ -77,27 +77,18 @@ class TestUtils(unittest.TestCase):
         for url, r_url in r_data:
             self.assertEqual(cleanup_url(url), r_url)
 
-    @unittest.skipIf(sys.platform=="win32", "cleanup_url is utterly broken on windows.")
     def test_cleanup_url_dir(self):
         r_url = "file://{0}/".format(os.path.abspath(os.path.expanduser("~")))
 
         url = "~"
 
         self.assertEqual(cleanup_url(url), r_url)
-        self.assertRaises(Exception, lambda: cleanup_url("/fofo/nar/does_not_exist"))
 
-    @unittest.expectedFailure
     def test_cleanup_url_relative_path(self):
         url, r_url = "file://foo/bar", "file://foo/bar/"
 
         self.assertEqual(cleanup_url(url), r_url)
 
-    def test_cleanup_url_wrong_behavior(self):
-        """This behavior is a consequence of the buggy behavior in
-        cleanup_url."""
-        url, r_url = "file://foo/bar", "file://foo/bar\\"
-
-        self.assertEqual(cleanup_url(url), r_url)
 
 class TestExitIfSudoOnVenv(unittest.TestCase):
     @mock.patch("enstaller.utils.sys.platform", "win32")
