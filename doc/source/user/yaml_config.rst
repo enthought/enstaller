@@ -25,6 +25,9 @@ format:
     repositories:
       - "enthought/commercial"
       - "enthought/free"
+      # Local FS repository -- should be a directory, and an index.json is expected
+      # in that directory
+      - "file:///foo"
 
     # Authentication
     authentication:

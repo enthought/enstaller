@@ -10,6 +10,7 @@ import zlib
 
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
 
+from egginst._compat import urlparse
 from egginst.utils import compute_md5
 
 from enstaller.vendor import requests
@@ -99,28 +100,23 @@ def cleanup_url(url):
     Ensure a given repo string, i.e. a string specifying a repository,
     is valid and return a cleaned up version of the string.
     """
-    if url.startswith(('http://', 'https://')):
-        if not url.endswith('/'):
-            url += '/'
+    p = urlparse.urlparse(url)
+    scheme, netloc, path, params, query, fragment = p[:6]
 
-    elif url.startswith('file://'):
-        dir_path = url[7:]
-        if dir_path.startswith('/'):
-            # Unix filename
-            if not url.endswith('/'):
-                url += '/'
-        else:
-            # Windows filename
-            if not url.endswith('\\'):
-                url += '\\'
+    if scheme == "":
+        scheme = "file"
 
-    elif isdir(abs_expanduser(url)):
-        return cleanup_url('file://' + abs_expanduser(url))
+    if scheme == "file":
+        netloc = expanduser(netloc)
+        path = expanduser(path)
 
+    if scheme in ('http', 'https', 'file'):
+        if not path.endswith('/'):
+            path += '/'
     else:
-        raise Exception("Invalid URL or non-existing file: %r" % url)
+        raise InvalidFormat("Unsupported scheme: {0!r}".format(url))
 
-    return url
+    return urlparse.urlunparse((scheme, netloc, path, params, query, fragment))
 
 
 def fill_url(url):

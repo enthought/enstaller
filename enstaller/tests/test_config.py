@@ -1185,3 +1185,23 @@ class TestYamlConfiguration(unittest.TestCase):
 
         # Then
         self.assertFalse(config.verify_ssl)
+
+    def test_repositories(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            store_url: "http://www.acme.com"
+
+            repositories:
+              - "enthought/free"
+              - "file:///foo"
+        """)
+        r_repositories = (
+            "http://www.acme.com/repo/enthought/free/{0}/".format(custom_plat),
+            "file:///foo/".format(custom_plat),
+        )
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertEqual(config.indexed_repositories, r_repositories)
