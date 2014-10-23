@@ -140,7 +140,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
             if p.scheme == "":
                 url = config.store_url + "/repo/{0}/{{PLATFORM}}".format(entry)
             elif p.scheme == "file":
-                url = entry + "/"
+                url = entry
             else:
                 msg = "Unsupported syntax: {0!r}".format(entry)
                 raise InvalidConfiguration(msg)
