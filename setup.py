@@ -160,6 +160,7 @@ packages = [
     'enstaller.cli',
     'enstaller.indexed_repo',
     'enstaller.solver',
+    'enstaller.tools',
     'enstaller.vendor',
     'enstaller.vendor.cachecontrol',
     'enstaller.vendor.cachecontrol.caches',
