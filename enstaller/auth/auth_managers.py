@@ -106,7 +106,7 @@ class BroodBearerTokenAuth(requests.auth.AuthBase):
         self._token = token
 
     def __call__(self, request):
-        request.headers['Authorization'] = 'Bearer {}'.format(self._token)
+        request.headers['Authorization'] = 'Bearer {0}'.format(self._token)
         return request
 
 
