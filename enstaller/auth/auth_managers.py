@@ -100,6 +100,16 @@ class OldRepoAuthManager(object):
         self._auth = auth
 
 
+class BroodBearerTokenAuth(requests.auth.AuthBase):
+
+    def __init__(self, token):
+        self._token = token
+
+    def __call__(self, request):
+        request.headers['Authorization'] = 'Bearer {0}'.format(self._token)
+        return request
+
+
 class BroodAuthenticator(object):
     """ Token-based authenticator for brood stores."""
     @classmethod
@@ -126,7 +136,7 @@ class BroodAuthenticator(object):
             raise AuthFailedError("Authentication error: %r" % str(e))
 
         token = resp.json()["token"]
-        self._auth = (token, None)
+        self._auth = BroodBearerTokenAuth(token)
 
 
 IAuthManager.register(LegacyCanopyAuthManager)
