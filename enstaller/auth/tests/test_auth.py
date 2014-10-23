@@ -12,6 +12,7 @@ import enstaller.config
 
 from enstaller.auth import DUMMY_USER, UserInfo
 from enstaller.auth.auth_managers import (BroodAuthenticator,
+                                          BroodBearerTokenAuth,
                                           LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.config import Configuration, write_default_config
@@ -258,25 +259,57 @@ class TestBroodAuthManager(AuthManagerBase):
                       body=json.dumps({"token": "dummy token"}))
         authenticator = BroodAuthenticator.from_configuration(self.config)
         session = Session(authenticator, self.prefix)
+        r_auth = BroodBearerTokenAuth("dummy token")
 
         # When
         with session:
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
             # Then
-            self.assertEqual(session._raw.auth, ("dummy token", None))
+            self.assertIsInstance(session._raw.auth, BroodBearerTokenAuth)
+            self.assertEqual(session._raw.auth._token, r_auth._token)
 
     @responses.activate
     def test_simple(self):
         # Given
         responses.add(responses.POST, self.token_url, status=200,
                       body=json.dumps({"token": "dummy token"}))
+        r_auth = BroodBearerTokenAuth("dummy token")
 
         # When
         self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
         # Then
-        self.assertEqual(self.session._raw.auth, ("dummy token", None))
+        self.assertIsInstance(self.session._raw.auth, BroodBearerTokenAuth)
+        self.assertEqual(self.session._raw.auth._token, r_auth._token)
+
+    @responses.activate
+    def test_bearer_token(self):
+        # Given
+        responses.add(responses.POST, self.token_url, status=200,
+                      body=json.dumps({"token": "dummy_token"}))
+
+        r_auth = BroodBearerTokenAuth("dummy_token")
+
+        # When
+        self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+        # Then
+        self.assertIsInstance(self.session._raw.auth, BroodBearerTokenAuth)
+        self.assertEqual(self.session._raw.auth._token, r_auth._token)
+
+        # Given
+        headers = {}
+        def callback(request):
+            headers.update(request.headers)
+            return (200, {}, b"")
+        responses.add_callback(responses.GET, "https://acme.com/fubar", callback)
+
+        # When
+        self.session.fetch("https://acme.com/fubar")
+
+        # Then
+        self.assertEqual(headers["Authorization"], "Bearer dummy_token")
 
     def test_connection_failure(self):
         with patch.object(self.session._raw, "post",
