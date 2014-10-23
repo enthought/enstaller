@@ -390,7 +390,7 @@ def run_enstaller_upgrade(upgrade_from="4.6.5-1"):
 
     build_enstaller_egg(upgrade_to)
     with lcd(ROOT):
-        local("echo y | {} -m enstaller.main --sys-config -s enstaller".format(pyenv.python))
+        local("echo y| {} -m enstaller.main --sys-config -s enstaller".format(pyenv.python))
         # We use --list instead of --version because we overrode the metadata
         # version, not the actualy version in enstaller package
         m = pyenv.runenpkg("--list", capture=True)
