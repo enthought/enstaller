@@ -22,12 +22,14 @@ from argparse import ArgumentParser
 from os.path import isfile
 
 from egginst._compat import http_client, urlparse
+from egginst.main import EGG_INFO
 from egginst.progress import console_progress_manager_factory
 
 import enstaller
 
 from enstaller.auth.auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
-from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
+from enstaller.errors import (EnpkgError, EnstallerException,
+                              InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
@@ -38,7 +40,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError, MissingPackage
 from enstaller.enpkg import _DEFAULT_MAX_RETRIES, Enpkg, ProgressBarContext
-from enstaller.repository import Repository
+from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
 from enstaller.utils import (abs_expanduser, comparable_version,
                              exit_if_sudo_on_venv, prompt_yes_no)
@@ -71,6 +73,27 @@ def epd_install_confirm(force_yes=False):
                          force_yes)
 
 
+def _get_enstaller_comparable_version(prefix, package_name):
+    runtime_version = (comparable_version(enstaller.__version__), 1)
+
+    egg_info_dir = os.path.join(prefix, EGG_INFO, package_name)
+    try:
+        # Installed as an egg in sys.prefix
+        enstaller_package = \
+            InstalledPackageMetadata.from_meta_dir(egg_info_dir)
+        if enstaller_package.version != enstaller.__version__:
+            # It is both installed as an egg and from sources/develop mode, the
+            # latter takes precedence
+            current_comparable_version = runtime_version
+        else:
+            current_comparable_version = enstaller_package.comparable_version
+    except EnstallerException:
+        # Installed from sources, no build number
+        current_comparable_version = runtime_version
+
+    return current_comparable_version
+
+
 def update_enstaller(session, repository, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
@@ -81,10 +104,13 @@ def update_enstaller(session, repository, opts):
     if not enstaller.__is_released__:
         return updated
 
-    current_comparable_version = (comparable_version(enstaller.__version__), 1)
+    package_name = "enstaller"
+
+    current_comparable_version = _get_enstaller_comparable_version(sys.prefix,
+                                                                   package_name)
 
     try:
-        latest = repository.find_latest_package("enstaller")
+        latest = repository.find_latest_package(package_name)
     except MissingPackage:
         updated = False
     else:
