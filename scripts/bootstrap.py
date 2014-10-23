@@ -27,7 +27,7 @@ import sys
 from distutils import log
 
 
-DEFAULT_VERSION = "4.7.6"
+DEFAULT_VERSION = "4.7.6-1"
 DEFAULT_URL = "https://s3.amazonaws.com/enstaller-assets/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
@@ -38,10 +38,14 @@ VERSION_RE = re.compile(r'''
     ''', re.VERBOSE)
 
 VERSION_TO_SHA256 = {
-    ("4.8.0.dev1_a77ddd9", "2.7"): "b0710ed4b2abac1aa1880b29cc061cf0fa19a7b78c476700a506b6ba850b5c5f",
-    ("4.7.6", "2.7"): "6736166f1b21fc417c1384c40b7b0716357ce472d1a56e1b8545408211375b57",
-    ("4.7.5", "2.7"): "9d027c5998a30510ca0731b41e6c71fbbc99bf7f6adac9a812d04497c7816961",
+    "4.8.0.dev1_a77ddd9": "b0710ed4b2abac1aa1880b29cc061cf0fa19a7b78c476700a506b6ba850b5c5f",
+    "4.7.6-1": "f438269a02880e270425f573a22e205c6732e03b8450d316f9f3747bd5859faa",
+    "4.6.5-1": "e2d578ba4fd337392324e2cb087c296275a36c83a11805342784bb9d7c3908eb",
+    "4.6.2-1": "3a50e1a96a13bef6b6d5e02486882004cbaa90377b87580b159cc3e88c75f8f3",
+    "4.5.6-1": "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c",
+    "4.5.3-1": "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85",
 }
+
 
 DEV_VERSION = "4.8.0.dev1_a77ddd9"
 
@@ -196,7 +200,7 @@ def sha256(path):
 
 def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
                        to_dir=os.curdir, delay=15,
-                       downloader_factory=get_best_downloader)
+                       downloader_factory=get_best_downloader):
     """Download enstaller egg from a specified location and return its filename
 
     Parameters
@@ -204,15 +208,14 @@ def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
     version : str
         The version to fetch.
     """
-    if not (version, PYTHON_VERSION) in VERSION_TO_SHA256:
-        msg = "Version {0!r} for {1!r} is not known, aborting...". \
-              format(version, PYTHON_VERSION)
+    if not version in VERSION_TO_SHA256:
+        msg = "Version {0!r} for is not known, aborting...".format(version)
         raise ValueError(msg)
-    expected_sha256 = VERSION_TO_SHA256[(version, PYTHON_VERSION)]
+    expected_sha256 = VERSION_TO_SHA256[version]
 
     # making sure we use the absolute path
     to_dir = os.path.abspath(to_dir)
-    egg_name = "enstaller-%s-py%s.egg" % (version, PYTHON_VERSION)
+    egg_name = "enstaller-%s.egg" % (version, )
     url = download_base + egg_name
     saveto = os.path.join(to_dir, egg_name)
     if not os.path.exists(saveto):  # Avoid repeated downloads
@@ -271,14 +274,32 @@ def main(argv=None):
     p.add_option("--dev", action="store_true",
                  help="If specified, will get a development egg instead of "
                       "latest. Use at your own risk.")
+    p.add_option("--version",
+                 help="If specified, use this specific version instead of "
+                      "latest release.")
+    p.add_option("-l", "--list", action="store_true", dest="list_available",
+                 help="If specified, list the available versions instead of "
+                      "installing anything.")
 
     (options, args) = p.parse_args(argv)
+
+    if options.list_available:
+        for version in VERSION_TO_SHA256:
+            if version != DEV_VERSION:
+                print version
+        sys.exit(0)
+
     if len(args) == 1:
         egg = args[0]
+        if not os.path.exists(egg):
+            raise ValueError("path {0!r} does not exist !".format(egg))
     elif len(args) > 1:
         p.error("Only accept up to one argument.")
     else:
-        if options.dev:
+        if options.version:
+            version = options.version
+            egg = download_enstaller(version)
+        elif options.dev:
             version = DEV_VERSION
             egg = download_enstaller(version)
         else:

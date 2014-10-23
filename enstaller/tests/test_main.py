@@ -24,6 +24,7 @@ import mock
 
 from egginst.main import EggInst
 from egginst.tests.common import mkdtemp, DUMMY_EGG
+from egginst.utils import ensure_dir
 
 
 from enstaller.auth import UserInfo
@@ -39,13 +40,15 @@ from enstaller.main import (check_prefixes,
                             needs_to_downgrade_enstaller,
                             repository_factory,
                             search, update_all,
-                            update_enstaller, whats_new)
+                            update_enstaller, whats_new,
+                            _get_enstaller_comparable_version)
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
+from enstaller.eggcollect import meta_info_from_prefix
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.session import Session
 from enstaller.solver import Requirement
-from enstaller.utils import PY_VER
+from enstaller.utils import PY_VER, comparable_version
 from enstaller.vendor import responses
 
 import enstaller.tests.common
@@ -60,12 +63,16 @@ from .common import (create_prefix_with_eggs,
 class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
 
-        enpkg = unconnected_enpkg_factory()
-        self.assertFalse(update_enstaller(enpkg, config, False, {}))
+        opts = mock.Mock()
+        opts.yes = False
+
+        self.assertFalse(update_enstaller(session, Repository(), opts))
 
     def _test_update_enstaller(self, low_version, high_version):
         config = Configuration()
+        session = mocked_session_factory(config.repository_cache)
 
         enstaller_eggs = [
             dummy_repository_package_factory("enstaller", low_version, 1),
@@ -74,12 +81,10 @@ class TestEnstallerUpdate(unittest.TestCase):
         repository = enstaller.tests.common.repository_factory(enstaller_eggs)
 
         with mock_raw_input("yes"):
-            with mock.patch("enstaller.main.install_req", lambda *args: None):
-                enpkg = Enpkg(repository,
-                              mocked_session_factory(config.repository_cache))
+            with mock.patch("enstaller.main.inplace_update", lambda *args: None):
                 opts = mock.Mock()
-                opts.no_deps = False
-                return update_enstaller(enpkg, config, config.autoupdate, opts)
+                opts.yes = False
+                return update_enstaller(session, repository, opts)
 
     @mock.patch("enstaller.__version__", "4.6.3")
     @mock.patch("enstaller.__is_released__", True)
@@ -550,3 +555,97 @@ class TestCustomConfigPath(unittest.TestCase):
         # When
         # Then No exception
         main(["-s", "numpy", "-c", path])
+
+
+class TestEnstallerComparableVersion(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_no_egg_install(self):
+        # Given
+        prefix = self.prefix
+        package_name = "enstaller"
+
+        # When
+        version = _get_enstaller_comparable_version(prefix, package_name)
+
+        # Then
+        self.assertEqual(version, (comparable_version(enstaller.__version__),
+                                   1))
+
+    def test_egg_install(self):
+        # ensure that we use the build number from installed metadata if
+        # version and enstaller.__version__ are the same
+
+        # Given
+        prefix = self.prefix
+        package_name = "enstaller"
+        version_string = "2.7.6"
+        build = 4
+
+        json_dict = {
+            "arch": None,
+            "build": build,
+            "ctime": "Mon Oct 20 15:49:19 2014",
+            "hook": False,
+            "key": "enstaller-{0}-1.egg".format(version_string),
+            "name": "enstaller",
+            "osdist": None,
+            "packages": [],
+            "platform": None,
+            "python": "2.7",
+            "type": "egg",
+            "version": version_string,
+        }
+
+        meta_info_path = meta_info_from_prefix(prefix, package_name)
+        ensure_dir(meta_info_path)
+        with open(meta_info_path, "wt") as fp:
+            json.dump(json_dict, fp)
+
+        # When
+        with mock.patch("enstaller.__version__", version_string):
+            version = _get_enstaller_comparable_version(prefix, package_name)
+
+        # Then
+        self.assertEqual(version, (comparable_version(version_string), build))
+
+    def test_egg_install_different_versions(self):
+        # ensure that we use the build number from installed metadata if
+        # version and enstaller.__version__ are the same
+
+        # Given
+        prefix = self.prefix
+        package_name = "enstaller"
+        version_string = "2.7.6"
+        build = 4
+
+        json_dict = {
+            "arch": None,
+            "build": build,
+            "ctime": "Mon Oct 20 15:49:19 2014",
+            "hook": False,
+            "key": "enstaller-{0}-1.egg".format(version_string),
+            "name": "enstaller",
+            "osdist": None,
+            "packages": [],
+            "platform": None,
+            "python": "2.7",
+            "type": "egg",
+            "version": version_string,
+        }
+
+        meta_info_path = meta_info_from_prefix(prefix, package_name)
+        ensure_dir(meta_info_path)
+        with open(meta_info_path, "wt") as fp:
+            json.dump(json_dict, fp)
+
+        # When
+        with mock.patch("enstaller.__version__", "4.8.0"):
+            version = _get_enstaller_comparable_version(prefix, package_name)
+
+        # Then
+        self.assertEqual(version, (comparable_version("4.8.0"), 1))

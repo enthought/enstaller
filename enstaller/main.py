@@ -22,12 +22,14 @@ from argparse import ArgumentParser
 from os.path import isfile
 
 from egginst._compat import http_client, urlparse
+from egginst.main import EGG_INFO
 from egginst.progress import console_progress_manager_factory
 
 import enstaller
 
 from enstaller.auth.auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
-from enstaller.errors import (EnpkgError, InvalidPythonPathConfiguration,
+from enstaller.errors import (EnpkgError, EnstallerException,
+                              InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
@@ -36,13 +38,12 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               convert_auth_if_required, input_auth,
                               print_config, write_default_config)
 from enstaller.session import Session
-from enstaller.errors import AuthFailedError
+from enstaller.errors import AuthFailedError, MissingPackage
 from enstaller.enpkg import _DEFAULT_MAX_RETRIES, Enpkg, ProgressBarContext
-from enstaller.repository import Repository
+from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
-from enstaller.solver.core import (create_enstaller_update_repository,
-                                   install_actions_enstaller)
-from enstaller.utils import abs_expanduser, exit_if_sudo_on_venv, prompt_yes_no
+from enstaller.utils import (abs_expanduser, comparable_version,
+                             exit_if_sudo_on_venv, prompt_yes_no)
 from enstaller.vendor import requests
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
@@ -52,6 +53,8 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
 from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
 from enstaller.cli.utils import (humanize_ssl_error_and_die, install_req,
                                  repository_factory)
+
+from enstaller._update_support import inplace_update
 
 logger = logging.getLogger(__name__)
 
@@ -70,26 +73,53 @@ def epd_install_confirm(force_yes=False):
                          force_yes)
 
 
-def update_enstaller(enpkg, config, autoupdate, opts):
+def _get_enstaller_comparable_version(prefix, package_name):
+    runtime_version = (comparable_version(enstaller.__version__), 1)
+
+    egg_info_dir = os.path.join(prefix, EGG_INFO, package_name)
+    try:
+        # Installed as an egg in sys.prefix
+        enstaller_package = \
+            InstalledPackageMetadata.from_meta_dir(egg_info_dir)
+        if enstaller_package.version != enstaller.__version__:
+            # It is both installed as an egg and from sources/develop mode, the
+            # latter takes precedence
+            current_comparable_version = runtime_version
+        else:
+            current_comparable_version = enstaller_package.comparable_version
+    except EnstallerException:
+        # Installed from sources, no build number
+        current_comparable_version = runtime_version
+
+    return current_comparable_version
+
+
+def update_enstaller(session, repository, opts):
     """
     Check if Enstaller is up to date, and if not, ask the user if he
     wants to update.  Return boolean indicating whether enstaller was
     updated.
     """
     updated = False
-    if not autoupdate:
-        return updated
     if not enstaller.__is_released__:
         return updated
-    new_repository = create_enstaller_update_repository(
-        enpkg._remote_repository, enstaller.__version__)
-    actions = install_actions_enstaller(new_repository,
-                                        enpkg._top_installed_repository)
-    if len(actions) > 0:
-        if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
-                         opts.yes):
-            install_req(enpkg, config, 'enstaller', opts)
-            updated = True
+
+    package_name = "enstaller"
+
+    current_comparable_version = _get_enstaller_comparable_version(sys.prefix,
+                                                                   package_name)
+
+    try:
+        latest = repository.find_latest_package(package_name)
+    except MissingPackage:
+        updated = False
+    else:
+        if latest.comparable_version > current_comparable_version:
+            if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
+                            opts.yes):
+                inplace_update(session, repository, latest)
+                updated = True
+
     return updated
 
 
@@ -310,10 +340,11 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
         return
 
     # Try to auto-update enstaller
-    if update_enstaller(enpkg, config, config.autoupdate, args):
-        print("Enstaller has been updated.\n"
-              "Please re-run your previous command.")
-        return
+    if config.autoupdate:
+        if update_enstaller(session, enpkg._remote_repository, args):
+            print("Enstaller has been updated.\n"
+                "Please re-run your previous command.")
+            return
 
     if args.search:                               # --search
         search(enpkg._remote_repository, enpkg._installed_repository,

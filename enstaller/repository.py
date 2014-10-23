@@ -394,7 +394,7 @@ class Repository(object):
         """
         packages = self.find_sorted_packages(name)
         if len(packages) < 1:
-            raise ValueError("No package with name {0!r}".format(name))
+            raise MissingPackage("No package with name {0!r}".format(name))
         else:
             return packages[-1]
 

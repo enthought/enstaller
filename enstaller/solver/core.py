@@ -10,53 +10,6 @@ from enstaller.repository import (egg_name_to_name_version, Repository,
 from .resolve import Resolve
 
 
-def create_enstaller_update_repository(repository, version):
-    """
-    Create a new repository with an additional fake package 'enstaller' at the
-    currently running version.
-
-    Parameters
-    ----------
-    repository: Repository
-        Current repository
-    version: str
-        Version of enstaller to inject
-
-    Returns
-    -------
-    """
-    name = "enstaller"
-    build = 1
-    key = "{0}-{1}-{2}.egg".format(name, version, build)
-    current_enstaller = RepositoryPackageMetadata(key, name, version, build,
-                                                  [], PY_VER, -1, "a" * 32,
-                                                  0.0, "free", True,
-                                                  "mocked_store")
-
-    new_repository = Repository()
-    for package in repository.iter_packages():
-        new_repository.add_package(package)
-    new_repository.add_package(current_enstaller)
-
-    return new_repository
-
-
-def install_actions_enstaller(remote_repository, installed_repository):
-    latest = remote_repository.find_latest_package("enstaller")
-
-    if latest.version == enstaller.__version__:
-        return []
-    else:
-        actions = [("fetch", latest.key)]
-
-        installed_enstallers = installed_repository.find_packages(latest.name)
-        if len(installed_enstallers) >= 1:
-            actions.append(("remove", latest.key))
-
-        actions.append(("install", latest.key))
-        return actions
-
-
 class Solver(object):
     def __init__(self, remote_repository, top_installed_repository,
                  mode='recur', force=False, forceall=False):

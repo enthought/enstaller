@@ -42,6 +42,7 @@ from .utils import (on_win, bin_dir_name, rel_site_packages, ensure_dir,
 from ._zipfile import ZipFile
 
 EGG_INFO = "EGG-INFO"
+BOOTSTRAP_ARCNAME = EGG_INFO + "/spec/__bootstrap__.py"
 
 R_EGG_INFO = re.compile("^{0}".format(EGG_INFO))
 R_EGG_INFO_BLACK_LIST = re.compile(

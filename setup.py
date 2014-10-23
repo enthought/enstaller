@@ -1,4 +1,5 @@
 import os
+import os.path
 import subprocess
 import textwrap
 import zipfile
@@ -9,6 +10,9 @@ from distutils.util import convert_path
 
 from setuptools.command.bdist_egg import bdist_egg as old_bdist_egg
 
+from egginst.main import BOOTSTRAP_ARCNAME
+
+
 MAJOR = 4
 MINOR = 8
 MICRO = 0
@@ -16,6 +20,9 @@ MICRO = 0
 IS_RELEASED = False
 
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+
+BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "scripts", "bootstrap.py")
+
 
 # Return the git revision as a string
 def git_version():
@@ -52,32 +59,53 @@ is_released = {is_released}
 if not is_released:
     version = full_version
 """
-    # Adding the git rev number needs to be done inside write_version_py(),
-    # otherwise the import of numpy.version messes up the build under Python 3.
-    fullversion = VERSION
+    force_mode = os.environ.get("FORCE_ENSTALLER_VERSION", None)
+    if force_mode is not None:
+        assert not IS_RELEASED, \
+                "FORCE_ENSTALLER_VERSION mode in release mode !"
+        version = full_version = force_mode
+        is_released = True
+    else:
+        version = full_version = VERSION
+        is_released = IS_RELEASED
+
     if os.path.exists('.git'):
         git_rev = git_version()
-    elif os.path.exists('numpy/_version.py'):
+    elif os.path.exists('enstaller/_version.py'):
         # must be a source distribution, use existing version file
         try:
             from enstaller._version import git_revision as git_rev
         except ImportError:
             raise ImportError("Unable to import git_revision. Try removing " \
-                              "numpy/version.py and the build directory " \
+                              "enstaller/_version.py and the build directory " \
                               "before building.")
     else:
         git_rev = "Unknown"
 
-    if not IS_RELEASED:
-        fullversion += '.dev1-' + git_rev[:7]
+    if not is_released:
+        full_version += '.dev1_' + git_rev[:7]
 
     with open(filename, "wt") as fp:
-        fp.write(template.format(version=VERSION,
-                                 full_version=fullversion,
+        fp.write(template.format(version=version,
+                                 full_version=full_version,
                                  git_revision=git_rev,
-                                 is_released=IS_RELEASED))
+                                 is_released=is_released))
 
-class bdist_egg(old_bdist_egg):
+class bdist_enegg(old_bdist_egg):
+    def finalize_options(self):
+        old_bdist_egg.finalize_options(self)
+
+        basename = "enstaller-{0}-1.egg".format(__version__)
+        self.egg_output = os.path.join(self.dist_dir, basename)
+
+    def _write_bootstrap_code(self, bootstrap_code):
+        zp = zipfile.ZipFile(self.egg_output, "a",
+                             compression=zipfile.ZIP_DEFLATED)
+        try:
+            zp.writestr(BOOTSTRAP_ARCNAME, bootstrap_code)
+        finally:
+            zp.close()
+
     def _write_spec_depend(self, spec_depend):
         zp = zipfile.ZipFile(self.egg_output, "a",
                              compression=zipfile.ZIP_DEFLATED)
@@ -88,6 +116,7 @@ class bdist_egg(old_bdist_egg):
 
     def run(self):
         old_bdist_egg.run(self)
+
         spec_depend = textwrap.dedent("""\
             metadata_version = '1.1'
             name = 'enstaller'
@@ -99,8 +128,11 @@ class bdist_egg(old_bdist_egg):
             osdist = None
             python = None
             packages = []
-        """.format(VERSION))
+        """.format(__version__))
         self._write_spec_depend(spec_depend)
+
+        with open(BOOTSTRAP_SCRIPT, "rt") as fp:
+            self._write_bootstrap_code(fp.read())
 
 
 write_version_py()
@@ -112,7 +144,7 @@ exec(compile(open(convert_path('enstaller/__init__.py')).read(),
              convert_path('enstaller/__init__.py'),
              'exec'),
      d)
-kwds['version'] = d['__version__']
+kwds['version'] = __version__ = d['__version__']
 
 f = open('README.rst')
 kwds['long_description'] = f.read()
@@ -202,6 +234,6 @@ setup(
         "Topic :: System :: Systems Administration",
     ],
     test_suite="nose.collector",
-    cmdclass={"bdist_egg": bdist_egg},
+    cmdclass={"bdist_enegg": bdist_enegg},
     **kwds
 )

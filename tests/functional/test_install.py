@@ -45,8 +45,9 @@ class TestEnstallerMainActions(unittest.TestCase):
         """)
 
         with mock_print() as m:
-            with mock.patch("enstaller.main.install_req"):
-                main([""])
+            with mock.patch("enstaller.main.update_enstaller"):
+                with mock.patch("enstaller.main.install_req"):
+                    main([""])
         self.assertMultiLineEqual(m.value, r_output)
 
     @authenticated_config
@@ -60,7 +61,7 @@ class TestEnstallerMainActions(unittest.TestCase):
         """)
 
         with mock_print() as m:
-            with mock.patch("enstaller.main.install_req"):
+            with mock.patch("enstaller.main.inplace_update"):
                 main(["enstaller"])
         self.assertMultiLineEqual(m.value, r_output)
 
