@@ -46,7 +46,13 @@ def git_version():
     except OSError:
         git_revision = "Unknown"
 
-    return git_revision
+    try:
+        out = _minimal_ext_cmd(['git', 'rev-list', '--count', 'HEAD'])
+        git_count = out.strip().decode('ascii')
+    except OSError:
+        git_count = "0"
+
+    return git_revision, git_count
 
 def write_version_py(filename='enstaller/_version.py'):
     template = """\
@@ -69,8 +75,11 @@ if not is_released:
         version = full_version = VERSION
         is_released = IS_RELEASED
 
+    git_rev = "Unknown"
+    git_count = "0"
+
     if os.path.exists('.git'):
-        git_rev = git_version()
+        git_rev, git_count = git_version()
     elif os.path.exists('enstaller/_version.py'):
         # must be a source distribution, use existing version file
         try:
@@ -79,11 +88,9 @@ if not is_released:
             raise ImportError("Unable to import git_revision. Try removing " \
                               "enstaller/_version.py and the build directory " \
                               "before building.")
-    else:
-        git_rev = "Unknown"
 
     if not is_released:
-        full_version += '.dev1_' + git_rev[:7]
+        full_version += '.dev' + git_count
 
     with open(filename, "wt") as fp:
         fp.write(template.format(version=version,
