@@ -142,7 +142,7 @@ class NormalizedVersion(object):
             raise HugeMajorVersionNumError("huge major version number, %r, "
                 "which might cause future problems: %r" % (self.parts[0][0], s))
 
-    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=True,
+    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=False,
                        pad_zeros_length=0):
         """Parse 'N.N.N' sequences, return a list of ints.
 

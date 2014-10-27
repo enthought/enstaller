@@ -14,8 +14,8 @@ from egginst._compat import urlparse
 from egginst.utils import compute_md5
 
 from enstaller.vendor import requests
-from enstaller.versions import NormalizedVersion, IrrationalVersionError
-from enstaller.versions.pep386_workaround import normalize_version_string
+from enstaller.versions.pep386_workaround import (normalize_version_string,
+                                                  PEP386WorkaroundVersion)
 from enstaller import plat
 
 
@@ -44,19 +44,9 @@ def canonical(s):
 def comparable_version(version):
     """
     Given a version string (e.g. '1.3.0.dev234'), return an object which
-    allows correct comparison. For example:
-        comparable_version('1.3.10') > comparable_version('1.3.8')  # True
-    whereas:
-        '1.3.10' > '1.3.8'  # False
+    allows correct comparison.
     """
-    try:
-        ver = normalize_version_string(version)
-        return NormalizedVersion(ver)
-    except IrrationalVersionError:
-        # If obtaining the RationalVersion object fails (for example for
-        # the version '2009j'), simply return the string, such that
-        # a string comparison can be made.
-        return version
+    return PEP386WorkaroundVersion.from_string(version)
 
 
 def info_file(path):
