@@ -9,9 +9,11 @@ logging.getLogger("enstaller").addHandler(egginst._compat.NullHandler())
 
 try:
     from enstaller._version import (full_version as __version__,
-                                    is_released as __is_released__)
+                                    git_revision as __git_revision__,
+                                    is_released as __is_released__,
+                                    )
 except ImportError as e: # pragma: no cover
-    __version__ = "no-built"
+    __version__ = __git_revision__ = "no-built"
     __is_released__ = False
 
 from enstaller.config import Configuration
