@@ -1,7 +1,7 @@
 import unittest
 
-from enstaller.verlib import NormalizedVersion
 from enstaller.utils import comparable_version
+from enstaller.versions import NormalizedVersion
 
 class TestVersion(unittest.TestCase):
     def test_single_number(self):
