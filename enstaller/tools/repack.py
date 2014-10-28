@@ -1,6 +1,8 @@
 import argparse
 import os
 import os.path
+import re
+import shutil
 import sys
 
 from okonomiyaki.errors import OkonomiyakiError
@@ -10,11 +12,21 @@ from okonomiyaki.file_formats.egg import (_SPEC_DEPEND_LOCATION,
 from okonomiyaki.file_formats.setuptools_egg import parse_filename
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
+from egginst.eggmeta import SPEC_DEPEND_KEYS
 from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException
 
 
 ENDIST_DAT = "endist.dat"
+# Whitelist of keys considered when exec`ing the endist.dat to update
+# spec/depend
+ACCEPTED_ENDIST_SPEC_KEYS = SPEC_DEPEND_KEYS
+# Whitelist of keys considered when exec`ing the endist.dat to update
+# the egg content
+ACCEPTED_ENDIST_EGG_KEYS = ("add_files",)
+# List of endist keys not yet supported by this tool
+UNSUPPORTED_ENDIST_KEYS = ("app_icon_file", "svn_rev", "svn_rev_init",
+                           "no_pyc")
 
 _SETUPTOOLS_TYPE = "setuptools"
 _EGGINST_TYPE = "egginst"
@@ -59,6 +71,9 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     data = {"build": build_number, "packages": [], "name": name,
             "version": version}
 
+    if os.path.exists(ENDIST_DAT):
+        data.update(_parse_endist_for_spec_depend(ENDIST_DAT))
+
     if platform_string is None:
         try:
             epd_platform = LegacyEPDPlatform.from_running_system()
@@ -72,6 +87,54 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
             LegacyEPDPlatform.from_epd_platform_string(platform_string)
 
     return LegacySpecDepend.from_data(data, epd_platform.short, pyver)
+
+
+def _parse_endist_for_egg_content(path):
+    data = _parse_endist(path)
+    return dict((k, data[k]) for k in data if k in ACCEPTED_ENDIST_EGG_KEYS)
+
+
+def _parse_endist_for_spec_depend(path):
+    data = _parse_endist(path)
+    return dict((k, data[k]) for k in data if k in ACCEPTED_ENDIST_SPEC_KEYS)
+
+
+def _parse_endist(path):
+    with open(path) as fp:
+        globals_dict = {}
+        local_dict = {}
+        exec(fp.read(), local_dict, globals_dict)
+
+    for k in globals_dict:
+        if k in UNSUPPORTED_ENDIST_KEYS:
+            msg = "key {0!r} not yet supported in {1!r}".format(k, ENDIST_DAT)
+            raise NotImplementedError(msg)
+    return globals_dict
+
+
+def _add_files(z, dir_path, regex_string, archive_dir):
+    r = re.compile(regex_string)
+    archive_dir = archive_dir.strip('/')
+
+    print("dir_path: {0!r}".format(dir_path))
+    print("rx: {0!r}".format(regex_string))
+    print("archive_dir: {0!r}".format(archive_dir))
+
+    for filename in os.listdir(dir_path):
+        path = os.path.join(dir_path, filename)
+        if not (r.match(filename) and os.path.isfile(path)):
+            continue
+
+        print("\tfn={0!r}".format(filename))
+
+        arcname = archive_dir + '/' + filename
+        if os.path.islink(path):
+            msg = "Soft link support not yet implemented\n"
+            raise NotImplementedError(msg)
+        elif os.path.isfile(path):
+            z.write(path, arcname)
+        else:
+            raise EnstallerException("Neiher link nor file:" % path)
 
 
 def repack(source_egg_path, build_number=1, platform_string=None):
@@ -89,15 +152,15 @@ def repack(source_egg_path, build_number=1, platform_string=None):
     # XXX: implement endist.dat/app handling
 
     print(20 * '-' + '\n' + legacy_spec.to_string() + 20 * '-')
+    shutil.copy2(source_egg_path, target_egg_path)
 
-    with ZipFile(source_egg_path) as source:
-        with ZipFile(target_egg_path, "w") as target:
-            for archive in source.namelist():
-                if archive in (_SPEC_DEPEND_LOCATION):
-                    continue
-                target.writestr(source.getinfo(archive), source.read(archive))
+    with ZipFile(target_egg_path, "w") as target:
+        target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
 
-            target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
+        if os.path.exists(ENDIST_DAT):
+            data = _parse_endist_for_egg_content(ENDIST_DAT)
+            for entry in data.get("add_files", []):
+                _add_files(target, entry[0], entry[1], entry[2])
 
 
 def main(argv=None):
@@ -112,9 +175,6 @@ def main(argv=None):
                    help="Legacy epd platform string (e.g. 'rh5-32'). "
                         "Will be guessed if not specified.")
     ns = p.parse_args(argv)
-
-    if os.path.exists(ENDIST_DAT):
-        p.error("{0!r} files are not handled yet.".format(ENDIST_DAT))
 
     repack(ns.egg, ns.build_number, ns.platform_string)
 
