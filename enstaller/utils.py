@@ -14,7 +14,8 @@ from egginst._compat import urlparse
 from egginst.utils import compute_md5
 
 from enstaller.vendor import requests
-from enstaller.verlib import NormalizedVersion, IrrationalVersionError
+from enstaller.versions.pep386_workaround import (normalize_version_string,
+                                                  PEP386WorkaroundVersion)
 from enstaller import plat
 
 
@@ -40,53 +41,12 @@ def canonical(s):
         s = 'pytables'
     return s
 
-def normalize_version_string(version_string):
-    """
-    Normalize the given version string to a string that can be converted to
-    a NormalizedVersion.
-
-    This function applies various special cases needed for EPD/Canopy and not
-    handled in NormalizedVersion parser.
-
-    Parameters
-    ----------
-    version_string: str
-        The version to convert
-
-    Returns
-    -------
-    normalized_version: str
-        The normalized version string. Note that this is not guaranteed to be
-        convertible to a NormalizedVersion
-    """
-    # This hack makes it possible to use 'rc' in the version, where
-    # 'rc' must be followed by a single digit.
-    version_string = version_string.replace('rc', '.dev99999')
-    # This hack allows us to deal with single number versions (e.g.
-    # pywin32's style '214').
-    if not "." in version_string:
-        version_string += ".0"
-
-    if version_string.endswith(".dev"):
-        version_string += "1"
-    return version_string
-
 def comparable_version(version):
     """
     Given a version string (e.g. '1.3.0.dev234'), return an object which
-    allows correct comparison. For example:
-        comparable_version('1.3.10') > comparable_version('1.3.8')  # True
-    whereas:
-        '1.3.10' > '1.3.8'  # False
+    allows correct comparison.
     """
-    try:
-        ver = normalize_version_string(version)
-        return NormalizedVersion(ver)
-    except IrrationalVersionError:
-        # If obtaining the RationalVersion object fails (for example for
-        # the version '2009j'), simply return the string, such that
-        # a string comparison can be made.
-        return version
+    return PEP386WorkaroundVersion.from_string(version)
 
 
 def info_file(path):

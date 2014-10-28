@@ -2,7 +2,7 @@
 omit = enstaller/argparse*
        enstaller/indexed_repo*
        enstaller/vendor*
-       enstaller/verlib*
+       enstaller/versions/pep386.py
        egginst/bootstrap.py
        egginst/console/*
        egginst/macho/*

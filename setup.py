@@ -187,6 +187,7 @@ packages = [
     'enstaller.vendor.win32ctypes',
     'enstaller.vendor.yaml',
     'enstaller.vendor.yaml_py3',
+    'enstaller.versions',
 ]
 
 package_data = {"enstaller.vendor.requests": ["cacert.pem"],
@@ -196,8 +197,12 @@ if include_testing:
     packages += [
         'egginst.tests',
         'enstaller.auth.tests',
+        'enstaller.cli.tests',
         'enstaller.indexed_repo.tests',
+        'enstaller.solver.tests',
         'enstaller.tests',
+        'enstaller.tools.tests',
+        'enstaller.versions.tests',
     ]
     macho_binaries = """dummy_with_target_dat-1.0.0-1.egg  foo_amd64
     foo_legacy_placehold.dylib  foo_rpath.dylib  foo.so  foo_x86

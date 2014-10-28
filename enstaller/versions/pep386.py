@@ -30,7 +30,7 @@ class HugeMajorVersionNumError(IrrationalVersionError):
 # versions that don't have those segments, to sort properly. An example
 # of versions in sort order ('highest' last):
 #   1.0b1                 ((1,0), ('b',1), ('f',))
-#   1.0.dev345            ((1,0), ('f',),  ('dev', 345))
+#   1.0.dev345            ((1,0), ('dev', 345), ('f',))
 #   1.0                   ((1,0), ('f',),  ('f',))
 #   1.0.post256.dev345    ((1,0), ('f',),  ('f', 'post', 256, 'dev', 345))
 #   1.0.post345           ((1,0), ('f',),  ('f', 'post', 345, 'f'))
@@ -45,10 +45,11 @@ FINAL_MARKER = ('f',)
 
 VERSION_RE = re.compile(r'''
     ^
-    (?P<version>\d+\.\d+)          # minimum 'N.N'
+    (?P<version>\d+)          # minimum 'N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
     (?:
-        (?P<prerel>[abc]|rc)       # 'a'=alpha, 'b'=beta, 'c'=release candidate
+        (?P<prerel>[abc]|rc|\.dev) # 'a'=alpha, 'b'=beta, 'c'=release candidate
+                                   # '.dev'=dev version (e.g. pre-alpha)
                                    # 'rc'= alias for release candidate
         (?P<prerelversion>\d+(?:\.\d+)*)
     )?
@@ -69,7 +70,6 @@ class NormalizedVersion(object):
         TODO: fill this out
 
     Bad:
-        1           # mininum two numbers
         1.2a        # release level must have a release serial
         1.2.3b
     """
@@ -107,7 +107,7 @@ class NormalizedVersion(object):
         parts = []
 
         # main version
-        block = self._parse_numdots(groups['version'], s, False, 2)
+        block = self._parse_numdots(groups['version'], s, False, 1)
         extraversion = groups.get('extraversion')
         if extraversion not in ('', None):
             block += self._parse_numdots(extraversion[1:], s)
@@ -142,7 +142,7 @@ class NormalizedVersion(object):
             raise HugeMajorVersionNumError("huge major version number, %r, "
                 "which might cause future problems: %r" % (self.parts[0][0], s))
 
-    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=True,
+    def _parse_numdots(self, s, full_ver_str, drop_trailing_zeros=False,
                        pad_zeros_length=0):
         """Parse 'N.N.N' sequences, return a list of ints.
 

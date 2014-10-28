@@ -14,7 +14,8 @@ from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, MissingPackage
 from enstaller.eggcollect import info_from_metadir
-from enstaller.utils import comparable_version, compute_md5, PY_VER
+from enstaller.utils import compute_md5, PY_VER
+from enstaller.versions.enpkg import EnpkgVersion
 
 
 class PackageVersionInfo(object):
@@ -47,23 +48,25 @@ class PackageMetadata(object):
         Create an instance from a key (the egg filename) and metadata passed as
         a dictionary
         """
-        return cls(key, json_dict["name"], json_dict["version"],
-                   json_dict["build"], json_dict["packages"],
+        version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
+                                                       json_dict["build"])
+        return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"])
 
-    def __init__(self, key, name, version, build, packages, python):
+    def __init__(self, key, name, version, packages, python):
         self.key = key
 
         self.name = name
-        self.version = version
-        self.build = build
+        self._version = version
+        self.version = str(version.upstream)
+        self.build = version.build
 
         self.packages = packages
         self.python = python
 
     def __repr__(self):
-        return "PackageMetadata('{0}-{1}-{2}', key={3!r})".format(
-            self.name, self.version, self.build, self.key)
+        return "PackageMetadata('{0}-{1}', key={2!r})".format(
+            self.name, self._version, self.key)
 
     @property
     def dependencies(self):
@@ -76,7 +79,7 @@ class PackageMetadata(object):
         """
         The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
         """
-        return "{0}-{1}".format(self.version, self.build)
+        return str(self._version)
 
     @property
     def comparable_version(self):
@@ -85,7 +88,7 @@ class PackageMetadata(object):
         package metadata (only make sense for two packages which differ only in
         versions).
         """
-        return comparable_version(self.version), self.build
+        return self._version
 
 
 class RepositoryPackageMetadata(PackageMetadata):
@@ -123,18 +126,18 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @classmethod
     def from_json_dict(cls, key, json_dict):
-        return cls(key, json_dict["name"], json_dict["version"],
-                   json_dict["build"], json_dict["packages"],
+        version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
+                                                       json_dict["build"])
+        return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
                    json_dict.get("available", True),
                    json_dict["store_location"])
 
-    def __init__(self, key, name, version, build, packages, python, size, md5,
+    def __init__(self, key, name, version, packages, python, size, md5,
                  mtime, product, available, store_location):
         super(RepositoryPackageMetadata, self).__init__(key, name, version,
-                                                        build, packages,
-                                                        python)
+                                                        packages, python)
 
         self.size = size
         self.md5 = md5
@@ -197,19 +200,20 @@ class InstalledPackageMetadata(PackageMetadata):
     def from_installed_meta_dict(cls, json_dict):
         key = json_dict["key"]
         name = json_dict["name"]
-        version = json_dict["version"]
+        upstream_version = json_dict["version"]
         build = json_dict.get("build", 1)
+        version = EnpkgVersion.from_upstream_and_build(upstream_version, build)
         packages = json_dict.get("packages", [])
         python = json_dict.get("python", PY_VER)
         ctime = json_dict.get("ctime", time.ctime(0.0))
         store_location = json_dict.get("store_location", "")
-        return cls(key, name, version, build, packages, python, ctime,
+        return cls(key, name, version, packages, python, ctime,
                    store_location)
 
-    def __init__(self, key, name, version, build, packages, python, ctime,
+    def __init__(self, key, name, version, packages, python, ctime,
                  store_location):
         super(InstalledPackageMetadata, self).__init__(key, name, version,
-                                                       build, packages, python)
+                                                       packages, python)
 
         self.ctime = ctime
         self.store_location = store_location
@@ -372,9 +376,10 @@ class Repository(object):
         package : RepositoryPackageMetadata
             The corresponding metadata.
         """
+        version = EnpkgVersion.from_string(version)
         candidates = self._name_to_packages.get(name, [])
         for candidate in candidates:
-            if candidate.full_version == version:
+            if candidate.comparable_version == version:
                 return candidate
         raise MissingPackage("Package '{0}-{1}' not found".format(name,
                                                                   version))

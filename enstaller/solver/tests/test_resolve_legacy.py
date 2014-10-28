@@ -151,6 +151,7 @@ class TestChain2(unittest.TestCase):
         indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
                    in ('open', 'runner', 'epd')]
         self.repo = _old_style_indices_to_repository(indices, python_version)
+
         return Resolve(self.repo)
 
     def test_flat_recur1(self):

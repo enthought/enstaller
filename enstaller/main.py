@@ -45,6 +45,7 @@ from enstaller.solver import Request, Requirement
 from enstaller.utils import (abs_expanduser, comparable_version,
                              exit_if_sudo_on_venv, prompt_yes_no)
 from enstaller.vendor import requests
+from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
@@ -74,7 +75,8 @@ def epd_install_confirm(force_yes=False):
 
 
 def _get_enstaller_comparable_version(prefix, package_name):
-    runtime_version = (comparable_version(enstaller.__version__), 1)
+    runtime_version = \
+        EnpkgVersion.from_upstream_and_build(enstaller.__version__, 1)
 
     egg_info_dir = os.path.join(prefix, EGG_INFO, package_name)
     try:

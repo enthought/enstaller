@@ -19,6 +19,7 @@ from enstaller.repository import (InstalledPackageMetadata, Repository,
 from enstaller.session import Session
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
+from enstaller.versions.enpkg import EnpkgVersion
 
 
 FAKE_MD5 = "a" * 32
@@ -80,7 +81,8 @@ class DummyAuthenticator(object):
 def dummy_installed_package_factory(name, version, build, key=None,
                                     py_ver=PY_VER, store_location=""):
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
-    return InstalledPackageMetadata(key, name.lower(), version, build, [], py_ver,
+    version = EnpkgVersion.from_upstream_and_build(version, build)
+    return InstalledPackageMetadata(key, name.lower(), version, [], py_ver,
                                     "", store_location)
 
 def dummy_repository_package_factory(name, version, build, key=None,
@@ -91,7 +93,8 @@ def dummy_repository_package_factory(name, version, build, key=None,
     fake_size = FAKE_SIZE
     fake_md5 = FAKE_MD5
     fake_mtime = mtime
-    return RepositoryPackageMetadata(key, name.lower(), version, build,
+    version = EnpkgVersion.from_upstream_and_build(version, build)
+    return RepositoryPackageMetadata(key, name.lower(), version,
                                      dependencies, py_ver, fake_size,
                                      fake_md5, fake_mtime, "commercial",
                                      True, store_location)
