@@ -31,6 +31,18 @@ class TestPEP386Workaround(TestCase):
         self.assertTrue(left < right)
         self.assertFalse(left > right)
 
+        # Given
+        left = PEP386WorkaroundVersion.from_string("1.3.0rc2")
+        right = PEP386WorkaroundVersion.from_string("1.3.0")
+
+        # When/Then
+        self.assertFalse(left == right)
+        self.assertTrue(left != right)
+        self.assertTrue(left <= right)
+        self.assertFalse(left >= right)
+        self.assertTrue(left < right)
+        self.assertFalse(left > right)
+
     def test_correct_lesser(self):
         # Given
         left = PEP386WorkaroundVersion.from_string("1.3.0")
@@ -43,6 +55,31 @@ class TestPEP386Workaround(TestCase):
         self.assertTrue(left >= right)
         self.assertFalse(left < right)
         self.assertTrue(left > right)
+
+        # Given
+        left = PEP386WorkaroundVersion.from_string("1.3.0")
+        right = PEP386WorkaroundVersion.from_string("1.3.0rc2")
+
+        # When/Then
+        self.assertFalse(left == right)
+        self.assertTrue(left != right)
+        self.assertFalse(left <= right)
+        self.assertTrue(left >= right)
+        self.assertFalse(left < right)
+        self.assertTrue(left > right)
+
+    def test_correct_series(self):
+        # Given
+        version_strings = ("1.1.0", "1.2.0.dev1", "1.2.0a1", "1.2.0a2", "1.2.0b1", "1.2.0c1",
+                           "1.2.0rc2", "1.2.0")
+        versions = tuple(PEP386WorkaroundVersion.from_string(v) for v in
+                         version_strings)
+
+        # When/Then
+        self.assertTrue(versions[0] < versions[1] < versions[2] < versions[3] <
+                        versions[4] < versions[5] < versions[6] < versions[7])
+        self.assertTrue(versions[7] > versions[6] > versions[5] > versions[4] >
+                        versions[3] > versions[2] > versions[1] > versions[0])
 
     def test_incorrect_equal(self):
         # Given
@@ -121,6 +158,16 @@ class TestPEP386Workaround(TestCase):
 
         # Then
         self.assertTrue(version._is_worked_around)
+        self.assertEqual(str(version), version_string)
+
+        # Given
+        version_string = "0.9.0rc2"
+
+        # When
+        version = PEP386WorkaroundVersion.from_string(version_string)
+
+        # Then
+        self.assertFalse(version._is_worked_around)
         self.assertEqual(str(version), version_string)
 
 

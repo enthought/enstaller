@@ -30,7 +30,7 @@ class HugeMajorVersionNumError(IrrationalVersionError):
 # versions that don't have those segments, to sort properly. An example
 # of versions in sort order ('highest' last):
 #   1.0b1                 ((1,0), ('b',1), ('f',))
-#   1.0.dev345            ((1,0), ('f',),  ('dev', 345))
+#   1.0.dev345            ((1,0), ('dev', 345), ('f',))
 #   1.0                   ((1,0), ('f',),  ('f',))
 #   1.0.post256.dev345    ((1,0), ('f',),  ('f', 'post', 256, 'dev', 345))
 #   1.0.post345           ((1,0), ('f',),  ('f', 'post', 345, 'f'))
@@ -48,7 +48,8 @@ VERSION_RE = re.compile(r'''
     (?P<version>\d+)          # minimum 'N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
     (?:
-        (?P<prerel>[abc]|rc)       # 'a'=alpha, 'b'=beta, 'c'=release candidate
+        (?P<prerel>[abc]|rc|\.dev) # 'a'=alpha, 'b'=beta, 'c'=release candidate
+                                   # '.dev'=dev version (e.g. pre-alpha)
                                    # 'rc'= alias for release candidate
         (?P<prerelversion>\d+(?:\.\d+)*)
     )?

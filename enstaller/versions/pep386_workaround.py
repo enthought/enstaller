@@ -20,9 +20,6 @@ def normalize_version_string(version_string):
         The normalized version string. Note that this is not guaranteed to be
         convertible to a NormalizedVersion
     """
-    # This hack makes it possible to use 'rc' in the version, where
-    # 'rc' must be followed by a single digit.
-    version_string = version_string.replace('rc', '.dev99999')
     if version_string.endswith(".dev"):
         version_string += "1"
     return version_string
@@ -54,16 +51,26 @@ class PEP386WorkaroundVersion(object):
     def __init__(self, parts, is_worked_around=False):
         self._parts = parts
 
-        comparable_parts = []
+        if is_worked_around:
+            comparable_parts = tuple(parts)
+        else:
+            numdot = list(parts[0])
+            while len(numdot) > 0 and numdot[-1] == 0:
+                numdot.pop()
 
-        numdot = list(parts[0])
-        while len(numdot) > 0 and numdot[-1] == 0:
-            numdot.pop()
+            prerel_parts = parts[1]
+            # This is a workaround for the verlib.py implementation of
+            # pep386.
+            if prerel_parts[0] == "rc":
+                prerel_parts = tuple(["c"] + list(prerel_parts[1:]))
+            elif prerel_parts[0] == ".dev":
+                # '`' sorts before 'a'. Explicit better than implicit you said
+                # ?
+                prerel_parts = tuple(['`'] + list(prerel_parts[1:]))
 
-        comparable_parts = [numdot]
-        comparable_parts.extend(parts[1:])
+            comparable_parts = (numdot, prerel_parts, parts[2])
 
-        self._comparable_parts = tuple(comparable_parts)
+        self._comparable_parts = comparable_parts
         self._is_worked_around = is_worked_around
 
     def __str__(self):
