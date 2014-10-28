@@ -46,14 +46,14 @@ class PEP386WorkaroundVersion(object):
     """
     @classmethod
     def from_string(cls, s):
-        normalized = normalize_version_string(s)
         try:
+            normalized = normalize_version_string(s)
             version = NormalizedVersion(normalized,
                                         error_on_huge_major_num=False)
             parts = version.parts
             return cls(parts)
         except IrrationalVersionError:
-            parts = normalized.split(".")
+            parts = s.split(".")
             return cls(parts, is_worked_around=True)
 
     def __init__(self, parts, is_worked_around=False):

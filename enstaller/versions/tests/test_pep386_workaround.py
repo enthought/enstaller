@@ -112,6 +112,18 @@ class TestPEP386Workaround(TestCase):
         self.assertFalse(left > right)
 
 
+    def test_roundtrip_workedaround(self):
+        # Given
+        version_string = "2011g"
+
+        # When
+        version = PEP386WorkaroundVersion.from_string(version_string)
+
+        # Then
+        self.assertTrue(version._is_worked_around)
+        self.assertEqual(str(version), version_string)
+
+
 class TestTrailingZeros(TestCase):
     def test_leading_zeros(self):
         # Given
