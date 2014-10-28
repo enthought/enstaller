@@ -78,7 +78,10 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(cleanup_url(url), r_url)
 
     def test_cleanup_url_dir(self):
-        r_url = "file://{0}/".format(os.path.abspath(os.path.expanduser("~")))
+        p = os.path.abspath(os.path.expanduser("~"))
+        if sys.platform == "win32":
+            p = "/" + p
+        r_url = "file://{0}/".format(p)
 
         url = "~"
 
