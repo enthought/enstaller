@@ -45,7 +45,7 @@ FINAL_MARKER = ('f',)
 
 VERSION_RE = re.compile(r'''
     ^
-    (?P<version>\d+\.\d+)          # minimum 'N.N'
+    (?P<version>\d+)          # minimum 'N'
     (?P<extraversion>(?:\.\d+)*)   # any number of extra '.N' segments
     (?:
         (?P<prerel>[abc]|rc)       # 'a'=alpha, 'b'=beta, 'c'=release candidate
@@ -69,7 +69,6 @@ class NormalizedVersion(object):
         TODO: fill this out
 
     Bad:
-        1           # mininum two numbers
         1.2a        # release level must have a release serial
         1.2.3b
     """
@@ -107,7 +106,7 @@ class NormalizedVersion(object):
         parts = []
 
         # main version
-        block = self._parse_numdots(groups['version'], s, False, 2)
+        block = self._parse_numdots(groups['version'], s, False, 1)
         extraversion = groups.get('extraversion')
         if extraversion not in ('', None):
             block += self._parse_numdots(extraversion[1:], s)

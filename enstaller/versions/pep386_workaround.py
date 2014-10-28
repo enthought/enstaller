@@ -23,11 +23,6 @@ def normalize_version_string(version_string):
     # This hack makes it possible to use 'rc' in the version, where
     # 'rc' must be followed by a single digit.
     version_string = version_string.replace('rc', '.dev99999')
-    # This hack allows us to deal with single number versions (e.g.
-    # pywin32's style '214').
-    if not "." in version_string:
-        version_string += ".0"
-
     if version_string.endswith(".dev"):
         version_string += "1"
     return version_string

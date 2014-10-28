@@ -193,6 +193,7 @@ class TestOldCases(TestCase):
 
         # Then
         self.assertEqual(version, r_version)
+        self.assertEqual(str(version), version_string)
 
     def test_dev_tag_without_number(self):
         # Given
