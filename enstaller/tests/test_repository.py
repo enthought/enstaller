@@ -15,6 +15,7 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, m
 
 from enstaller.compat import path_to_uri
 from enstaller.errors import MissingPackage
+from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
@@ -79,7 +80,8 @@ class TestEggNameToNameVersion(unittest.TestCase):
 class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
-        metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", "1.3.0", 1, [],
+        version = EnpkgVersion.from_string("1.3.0-1")
+        metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", version, [],
                                    "2.7")
 
         # When
@@ -119,8 +121,9 @@ class TestRepositoryPackage(unittest.TestCase):
             "version": "1.3.0",
 
         }
+        version = EnpkgVersion.from_string("1.3.0-1")
         metadata = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             "1.3.0", 1, [], "2.7", 1, md5,
+                                             version, [], "2.7", 1, md5,
                                              0.0, "free", True, "")
 
         # When/Then
@@ -296,10 +299,13 @@ class TestRepository(unittest.TestCase):
 
     def test_has_package(self):
         # Given
+        version = EnpkgVersion.from_string("1.3.0-1")
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            "1.3.0", 1, [], "2.7")
+                                            version, [], "2.7")
+
+        version = EnpkgVersion.from_string("1.4.0-1")
         unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
-                                              "1.4.0", 1, [], "2.7")
+                                              version, [], "2.7")
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))

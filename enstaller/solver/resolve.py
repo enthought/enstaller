@@ -4,6 +4,7 @@ from collections import defaultdict
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.repository import egg_name_to_name_version
 from enstaller.utils import comparable_version
+from enstaller.versions.enpkg import EnpkgVersion
 
 from .requirement import Requirement
 
@@ -15,7 +16,8 @@ def comparable_info(spec):
     Returns a tuple(version, build) for a distribution, version is a
     RationalVersion object.  The result may be used for as a sort key.
     """
-    return comparable_version(spec['version']), spec['build']
+    return EnpkgVersion.from_upstream_and_build(spec['version'],
+                                                spec['build'])
 
 
 class Resolve(object):

@@ -3,6 +3,20 @@ from .pep386_workaround import PEP386WorkaroundVersion
 
 class EnpkgVersion(object):
     @classmethod
+    def from_upstream_and_build(cls, upstream, build):
+        """ Creates a new EnpkgVersion from the upstream string and the
+        build number.
+
+        Parameters
+        ----------
+        upstream : str
+            The upstream version (e.g. '1.3.0')
+        build : int
+            The build number
+        """
+        return cls.from_string("{0}-{1}".format(upstream, build))
+
+    @classmethod
     def from_string(cls, version_string):
         """ Creates a new EnpkgVersion from its string representation.
 

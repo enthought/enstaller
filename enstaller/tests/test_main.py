@@ -50,6 +50,7 @@ from enstaller.session import Session
 from enstaller.solver import Requirement
 from enstaller.utils import PY_VER, comparable_version
 from enstaller.vendor import responses
+from enstaller.versions.enpkg import EnpkgVersion
 
 import enstaller.tests.common
 from .common import (create_prefix_with_eggs,
@@ -568,13 +569,14 @@ class TestEnstallerComparableVersion(unittest.TestCase):
         # Given
         prefix = self.prefix
         package_name = "enstaller"
+        r_version = EnpkgVersion.from_upstream_and_build(enstaller.__version__,
+                                                         1)
 
         # When
         version = _get_enstaller_comparable_version(prefix, package_name)
 
         # Then
-        self.assertEqual(version, (comparable_version(enstaller.__version__),
-                                   1))
+        self.assertEqual(version, r_version)
 
     def test_egg_install(self):
         # ensure that we use the build number from installed metadata if
@@ -585,6 +587,7 @@ class TestEnstallerComparableVersion(unittest.TestCase):
         package_name = "enstaller"
         version_string = "2.7.6"
         build = 4
+        r_version = EnpkgVersion.from_upstream_and_build(version_string, build)
 
         json_dict = {
             "arch": None,
@@ -611,7 +614,7 @@ class TestEnstallerComparableVersion(unittest.TestCase):
             version = _get_enstaller_comparable_version(prefix, package_name)
 
         # Then
-        self.assertEqual(version, (comparable_version(version_string), build))
+        self.assertEqual(version, r_version)
 
     def test_egg_install_different_versions(self):
         # ensure that we use the build number from installed metadata if
@@ -637,6 +640,7 @@ class TestEnstallerComparableVersion(unittest.TestCase):
             "type": "egg",
             "version": version_string,
         }
+        r_version = EnpkgVersion.from_upstream_and_build("4.8.0", 1)
 
         meta_info_path = meta_info_from_prefix(prefix, package_name)
         ensure_dir(meta_info_path)
@@ -648,4 +652,4 @@ class TestEnstallerComparableVersion(unittest.TestCase):
             version = _get_enstaller_comparable_version(prefix, package_name)
 
         # Then
-        self.assertEqual(version, (comparable_version("4.8.0"), 1))
+        self.assertEqual(version, r_version)
