@@ -699,6 +699,8 @@ def print_config(config, prefix, verify=True):
     user = DUMMY_USER
     try:
         user = authenticate(config, verify=verify)
+    except EnstallerException as e:
+        print(e)
     except requests.exceptions.SSLError as e:
         print()
         print(e)
