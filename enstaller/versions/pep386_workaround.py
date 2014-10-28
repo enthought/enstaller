@@ -106,7 +106,7 @@ class PEP386WorkaroundVersion(object):
         return self.__le__(other) and self.__ne__(other)
 
     def __ge__(self, other):
-        return not self.__lt__(other) or self.__eq__(other)
+        return not self.__lt__(other)
 
     def __gt__(self, other):
         return not self.__le__(other)

@@ -14,7 +14,8 @@ class EnpkgVersion(object):
         build : int
             The build number
         """
-        return cls.from_string("{0}-{1}".format(upstream, build))
+        upstream = PEP386WorkaroundVersion.from_string(upstream)
+        return cls(upstream, build)
 
     @classmethod
     def from_string(cls, version_string):
@@ -30,13 +31,12 @@ class EnpkgVersion(object):
             msg = "Invalid version format: {0!r}".format(version_string)
             raise ValueError(msg)
         
-        upstream = PEP386WorkaroundVersion.from_string(parts[0])
         try:
             build = int(parts[1])
         except ValueError:
             raise ValueError("Invalid build number: {0!r}".format(parts[1]))
 
-        return cls(upstream, build)
+        return cls.from_upstream_and_build(parts[0], build)
 
     def __init__(self, upstream, build):
         """ Creates a new EnpkgVersion instance
@@ -74,7 +74,7 @@ class EnpkgVersion(object):
         return self._parts < other._parts
 
     def __le__(self, other):
-        return self.__lt__(other) or self.__eq__(other)
+        return not self.__gt__(other)
 
     def __gt__(self, other):
         if not isinstance(other, EnpkgVersion):
@@ -82,4 +82,4 @@ class EnpkgVersion(object):
         return self._parts > other._parts
 
     def __ge__(self, other):
-        return self.__gt__(other) or self.__eq__(other)
+        return not self.__lt__(other)

@@ -379,7 +379,7 @@ class Repository(object):
         version = EnpkgVersion.from_string(version)
         candidates = self._name_to_packages.get(name, [])
         for candidate in candidates:
-            if candidate._version == version:
+            if candidate.comparable_version == version:
                 return candidate
         raise MissingPackage("Package '{0}-{1}' not found".format(name,
                                                                   version))

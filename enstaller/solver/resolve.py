@@ -13,8 +13,8 @@ logger = logging.getLogger(__name__)
 
 def comparable_info(spec):
     """
-    Returns a tuple(version, build) for a distribution, version is a
-    RationalVersion object.  The result may be used for as a sort key.
+    Returns a EnpkgVersion object from the given spec. May be used for version
+    comparison.
     """
     return EnpkgVersion.from_upstream_and_build(spec['version'],
                                                 spec['build'])
