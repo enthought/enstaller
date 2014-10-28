@@ -62,7 +62,7 @@ class PEP386WorkaroundVersion(object):
         comparable_parts = []
 
         numdot = list(parts[0])
-        while numdot[-1] == 0:
+        while len(numdot) > 0 and numdot[-1] == 0:
             numdot.pop()
 
         comparable_parts = [numdot]

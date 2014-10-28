@@ -171,6 +171,16 @@ class TestTrailingZeros(TestCase):
         self.assertFalse(left > right)
         self.assertTrue(left >= right)
 
+    def test_all_zeros(self):
+        # Given
+        version_string = "0.0.0"
+
+        # When
+        v = PEP386WorkaroundVersion.from_string(version_string)
+
+        # Then
+        self.assertEqual(str(v), version_string)
+
 
 class TestOldCases(TestCase):
     def test_single_number(self):
