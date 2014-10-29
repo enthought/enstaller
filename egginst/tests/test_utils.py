@@ -5,7 +5,7 @@ import shutil
 import tempfile
 import textwrap
 
-from egginst.utils import atomic_file, parse_assignments
+from egginst.utils import atomic_file, parse_assignments, samefile
 from enstaller.errors import InvalidFormat
 
 
@@ -121,3 +121,35 @@ class TestAtomicFile(TestCase):
         with open(path, "rb") as fp:
             content = fp.read()
         self.assertEqual(content, r_content)
+
+
+class TestSameFile(TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_simple_same_file(self):
+        # Given
+        os.makedirs(os.path.join(self.prefix, "foo"))
+        left = os.path.join(self.prefix, "bar")
+        right = os.path.join(self.prefix, "foo", os.pardir, "bar")
+
+        with open(left, "w") as fp:
+            fp.write("")
+
+        # When/Then
+        self.assertTrue(samefile(left, right))
+
+    def test_simple_not_same_file(self):
+        # Given
+        left = os.path.join(self.prefix, "bar")
+        right = os.path.join(self.prefix, "foo")
+
+        for path in left, right:
+            with open(path, "w") as fp:
+                fp.write("")
+
+        # When/Then
+        self.assertFalse(samefile(left, right))

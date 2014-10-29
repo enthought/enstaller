@@ -328,3 +328,8 @@ def atomic_file(filename, mode='w+b'):
             _cleanup(temp_fp)
         else:
             rename(temp_fp._name, filename)
+
+if sys.platform == "win32":
+    from egginst._win32_compat import samefile
+else:
+    samefile = os.path.samefile
