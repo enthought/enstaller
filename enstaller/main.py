@@ -21,13 +21,12 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
-from egginst._compat import http_client, urlparse
+from egginst._compat import http_client
 from egginst.main import EGG_INFO
 from egginst.progress import console_progress_manager_factory
 
 import enstaller
 
-from enstaller.auth.auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
 from enstaller.errors import (EnpkgError, EnstallerException,
                               InvalidPythonPathConfiguration,
                               InvalidConfiguration,
@@ -39,11 +38,11 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               print_config, write_default_config)
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError, MissingPackage
-from enstaller.enpkg import _DEFAULT_MAX_RETRIES, Enpkg, ProgressBarContext
+from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
-from enstaller.utils import (abs_expanduser, comparable_version,
-                             exit_if_sudo_on_venv, prompt_yes_no)
+from enstaller.utils import (abs_expanduser, exit_if_sudo_on_venv,
+                             prompt_yes_no)
 from enstaller.vendor import requests
 from enstaller.versions.enpkg import EnpkgVersion
 
@@ -51,7 +50,6 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
                                     list_option, print_history, revert, search,
                                     update_all, whats_new)
-from enstaller.cli.utils import DEFAULT_TEXT_WIDTH
 from enstaller.cli.utils import (humanize_ssl_error_and_die, install_req,
                                  repository_factory)
 
@@ -108,8 +106,8 @@ def update_enstaller(session, repository, opts):
 
     package_name = "enstaller"
 
-    current_comparable_version = _get_enstaller_comparable_version(sys.prefix,
-                                                                   package_name)
+    current_comparable_version = \
+        _get_enstaller_comparable_version(sys.prefix, package_name)
 
     try:
         latest = repository.find_latest_package(package_name)
@@ -118,7 +116,7 @@ def update_enstaller(session, repository, opts):
     else:
         if latest.comparable_version > current_comparable_version:
             if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
-                            opts.yes):
+                             opts.yes):
                 inplace_update(session, repository, latest)
                 updated = True
 
@@ -237,9 +235,9 @@ def ensure_authenticated_config(config, config_filename, session,
                 url = config.store_url
             else:
                 url = e.original_exception.request.url
-            msg, is_auth_error = _invalid_authentication_message(url,
-                                                                 username,
-                                                                 str(e.original_exception))
+            msg, is_auth_error = \
+                _invalid_authentication_message(url, username,
+                                                str(e.original_exception))
         print(msg)
         if is_auth_error:
             print("\nYou can change your authentication details with "
@@ -266,7 +264,8 @@ def configure_authentication_or_exit(config, config_filename,
         sys.exit(-1)
 
     try:
-        config._checked_change_auth((username, password), session, config_filename)
+        config._checked_change_auth((username, password), session,
+                                    config_filename)
     except AuthFailedError as e:
         if e.original_exception is None:
             msg, _ = _invalid_authentication_message(config.store_url,
@@ -345,7 +344,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
     if config.autoupdate:
         if update_enstaller(session, enpkg._remote_repository, args):
             print("Enstaller has been updated.\n"
-                "Please re-run your previous command.")
+                  "Please re-run your previous command.")
             return
 
     if args.search:                               # --search
@@ -430,7 +429,6 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
     else:
         for req in reqs:
             install_req(enpkg, config, req, args)
-
 
 
 def _user_base():
@@ -676,9 +674,9 @@ def main(argv=None):
         else:
 
             progress_bar_context = ProgressBarContext(
-                    console_progress_manager_factory,
-                    fetch=lambda *a, **kw: console_progress_manager_factory(*a,
-                        show_speed=True, **kw))
+                console_progress_manager_factory,
+                fetch=lambda *a, **kw:
+                    console_progress_manager_factory(*a, show_speed=True, **kw))
         enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                       args.force or args.forceall,
                       max_retries=config.max_retries)
