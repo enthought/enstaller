@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
 ENSTALLER4RC_FILENAME = ".enstaller4rc"
-SYS_PREFIX_ENSTALLER4RC = os.path.join(real_prefix(), ENSTALLER4RC_FILENAME)
+SYS_PREFIX_ENSTALLER4RC = os.path.join(sys.prefix, ENSTALLER4RC_FILENAME)
 HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
 
 STORE_KIND_LEGACY = "legacy"
@@ -79,8 +79,8 @@ def configuration_read_search_order():
     Return a list of directories where to look for the configuration file.
     """
     paths = [
+        sys.prefix,
         abs_expanduser("~"),
-        real_prefix(),
     ]
 
     return [os.path.normpath(p) for p in paths]

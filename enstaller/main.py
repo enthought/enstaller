@@ -171,20 +171,15 @@ def needs_to_downgrade_enstaller(reqs):
     return False
 
 
-def get_config_filename(use_sys_config):
-    if use_sys_config:                           # --sys-config
-        config_filename = SYS_PREFIX_ENSTALLER4RC
-    else:
-        paths = [os.path.join(d, ENSTALLER4RC_FILENAME) for d in
-                 configuration_read_search_order()]
-        for path in paths:
-            if isfile(path):
-                config_filename = path
-                break
-        else:
-            config_filename = HOME_ENSTALLER4RC
-
-    return config_filename
+def _get_config_candidate():
+    """ Return a full path if one candidate is found, None if no config file
+    was found.
+    """
+    paths = [os.path.join(d, ENSTALLER4RC_FILENAME) for d in
+             configuration_read_search_order()]
+    for path in paths:
+        if isfile(path):
+            return path
 
 
 def _invalid_authentication_message(auth_url, username, original_error):
@@ -496,8 +491,7 @@ def _create_parser():
                    help="search the online repo index "
                         "and display versions available")
     p.add_argument("--sys-config", action="store_true",
-                   help="use <sys.prefix>/.enstaller4rc (even when "
-                        "~/.enstaller4rc exists)")
+                   help="Do nothing, kept for backwarc compatibility.")
     p.add_argument("--sys-prefix", action="store_true",
                    help="use sys.prefix as the install prefix")
     p.add_argument("--update-all", action="store_true",
@@ -581,9 +575,17 @@ def _preprocess_options(argv):
     return p, args
 
 
-def _ensure_config_or_die(config_filename):
-    if not os.path.isfile(config_filename):
+def _ensure_config_path():
+    config_filename = _get_config_candidate()
+
+    if config_filename is None:
+        config_filename = HOME_ENSTALLER4RC
         write_default_config(config_filename)
+    return config_filename
+
+
+def _ensure_config_or_die():
+    config_filename = _ensure_config_path()
 
     try:
         config = Configuration.from_file(config_filename)
@@ -630,8 +632,8 @@ def main(argv=None):
             sys.exit(-1)
         use_new_format = True
     else:
-        config_filename = get_config_filename(args.sys_config)
-        config = _ensure_config_or_die(config_filename)
+        config = _ensure_config_or_die()
+        config_filename = config.filename
         use_new_format = False
 
     setup_proxy_or_die(config, args.proxy)

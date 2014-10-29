@@ -19,7 +19,8 @@ import mock
 from enstaller.vendor import responses
 
 from enstaller.main import main, main_noexc
-from enstaller.config import _encode_auth, _set_keyring_password, Configuration
+from enstaller.config import (_encode_auth, _set_keyring_password,
+                              Configuration, write_default_config)
 
 from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
                                     mock_raw_input)
@@ -44,6 +45,7 @@ class TestAuth(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.config = os.path.join(self.d, ".enstaller4rc")
+        write_default_config(self.config)
 
     def tearDown(self):
         shutil.rmtree(self.d)

@@ -31,9 +31,9 @@ def without_any_configuration(f):
         with tempfile.NamedTemporaryFile(delete=False) as fp:
             pass
         try:
-            dec = mock.patch("enstaller.main.get_config_filename",
-                              lambda ignored: fp.name)
-            return dec(f)(*a, **kw)
+            with mock.patch("enstaller.main._ensure_config_path",
+                            return_value=fp.name):
+                return f(*a, **kw)
         finally:
             os.unlink(fp.name)
     return wrapper
@@ -79,8 +79,8 @@ def use_given_config_context(filename):
     When this decorator is applied, enstaller.main will use the given filename
     as its configuration file.
     """
-    with mock.patch("enstaller.main.get_config_filename",
-                    lambda ignored: filename) as context:
+    with mock.patch("enstaller.main._ensure_config_path",
+                    return_value=filename) as context:
         yield context
 
 
