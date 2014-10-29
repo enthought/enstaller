@@ -221,9 +221,9 @@ def download_enstaller(version=DEFAULT_VERSION, download_base=DEFAULT_URL,
     expected_sha256 = None
     for k, v in VERSION_TO_SHA256:
         if k == version:
-            excepted_sha256 = v
+            expected_sha256 = v
             break
-    if excepted_sha256 is None:
+    if expected_sha256 is None:
         msg = "Version {0!r} for is not known, aborting...".format(version)
         raise ValueError(msg)
 
