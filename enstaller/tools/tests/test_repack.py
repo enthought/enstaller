@@ -42,7 +42,6 @@ class TestRepack(TestCase):
         # When/Then
         mocked = "enstaller.tools.repack.LegacyEPDPlatform." \
                  "from_running_system"
-        LegacyEPDPlatform.from_epd_platform_string("rh5-32")
         with mock.patch(mocked, side_effect=OkonomiyakiError()):
             with self.assertRaises(EnstallerException):
                 repack(source, 1)
