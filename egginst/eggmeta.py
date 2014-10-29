@@ -16,6 +16,9 @@ from egginst.utils import parse_assignments
 # installed
 APPINST_PATH = join("inst", "appinst.dat")
 
+SPEC_DEPEND_KEYS = ('name', 'version', 'build', 'arch', 'platform', 'osdist',
+                    'python', 'packages')
+
 def parse_rawspec(data):
     # XXX: hack to workaround 2.6-specific bug with ast-parser and
     # unicode.
@@ -24,8 +27,7 @@ def parse_rawspec(data):
     else:
         spec = parse_assignments(StringIO(data))
     res = {}
-    for k in ('name', 'version', 'build',
-              'arch', 'platform', 'osdist', 'python', 'packages'):
+    for k in SPEC_DEPEND_KEYS:
         res[k] = spec[k]
     return res
 
