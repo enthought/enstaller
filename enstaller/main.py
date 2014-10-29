@@ -186,35 +186,12 @@ def get_config_filename(use_sys_config):
 
 
 def _invalid_authentication_message(auth_url, username, original_error):
-    if "routines:SSL3_GET_SERVER_CERTIFICATE:certificate verify failed" \
-            in str(original_error):
-        paragraph1 = textwrap.fill(textwrap.dedent("""\
-            Could not authenticate against {0!r} because the underlying SSL
-            library used by enpkg could not verify the CA certificate. This
-            could happen because you have a very old SSL library. You can disable
-            CA certificate checking by using the -k/--insecure option of enpkg::
-            """.format(auth_url)))
-        template = paragraph1 + textwrap.dedent("""
-
-                enpkg -k <your options>
-
-            The original error is:
-
-            {{0}}
-            """.format(auth_url))
-        formatted_error = "\n".join(" "* 4 + line for line in \
-                                    textwrap.wrap("`" +
-                                                  original_error_string + "`"))
-        msg = template.format(formatted_error)
-        auth_error = False
-    else:
-        msg = textwrap.dedent("""\
-            Could not authenticate with user '{0}' against {1!r}. Please check
-            your credentials/configuration and try again (original error is:
-            {2!r}).
-            """.format(username, auth_url, str(original_error)))
-        auth_error = True
-    return msg, auth_error
+    msg = textwrap.dedent("""\
+        Could not authenticate with user '{0}' against {1!r}. Please check
+        your credentials/configuration and try again (original error is:
+        {2!r}).
+        """.format(username, auth_url, str(original_error)))
+    return msg
 
 
 def ensure_authenticated_config(config, config_filename, session,
@@ -227,21 +204,17 @@ def ensure_authenticated_config(config, config_filename, session,
         username, _ = config.auth
         if e.original_exception is None:
             url = config.store_url
-            msg, is_auth_error = _invalid_authentication_message(url,
-                                                                 username,
-                                                                 e.message)
+            msg = _invalid_authentication_message(url, username, e.message)
         else:
             if config.use_webservice:
                 url = config.store_url
             else:
                 url = e.original_exception.request.url
-            msg, is_auth_error = \
-                _invalid_authentication_message(url, username,
-                                                str(e.original_exception))
+            msg = _invalid_authentication_message(url, username,
+                                                  str(e.original_exception))
         print(msg)
-        if is_auth_error:
-            print("\nYou can change your authentication details with "
-                  "'enpkg --userpass'.")
+        print("\nYou can change your authentication details with "
+              "'enpkg --userpass'.")
         sys.exit(-1)
     else:
         if not use_new_format:
@@ -268,12 +241,11 @@ def configure_authentication_or_exit(config, config_filename,
                                     config_filename)
     except AuthFailedError as e:
         if e.original_exception is None:
-            msg, _ = _invalid_authentication_message(config.store_url,
-                                                     username, str(e))
+            msg = _invalid_authentication_message(config.store_url, username,
+                                                  str(e))
         else:
-            msg, _ = _invalid_authentication_message(config.store_url,
-                                                     username,
-                                                     str(e.original_exception))
+            msg = _invalid_authentication_message(config.store_url, username,
+                                                  str(e.original_exception))
         print(msg)
         print("\nNo modification was written.")
         sys.exit(-1)
