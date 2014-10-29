@@ -179,5 +179,5 @@ def main(argv=None):
     repack(ns.egg, ns.build_number, ns.platform_string)
 
 
-if __name__ == "__main__":
+if __name__ == "__main__": #  pragma: no cover
     main()
