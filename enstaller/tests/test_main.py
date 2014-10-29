@@ -9,38 +9,21 @@ import sys
 import tempfile
 import textwrap
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
-    # context manager does not contain the actual exception object ?
-    def exception_code(ctx):
-        return ctx.exception
-else:
-    import unittest
-    def exception_code(ctx):
-        return ctx.exception.code
-
 import mock
 
-from egginst.main import EggInst
+from egginst._compat import TestCase
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
 
 
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
-from enstaller.enpkg import Enpkg
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.main import (check_prefixes,
-                            epd_install_confirm, env_option,
+from enstaller.main import (check_prefixes, epd_install_confirm, env_option,
                             get_config_filename, get_package_path,
-                            imports_option,
-                            install_from_requirements, install_req,
-                            main,
-                            needs_to_downgrade_enstaller,
-                            repository_factory,
-                            search, update_all,
-                            update_enstaller, whats_new,
+                            imports_option, install_req, main,
+                            needs_to_downgrade_enstaller, repository_factory,
+                            search, update_enstaller,
                             _get_enstaller_comparable_version)
 from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
 from enstaller.eggcollect import meta_info_from_prefix
@@ -48,7 +31,7 @@ from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.session import Session
 from enstaller.solver import Requirement
-from enstaller.utils import PY_VER, comparable_version
+from enstaller.utils import PY_VER
 from enstaller.vendor import responses
 from enstaller.versions.enpkg import EnpkgVersion
 
@@ -57,11 +40,12 @@ from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring,
-                     mocked_session_factory, unconnected_enpkg_factory,
-                     FakeOptions, FAKE_MD5, FAKE_SIZE, R_JSON_AUTH_FREE_RESP,
+                     mocked_session_factory,
+                     FakeOptions, R_JSON_AUTH_FREE_RESP,
                      DummyAuthenticator)
 
-class TestEnstallerUpdate(unittest.TestCase):
+
+class TestEnstallerUpdate(TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
@@ -101,7 +85,8 @@ class TestEnstallerUpdate(unittest.TestCase):
         low_version, high_version = "1.0.0", "2.0.0"
         self.assertFalse(self._test_update_enstaller(low_version, high_version))
 
-class TestMisc(unittest.TestCase):
+
+class TestMisc(TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -135,7 +120,7 @@ class TestMisc(unittest.TestCase):
     def test_check_prefixes_unix(self):
         prefixes = ["/foo", "/bar"]
         site_packages = [posixpath.join(prefix,
-                                        "lib/python{0}/site-packages". \
+                                        "lib/python{0}/site-packages".
                                         format(PY_VER))
                          for prefix in prefixes]
 
@@ -154,7 +139,7 @@ class TestMisc(unittest.TestCase):
                 check_prefixes(prefixes)
             message = str(e.exception)
             self.assertEqual(message,
-                             "Expected to find {0} in PYTHONPATH". \
+                             "Expected to find {0} in PYTHONPATH".
                              format(site_packages[0]))
 
     @mock.patch("sys.platform", "win32")
@@ -177,7 +162,7 @@ class TestMisc(unittest.TestCase):
                 check_prefixes(prefixes)
             message = str(e.exception)
             self.assertEqual(message,
-                             "Expected to find {0} in PYTHONPATH". \
+                             "Expected to find {0} in PYTHONPATH".
                              format(site_packages[0]))
 
     def test_imports_option_empty(self):
@@ -337,7 +322,7 @@ class TestMisc(unittest.TestCase):
         self.assertEqual(repository.find_packages("nose"), [])
 
 
-class TestSearch(unittest.TestCase):
+class TestSearch(TestCase):
     def test_no_installed(self):
         config = Configuration()
         config.update(use_webservice=False)
@@ -452,8 +437,9 @@ class TestSearch(unittest.TestCase):
 
                 self.assertMultiLineEqual(m.value, r_output)
 
+
 @fake_keyring
-class TestInstallRequirement(unittest.TestCase):
+class TestInstallRequirement(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -521,8 +507,8 @@ class TestInstallRequirement(unittest.TestCase):
             with mock_raw_input("yes"):
                 with mock.patch("enstaller.main.Enpkg.execute") as m:
                     enpkg = create_prefix_with_eggs(Configuration(),
-                                                     self.prefix, [],
-                                                     remote_entries)
+                                                    self.prefix, [],
+                                                    remote_entries)
                     install_req(enpkg, Configuration(), "nose", FakeOptions())
 
         # Then
@@ -531,7 +517,7 @@ class TestInstallRequirement(unittest.TestCase):
                               ('install', 'nose-1.3.0-1.egg')])
 
 
-class TestCustomConfigPath(unittest.TestCase):
+class TestCustomConfigPath(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -558,7 +544,7 @@ class TestCustomConfigPath(unittest.TestCase):
         main(["-s", "numpy", "-c", path])
 
 
-class TestEnstallerComparableVersion(unittest.TestCase):
+class TestEnstallerComparableVersion(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
