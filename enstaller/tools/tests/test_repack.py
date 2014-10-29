@@ -76,19 +76,23 @@ class TestRepack(TestCase):
         shutil.copy(STANDARD_EGG, source)
 
         # When/Then
-        with self.assertRaises(EnstallerException):
+        with self.assertRaises(EnstallerException) as e:
             repack(source, 1, "rh5-64")
+        self.assertTrue(str(e.exception).startswith("Unrecognized format"))
 
     def test_refuse_inplace(self):
         # Given
         target = os.path.join(self.prefix, "dummy-1.0.1-1.egg")
         source = target
+        r_msg = "source and repack-ed egg are the same"
 
         shutil.copy(DUMMY_EGG, source)
 
         # When/Then
-        with self.assertRaises(EnstallerException):
+        with self.assertRaises(EnstallerException) as e:
             repack(source, 1, "rh5-64")
+
+        self.assertTrue(str(e.exception).startswith(r_msg))
 
     def test_simple_setuptools_egg(self):
         # Given
