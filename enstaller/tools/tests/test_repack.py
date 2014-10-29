@@ -3,7 +3,6 @@ import os.path
 import shutil
 import tempfile
 import textwrap
-import zipfile
 
 import mock
 
@@ -11,6 +10,7 @@ from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
 from egginst._compat import TestCase
+from egginst._zipfile import ZipFile
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import DUMMY_EGG, STANDARD_EGG, NOSE_1_2_1
 
@@ -66,7 +66,7 @@ class TestRepack(TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
-        with zipfile.ZipFile(target) as zp:
+        with ZipFile(target) as zp:
             spec = info_from_z(zp)
         self.assertEqual(spec["arch"], "x86")
 
@@ -137,7 +137,7 @@ class TestRepack(TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
-        with zipfile.ZipFile(target) as zp:
+        with ZipFile(target) as zp:
             info = info_from_z(zp)
         self.assertItemsEqual(info["packages"], ["foo"])
         self.assertItemsEqual(info["name"], "babar")
@@ -166,8 +166,8 @@ class TestRepack(TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
-        with zipfile.ZipFile(target) as zp:
-            data = zp.read("EGG-INFO/foo.txt")
+        with ZipFile(target) as zp:
+            data = zp.read("EGG-INFO/foo.txt").decode("utf8")
         self.assertEqual(data, "babar")
 
     def test_endist_unsupported_key(self):
