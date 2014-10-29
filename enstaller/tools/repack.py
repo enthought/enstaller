@@ -13,6 +13,7 @@ from okonomiyaki.file_formats.setuptools_egg import parse_filename
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
 from egginst.eggmeta import SPEC_DEPEND_KEYS
+from egginst.utils import samefile
 from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException
 
@@ -145,7 +146,7 @@ def repack(source_egg_path, build_number=1, platform_string=None):
     target_egg_path = os.path.join(parent_dir, legacy_spec.egg_name)
 
     if os.path.exists(target_egg_path) and \
-            os.path.samefile(source_egg_path, target_egg_path):
+            samefile(source_egg_path, target_egg_path):
         msg = "source and repack-ed egg are the same file: {0!r}. Inplace " \
               "mode not yet implemented."
         raise EnstallerException(msg.format(source_egg_path))
