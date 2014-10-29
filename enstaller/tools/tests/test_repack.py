@@ -179,7 +179,6 @@ class TestRepack(TestCase):
         source = os.path.join(self.prefix, os.path.basename(NOSE_1_2_1))
         shutil.copy(NOSE_1_2_1, source)
 
-        target = os.path.join(self.prefix, "nose-1.2.1-2.egg")
         endist = os.path.join(self.prefix, "endist.dat")
         with open(endist, "w") as fp:
             data = "app_icon_file = 'fubar.ico'"

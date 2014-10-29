@@ -8,7 +8,7 @@ from egginst._compat import TestCase
 from enstaller.config import Configuration
 from enstaller.plat import custom_plat
 from enstaller.session import Session
-from enstaller.tests.common import (mock_print, mocked_session_factory,
+from enstaller.tests.common import (mock_print,
                                     dummy_repository_package_factory,
                                     R_JSON_AUTH_RESP)
 from enstaller.vendor import responses
