@@ -154,7 +154,7 @@ def repack(source_egg_path, build_number=1, platform_string=None):
     print(20 * '-' + '\n' + legacy_spec.to_string() + 20 * '-')
     shutil.copy2(source_egg_path, target_egg_path)
 
-    with ZipFile(target_egg_path, "w") as target:
+    with ZipFile(target_egg_path, "a") as target:
         target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
 
         if os.path.exists(ENDIST_DAT):

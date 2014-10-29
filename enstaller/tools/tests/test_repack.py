@@ -25,6 +25,7 @@ def chdir(d):
     yield old
     os.chdir(old)
 
+
 class TestRepack(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
@@ -105,6 +106,8 @@ class TestRepack(TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
+        with ZipFile(target) as zp:
+            zp.read("jinja2/__init__.py")
 
     def test_simple_enthought_egg(self):
         # Given
