@@ -78,7 +78,15 @@ class TestUtils(unittest.TestCase):
             self.assertEqual(cleanup_url(url), r_url)
 
     def test_cleanup_url_dir(self):
-        r_url = "file://{0}/".format(os.path.abspath(os.path.expanduser("~")))
+        if sys.platform == "win32":
+            # The \\ -> / replace is a hack to deal with expanduser being
+            # inconsistent on windows depending on whether HOME, USERPROFILE or
+            # HOMEPATH is used
+            home = os.path.expanduser("~").replace("\\", "/")
+            p = "/" + os.path.abspath(home)
+        else:
+            p = os.path.abspath(os.path.expanduser("~"))
+        r_url = "file://{0}/".format(p)
 
         url = "~"
 
