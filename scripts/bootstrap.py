@@ -51,13 +51,15 @@ VERSION_TO_SHA256 = [
         "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c"),
     ("4.5.3-1",
         "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85"),
+    ("4.8.0.dev2961-1",
+        "04ae47e79862c0198823440e3de71cdb857cc7135d5ec60286bd9308c92f0698"),
     ("4.8.0.dev2949-1",
         "bc86ac6a276a477d79d3afe379f57e05c70d32162af2f9030cb050352d7d3cc5"),
 ]
 VERSION_TO_SHA256_KEYS = [_[0] for _ in VERSION_TO_SHA256]
 
 
-DEV_VERSION = "4.8.0.dev2949-1"
+DEV_VERSION = "4.8.0.dev2961-1"
 
 
 ###################################
