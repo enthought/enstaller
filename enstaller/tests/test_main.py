@@ -20,12 +20,11 @@ from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.errors import InvalidPythonPathConfiguration
 from enstaller.main import (check_prefixes, epd_install_confirm, env_option,
-                            get_config_filename, get_package_path,
-                            imports_option, install_req, main,
-                            needs_to_downgrade_enstaller, repository_factory,
-                            search, update_enstaller,
-                            _get_enstaller_comparable_version)
-from enstaller.main import HOME_ENSTALLER4RC, SYS_PREFIX_ENSTALLER4RC
+                            get_package_path, imports_option, install_req,
+                            main, needs_to_downgrade_enstaller,
+                            repository_factory, search, update_enstaller,
+                            _ensure_config_path, _get_enstaller_comparable_version)
+from enstaller.main import HOME_ENSTALLER4RC
 from enstaller.eggcollect import meta_info_from_prefix
 from enstaller.plat import custom_plat
 from enstaller.repository import Repository, InstalledPackageMetadata
@@ -262,36 +261,44 @@ class TestMisc(TestCase):
         # When/Then
         self.assertTrue(needs_to_downgrade_enstaller(reqs))
 
-    def test_get_config_filename_sys_config(self):
+    @mock.patch("enstaller.main.write_default_config")
+    def test_get_config_filename_nothing_anywhere(self, write_default_config):
+        # When
+        with mock.patch("enstaller.main._get_config_candidate", return_value=None):
+            config_path = _ensure_config_path()
+
+        # Then
+        self.assertEqual(config_path, HOME_ENSTALLER4RC)
+        self.assertTrue(write_default_config.called_with(config_path,
+                                                         HOME_ENSTALLER4RC))
+
+    @mock.patch("enstaller.main.write_default_config")
+    def test_get_config_filename_nothing_in_sys_prefix(self, write_default_config):
         # Given
-        use_sys_config = True
+        prefix = self.tempdir
 
-        # When/Then
-        self.assertEqual(get_config_filename(use_sys_config), SYS_PREFIX_ENSTALLER4RC)
+        # When
+        with mock.patch("enstaller.config.sys.prefix", prefix):
+            config_path = _ensure_config_path()
 
-    def test_get_config_filename_no_sys_config_default(self):
+        # Then
+        self.assertEqual(config_path, HOME_ENSTALLER4RC)
+
+    @mock.patch("enstaller.main.write_default_config")
+    def test_get_config_filename_file_in_sys_prefix(self, write_default_config):
         # Given
-        use_sys_config = False
+        prefix = self.tempdir
+        path = os.path.join(prefix, ".enstaller4rc")
 
-        # When/Then
-        self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
+        with open(path, "w") as fp:
+            fp.write("")
 
-    def test_get_config_filename_no_sys_config_with_single_prefix(self):
-        # Given
-        use_sys_config = False
+        # When
+        with mock.patch("enstaller.config.sys.prefix", prefix):
+            config_path = _ensure_config_path()
 
-        # When/Then
-        with mock.patch("enstaller.main.configuration_read_search_order",
-                        return_value=[self.tempdir]):
-            self.assertEqual(get_config_filename(use_sys_config), HOME_ENSTALLER4RC)
-
-        # When/Then
-        with mock.patch("enstaller.main.configuration_read_search_order",
-                        return_value=[self.tempdir]):
-            path = os.path.join(self.tempdir, ".enstaller4rc")
-            with open(path, "w") as fp:
-                fp.write("")
-            self.assertEqual(get_config_filename(use_sys_config), path)
+        # Then
+        self.assertEqual(config_path, path)
 
     def _mock_index(self, entries):
         index = dict((entry.key, entry.s3index_data) for entry in entries)

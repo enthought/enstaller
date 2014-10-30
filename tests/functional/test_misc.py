@@ -4,12 +4,9 @@ import platform
 import sys
 import textwrap
 
-if sys.version_info[:2] < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 import mock
+
+from egginst._compat import TestCase
 
 from enstaller import __version__
 
@@ -23,7 +20,8 @@ from enstaller.tests.common import mock_index, mock_print, R_JSON_AUTH_RESP
 
 from .common import authenticated_config
 
-class TestMisc(unittest.TestCase):
+
+class TestMisc(TestCase):
     @authenticated_config
     @responses.activate
     def test_print_config(self):
@@ -130,7 +128,8 @@ Subscription level: Canopy / EPD Basic or above
         with self.assertRaises(SystemExit) as e:
             with mock.patch("enstaller.main._ensure_config_or_die",
                             return_value=config):
-                main_noexc(["-s", "fubar"])
+                with mock.patch("enstaller.main.convert_auth_if_required"):
+                    main_noexc(["-s", "fubar"])
 
         # Then
         self.assertEqual(e.exception.code, 0)
@@ -139,7 +138,8 @@ Subscription level: Canopy / EPD Basic or above
         with self.assertRaises(SystemExit) as e:
             with mock.patch("enstaller.main._ensure_config_or_die",
                             return_value=config):
-                main_noexc(["-ks", "fubar"])
+                with mock.patch("enstaller.main.convert_auth_if_required"):
+                    main_noexc(["-ks", "fubar"])
 
         # Then
         self.assertEqual(e.exception.code, 0)

@@ -27,7 +27,7 @@ from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
-from enstaller.utils import real_prefix
+from enstaller.utils import real_prefix, under_venv
 from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
 from enstaller import plat
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 KEYRING_SERVICE_NAME = 'Enthought.com'
 
 ENSTALLER4RC_FILENAME = ".enstaller4rc"
-SYS_PREFIX_ENSTALLER4RC = os.path.join(real_prefix(), ENSTALLER4RC_FILENAME)
+SYS_PREFIX_ENSTALLER4RC = os.path.join(sys.prefix, ENSTALLER4RC_FILENAME)
 HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
 
 STORE_KIND_LEGACY = "legacy"
@@ -74,14 +74,28 @@ def _keyring_backend_name():
     return str(type(keyring.get_keyring()))
 
 
-def configuration_read_search_order():
+def legacy_configuration_read_search_order():
     """
     Return a list of directories where to look for the configuration file.
+
+    Legacy order, don't use outside canopy.
     """
     paths = [
         abs_expanduser("~"),
         real_prefix(),
     ]
+
+    return [os.path.normpath(p) for p in paths]
+
+
+def configuration_read_search_order():
+    """
+    Return a list of directories where to look for the configuration file.
+    """
+    paths = [sys.prefix]
+    if under_venv():
+        paths.append(real_prefix())
+    paths.append(abs_expanduser("~"))
 
     return [os.path.normpath(p) for p in paths]
 
@@ -356,7 +370,7 @@ class Configuration(object):
                       "Configuration.from_filename with an explicit "
                       "filename instead", DeprecationWarning)
         config_path = None
-        for p in configuration_read_search_order():
+        for p in legacy_configuration_read_search_order():
             candidate = os.path.join(p, ENSTALLER4RC_FILENAME)
             if isfile(candidate):
                 config_path = candidate
