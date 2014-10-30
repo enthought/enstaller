@@ -232,6 +232,7 @@ prefix = %(sys_prefix)r
 use_pypi = %(use_pypi)s
 """
 
+
 def _decode_auth(s):
     parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
     if len(parts) == 2:
@@ -297,7 +298,7 @@ def _is_using_epd_username(filename_or_fp):
     Returns True if the given configuration file uses EPD_username.
     """
     data = parse_assignments(filename_or_fp)
-    return "EPD_username" in data and not "EPD_auth" in data
+    return "EPD_username" in data and "EPD_auth" not in data
 
 
 def convert_auth_if_required(filename):
@@ -339,7 +340,7 @@ def _create_error_message(fp, exc):
         if isinstance(exc, SyntaxError):
             msg = "Could not parse configuration file " \
                   "(invalid python syntax at line {0!r}: expression {1!r})".\
-                    format(exc.lineno, line)
+                  format(exc.lineno, line)
         else:
             msg = "Could not parse configuration file " \
                   "(error at line {0!r}: expression {1!r} not " \
@@ -384,6 +385,7 @@ class Configuration(object):
         """
         def _create(fp):
             ret = cls()
+
             def epd_auth_to_auth(epd_auth):
                 username, password = _decode_auth(epd_auth)
                 ret.set_auth(username, password)
@@ -471,9 +473,9 @@ class Configuration(object):
             "store_url": self._set_store_url,
         })
 
-    #-----------
+    # ----------
     # Properties
-    #-----------
+    # ----------
     @property
     def api_url(self):
         """
@@ -532,9 +534,9 @@ class Configuration(object):
         if self.use_webservice:
             index_url = store_url = self.webservice_entry_point + _INDEX_NAME
             if self.use_pypi:
-                index_url +=  "?pypi=true"
+                index_url += "?pypi=true"
             else:
-                index_url +=  "?pypi=false"
+                index_url += "?pypi=false"
             return tuple([(index_url, store_url)])
         else:
             return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
@@ -651,9 +653,9 @@ class Configuration(object):
         return fill_url("{0}/eggs/{1}/".
                         format(self.store_url, self._platform))
 
-    #---------------
+    # --------------
     # Public methods
-    #---------------
+    # --------------
     def set_auth(self, username, password):
         """ Set the internal authentication information.
 
@@ -686,7 +688,7 @@ class Configuration(object):
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
-        for name, value  in kw.items():
+        for name, value in kw.items():
             setter = self._name_to_setter.get(name, None)
             if name is None:
                 raise ValueError("Invalid setting name: {0!r}".format(name))
@@ -746,9 +748,9 @@ class Configuration(object):
         with open(filename, "w") as fo:
             fo.write(RC_TEMPLATE % variables)
 
-    #----------------
+    # ---------------
     # Private methods
-    #----------------
+    # ---------------
     def _change_auth(self, filename):
         pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
         with open(filename, 'r') as fi:
@@ -790,7 +792,7 @@ class Configuration(object):
     def _set_max_retries(self, raw_max_retries):
         try:
             max_retries = int(raw_max_retries)
-        except ValueError as e:
+        except ValueError:
             msg = "Invalid type for 'max_retries': {0!r}"
             raise InvalidConfiguration(msg.format(raw_max_retries))
         else:
