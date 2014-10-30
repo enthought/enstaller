@@ -743,7 +743,7 @@ class TestConfiguration(unittest.TestCase):
             fp.write("store_url = \"http://acme.com\"")
 
         # When
-        with mock.patch("enstaller.config.configuration_read_search_order",
+        with mock.patch("enstaller.config.legacy_configuration_read_search_order",
                         return_value=[self.prefix]):
             config = Configuration._from_legacy_locations()
 
@@ -752,7 +752,7 @@ class TestConfiguration(unittest.TestCase):
 
     def test__from_legacy_locations_non_existing_path(self):
         # When/Then
-        with mock.patch("enstaller.config.configuration_read_search_order",
+        with mock.patch("enstaller.config.legacy_configuration_read_search_order",
                         return_value=[self.prefix]):
             with self.assertRaises(InvalidConfiguration):
                 Configuration._from_legacy_locations()
