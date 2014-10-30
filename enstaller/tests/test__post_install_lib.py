@@ -4,6 +4,7 @@ import unittest
 
 from egginst._post_install_lib import safe_write, update_pkg_config_prefix
 
+
 class TestSafeWrite(unittest.TestCase):
     def setUp(self):
         f = tempfile.NamedTemporaryFile(delete=False)
@@ -51,6 +52,7 @@ class TestSafeWrite(unittest.TestCase):
 
         with open(name) as fp:
             self.assertEqual(fp.read(), "foo")
+
 
 class TestUpdatePkgConfig(unittest.TestCase):
     def setUp(self):

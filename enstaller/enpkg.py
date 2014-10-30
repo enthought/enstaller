@@ -199,6 +199,7 @@ class RemoveAction(_BaseAction):
         for n in self.iter_execute():
             self.progress_update(n)
 
+
 class ProgressBarContext(object):
     def __init__(self, default_progress_bar_factory, **kw):
         """
@@ -242,7 +243,6 @@ class _ExecuteContext(object):
         self._remote_repository = enpkg._remote_repository
         self._enpkg = enpkg
         self._force = force
-
 
         self._pbar_context = progress_bar_context
 
@@ -311,13 +311,13 @@ class Enpkg(object):
 
         self._installed_repository = Repository._from_prefixes(self.prefixes)
         self._top_installed_repository = \
-                Repository._from_prefixes([self.top_prefix])
+            Repository._from_prefixes([self.top_prefix])
 
         self._session = session
         self._downloader = _DownloadManager(session, remote_repository)
 
         self._progress_context = progress_context or \
-                ProgressBarContext(dummy_progress_bar_factory)
+            ProgressBarContext(dummy_progress_bar_factory)
 
         self._force = force
         self.max_retries = max_retries
@@ -327,7 +327,6 @@ class Enpkg(object):
                         self._top_installed_repository,
                         mode, force, forceall)
         return solver
-
 
     def execute_context(self, actions):
         return _ExecuteContext(actions, self, self._progress_context,
@@ -388,8 +387,7 @@ class Enpkg(object):
             if not isfile(join(self._downloader.cache_directory, egg)):
                 eggname, version = egg_name_to_name_version(egg)
                 try:
-                    pack = self._remote_repository.find_package(eggname,
-                                                                version)
+                    self._remote_repository.find_package(eggname, version)
                     res.append(('fetch_0', egg))
                 except MissingPackage:
                     raise EnpkgError("cannot revert -- missing %r" % egg)

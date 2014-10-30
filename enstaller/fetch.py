@@ -1,4 +1,3 @@
-import os.path
 import logging
 
 from os.path import isfile, join

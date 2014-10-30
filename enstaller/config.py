@@ -12,10 +12,9 @@ import platform
 import tempfile
 import warnings
 
-from getpass import getpass
 from os.path import isfile, join
 
-from egginst._compat import input, string_types, urlparse
+from egginst._compat import string_types, urlparse
 from egginst.utils import parse_assignments
 
 from enstaller.vendor import keyring
@@ -24,6 +23,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 from enstaller import __version__
 from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
                             UserInfo)
+from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
@@ -125,126 +125,6 @@ def _get_writable_local_dir(local_dir):
                 format(local_dir))
     return tempfile.mkdtemp()
 
-# Kept for backward compatibility
-RC_DEFAULT_TEMPLATE = """\
-# enstaller configuration file
-# ============================
-#
-# This file contains the default package repositories and configuration
-# used by enstaller %(version)s for the Python %(py_ver)s environment:
-#
-#   sys.prefix = %(sys_prefix)r
-#
-# This file was initially created by running the enpkg command.
-
-%(auth_section)s
-
-# `use_webservice` refers to using 'https://api.enthought.com/eggs/'.
-# The default is True; that is, the webservice URL is used for fetching
-# eggs.  Uncommenting changes this behavior to using the explicit
-# IndexedRepos listed below.
-#use_webservice = False
-
-# When use_webservice is True, one can control the store entry point enpkg will
-# talk to. If not specified, a default will be used. Mostly useful for testing
-#store_url = "https://acme.com"
-
-# The enpkg command searches for eggs in the list `IndexedRepos` defined
-# below.  When enpkg searches for an egg, it tries each repository in
-# this list in order and selects the first one that matches, ignoring
-# remaining repositories.  Therefore, the order of this list matters.
-#
-# For local repositories, the index file is optional.  Remember that on
-# Windows systems backslashes in a directory path need to escaped, e.g.:
-# r'file://C:\\repository\\' or 'file://C:\\\\repository\\\\'
-IndexedRepos = [
-#  'https://www.enthought.com/repo/ets/eggs/{SUBDIR}/',
-  'https://www.enthought.com/repo/epd/GPL-eggs/{SUBDIR}/',
-  'https://www.enthought.com/repo/epd/eggs/{SUBDIR}/',
-# The Enthought PyPI build mirror:
-  'http://www.enthought.com/repo/pypi/eggs/{SUBDIR}/',
-]
-
-# Install prefix (enpkg --prefix and --sys-prefix options overwrite
-# this).  When this variable is not provided, it will default to the
-# value of sys.prefix (within the current interpreter running enpkg).
-#prefix = %(sys_prefix)r
-
-# When running enpkg behind a firewall it might be necessary to use a
-# proxy to access the repositories.  The URL for the proxy can be set
-# here.  Note that the enpkg --proxy option will overwrite this setting.
-%(proxy_line)s
-
-# Uncomment the next line to disable application menu-item installation.
-# This only affects the few packages that install menu items, such as
-# IPython.
-#noapp = True
-
-# Uncomment the next line to turn off automatic prompts to update
-# enstaller.
-#autoupdate = False
-
-# Uncomment to disable pypi eggs
-#use_pypi = False
-"""
-
-RC_TEMPLATE = """\
-# enstaller configuration file
-# ============================
-#
-# This file contains the default package repositories and configuration
-# used by enstaller %(version)s for the Python %(py_ver)s environment:
-#
-#   sys.prefix = %(sys_prefix)r
-#
-# This file was initially created by running the enpkg command.
-
-%(auth_section)s
-
-# `use_webservice` refers to using 'https://api.enthought.com/eggs/'.
-# The default is True; that is, the webservice URL is used for fetching
-# eggs.  Uncommenting changes this behavior to using the explicit
-# IndexedRepos listed below.
-use_webservice = %(use_webservice)s
-
-# When use_webservice is True, one can control the store entry point enpkg will
-# talk to. If not specified, a default will be used. Mostly useful for testing
-store_url = "%(store_url)s"
-
-# The enpkg command searches for eggs in the list `IndexedRepos` defined
-# below.  When enpkg searches for an egg, it tries each repository in
-# this list in order and selects the first one that matches, ignoring
-# remaining repositories.  Therefore, the order of this list matters.
-#
-# For local repositories, the index file is optional.  Remember that on
-# Windows systems backslashes in a directory path need to escaped, e.g.:
-# r'file://C:\\repository\\' or 'file://C:\\\\repository\\\\'
-IndexedRepos = [
-%(indexed_repositories)s
-]
-
-# Install prefix (enpkg --prefix and --sys-prefix options overwrite
-# this).  When this variable is not provided, it will default to the
-# value of sys.prefix (within the current interpreter running enpkg).
-prefix = %(sys_prefix)r
-
-# When running enpkg behind a firewall it might be necessary to use a
-# proxy to access the repositories.  The URL for the proxy can be set
-# here.  Note that the enpkg --proxy option will overwrite this setting.
-%(proxy_line)s
-
-# Uncomment the next line to disable application menu-item installation.
-# This only affects the few packages that install menu items, such as
-# IPython.
-#noapp = True
-
-# Uncomment the next line to turn off automatic prompts to update
-# enstaller.
-#autoupdate = False
-
-# Whether to consider pypi eggs
-use_pypi = %(use_pypi)s
-"""
 
 def _decode_auth(s):
     parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
@@ -311,7 +191,7 @@ def _is_using_epd_username(filename_or_fp):
     Returns True if the given configuration file uses EPD_username.
     """
     data = parse_assignments(filename_or_fp)
-    return "EPD_username" in data and not "EPD_auth" in data
+    return "EPD_username" in data and "EPD_auth" not in data
 
 
 def convert_auth_if_required(filename):
@@ -353,7 +233,7 @@ def _create_error_message(fp, exc):
         if isinstance(exc, SyntaxError):
             msg = "Could not parse configuration file " \
                   "(invalid python syntax at line {0!r}: expression {1!r})".\
-                    format(exc.lineno, line)
+                  format(exc.lineno, line)
         else:
             msg = "Could not parse configuration file " \
                   "(error at line {0!r}: expression {1!r} not " \
@@ -398,6 +278,7 @@ class Configuration(object):
         """
         def _create(fp):
             ret = cls()
+
             def epd_auth_to_auth(epd_auth):
                 username, password = _decode_auth(epd_auth)
                 ret.set_auth(username, password)
@@ -485,9 +366,9 @@ class Configuration(object):
             "store_url": self._set_store_url,
         })
 
-    #-----------
+    # ----------
     # Properties
-    #-----------
+    # ----------
     @property
     def api_url(self):
         """
@@ -546,9 +427,9 @@ class Configuration(object):
         if self.use_webservice:
             index_url = store_url = self.webservice_entry_point + _INDEX_NAME
             if self.use_pypi:
-                index_url +=  "?pypi=true"
+                index_url += "?pypi=true"
             else:
-                index_url +=  "?pypi=false"
+                index_url += "?pypi=false"
             return tuple([(index_url, store_url)])
         else:
             return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
@@ -665,9 +546,9 @@ class Configuration(object):
         return fill_url("{0}/eggs/{1}/".
                         format(self.store_url, self._platform))
 
-    #---------------
+    # --------------
     # Public methods
-    #---------------
+    # --------------
     def set_auth(self, username, password):
         """ Set the internal authentication information.
 
@@ -700,7 +581,7 @@ class Configuration(object):
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
-        for name, value  in kw.items():
+        for name, value in kw.items():
             setter = self._name_to_setter.get(name, None)
             if name is None:
                 raise ValueError("Invalid setting name: {0!r}".format(name))
@@ -760,9 +641,9 @@ class Configuration(object):
         with open(filename, "w") as fo:
             fo.write(RC_TEMPLATE % variables)
 
-    #----------------
+    # ---------------
     # Private methods
-    #----------------
+    # ---------------
     def _change_auth(self, filename):
         pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
         with open(filename, 'r') as fi:
@@ -804,7 +685,7 @@ class Configuration(object):
     def _set_max_retries(self, raw_max_retries):
         try:
             max_retries = int(raw_max_retries)
-        except ValueError as e:
+        except ValueError:
             msg = "Invalid type for 'max_retries': {0!r}"
             raise InvalidConfiguration(msg.format(raw_max_retries))
         else:
@@ -828,20 +709,6 @@ class Configuration(object):
 
     def _simple_attribute_set_factory(self, attribute_name):
         return lambda value: setattr(self, attribute_name, value)
-
-
-def input_auth():
-    """
-    Prompt user for username and password.  Return (username, password)
-    tuple or (None, None) if left blank.
-    """
-    print(textwrap.dedent("""\
-        Please enter the email address and password for your Canopy / EPD
-        subscription.  """))
-    username = input('Email (or username): ').strip()
-    if not username:
-        return None, None
-    return username, getpass('Password: ')
 
 
 def prepend_url(filename, url):

@@ -4,7 +4,6 @@ from egginst._compat import PY2, string_types, urlparse
 
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
-from enstaller.utils import fill_url
 from enstaller.vendor import jsonschema
 
 if PY2:
@@ -44,7 +43,7 @@ _SCHEMA = {
             "type": "boolean"
         },
         "store_url": {
-            "description": "The url (schema + hostname only of the store to " \
+            "description": "The url (schema + hostname only of the store to "
                            "connect to).",
             "type": "string"
         },

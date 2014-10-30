@@ -3,7 +3,6 @@ from collections import defaultdict
 
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.repository import egg_name_to_name_version
-from enstaller.utils import comparable_version
 from enstaller.versions.enpkg import EnpkgVersion
 
 from .requirement import Requirement
@@ -46,7 +45,7 @@ class Resolve(object):
         assert requirement.strictness >= 1
         d = dict((package.key, package) for package in
                  self.repository.find_packages(requirement.name))
-        matches = [key for key, package in d.items() \
+        matches = [key for key, package in d.items()
                    if requirement.matches(package)]
         if len(matches) == 0:
             return None
@@ -150,7 +149,7 @@ class Resolve(object):
             visited.add(egg)
             for r in self._dependencies_from_egg(egg):
                 reqs_deep[r.name].add(r)
-                if (r.name in reqs_shallow  and
+                if (r.name in reqs_shallow and
                         r.strictness < reqs_shallow[r.name].strictness):
                     continue
                 d = self._latest_egg(r)
@@ -159,7 +158,7 @@ class Resolve(object):
                           "required by \"%s\"" % (str(r), egg)
                     raise MissingDependency(msg, egg, r)
                 eggs.add(d)
-                if not d in visited:
+                if d not in visited:
                     add_dependents(d, visited)
 
         eggs = set([root])

@@ -69,11 +69,11 @@ class UserInfo(object):
 
     def to_dict(self):
         keys = (
-             "is_authenticated",
-             "first_name",
-             "last_name",
-             "has_subscription",
-             "subscription_level",
+            "is_authenticated",
+            "first_name",
+            "last_name",
+            "has_subscription",
+            "subscription_level",
         )
         return dict((k, getattr(self, k)) for k in keys)
 

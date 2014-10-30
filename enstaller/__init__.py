@@ -12,10 +12,13 @@ try:
                                     git_revision as __git_revision__,
                                     is_released as __is_released__,
                                     )
-except ImportError as e: # pragma: no cover
+except ImportError as e:  # pragma: no cover
     __version__ = __git_revision__ = "no-built"
     __is_released__ = False
 
 from enstaller.config import Configuration
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.session import Session
+
+__all__ = ["Configuration", "Repository", "RepositoryPackageMetadata",
+           "Session"]

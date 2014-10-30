@@ -9,10 +9,8 @@ import sys
 
 import mock
 
-from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
-from enstaller.errors import AuthFailedError
 from enstaller.plat import custom_plat
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
@@ -44,11 +42,13 @@ R_JSON_AUTH_FREE_RESP = {
     'subscription_level': u'free'
 }
 
-R_JSON_NOAUTH_RESP = {'is_authenticated': False,
-        'last_name': u'Cournapeau',
-        'first_name': u'David',
-        'has_subscription': True,
-        'subscription_level': u'basic'}
+R_JSON_NOAUTH_RESP = {
+    'is_authenticated': False,
+    'last_name': u'Cournapeau',
+    'first_name': u'David',
+    'has_subscription': True,
+    'subscription_level': u'basic'
+}
 
 SIMPLE_INDEX = {
     "nose-1.3.4-1.egg": {
@@ -85,6 +85,7 @@ def dummy_installed_package_factory(name, version, build, key=None,
     return InstalledPackageMetadata(key, name.lower(), version, [], py_ver,
                                     "", store_location)
 
+
 def dummy_repository_package_factory(name, version, build, key=None,
                                      py_ver=PY_VER, store_location="",
                                      dependencies=None, mtime=0.0):
@@ -118,6 +119,7 @@ class MockedPrint(object):
     def value(self):
         return self.s.getvalue()
 
+
 @contextlib.contextmanager
 def mock_print():
     m = MockedPrint()
@@ -147,11 +149,13 @@ def mock_input(input_string):
 def make_keyring_unavailable(f):
     return mock.patch("enstaller.config.keyring", None)(f)
 
+
 # Context managers to force certain configuration
 @contextlib.contextmanager
 def make_keyring_unavailable_context():
     with mock.patch("enstaller.config.keyring", None) as context:
         yield context
+
 
 # Context managers to force certain configuration
 @contextlib.contextmanager
@@ -160,11 +164,13 @@ def make_keyring_available_context():
     with mock.patch("enstaller.config.keyring", m) as context:
         yield context
 
+
 @contextlib.contextmanager
 def make_default_configuration_path(path):
     with mock.patch("enstaller.main.get_config_filename",
                     lambda ignored: path) as context:
         yield context
+
 
 @contextlib.contextmanager
 def mock_input_auth(username, password):
@@ -196,6 +202,7 @@ def fake_keyring_context():
                         keyring.set_password):
             yield keyring
 
+
 def fake_keyring(f):
     keyring = _FakeKeyring()
     dec1 = mock.patch("enstaller.config.keyring.get_password",
@@ -204,6 +211,7 @@ def fake_keyring(f):
                       keyring.set_password)
     return dec1(dec2(f))
 
+
 @contextlib.contextmanager
 def mock_history_get_state_context(state=None):
     if state is None:
@@ -211,6 +219,7 @@ def mock_history_get_state_context(state=None):
     with mock.patch("enstaller.enpkg.History") as context:
         context.return_value.get_state.return_value = set(state)
         yield context
+
 
 @contextlib.contextmanager
 def mock_raw_input(return_value):
@@ -221,6 +230,7 @@ def mock_raw_input(return_value):
     with mock.patch("enstaller.utils.input",
                     side_effect=_function) as context:
         yield context
+
 
 def unconnected_enpkg_factory(prefixes=None):
     """
@@ -233,6 +243,7 @@ def unconnected_enpkg_factory(prefixes=None):
     repository = Repository()
     return Enpkg(repository, mocked_session_factory(config.repository_cache),
                  prefixes=prefixes)
+
 
 def mocked_session_factory(repository_cache):
     return Session(DummyAuthenticator(), repository_cache)
@@ -263,7 +274,7 @@ class FakeOptions(object):
 
 
 def create_prefix_with_eggs(config, prefix, installed_entries=None,
-                             remote_entries=None):
+                            remote_entries=None):
     if remote_entries is None:
         remote_entries = []
     if installed_entries is None:

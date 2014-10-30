@@ -34,7 +34,7 @@ from enstaller.errors import (EnpkgError, EnstallerException,
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
                               configuration_read_search_order,
-                              convert_auth_if_required, input_auth,
+                              convert_auth_if_required,
                               print_config, write_default_config)
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError, MissingPackage
@@ -42,7 +42,7 @@ from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
 from enstaller.utils import (abs_expanduser, exit_if_sudo_on_venv,
-                             prompt_yes_no)
+                             input_auth, prompt_yes_no)
 from enstaller.vendor import requests
 from enstaller.versions.enpkg import EnpkgVersion
 

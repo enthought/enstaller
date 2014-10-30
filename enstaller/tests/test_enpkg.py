@@ -1,15 +1,10 @@
 import os.path
 import shutil
-import sys
 import tempfile
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 import mock
 
+from egginst._compat import TestCase
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
 
@@ -30,7 +25,7 @@ from .common import (dummy_repository_package_factory,
                      unconnected_enpkg_factory, DummyAuthenticator)
 
 
-class TestEnpkgActions(unittest.TestCase):
+class TestEnpkgActions(TestCase):
     def test_empty_actions(self):
         """
         Ensuring enpkg.execute([]) does not crash
@@ -42,8 +37,6 @@ class TestEnpkgActions(unittest.TestCase):
         enpkg.execute([])
 
     def test_remove(self):
-        repository = Repository()
-
         with mkdtemp() as d:
             makedirs(d)
 
@@ -54,7 +47,8 @@ class TestEnpkgActions(unittest.TestCase):
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
 
-class TestEnpkgExecute(unittest.TestCase):
+
+class TestEnpkgExecute(TestCase):
     def setUp(self):
         self.prefixes = [tempfile.mkdtemp()]
 
@@ -66,8 +60,6 @@ class TestEnpkgExecute(unittest.TestCase):
         egg = "yoyo.egg"
         fetch_opcode = 0
 
-        repository = Repository()
-
         with mock.patch("enstaller.enpkg.FetchAction") as mocked_fetch:
             enpkg = unconnected_enpkg_factory(prefixes=self.prefixes)
             enpkg.ec = mock.MagicMock()
@@ -78,11 +70,6 @@ class TestEnpkgExecute(unittest.TestCase):
 
     def test_simple_install(self):
         config = Configuration()
-
-        egg = DUMMY_EGG
-        base_egg = os.path.basename(egg)
-        fetch_opcode = 0
-
         entries = [
             dummy_repository_package_factory("dummy", "1.0.1", 1)
         ]
@@ -101,7 +88,7 @@ class TestEnpkgExecute(unittest.TestCase):
                 mocked_install.assert_called_with()
 
 
-class TestEnpkgRevert(unittest.TestCase):
+class TestEnpkgRevert(TestCase):
     def setUp(self):
         self.prefixes = [tempfile.mkdtemp()]
 
@@ -110,8 +97,6 @@ class TestEnpkgRevert(unittest.TestCase):
             shutil.rmtree(prefix)
 
     def test_empty_history(self):
-        repository = Repository()
-
         enpkg = unconnected_enpkg_factory(self.prefixes)
         enpkg.revert_actions(0)
 
@@ -148,8 +133,8 @@ class TestEnpkgRevert(unittest.TestCase):
 
         with open(egg, "rb") as fp:
             responses.add(responses.GET, package.source_url,
-                         body=fp.read(), status=200,
-                         content_type='application/json')
+                          body=fp.read(), status=200,
+                          content_type='application/json')
 
         session = Session(DummyAuthenticator(), config.repository_cache)
 
@@ -210,7 +195,7 @@ class TestEnpkgRevert(unittest.TestCase):
                 self.assertEqual(ret, r_actions)
 
 
-class TestFetchAction(unittest.TestCase):
+class TestFetchAction(TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -229,8 +214,8 @@ class TestFetchAction(unittest.TestCase):
     def _add_response_for_path(self, path):
         with open(path, "rb") as fp:
             responses.add(responses.GET, path_to_uri(path),
-                         body=fp.read(), status=200,
-                         content_type='application/octet-stream')
+                          body=fp.read(), status=200,
+                          content_type='application/octet-stream')
 
     @responses.activate
     def test_simple(self):
@@ -299,8 +284,10 @@ class TestFetchAction(unittest.TestCase):
         class MyDummyProgressBar(object):
             def update(self, n):
                 self.fail("progress bar called")
+
             def __enter__(self):
                 return self
+
             def __exit__(self, *a, **kw):
                 pass
 
@@ -309,7 +296,6 @@ class TestFetchAction(unittest.TestCase):
                              progress_bar_factory=lambda *a, **kw: progress)
         for step in action:
             pass
-
 
     @responses.activate
     def test_progress_manager(self):
@@ -322,10 +308,13 @@ class TestFetchAction(unittest.TestCase):
         class MyDummyProgressBar(object):
             def __init__(self):
                 self.called = False
+
             def update(self, n):
                 self.called = True
+
             def __enter__(self):
                 return self
+
             def __exit__(self, *a, **kw):
                 pass
 
@@ -339,6 +328,7 @@ class TestFetchAction(unittest.TestCase):
 
     def _add_failing_checksum_response(self, url, payload, n_invalid=2):
         counter = [0]
+
         def request_callback(request):
             counter[0] += 1
 
@@ -350,20 +340,18 @@ class TestFetchAction(unittest.TestCase):
                 return (200, headers, b"")
 
         responses.add_callback(responses.GET, url,
-            callback=request_callback,
-            content_type='application/octet-stream',
-        )
+                               callback=request_callback,
+                               content_type='application/octet-stream')
 
     def _retry_common_setup(self):
         store_location = "http://acme.com/"
         filename = "nose-1.3.0-1.egg"
 
-        url = store_location + filename
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
         repository = Repository()
         package = RepositoryPackageMetadata.from_egg(path,
-                store_location=store_location)
+                                                     store_location=store_location)
         repository.add_package(package)
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
@@ -407,7 +395,7 @@ class TestFetchAction(unittest.TestCase):
         action.execute()
 
 
-class TestRemoveAction(unittest.TestCase):
+class TestRemoveAction(TestCase):
     def setUp(self):
         self.top_prefix = tempfile.mkdtemp()
         self.top_installed_repository = Repository(self.top_prefix)
@@ -460,7 +448,6 @@ class TestRemoveAction(unittest.TestCase):
 
         self._install_eggs([path])
 
-
         # When
         action = RemoveAction(path, self.top_prefix,
                               self.top_installed_repository,
@@ -475,7 +462,6 @@ class TestRemoveAction(unittest.TestCase):
         self.assertFalse(self.installed_repository.has_package(metadata))
         self.assertFalse(action.is_canceled)
 
-
     def test_iteration_cancel(self):
         # Given
         filename = "nose-1.3.0-1.egg"
@@ -484,7 +470,6 @@ class TestRemoveAction(unittest.TestCase):
         metadata = PackageMetadata.from_egg(path)
 
         self._install_eggs([path])
-
 
         # When
         action = RemoveAction(path, self.top_prefix,

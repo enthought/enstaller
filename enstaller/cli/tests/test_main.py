@@ -87,7 +87,7 @@ class TestUpdatesCheck(TestCase):
         ]
 
         remote, installed = create_repositories(remote_entries,
-                                                 installed_entries)
+                                                installed_entries)
 
         # When
         with mock_print() as m:
@@ -112,7 +112,7 @@ class TestUpdatesCheck(TestCase):
         ]
 
         remote, installed = create_repositories(remote_entries,
-                                                 installed_entries)
+                                                installed_entries)
 
         # When
         with mock_print() as m:
@@ -159,7 +159,7 @@ class TestUpdatesCheck(TestCase):
 
         with mkdtemp() as d:
             enpkg = create_prefix_with_eggs(config, d,
-                    installed_entries, remote_entries)
+                                            installed_entries, remote_entries)
             with mock_print() as m:
                 update_all(enpkg, config, FakeOptions())
                 self.assertMultiLineEqual(m.value, r_output)

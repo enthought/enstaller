@@ -56,7 +56,6 @@ class TestUserInfo(TestCase):
         url = "https://acme.com"
         token_url = url + "/api/v0/json/auth/tokens/auth"
 
-
         config = Configuration()
         config.update(store_url="brood+" + url)
 

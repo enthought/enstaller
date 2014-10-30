@@ -3,19 +3,20 @@ from __future__ import print_function
 from egginst._compat import urlparse
 from egginst._compat import PY2, input, pathname2url, unquote, url2pathname
 
+import getpass
 import json
 import logging
 import sys
+import textwrap
 import zlib
 
-from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
+from os.path import abspath, expanduser, getmtime, getsize, isfile, join
 
-from egginst._compat import urlparse
 from egginst.utils import compute_md5
 
+from enstaller.errors import InvalidFormat
 from enstaller.vendor import requests
-from enstaller.versions.pep386_workaround import (normalize_version_string,
-                                                  PEP386WorkaroundVersion)
+from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
 from enstaller import plat
 
 
@@ -40,6 +41,7 @@ def canonical(s):
     if s == 'tables':
         s = 'pytables'
     return s
+
 
 def comparable_version(version):
     """
@@ -85,6 +87,7 @@ def fill_url(url):
     url = url.replace('{PLATFORM}', plat.custom_plat)
     return cleanup_url(url)
 
+
 def exit_if_sudo_on_venv(prefix):
     """ Exits the running process with a message to run as non-sudo user.
 
@@ -106,10 +109,11 @@ def exit_if_sudo_on_venv(prefix):
     if os.getuid() != 0:
         return
 
-    print('You are running enpkg as a root user inside a virtual environment. ' \
+    print('You are running enpkg as a root user inside a virtual environment. '
           'Please run it as a normal user')
 
     sys.exit(1)
+
 
 def path_to_uri(path):
     """Convert the given path string to a valid URI.
@@ -118,6 +122,7 @@ def path_to_uri(path):
     shell API on windows, e.g. 'C:\\foo.txt' will be
     'file:///C:/foo.txt'"""
     return urlparse.urljoin("file:", pathname2url(path))
+
 
 def uri_to_path(uri):
     """Convert a valid file uri scheme string to a native
@@ -198,7 +203,7 @@ def decode_json_from_buffer(data):
             # urllib3 fails to decompress.
             raise requests.exceptions.ContentDecodingError(
                 "Detected gzip-compressed response, but failed to decode it.",
-                 e)
+                e)
 
     try:
         decoded_data = data.decode("utf8")
@@ -206,3 +211,17 @@ def decode_json_from_buffer(data):
         raise ValueError("Invalid index data, try again ({0!r})".format(e))
 
     return json.loads(decoded_data)
+
+
+def input_auth():
+    """
+    Prompt user for username and password.  Return (username, password)
+    tuple or (None, None) if left blank.
+    """
+    print(textwrap.dedent("""\
+        Please enter the email address and password for your Canopy / EPD
+        subscription.  """))
+    username = input('Email (or username): ').strip()
+    if not username:
+        return None, None
+    return username, getpass.getpass('Password: ')

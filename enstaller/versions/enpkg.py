@@ -30,7 +30,7 @@ class EnpkgVersion(object):
         if len(parts) < 2:
             msg = "Invalid version format: {0!r}".format(version_string)
             raise ValueError(msg)
-        
+
         try:
             build = int(parts[1])
         except ValueError:

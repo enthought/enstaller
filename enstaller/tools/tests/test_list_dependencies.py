@@ -21,10 +21,11 @@ def _mock_index(entries, platform=None):
     index = dict((entry.key, entry.s3index_data) for entry in entries)
 
     responses.add(responses.GET,
-                  "https://api.enthought.com/eggs/{0}/index.json". \
-                          format(platform),
+                  "https://api.enthought.com/eggs/{0}/index.json".
+                  format(platform),
                   body=json.dumps(index), status=200,
                   content_type='application/json')
+
 
 class TestListDependencies(TestCase):
     @responses.activate

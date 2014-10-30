@@ -228,6 +228,7 @@ class InstalledPackageMetadata(PackageMetadata):
                 "ctime")
         return dict((k, getattr(self, k)) for k in keys)
 
+
 def parse_version(version):
     """
     Parse a full version (e.g. '1.8.0-1' into upstream and build)
@@ -246,6 +247,7 @@ def parse_version(version):
         raise ValueError("Version not understood {0!r}".format(version))
     else:
         return parts[0], int(parts[1])
+
 
 def egg_name_to_name_version(egg_name):
     """
@@ -287,7 +289,7 @@ class Repository(object):
     contains.
     """
     def _populate_from_prefixes(self, prefixes):
-        if prefixes is None: #  pragma: nocover
+        if prefixes is None:  # pragma: nocover
             prefixes = [sys.prefix]
 
         for prefix, egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
@@ -383,7 +385,6 @@ class Repository(object):
                 return candidate
         raise MissingPackage("Package '{0}-{1}' not found".format(name,
                                                                   version))
-
 
     def find_latest_package(self, name):
         """Returns the latest package with the given name.

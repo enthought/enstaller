@@ -1,28 +1,17 @@
 import json
 import os.path
 import shutil
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
-import mock
-
-from egginst.tests.common import mkdtemp
-
+from egginst._compat import TestCase
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.legacy_stores import parse_index, repository_factory
-from enstaller.plat import custom_plat
 
 from enstaller.tests.common import (SIMPLE_INDEX,
                                     dummy_repository_package_factory,
                                     mock_index,
                                     mocked_session_factory)
-from enstaller.vendor import responses
 
 
 def _index_provider(store_location):
@@ -35,7 +24,7 @@ def _index_provider(store_location):
     return json.dumps(dict((entry.key, entry.s3index_data) for entry in entries))
 
 
-class TestLegacyStores(unittest.TestCase):
+class TestLegacyStores(TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -59,18 +48,18 @@ class TestLegacyStores(unittest.TestCase):
     def test_simple_no_webservice_file(self):
         # Given
         fake_index = {
-           "zope.testing-3.8.3-1.egg": {
-               "available": True,
-               "build": 1,
-               "md5": "6041fd75b7fe9187ccef0d40332c6c16",
-               "mtime": 1262725254.0,
-               "name": "zope.testing",
-               "product": "commercial",
-               "python": "2.6",
-               "size": 514439,
-               "type": "egg",
-               "version": "3.8.3",
-           }
+            "zope.testing-3.8.3-1.egg": {
+                "available": True,
+                "build": 1,
+                "md5": "6041fd75b7fe9187ccef0d40332c6c16",
+                "mtime": 1262725254.0,
+                "name": "zope.testing",
+                "product": "commercial",
+                "python": "2.6",
+                "size": 514439,
+                "type": "egg",
+                "version": "3.8.3",
+            }
         }
         index_path = os.path.join(self.tempdir, "index.json")
         with open(index_path, "w") as fp:
@@ -85,22 +74,21 @@ class TestLegacyStores(unittest.TestCase):
         self.assertEqual(len(packages), 1)
         self.assertEqual(packages[0].key, "zope.testing-3.8.3-1.egg")
 
-
     def test_parse_index_python_version(self):
         # Given
         index = {
-           "zope.testing-3.8.3-1.egg": {
-               "available": True,
-               "build": 1,
-               "md5": "6041fd75b7fe9187ccef0d40332c6c16",
-               "mtime": 1262725254.0,
-               "name": "zope.testing",
-               "product": "commercial",
-               "python": "2.6",
-               "size": 514439,
-               "type": "egg",
-               "version": "3.8.3",
-           }
+            "zope.testing-3.8.3-1.egg": {
+                "available": True,
+                "build": 1,
+                "md5": "6041fd75b7fe9187ccef0d40332c6c16",
+                "mtime": 1262725254.0,
+                "name": "zope.testing",
+                "product": "commercial",
+                "python": "2.6",
+                "size": 514439,
+                "type": "egg",
+                "version": "3.8.3",
+            }
         }
 
         # When

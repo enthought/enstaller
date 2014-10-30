@@ -1,28 +1,22 @@
-import sys
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst._compat import TestCase
 from enstaller.repository import PackageVersionInfo
 
 from ..requirement import Requirement
 
 
-class TestRequirement(unittest.TestCase):
+class TestRequirement(TestCase):
     def assertEqualRequirements(self, left, right):
         self.assertEqual(left.as_dict(), right.as_dict())
 
     def test_init(self):
         for req_string, name, version, build, strictness in [
-            ('',          None,  None,  None, 0),
-            (' \t',       None,  None,  None, 0),
-            ('foo',       'foo', None,  None, 1),
-            (u'bar 1.9',  'bar', '1.9', None, 2),
-            ('BAZ 1.8-2', 'baz', '1.8', 2,    3),
-            ('qux 1.3-0', 'qux', '1.3', 0,    3),
-            ]:
+                ('',          None,  None,  None, 0),
+                (' \t',       None,  None,  None, 0),
+                ('foo',       'foo', None,  None, 1),
+                (u'bar 1.9',  'bar', '1.9', None, 2),
+                ('BAZ 1.8-2', 'baz', '1.8', 2,    3),
+                ('qux 1.3-0', 'qux', '1.3', 0,    3),
+        ]:
             r = Requirement(req_string)
             self.assertEqual(r.name, name)
             self.assertEqual(r.version, version)
@@ -35,7 +29,7 @@ class TestRequirement(unittest.TestCase):
             ('foo',       dict(name='foo')),
             ('bar 1.9',   dict(name='bar', version='1.9')),
             ('BAZ 1.8-2', dict(name='baz', version='1.8', build=2)),
-            ]:
+        ]:
             r = Requirement(req_string)
             self.assertEqual(r.as_dict(), d)
 
@@ -59,7 +53,7 @@ class TestRequirement(unittest.TestCase):
             ('FOO_Bar 1.8.7', False),
             ('FOO_BAR 2.4.1-3', True),
             ('FOO_Bar 2.4.1-1', False),
-            ]:
+        ]:
             self.assertEqual(Requirement(req_string).matches(spec), m, req_string)
 
     def test_from_anything_name(self):
@@ -101,5 +95,3 @@ class TestRequirement(unittest.TestCase):
 
         # Then
         self.assertEqualRequirements(req, req_arg)
-
-
