@@ -1,14 +1,5 @@
 from __future__ import absolute_import
 
-import json
-
-from egginst._compat import urlparse
-
-from enstaller.errors import AuthFailedError, EnstallerException
-
-from .auth_managers import LegacyCanopyAuthManager, OldRepoAuthManager
-from .user_info import UserInfo
-
 
 def subscription_message(config, user):
     """

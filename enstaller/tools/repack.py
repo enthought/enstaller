@@ -17,14 +17,13 @@ from egginst.utils import samefile
 from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException
 
-
 ENDIST_DAT = "endist.dat"
 # Whitelist of keys considered when exec`ing the endist.dat to update
 # spec/depend
 ACCEPTED_ENDIST_SPEC_KEYS = SPEC_DEPEND_KEYS
 # Whitelist of keys considered when exec`ing the endist.dat to update
 # the egg content
-ACCEPTED_ENDIST_EGG_KEYS = ("add_files",)
+ACCEPTED_ENDIST_EGG_KEYS = ("add_files", )
 # List of endist keys not yet supported by this tool
 UNSUPPORTED_ENDIST_KEYS = ("app_icon_file", "svn_rev", "svn_rev_init",
                            "no_pyc")
@@ -150,7 +149,6 @@ def repack(source_egg_path, build_number=1, platform_string=None):
         msg = "source and repack-ed egg are the same file: {0!r}. Inplace " \
               "mode not yet implemented."
         raise EnstallerException(msg.format(source_egg_path))
-
     # XXX: implement endist.dat/app handling
 
     print(20 * '-' + '\n' + legacy_spec.to_string() + 20 * '-')

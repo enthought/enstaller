@@ -5,13 +5,9 @@ import random
 import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 import mock
 
+from egginst._compat import skipIf, TestCase
 from egginst.main import name_version_fn
 from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
     DUMMY_EGG_MTIME, DUMMY_EGG_MD5
@@ -22,14 +18,14 @@ from enstaller.utils import canonical, comparable_version, input_auth, \
 from .common import mock_input, mock_print, mock_raw_input
 
 
-class TestUtils(unittest.TestCase):
+class TestUtils(TestCase):
 
     def test_canonical(self):
         for name, cname in [
             ('NumPy', 'numpy'),
             ('MySql-python', 'mysql_python'),
             ('Python-dateutil', 'python_dateutil'),
-            ]:
+        ]:
             self.assertEqual(canonical(name), cname)
 
     def test_naming(self):
@@ -37,7 +33,7 @@ class TestUtils(unittest.TestCase):
             ('NumPy-1.5-py2.6-win32.egg', 'NumPy', '1.5-py2.6-win32', 'numpy'),
             ('NumPy-1.5-2.egg', 'NumPy', '1.5-2', 'numpy'),
             ('NumPy-1.5.egg', 'NumPy', '1.5', 'numpy'),
-            ]:
+        ]:
             self.assertEqual(name_version_fn(fn), (name, ver))
             self.assertEqual(name.lower(), cname)
             self.assertEqual(canonical(name), cname)
@@ -52,7 +48,7 @@ class TestUtils(unittest.TestCase):
             ['0.99', '1.0a2', '1.0b1', '1.0rc1', '1.0', '1.0.1'],
             ['2.0.8', '2.0.10', '2.0.10.1', '2.0.11'],
             ['0.10.1', '0.10.2', '0.11.dev1324', '0.11'],
-            ):
+        ):
             org = list(versions)
             random.shuffle(versions)
             versions.sort(key=comparable_version)
@@ -60,9 +56,9 @@ class TestUtils(unittest.TestCase):
 
     def test_info_file(self):
         r_info = {
-                "size": DUMMY_EGG_SIZE,
-                "mtime": DUMMY_EGG_MTIME,
-                "md5": DUMMY_EGG_MD5
+            "size": DUMMY_EGG_SIZE,
+            "mtime": DUMMY_EGG_MTIME,
+            "md5": DUMMY_EGG_MD5
         }
 
         info = info_file(DUMMY_EGG)
@@ -99,18 +95,18 @@ class TestUtils(unittest.TestCase):
         self.assertEqual(cleanup_url(url), r_url)
 
 
-class TestExitIfSudoOnVenv(unittest.TestCase):
+class TestExitIfSudoOnVenv(TestCase):
     @mock.patch("enstaller.utils.sys.platform", "win32")
     def test_windows(self):
         exit_if_sudo_on_venv("some_prefix")
 
-    @unittest.skipIf(sys.platform=="win32", "no getuid on windows")
+    @skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 0)
     def test_no_venv(self):
         exit_if_sudo_on_venv("some_prefix")
 
-    @unittest.skipIf(sys.platform=="win32", "no getuid on windows")
+    @skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 0)
     def test_venv_sudo(self):
@@ -121,7 +117,7 @@ class TestExitIfSudoOnVenv(unittest.TestCase):
 
         self.assertRaises(SystemExit, lambda: exit_if_sudo_on_venv(d))
 
-    @unittest.skipIf(sys.platform=="win32", "no getuid on windows")
+    @skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 1)
     def test_venv_no_sudo(self):
@@ -132,7 +128,8 @@ class TestExitIfSudoOnVenv(unittest.TestCase):
 
         exit_if_sudo_on_venv(d)
 
-class TestUri(unittest.TestCase):
+
+class TestUri(TestCase):
     def test_path_to_uri_simple(self):
         """Ensure path to uri conversion works."""
         # XXX: this is a bit ugly, but urllib does not allow to select which OS
@@ -168,7 +165,7 @@ class TestUri(unittest.TestCase):
         self.assertEqual(r_path, path)
 
 
-class TestPromptYesNo(unittest.TestCase):
+class TestPromptYesNo(TestCase):
     def test_simple(self):
         # Given
         message = "Do you want to do it ?"
@@ -214,7 +211,7 @@ FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 
 
-class TestInputAuth(unittest.TestCase):
+class TestInputAuth(TestCase):
     @mock.patch("enstaller.utils.getpass.getpass", lambda ignored: FAKE_PASSWORD)
     def test_simple(self):
         with mock_input(FAKE_USER):
@@ -224,7 +221,3 @@ class TestInputAuth(unittest.TestCase):
     def test_empty(self):
         with mock_input(""):
             self.assertEqual(input_auth(), (None, None))
-
-
-if __name__ == '__main__':
-    unittest.main()

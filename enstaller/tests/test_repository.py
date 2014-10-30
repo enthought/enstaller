@@ -1,13 +1,8 @@
 import operator
 import os.path
-import sys
 import time
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst._compat import TestCase
 from egginst.main import EggInst
 from egginst.utils import compute_md5
 from egginst.testing_utils import slow
@@ -24,7 +19,7 @@ from enstaller.tests.common import dummy_installed_package_factory
 from enstaller.utils import PY_VER
 
 
-class TestParseVersion(unittest.TestCase):
+class TestParseVersion(TestCase):
     def test_simple(self):
         # given
         version = "1.8.0-1"
@@ -45,7 +40,7 @@ class TestParseVersion(unittest.TestCase):
             parse_version(version)
 
 
-class TestEggNameToNameVersion(unittest.TestCase):
+class TestEggNameToNameVersion(TestCase):
     def test_simple(self):
         # given
         egg_name = "numpy-1.8.0-1.egg"
@@ -77,7 +72,7 @@ class TestEggNameToNameVersion(unittest.TestCase):
             egg_name_to_name_version(egg_name)
 
 
-class TestPackage(unittest.TestCase):
+class TestPackage(TestCase):
     def test_repr(self):
         # Given
         version = EnpkgVersion.from_string("1.3.0-1")
@@ -103,7 +98,7 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.build, 1)
 
 
-class TestRepositoryPackage(unittest.TestCase):
+class TestRepositoryPackage(TestCase):
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
@@ -143,22 +138,22 @@ class TestRepositoryPackage(unittest.TestCase):
         self.assertEqual(metadata.source_url, path_to_uri(path))
 
 
-class TestInstalledPackage(unittest.TestCase):
+class TestInstalledPackage(TestCase):
     def test_from_meta_dir(self):
         # Given
         json_dict = {
-          "arch": "amd64",
-          "build": 1,
-          "ctime": "Thu Apr 24 15:41:24 2014",
-          "hook": False,
-          "key": "VTK-5.10.1-1.egg",
-          "name": "vtk",
-          "osdist": "RedHat_5",
-          "packages": [],
-          "platform": "linux2",
-          "python": "2.7",
-          "type": "egg",
-          "version": "5.10.1"
+            "arch": "amd64",
+            "build": 1,
+            "ctime": "Thu Apr 24 15:41:24 2014",
+            "hook": False,
+            "key": "VTK-5.10.1-1.egg",
+            "name": "vtk",
+            "osdist": "RedHat_5",
+            "packages": [],
+            "platform": "linux2",
+            "python": "2.7",
+            "type": "egg",
+            "version": "5.10.1"
         }
 
         # When
@@ -170,17 +165,17 @@ class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir_no_packages(self):
         # Given
         json_dict = {
-          "arch": "amd64",
-          "build": 1,
-          "ctime": "Thu Apr 24 15:41:24 2014",
-          "hook": False,
-          "key": "VTK-5.10.1-1.egg",
-          "name": "vtk",
-          "osdist": "RedHat_5",
-          "platform": "linux2",
-          "python": "2.7",
-          "type": "egg",
-          "version": "5.10.1"
+            "arch": "amd64",
+            "build": 1,
+            "ctime": "Thu Apr 24 15:41:24 2014",
+            "hook": False,
+            "key": "VTK-5.10.1-1.egg",
+            "name": "vtk",
+            "osdist": "RedHat_5",
+            "platform": "linux2",
+            "python": "2.7",
+            "type": "egg",
+            "version": "5.10.1"
         }
 
         # When
@@ -210,7 +205,7 @@ class TestInstalledPackage(unittest.TestCase):
         self.assertEqual(metadata.ctime, time.ctime(0.0))
 
 
-class TestRepository(unittest.TestCase):
+class TestRepository(TestCase):
     def setUp(self):
         eggs = [
             "dummy-1.0.1-1.egg",
@@ -401,8 +396,9 @@ class TestRepository(unittest.TestCase):
             [p.key for p in repository.iter_packages()],
             ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
 
+
 # Unittest that used to belong to Enpkg
-class TestRepositoryMisc(unittest.TestCase):
+class TestRepositoryMisc(TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
         entries = [

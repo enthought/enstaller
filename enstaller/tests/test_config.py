@@ -1,5 +1,3 @@
-import base64
-import contextlib
 import os.path
 import platform
 import shutil
@@ -22,13 +20,12 @@ from enstaller.plat import custom_plat
 
 from enstaller import __version__
 
-from enstaller.config import (abs_expanduser,
-    configuration_read_search_order,
-    prepend_url, print_config, _is_using_epd_username,
-    convert_auth_if_required, _keyring_backend_name, write_default_config)
-from enstaller.config import (
-    HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
-    Configuration, add_url, _encode_auth, _encode_string_base64)
+from enstaller.config import (prepend_url, print_config,
+                              _is_using_epd_username, convert_auth_if_required,
+                              _keyring_backend_name, write_default_config)
+from enstaller.config import (KEYRING_SERVICE_NAME,
+                              Configuration, add_url,
+                              _encode_auth, _encode_string_base64)
 from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
@@ -116,6 +113,7 @@ class TestWriteConfig(unittest.TestCase):
         self.assertEqual(config.api_url,
                          "https://acme.com/accounts/user/info/")
 
+
 class TestConfigKeyringConversion(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
@@ -187,6 +185,7 @@ class TestConfigKeyringConversion(unittest.TestCase):
             # When/Then
             with self.assertRaises(EnstallerException):
                 convert_auth_if_required(path)
+
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
@@ -354,6 +353,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         with open(fp.name, "r") as fp:
             self.assertEqual(fp.read(), config_data)
 
+
 class TestAuthenticationConfiguration(unittest.TestCase):
     @make_keyring_unavailable
     def test_without_configuration_no_keyring(self):
@@ -389,6 +389,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
         with mock.patch("enstaller.config.keyring", mocked_keyring):
             config = Configuration.from_file(fp.name)
             self.assertTrue(config.is_auth_configured)
+
 
 class TestConfigurationParsing(unittest.TestCase):
     def test_parse_simple_unsupported_entry(self):
@@ -532,7 +533,6 @@ class TestConfigurationPrint(unittest.TestCase):
                                                         self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
-
     def test_simple(self):
         output_template = textwrap.dedent("""\
             Python version: {pyver}
@@ -607,6 +607,7 @@ class TestConfigurationPrint(unittest.TestCase):
             print_config(config, config.prefix, Session(DummyAuthenticator(),
                                                         self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
+
 
 class TestConfiguration(unittest.TestCase):
     def setUp(self):
@@ -747,7 +748,7 @@ class TestConfiguration(unittest.TestCase):
                 Configuration._from_legacy_locations()
 
     def test_reset_auth_with_keyring(self):
-        with make_keyring_available_context() as m:
+        with make_keyring_available_context():
             config = Configuration()
             config.set_auth(FAKE_USER, FAKE_PASSWORD)
 
@@ -808,9 +809,9 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property(self):
         # Given
         r_indices = tuple([
-            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
-                format(custom_plat),
-            "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
+             format(custom_plat),
+             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ])
         config = Configuration()
 
@@ -821,9 +822,9 @@ class TestConfiguration(unittest.TestCase):
         # Given
         platform = "win-32"
         r_indices = tuple([
-            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
-                format(platform),
-            "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
+             format(platform),
+             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
         ])
 
         # When
@@ -836,9 +837,9 @@ class TestConfiguration(unittest.TestCase):
         # Given
         platform = "osx-32"
         r_indices = tuple([
-            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true". \
-                format(platform),
-            "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
+             format(platform),
+             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
         ])
 
         # When
@@ -851,8 +852,8 @@ class TestConfiguration(unittest.TestCase):
     def test_indices_property_no_pypi(self):
         # Given
         r_indices = tuple([
-            ("https://api.enthought.com/eggs/{0}/index.json?pypi=false". \
-                format(custom_plat),
+            ("https://api.enthought.com/eggs/{0}/index.json?pypi=false".
+             format(custom_plat),
              "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
         ])
         config = Configuration()
@@ -954,9 +955,8 @@ class TestMisc(unittest.TestCase):
         fake_dir = "/some/dummy_dir/hopefully/doesnt/exists"
 
         config = Configuration()
-        def mocked_makedirs(d):
-            raise OSError("mocked makedirs")
-        with mock.patch("os.makedirs", mocked_makedirs):
+
+        with mock.patch("os.makedirs", side_effect=OSError("mocked makedirs")):
             config.update(repository_cache=fake_dir)
             self.assertNotEqual(config.repository_cache, fake_dir)
 

@@ -148,7 +148,6 @@ class TestPEP386Workaround(TestCase):
         self.assertTrue(left < right)
         self.assertFalse(left > right)
 
-
     def test_roundtrip_workedaround(self):
         # Given
         version_string = "2011g"

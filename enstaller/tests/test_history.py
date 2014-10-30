@@ -7,6 +7,7 @@ from enstaller.history import History
 
 PATH = join(dirname(__file__), 'history')
 
+
 def package_changes(first_set, second_set):
     removed = ['-' + name for name in first_set - second_set]
     added = ['+' + name for name in second_set - first_set]

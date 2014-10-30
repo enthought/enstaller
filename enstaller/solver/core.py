@@ -1,11 +1,6 @@
-from enstaller.utils import PY_VER
-
-import enstaller
-
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
-from enstaller.repository import (egg_name_to_name_version, Repository,
-                                  RepositoryPackageMetadata)
+from enstaller.repository import egg_name_to_name_version
 
 from .resolve import Resolve
 
@@ -47,7 +42,7 @@ class Solver(object):
         else:
             full_version = None
         packages = self._top_installed_repository.find_packages(
-                requirement.name, full_version)
+            requirement.name, full_version)
         if len(packages) == 0:
             raise EnpkgError("package %s not installed" % (requirement, ))
         return [packages[0].key]

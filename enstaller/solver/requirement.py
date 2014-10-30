@@ -85,9 +85,9 @@ class Requirement(object):
         return 'Requirement(%r)' % str(self)
 
     def __eq__(self, other):
-        return (self.name == other.name  and
-                self.version == other.version  and
-                self.build == other.build  and
+        return (self.name == other.name and
+                self.version == other.version and
+                self.build == other.build and
                 self.strictness == other.strictness)
 
     def __hash__(self):

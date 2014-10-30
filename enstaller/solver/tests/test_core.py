@@ -2,16 +2,9 @@ from __future__ import absolute_import
 
 import os.path
 import shutil
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
-import mock
-
+from egginst._compat import TestCase
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
@@ -30,7 +23,7 @@ from enstaller.tests.common import (dummy_installed_package_factory,
                                     repository_factory)
 
 
-class TestSolverNoDependencies(unittest.TestCase):
+class TestSolverNoDependencies(TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -129,7 +122,7 @@ class TestSolverNoDependencies(unittest.TestCase):
         # When/Then
         with self.assertRaises(EnpkgError):
             solver.resolve(request)
-  
+
     def test_chained_override_update(self):
         """ Test update to package with latest version in lower prefix
         but an older version in primary prefix.
@@ -174,7 +167,7 @@ class TestSolverNoDependencies(unittest.TestCase):
         self.assertListEqual(actions, expected_actions)
 
 
-class TestSolverDependencies(unittest.TestCase):
+class TestSolverDependencies(TestCase):
     def test_simple(self):
         # Given
         entries = [
@@ -212,7 +205,8 @@ class TestSolverDependencies(unittest.TestCase):
         repository = repository_factory(entries)
         installed_repository = Repository()
         installed_repository.add_package(
-                dummy_installed_package_factory("MKL", "10.3", 1))
+            dummy_installed_package_factory("MKL", "10.3", 1)
+        )
 
         expected_actions = [
             ('install', "numpy-1.8.0-2.egg"),

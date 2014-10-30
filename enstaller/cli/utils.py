@@ -2,7 +2,6 @@ from __future__ import absolute_import, print_function
 
 import errno
 import io
-import json
 import sys
 import textwrap
 
@@ -13,7 +12,7 @@ from egginst.progress import (console_progress_manager_factory,
 
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import MissingDependency, NoPackageFound, UnavailablePackage
+from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
@@ -87,6 +86,7 @@ with pip as follows:
     $ pip install <requested_package>
 """
 
+
 def install_req(enpkg, config, req, opts):
     """
     Try to execute the install actions.
@@ -152,7 +152,7 @@ def install_req(enpkg, config, req, opts):
         except MissingDependency as e:
             if len(pypi_requirements) > 0:
                 msg = _BROKEN_PYPI_TEMPLATE.format(requested=e.requester,
-                        dependency=e.requirement)
+                                                   dependency=e.requirement)
                 print(msg)
             else:
                 print("One of the requested package has broken dependencies")
@@ -213,9 +213,9 @@ def repository_factory(session, indices, quiet=False):
         with session.etag():
             resp = session.fetch(url)
             for package in parse_index(_fetch_json_with_progress(resp,
-                                                                store_location,
-                                                                quiet),
-                                    store_location):
+                                                                 store_location,
+                                                                 quiet),
+                                       store_location):
                 repository.add_package(package)
     return repository
 

@@ -3,6 +3,7 @@ Naive implementation of freeze-like feature
 """
 from enstaller.repository import Repository
 
+
 def get_freeze_list(prefixes):
     """
     Compute the list of eggs installed in the given prefixes.

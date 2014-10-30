@@ -4,3 +4,5 @@ from ._impl import subscription_message
 from .user_info import DUMMY_USER, UserInfo
 
 _INDEX_NAME = "index.json"
+
+__all__ = ["subscription_message", "DUMMY_USER", "UserInfo"]

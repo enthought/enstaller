@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import json
 import re
 import shutil
 import sys
@@ -14,7 +13,6 @@ from egginst._compat import TestCase
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, mkdtemp
 
-from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository
@@ -25,7 +23,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     dummy_repository_package_factory,
                                     mocked_session_factory,
                                     mock_index, mock_print, mock_raw_input,
-                                    PY_VER, R_JSON_AUTH_RESP)
+                                    PY_VER)
 from enstaller.vendor import requests, responses
 
 from ..utils import (disp_store_info, install_req, install_time_string,
@@ -75,7 +73,7 @@ class TestMisc(TestCase):
 
 class TestInfoStrings(TestCase):
     def test_print_install_time(self):
-        with mkdtemp() as d:
+        with mkdtemp():
             installed_entries = [dummy_installed_package_factory("dummy",
                                                                  "1.0.1", 1)]
             installed_repository = Repository()
@@ -135,15 +133,15 @@ class TestUpdatesCheck(TestCase):
             dummy_repository_package_factory("dummy", "0.9.8", 1)
         ]
         installed_entries = [
-                dummy_installed_package_factory("dummy", "1.0.1", 1)
+            dummy_installed_package_factory("dummy", "1.0.1", 1)
         ]
 
         remote_repository, installed_repository = \
             self._create_repositories(remote_entries, installed_entries)
 
         # When
-        updates, EPD_update =  updates_check(remote_repository,
-                                             installed_repository)
+        updates, EPD_update = updates_check(remote_repository,
+                                            installed_repository)
 
         # Then
         self.assertEqual(EPD_update, [])
@@ -160,16 +158,15 @@ class TestUpdatesCheck(TestCase):
             dummy_repository_package_factory("dummy", "0.9.8", 1)
         ]
         installed_entries = [
-                dummy_installed_package_factory("dummy", "1.0.1", 1)
+            dummy_installed_package_factory("dummy", "1.0.1", 1)
         ]
 
         remote_repository, installed_repository = \
             self._create_repositories(remote_entries, installed_entries)
 
-
         # When
-        updates, EPD_update =  updates_check(remote_repository,
-                                             installed_repository)
+        updates, EPD_update = updates_check(remote_repository,
+                                            installed_repository)
 
         # Then
         self.assertEqual(EPD_update, [])
@@ -178,16 +175,15 @@ class TestUpdatesCheck(TestCase):
     def test_update_check_no_available(self):
         # Given
         installed_entries = [
-                dummy_installed_package_factory("dummy", "1.0.1", 1)
+            dummy_installed_package_factory("dummy", "1.0.1", 1)
         ]
 
         remote_repository, installed_repository = \
             self._create_repositories([], installed_entries)
 
-
         # When
-        updates, EPD_update =  updates_check(remote_repository,
-                                             installed_repository)
+        updates, EPD_update = updates_check(remote_repository,
+                                            installed_repository)
 
         # Then
         self.assertEqual(EPD_update, [])
@@ -202,8 +198,8 @@ class TestUpdatesCheck(TestCase):
             self._create_repositories(remote_entries, installed_entries)
 
         # When
-        updates, EPD_update =  updates_check(remote_repository,
-                                             installed_repository)
+        updates, EPD_update = updates_check(remote_repository,
+                                            installed_repository)
 
         # Then
         self.assertEqual(updates, [])
@@ -225,7 +221,6 @@ class TestInstallReq(TestCase):
     def test_install_not_available(self):
         # Given
         config = Configuration()
-        session = Session(DummyAuthenticator(), self.prefix)
 
         nose = dummy_repository_package_factory("nose", "1.3.0", 1)
         nose.available = False
@@ -239,7 +234,7 @@ class TestInstallReq(TestCase):
 
         # When/Then
         with mock.patch("enstaller.config.subscription_message") as \
-            subscription_message:
+                subscription_message:
             with self.assertRaises(SystemExit) as e:
                 install_req(enpkg, config, "nose", FakeOptions())
             subscription_message.assert_called()
@@ -252,7 +247,7 @@ class TestInstallReq(TestCase):
 
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = create_prefix_with_eggs(Configuration(), self.prefix, [],
-                    remote_entries)
+                                            remote_entries)
             install_req(enpkg, Configuration(), "nose", FakeOptions())
             m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
                                   ('install', 'nose-1.3.0-1.egg')])
@@ -283,7 +278,7 @@ class TestInstallReq(TestCase):
 
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = create_prefix_with_eggs(config, self.prefix,
-                                             installed_entries, remote_entries)
+                                            installed_entries, remote_entries)
             install_req(enpkg, config, "nose", FakeOptions())
             m.assert_called_with([])
 
@@ -329,7 +324,8 @@ class TestInstallReq(TestCase):
             "size": 9227,
             "type": "egg",
             "version": "0.2.3"
-    }})
+        }
+    })
     def test_install_pypi_requirement(self):
         self.maxDiff = None
 
@@ -380,7 +376,8 @@ class TestInstallReq(TestCase):
             "size": 9227,
             "type": "egg",
             "version": "0.2.3"
-    }})
+        }
+    })
     def test_install_broken_pypi_requirement(self):
         self.maxDiff = None
 
@@ -427,6 +424,7 @@ class TestFetchJsonWithProgress(TestCase):
 
     @responses.activate
     def test_simple(self):
+
         # Given
         def callback(request):
             self.assertTrue("gzip" in
@@ -450,6 +448,7 @@ class TestFetchJsonWithProgress(TestCase):
 
     @responses.activate
     def test_handle_stripped_header(self):
+
         # Given
         def callback(request):
             self.assertTrue("gzip" in
@@ -473,6 +472,7 @@ class TestFetchJsonWithProgress(TestCase):
 
     @responses.activate
     def test_handle_stripped_header_incomplete_data(self):
+
         # Given
         def callback(request):
             self.assertTrue("gzip" in
@@ -490,4 +490,4 @@ class TestFetchJsonWithProgress(TestCase):
         session = Session.from_configuration(config)
         resp = session.fetch("https://acme.com/index.json")
         with self.assertRaises(requests.exceptions.ContentDecodingError):
-            data = _fetch_json_with_progress(resp, "acme.com", quiet=False)
+            _fetch_json_with_progress(resp, "acme.com", quiet=False)

@@ -1,15 +1,10 @@
 from __future__ import absolute_import
 
 import os
-import sys
 
 from os.path import abspath, dirname, join
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst._compat import TestCase
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import PY_VER
 
@@ -32,7 +27,6 @@ def _old_style_index_to_packages(index_path, python_version):
     for key, spec in index.items():
         spec['name'] = spec['name'].lower()
         spec['type'] = 'egg'
-        #spec['repo_dispname'] = self.name
         spec['store_location'] = os.path.dirname(index_path)
 
         if python_version == "*":
@@ -43,6 +37,7 @@ def _old_style_index_to_packages(index_path, python_version):
             packages.append(package)
 
     return packages
+
 
 def _old_style_indices_to_repository(indices, python_version=PY_VER):
     repository = Repository()
@@ -55,7 +50,8 @@ def _old_style_indices_to_repository(indices, python_version=PY_VER):
 def eggs_rs(c, req_string):
     return c.install_sequence(Requirement(req_string))
 
-class TestChain0(unittest.TestCase):
+
+class TestChain0(TestCase):
     def _resolve_factory(self, python_version):
         indices = [join(INDEX_REPO_DIR, fn) for fn in ['index-add.txt',
                                                        'index-5.1.txt',
@@ -87,7 +83,8 @@ class TestChain0(unittest.TestCase):
                          ['numpy-1.3.0-2.egg', 'scipy-0.8.0-2.egg',
                           'EPDCore-2.0.0-1.egg'])
 
-class TestChain1(unittest.TestCase):
+
+class TestChain1(TestCase):
     def _resolve_factory(self, python_version=PY_VER):
         indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
                    in ('epd', 'gpl')]
@@ -100,7 +97,7 @@ class TestChain1(unittest.TestCase):
             ('MySQL_python', 'gpl'),
             ('bitarray', 'epd'),
             ('foobar', None),
-            ]:
+        ]:
             resolve._latest_egg(Requirement(req_string))
 
     def test_get_dist(self):
@@ -113,7 +110,7 @@ class TestChain1(unittest.TestCase):
             ('swig 1.3.40-1', 'epd', 'swig-1.3.40-1.egg'),
             ('swig 1.3.40-2', 'epd', 'swig-1.3.40-2.egg'),
             ('foobar', None, None),
-            ]:
+        ]:
             self.assertEqual(resolve._latest_egg(Requirement(req_string)), egg)
 
     def test_reqs_dist(self):
@@ -127,11 +124,11 @@ class TestChain1(unittest.TestCase):
     def test_root(self):
         resolve = self._resolve_factory("2.7")
         self.assertEqual(resolve.install_sequence(Requirement('numpy 1.5.1'),
-                                                       mode='root'),
+                                                  mode='root'),
                          ['numpy-1.5.1-2.egg'])
 
         self.assertEqual(resolve.install_sequence(Requirement('numpy 1.5.1-1'),
-                                                       mode='root'),
+                                                  mode='root'),
                          ['numpy-1.5.1-1.egg'])
 
     def test_order1(self):
@@ -146,7 +143,7 @@ class TestChain1(unittest.TestCase):
                           'scipy-0.9.0-1.egg'])
 
 
-class TestChain2(unittest.TestCase):
+class TestChain2(TestCase):
     def _resolve_factory(self, python_version=PY_VER):
         indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
                    in ('open', 'runner', 'epd')]
@@ -174,7 +171,8 @@ class TestChain2(unittest.TestCase):
         lst = resolve.install_sequence(Requirement('ets'))
         self.assert_('numpy-1.5.1-2.egg' in lst)
 
-class TestCycle(unittest.TestCase):
+
+class TestCycle(TestCase):
     """Avoid an infinite recursion when the dependencies contain a cycle."""
 
     def _resolve_factory(self, python_version):
@@ -188,8 +186,8 @@ class TestCycle(unittest.TestCase):
             eg = eggs_rs(resolve, 'cycleParent 2.0-5')
         except Exception as e:
             self.assertIn("Loop", str(e),
-                          "unexpected exception message "+repr(e) )
+                          "unexpected exception message " + repr(e))
         else:
-            self.assertIsNone(eg, 
-                              "dependency cycle did not trigger an exception " 
+            self.assertIsNone(eg,
+                              "dependency cycle did not trigger an exception "
                               + repr(eg))

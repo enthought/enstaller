@@ -22,9 +22,9 @@ if PY2:
     string_types = (str, unicode)
 
     if sys.version_info < (2, 7):
-        from unittest2 import TestCase
+        from unittest2 import TestCase, skipIf
     else:
-        from unittest import TestCase
+        from unittest import TestCase, skipIf
     TestCase.assertNotRegex = TestCase.assertNotRegexpMatches
     TestCase.assertRegex = TestCase.assertRegexpMatches
 
@@ -39,7 +39,7 @@ else:
     import http.client as http_client
     from io import StringIO, BytesIO
 
-    from unittest import TestCase
+    from unittest import TestCase, skipIf
     TestCase.assertItemsEqual = TestCase.assertCountEqual
 
     NativeStringIO = StringIO

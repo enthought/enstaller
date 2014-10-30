@@ -44,12 +44,12 @@ def main(argv=None):
 
     p = argparse.ArgumentParser()
     p.add_argument("requirement",
-            help="Requirement string (e.g. 'mayavi')")
+                   help="Requirement string (e.g. 'mayavi')")
     p.add_argument("--platform",
-            help="Platform to consider (default: %(default)s). 'all' works as well",
-            default=plat)
+                   help="Platform to consider (default: %(default)s). 'all' works as well",
+                   default=plat)
     p.add_argument("--auth",
-            help="Authentication (default: enpkg credentials)")
+                   help="Authentication (default: enpkg credentials)")
 
     namespace = p.parse_args(argv)
 
@@ -75,5 +75,5 @@ def main(argv=None):
                            namespace.platform)
 
 
-if __name__ == "__main__": #  pragma: nocover
+if __name__ == "__main__":  # pragma: nocover
     main()

@@ -8,8 +8,6 @@ import tempfile
 
 from mock import patch
 
-import enstaller.config
-
 from enstaller.auth import DUMMY_USER, UserInfo
 from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           BroodBearerTokenAuth,
@@ -17,8 +15,7 @@ from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           OldRepoAuthManager)
 from enstaller.config import Configuration, write_default_config
 from enstaller.session import Session
-from enstaller.errors import (AuthFailedError, EnstallerException,
-                              InvalidConfiguration)
+from enstaller.errors import AuthFailedError, InvalidConfiguration
 from enstaller.tests.common import (DummyAuthenticator, fake_keyring,
                                     R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
@@ -28,6 +25,7 @@ basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription
 free_user = UserInfo(True, first_name="John", last_name="Smith", has_subscription=False)
 anon_user = UserInfo(False)
 old_auth_user = DUMMY_USER
+
 
 def compute_creds(username, password):
     s = "{0}:{1}".format(username, password)
@@ -300,6 +298,7 @@ class TestBroodAuthManager(AuthManagerBase):
 
         # Given
         headers = {}
+
         def callback(request):
             headers.update(request.headers)
             return (200, {}, b"")
@@ -320,7 +319,6 @@ class TestBroodAuthManager(AuthManagerBase):
     @responses.activate
     def test_http_failure(self):
         # Given
-        config = Configuration()
         responses.add(responses.POST, self.token_url, body="", status=403,
                       content_type='application/json')
 

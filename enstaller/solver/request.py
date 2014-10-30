@@ -2,7 +2,7 @@ class _Job(object):
     def __init__(self, requirement, job_type):
         self.requirement = requirement
 
-        if not job_type in ["install", "remove", "update", "upgrade"]:
+        if job_type not in ["install", "remove", "update", "upgrade"]:
             raise ValueError("invalid job type {0}".format(job_type))
         self.kind = job_type
 
@@ -11,7 +11,7 @@ class _Job(object):
             return False
         else:
             return self.kind == other.kind \
-                    and self.requirement == other.requirement
+                and self.requirement == other.requirement
 
 
 class Request(object):

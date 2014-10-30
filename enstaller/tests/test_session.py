@@ -86,7 +86,6 @@ class TestSession(TestCase):
         # Given
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
-        old_adapters = session._raw.adapters.copy()
 
         # When
         with session.etag():
@@ -130,7 +129,6 @@ class TestSession(TestCase):
         # Given
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
-        old_adapters = session._raw.adapters.copy()
 
         # When
         with mock.patch("enstaller.session.CacheControlAdapter") as m:
@@ -161,7 +159,6 @@ class TestSession(TestCase):
             for prefix in ("http://", "https://"):
                 self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
 
-
     def test_max_retries_with_etag(self):
         # Given
         config = Configuration()
@@ -178,7 +175,6 @@ class TestSession(TestCase):
             with session.etag():
                 for prefix in ("http://", "https://"):
                     self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
-
 
     def test_from_configuration(self):
         # Given
@@ -223,7 +219,7 @@ class TestSession(TestCase):
         # When/Then
         with Session.from_configuration(config) as session:
             resp = session._raw_get(url)
-            self.assertTrue(resp.request.headers["user-agent"]. \
+            self.assertTrue(resp.request.headers["user-agent"].
                             startswith(r_user_agent))
 
     @responses.activate

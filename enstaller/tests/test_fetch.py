@@ -1,31 +1,22 @@
 import os
 import os.path
 import shutil
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
-import mock
-
+from egginst._compat import TestCase
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.vendor import requests, responses
 
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch import _DownloadManager
-from enstaller.proxy_info import ProxyInfo
 from enstaller.repository import Repository, RepositoryPackageMetadata
-from enstaller.session import Session
 from enstaller.utils import compute_md5
 
 from enstaller.tests.common import mocked_session_factory
 
 
-class Test_DownloadManager(unittest.TestCase):
+class Test_DownloadManager(TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -162,4 +153,4 @@ class Test_DownloadManager(unittest.TestCase):
 
         # When/Then
         with self.assertRaises(requests.exceptions.HTTPError):
-            context = downloader.fetch(filename)
+            downloader.fetch(filename)

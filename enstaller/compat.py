@@ -9,6 +9,7 @@ def close_file_or_response(fp):
         # Compat shim for requests < 2
         fp._fp.close()
 
+
 def path_to_uri(path):
     """Convert the given path to a file:// uri."""
     return urlparse.urljoin("file:", pathname2url(path))

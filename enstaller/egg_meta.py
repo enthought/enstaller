@@ -13,19 +13,23 @@ egg_fmt = '%(name)s-%(version)s-%(build)d.egg'
 
 egg_pat = re.compile(r'([\w.]+)-([\w.]+)-(\d+)\.egg$')
 
+
 def is_valid_eggname(eggname):
     return bool(egg_pat.match(eggname))
+
 
 def split_eggname(eggname):
     m = egg_pat.match(eggname)
     assert m, eggname
     return m.group(1), m.group(2), int(m.group(3))
 
+
 def info_from_egg(path):
     z = zipfile.ZipFile(path)
     res = info_from_z(z)
     z.close()
     return res
+
 
 def update_index(dir_path, force=False, verbose=False):
     index_path = join(dir_path, 'index.json')

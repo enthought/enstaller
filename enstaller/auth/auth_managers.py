@@ -3,7 +3,7 @@ from __future__ import absolute_import
 import abc
 
 from egginst._compat import urlparse, with_metaclass
-from enstaller.errors import AuthFailedError, EnstallerException
+from enstaller.errors import AuthFailedError
 from enstaller.vendor import requests
 
 from .user_info import UserInfo

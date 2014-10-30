@@ -1,13 +1,14 @@
 import re
 import sys
 import time
-import string
+
 from os.path import isfile, join
 
 import egginst
 
 
 TIME_FMT = '%Y-%m-%d %H:%M:%S %z %Z'
+
 
 def now():
     """
@@ -16,8 +17,10 @@ def now():
     """
     return time.strftime(TIME_FMT)
 
+
 def is_diff(content):
     return any(s.startswith(('-', '+')) for s in content)
+
 
 def pretty_diff(diff):
     added = {}
@@ -36,6 +39,7 @@ def pretty_diff(diff):
         yield '-%s-%s' % (name, removed[name])
     for name in sorted(set(added) - changed):
         yield '+%s-%s' % (name, added[name])
+
 
 def pretty_content(content):
     if is_diff(content):

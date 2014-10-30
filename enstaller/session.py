@@ -64,7 +64,7 @@ class Session(object):
         If True, SSL CA are verified (default).
     """
     def __init__(self, authenticator, cache_directory, proxies=None,
-            verify=True, max_retries=0):
+                 verify=True, max_retries=0):
         self.proxies = proxies
         self.verify = verify
         self.cache_directory = cache_directory
