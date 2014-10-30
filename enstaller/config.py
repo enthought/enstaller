@@ -27,7 +27,7 @@ from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
-from enstaller.utils import real_prefix
+from enstaller.utils import real_prefix, under_venv
 from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
 from enstaller import plat
@@ -78,10 +78,10 @@ def configuration_read_search_order():
     """
     Return a list of directories where to look for the configuration file.
     """
-    paths = [
-        sys.prefix,
-        abs_expanduser("~"),
-    ]
+    paths = [sys.prefix]
+    if under_venv():
+        paths.append(real_prefix())
+    paths.append(abs_expanduser("~"))
 
     return [os.path.normpath(p) for p in paths]
 
