@@ -24,7 +24,7 @@ from enstaller import __version__
 
 from enstaller.config import (abs_expanduser,
     configuration_read_search_order,
-    input_auth, prepend_url, print_config, _is_using_epd_username,
+    prepend_url, print_config, _is_using_epd_username,
     convert_auth_if_required, _keyring_backend_name, write_default_config)
 from enstaller.config import (
     HOME_ENSTALLER4RC, KEYRING_SERVICE_NAME, SYS_PREFIX_ENSTALLER4RC,
@@ -35,24 +35,13 @@ from enstaller.errors import (EnstallerException,
 from enstaller.utils import PY_VER
 
 from .common import (make_keyring_available_context, make_keyring_unavailable,
-                     mock_input, mock_print, fake_keyring_context,
+                     mock_print, fake_keyring_context,
                      fake_keyring, DummyAuthenticator)
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
 
-
-class TestInputAuth(unittest.TestCase):
-    @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
-    def test_simple(self):
-        with mock_input(FAKE_USER):
-            self.assertEqual(input_auth(), (FAKE_USER, FAKE_PASSWORD))
-
-    @mock.patch("enstaller.config.getpass", lambda ignored: FAKE_PASSWORD)
-    def test_empty(self):
-        with mock_input(""):
-            self.assertEqual(input_auth(), (None, None))
 
 class TestWriteConfig(unittest.TestCase):
     def setUp(self):

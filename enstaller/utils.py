@@ -3,9 +3,11 @@ from __future__ import print_function
 from egginst._compat import urlparse
 from egginst._compat import PY2, input, pathname2url, unquote, url2pathname
 
+import getpass
 import json
 import logging
 import sys
+import textwrap
 import zlib
 
 from os.path import abspath, expanduser, getmtime, getsize, isdir, isfile, join
@@ -206,3 +208,17 @@ def decode_json_from_buffer(data):
         raise ValueError("Invalid index data, try again ({0!r})".format(e))
 
     return json.loads(decoded_data)
+
+
+def input_auth():
+    """
+    Prompt user for username and password.  Return (username, password)
+    tuple or (None, None) if left blank.
+    """
+    print(textwrap.dedent("""\
+        Please enter the email address and password for your Canopy / EPD
+        subscription.  """))
+    username = input('Email (or username): ').strip()
+    if not username:
+        return None, None
+    return username, getpass.getpass('Password: ')

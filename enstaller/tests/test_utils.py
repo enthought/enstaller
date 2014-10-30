@@ -16,9 +16,10 @@ from egginst.main import name_version_fn
 from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
     DUMMY_EGG_MTIME, DUMMY_EGG_MD5
 
-from enstaller.utils import canonical, comparable_version, path_to_uri, \
-    uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv, prompt_yes_no
-from .common import mock_print, mock_raw_input
+from enstaller.utils import canonical, comparable_version, input_auth, \
+    path_to_uri, uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv, \
+    prompt_yes_no
+from .common import mock_input, mock_print, mock_raw_input
 
 
 class TestUtils(unittest.TestCase):
@@ -207,6 +208,22 @@ class TestPromptYesNo(unittest.TestCase):
         self.assertEqual(m.value.rstrip(), message)
         self.assertTrue(res)
         mocked_input.assert_called()
+
+
+FAKE_USER = "john.doe"
+FAKE_PASSWORD = "fake_password"
+
+
+class TestInputAuth(unittest.TestCase):
+    @mock.patch("enstaller.utils.getpass.getpass", lambda ignored: FAKE_PASSWORD)
+    def test_simple(self):
+        with mock_input(FAKE_USER):
+            self.assertEqual(input_auth(), (FAKE_USER, FAKE_PASSWORD))
+
+    @mock.patch("enstaller.utils.getpass.getpass", lambda ignored: FAKE_PASSWORD)
+    def test_empty(self):
+        with mock_input(""):
+            self.assertEqual(input_auth(), (None, None))
 
 
 if __name__ == '__main__':
