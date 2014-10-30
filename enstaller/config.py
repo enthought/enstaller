@@ -74,6 +74,20 @@ def _keyring_backend_name():
     return str(type(keyring.get_keyring()))
 
 
+def legacy_configuration_read_search_order():
+    """
+    Return a list of directories where to look for the configuration file.
+
+    Legacy order, don't use outside canopy.
+    """
+    paths = [
+        abs_expanduser("~"),
+        real_prefix(),
+    ]
+
+    return [os.path.normpath(p) for p in paths]
+
+
 def configuration_read_search_order():
     """
     Return a list of directories where to look for the configuration file.
@@ -356,7 +370,7 @@ class Configuration(object):
                       "Configuration.from_filename with an explicit "
                       "filename instead", DeprecationWarning)
         config_path = None
-        for p in configuration_read_search_order():
+        for p in legacy_configuration_read_search_order():
             candidate = os.path.join(p, ENSTALLER4RC_FILENAME)
             if isfile(candidate):
                 config_path = candidate
