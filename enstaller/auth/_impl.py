@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 
-from enstaller.vendor import requests
+import base64
+
+from enstaller.errors import InvalidConfiguration
 
 
 AUTH_KIND_CLEAR = "auth_clear"
@@ -41,6 +43,16 @@ def subscription_message(config, user):
 
 
 class UserPasswordAuth(object):
+    @classmethod
+    def from_encoded_auth(cls, encoded_auth):
+        parts = base64.decodestring(encoded_auth.encode("utf8")). \
+            decode("utf8"). \
+            split(":")
+        if len(parts) == 2:
+            return tuple(parts)
+        else:
+            raise InvalidConfiguration("Invalid auth line")
+
     def __init__(self, username, password):
         self.username = username
         self.password = password
@@ -51,5 +63,5 @@ class UserPasswordAuth(object):
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
-                and self.username == other.username \
-                and self.password == other.password
+            and self.username == other.username \
+            and self.password == other.password

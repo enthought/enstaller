@@ -2,6 +2,7 @@ import os.path
 
 from egginst._compat import PY2, string_types, urllib
 
+from enstaller.auth import UserPasswordAuth
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
 from enstaller.vendor import jsonschema
@@ -95,7 +96,7 @@ _SCHEMA = {
 
 def load_configuration_from_yaml(cls, filename_or_fp):
     # FIXME: local import to workaround circular import
-    from enstaller.config import _decode_auth, STORE_KIND_BROOD
+    from enstaller.config import STORE_KIND_BROOD
     if isinstance(filename_or_fp, string_types):
         with open(filename_or_fp, "rt") as fp:
             data = yaml.load(fp)
@@ -120,13 +121,15 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         if authentication_type == _AUTHENTICATION_TYPE_BASIC:
             username = authentication[_USERNAME]
             password = authentication[_PASSWORD]
+            auth = UserPasswordAuth(username, password)
         elif authentication_type == _AUTHENTICATION_TYPE_DIGEST:
-            username, password = _decode_auth(authentication[_AUTH_STRING])
+            auth_string = authentication[_AUTH_STRING]
+            auth = UserPasswordAuth.from_encoded_auth(auth_string)
         else:
             msg = "Unknown authentication type {0!r}". \
                   format(authentication_type)
             raise InvalidConfiguration(msg)
-        config.update(auth=(username, password))
+        config.update(auth=auth)
 
     if _STORE_URL in data:
         config.update(store_url=data[_STORE_URL])

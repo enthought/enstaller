@@ -127,14 +127,6 @@ def _get_writable_local_dir(local_dir):
     return tempfile.mkdtemp()
 
 
-def _decode_auth(s):
-    parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
-    if len(parts) == 2:
-        return tuple(parts)
-    else:
-        raise InvalidConfiguration("Invalid auth line")
-
-
 def _encode_string_base64(s):
     return base64.encodestring(s.encode("utf8")).decode("utf8")
 
@@ -285,8 +277,7 @@ class Configuration(object):
             ret = cls()
 
             def epd_auth_to_auth(epd_auth):
-                username, password = _decode_auth(epd_auth)
-                ret.update(auth=(username, password))
+                ret.update(auth=UserPasswordAuth.from_encoded_auth(epd_auth))
 
             def epd_username_to_auth(username):
                 if keyring is None:
@@ -557,11 +548,11 @@ class Configuration(object):
 
     def set_auth_from_encoded(self, value):
         try:
-            username, password = _decode_auth(value)
+            auth = UserPasswordAuth.from_encoded_auth(value)
         except Exception:
             raise InvalidConfiguration("Invalid EPD_auth value")
         else:
-            self.update(auth=(username, password))
+            self.update(auth=auth)
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
