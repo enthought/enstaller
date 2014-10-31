@@ -27,6 +27,7 @@ from egginst.progress import console_progress_manager_factory
 
 import enstaller
 
+from enstaller.auth import UserPasswordAuth
 from enstaller.errors import (EnpkgError, EnstallerException,
                               InvalidPythonPathConfiguration,
                               InvalidConfiguration,
@@ -180,12 +181,18 @@ def _get_config_candidate():
             return path
 
 
-def _invalid_authentication_message(auth_url, username, original_error):
+def _invalid_authentication_message(auth_url, auth, original_error):
+    if isinstance(auth, UserPasswordAuth):
+        header = "Could not authenticate with user '{0}' against {1!r}.". \
+                 format(auth.username, auth_url)
+    else:
+        msg = "Auth type {0!r} not yet implemented".format(type(auth))
+        raise NotImplementedError(msg)
     msg = textwrap.dedent("""\
-        Could not authenticate with user '{0}' against {1!r}. Please check
-        your credentials/configuration and try again (original error is:
-        {2!r}).
-        """.format(username, auth_url, str(original_error)))
+        {0}
+        Please check your credentials/configuration and try again
+        (original error is: {1!r}).
+        """.format(header, str(original_error)))
     return msg
 
 
@@ -196,16 +203,15 @@ def ensure_authenticated_config(config, config_filename, session,
     except requests.exceptions.SSLError as e:
         humanize_ssl_error_and_die(e, config.store_url)
     except AuthFailedError as e:
-        username, _ = config.auth
         if e.original_exception is None:
             url = config.store_url
-            msg = _invalid_authentication_message(url, username, e.message)
+            msg = _invalid_authentication_message(url, config.auth, e.message)
         else:
             if config.use_webservice:
                 url = config.store_url
             else:
                 url = e.original_exception.request.url
-            msg = _invalid_authentication_message(url, username,
+            msg = _invalid_authentication_message(url, config.auth,
                                                   str(e.original_exception))
         print(msg)
         print("\nYou can change your authentication details with "
@@ -231,15 +237,18 @@ def configure_authentication_or_exit(config, config_filename,
         print("No valid username entered (no modification was written).")
         sys.exit(-1)
 
+    auth = UserPasswordAuth(username, password)
+
     try:
-        config._checked_change_auth((username, password), session,
-                                    config_filename)
+        config._checked_change_auth(auth, session, config_filename)
     except AuthFailedError as e:
         if e.original_exception is None:
-            msg = _invalid_authentication_message(config.store_url, username,
+            msg = _invalid_authentication_message(config.store_url,
+                                                  auth,
                                                   str(e))
         else:
-            msg = _invalid_authentication_message(config.store_url, username,
+            msg = _invalid_authentication_message(config.store_url,
+                                                  auth,
                                                   str(e.original_exception))
         print(msg)
         print("\nNo modification was written.")

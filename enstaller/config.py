@@ -21,8 +21,9 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
-                            UserInfo)
+from enstaller.auth import (_INDEX_NAME, AUTH_KIND_CLEAR, DUMMY_USER,
+                            subscription_message, UserInfo,
+                            UserPasswordAuth)
 from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
@@ -160,7 +161,10 @@ def write_default_config(filename):
     else:
         config = Configuration()
 
-        username, password = config.auth
+        if not isinstance(config.auth, UserPasswordAuth):
+            raise NotImplemented("Auth != UserPasswordAuth not supported")
+
+        username, password = config.auth.username, config.auth.password
         if username and password:
             authline = 'EPD_auth = %r' % config.encoded_auth
             auth_section = textwrap.dedent("""
@@ -381,7 +385,7 @@ class Configuration(object):
         """
         (username, password) pair.
         """
-        return (self._username, self._password)
+        return UserPasswordAuth(self._username, self._password)
 
     @property
     def autoupdate(self):
@@ -596,7 +600,10 @@ class Configuration(object):
         filename : str
             The path of the written file.
         """
-        username, password = self.auth
+        if not isinstance(self.auth, UserPasswordAuth):
+            raise NotImplemented("Auth != UserPasswordAuth not supported")
+
+        username, password = self.auth.username, self.auth.password
         if username and password:
             authline = 'EPD_auth = %r' % self.encoded_auth
             auth_section = textwrap.dedent("""

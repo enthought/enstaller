@@ -20,6 +20,8 @@ from enstaller.tests.common import (DummyAuthenticator, fake_keyring,
                                     R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
 
+from .._impl import UserPasswordAuth
+
 
 basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription=True)
 free_user = UserInfo(True, first_name="John", last_name="Smith", has_subscription=False)
@@ -81,7 +83,8 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             usr = config._checked_change_auth(auth, session, self.f)
 
             self.assertTrue(usr.is_authenticated)
-            self.assertEqual(config.auth, ("valid_user", "valid_password"))
+            self.assertEqual(config.auth,
+                             UserPasswordAuth("valid_user", "valid_password"))
 
     def test_remote_success(self):
         write_default_config(self.f)
