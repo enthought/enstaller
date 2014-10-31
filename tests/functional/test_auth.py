@@ -18,8 +18,9 @@ import mock
 
 from enstaller.vendor import responses
 
+from enstaller.auth import UserPasswordAuth
 from enstaller.main import main, main_noexc
-from enstaller.config import (_encode_auth, _set_keyring_password,
+from enstaller.config import (_set_keyring_password,
                               Configuration, write_default_config)
 
 from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
@@ -33,7 +34,7 @@ from .common import (
 
 FAKE_USER = "nono"
 FAKE_PASSWORD = "le petit robot"
-FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
+FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
 
 class TestAuth(unittest.TestCase):
     @contextlib.contextmanager

@@ -20,8 +20,7 @@ from enstaller.config import (prepend_url, print_config,
                               _is_using_epd_username, convert_auth_if_required,
                               _keyring_backend_name, write_default_config)
 from enstaller.config import (KEYRING_SERVICE_NAME,
-                              Configuration, add_url,
-                              _encode_auth, _encode_string_base64)
+                              Configuration, add_url)
 from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
@@ -34,7 +33,7 @@ from .common import (make_keyring_available_context, make_keyring_unavailable,
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_AUTH = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)
-FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
+FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
 
 
 class TestWriteConfig(unittest.TestCase):
@@ -53,7 +52,7 @@ class TestWriteConfig(unittest.TestCase):
 
         config = Configuration.from_file(self.f)
 
-        self.assertEqual(config.encoded_auth, FAKE_CREDS)
+        self.assertEqual(config.auth._encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.proxy_dict, {})
@@ -101,7 +100,7 @@ class TestWriteConfig(unittest.TestCase):
         config = Configuration.from_file(self.f)
         config.update(store_url="https://acme.com")
 
-        self.assertEqual(config.encoded_auth, FAKE_CREDS)
+        self.assertEqual(config.auth._encoded_auth, FAKE_CREDS)
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.proxy, None)
         self.assertEqual(config.use_webservice, True)
@@ -392,15 +391,7 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(s)
-        self.assertEqual(config.encoded_auth, FAKE_CREDS)
         self.assertEqual(config.auth, FAKE_AUTH)
-
-    @make_keyring_unavailable
-    def test_epd_invalid_auth(self):
-        s = StringIO("EPD_auth = '{0}'".format(_encode_string_base64(FAKE_USER)))
-
-        with self.assertRaises(InvalidConfiguration):
-            Configuration.from_file(s)
 
     @make_keyring_unavailable
     def test_epd_username_wo_keyring(self):
@@ -413,7 +404,7 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration.from_file(s)
         self.assertFalse(config.is_auth_configured)
         with self.assertRaises(InvalidConfiguration):
-            config.encoded_auth
+            config.auth._encoded_auth
 
     def test_epd_username(self):
         with fake_keyring_context() as mocked_keyring:
@@ -423,7 +414,7 @@ class TestConfigurationParsing(unittest.TestCase):
             config = Configuration.from_file(s)
 
             self.assertEqual(config.auth, FAKE_AUTH)
-            self.assertEqual(config.encoded_auth, FAKE_CREDS)
+            self.assertEqual(config.auth._encoded_auth, FAKE_CREDS)
 
     def test_epd_auth(self):
         """
@@ -433,7 +424,6 @@ class TestConfigurationParsing(unittest.TestCase):
         config = Configuration.from_file(s)
 
         self.assertEqual(config.auth, FAKE_AUTH)
-        self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
     def test_store_kind(self):
         """
@@ -1090,7 +1080,7 @@ class TestYamlConfiguration(unittest.TestCase):
             authentication:
               type: digest
               auth: {0}
-        """.format(_encode_auth("nono@acme.com", "ulysse")))
+        """.format(UserPasswordAuth("nono@acme.com", "ulysse")._encoded_auth))
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))

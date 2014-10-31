@@ -2,7 +2,6 @@
 # Author: Ilan Schnell <ischnell@enthought.com>
 from __future__ import absolute_import, print_function
 
-import base64
 import logging
 import re
 import os
@@ -127,15 +126,6 @@ def _get_writable_local_dir(local_dir):
     return tempfile.mkdtemp()
 
 
-def _encode_string_base64(s):
-    return base64.encodestring(s.encode("utf8")).decode("utf8")
-
-
-def _encode_auth(username, password):
-    s = "{0}:{1}".format(username, password)
-    return _encode_string_base64(s).rstrip()
-
-
 def write_default_config(filename):
     """
     Write a default configuration file at the given location.
@@ -158,7 +148,7 @@ def write_default_config(filename):
 
         username, password = config.auth.username, config.auth.password
         if username and password:
-            authline = 'EPD_auth = %r' % config.encoded_auth
+            authline = 'EPD_auth = %r' % config.auth._encoded_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
@@ -386,19 +376,6 @@ class Configuration(object):
         return self._autoupdate
 
     @property
-    def encoded_auth(self):
-        """
-        Auth information, encoded as expected by EPD_auth.
-        """
-        if not self.is_auth_configured:
-            raise InvalidConfiguration("EPD_auth is not available when "
-                                       "auth has not been configured.")
-        if not isinstance(self._auth, UserPasswordAuth):
-            msg = "Cannot access encoded auth for {0!r}".format(type(self._auth))
-            raise ValueError(msg)
-        return _encode_auth(self._auth.username, self._auth.password)
-
-    @property
     def filename(self):
         """
         The filename this configuration was created from. May be None if the
@@ -443,10 +420,7 @@ class Configuration(object):
 
         """
         if isinstance(self._auth, UserPasswordAuth):
-            if self._auth.username and self._auth.password is not None:
-                return True
-            else:
-                return False
+            return self._auth._is_auth_configured
         else:
             return False
 
@@ -576,7 +550,7 @@ class Configuration(object):
 
         username, password = self.auth.username, self.auth.password
         if username and password:
-            authline = 'EPD_auth = %r' % self.encoded_auth
+            authline = 'EPD_auth = %r' % self.auth._encoded_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
@@ -627,14 +601,17 @@ class Configuration(object):
         with open(filename, 'r') as fi:
             data = fi.read()
 
-        if not self.is_auth_configured:
+        if not isinstance(self.auth, UserPasswordAuth):
+            raise NotImplemented("Auth != UserPasswordAuth not supported")
+
+        if not self.auth._is_auth_configured:
             if pat.search(data):
                 data = pat.sub("", data)
             with open(filename, 'w') as fo:
                 fo.write(data)
             return
 
-        authline = 'EPD_auth = \'%s\'' % self.encoded_auth
+        authline = 'EPD_auth = \'%s\'' % self.auth._encoded_auth
 
         if pat.search(data):
             data = pat.sub(authline, data)

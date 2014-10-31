@@ -49,7 +49,7 @@ class UserPasswordAuth(object):
             decode("utf8"). \
             split(":")
         if len(parts) == 2:
-            return tuple(parts)
+            return cls(*parts)
         else:
             raise InvalidConfiguration("Invalid auth line")
 
@@ -58,10 +58,38 @@ class UserPasswordAuth(object):
         self.password = password
 
     @property
+    def _encoded_auth(self):
+        """
+        Auth information, encoded as expected by EPD_auth.
+        """
+        if not self._is_auth_configured:
+            raise InvalidConfiguration("EPD_auth is not available when "
+                                       "auth has not been configured.")
+        return _encode_auth(self.username, self.password)
+
+    @property
     def request_adapter(self):
         return (self.username, self.password)
+
+    @property
+    def _is_auth_configured(self):
+        if self.username and self.password is not None:
+            return True
+        else:
+            return False
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
             and self.username == other.username \
             and self.password == other.password
+
+
+def _encode_string_base64(s):
+    return base64.encodestring(s.encode("utf8")).decode("utf8")
+
+
+def _encode_auth(username, password):
+    s = "{0}:{1}".format(username, password)
+    return _encode_string_base64(s).rstrip()
+
+
