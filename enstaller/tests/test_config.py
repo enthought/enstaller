@@ -208,19 +208,6 @@ class TestGetAuth(unittest.TestCase):
 
         self.assertEqual(config.auth, FAKE_AUTH)
 
-    def test_with_auth_and_keyring(self):
-        with open(self.f, "w") as fp:
-            fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
-        config = Configuration.from_file(self.f)
-
-        attrs = {"get_password.return_value": FAKE_PASSWORD}
-        mocked_keyring = mock.Mock(**attrs)
-        with mock.patch("enstaller.config.keyring", mocked_keyring):
-            config.update(username=FAKE_USER)
-
-            self.assertFalse(mocked_keyring.get_password.called)
-            self.assertEqual(config.auth, FAKE_AUTH)
-
     @make_keyring_unavailable
     def test_without_auth_or_keyring(self):
         config = Configuration()
@@ -406,7 +393,7 @@ class TestConfigurationParsing(unittest.TestCase):
 
         config = Configuration.from_file(s)
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
-        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.auth, FAKE_AUTH)
 
     @make_keyring_unavailable
     def test_epd_invalid_auth(self):
@@ -435,7 +422,7 @@ class TestConfigurationParsing(unittest.TestCase):
             s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
             config = Configuration.from_file(s)
 
-            self.assertEqual(config.username, FAKE_USER)
+            self.assertEqual(config.auth, FAKE_AUTH)
             self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
     def test_epd_auth(self):
@@ -445,7 +432,7 @@ class TestConfigurationParsing(unittest.TestCase):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
         config = Configuration.from_file(s)
 
-        self.assertEqual(config.username, FAKE_USER)
+        self.assertEqual(config.auth, FAKE_AUTH)
         self.assertEqual(config.encoded_auth, FAKE_CREDS)
 
     def test_store_kind(self):
@@ -754,8 +741,8 @@ class TestConfiguration(unittest.TestCase):
 
             config.reset_auth()
 
-            self.assertIsNone(config._username)
-            self.assertIsNone(config._password)
+            self.assertIsNone(config.auth.username)
+            self.assertIsNone(config.auth.password)
             self.assertFalse(config.is_auth_configured)
 
     def test_set_prefix(self):
@@ -777,8 +764,7 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration()
         config.set_auth_from_encoded(FAKE_CREDS)
 
-        self.assertEqual(config._username, FAKE_USER)
-        self.assertEqual(config._password, FAKE_PASSWORD)
+        self.assertEqual(config.auth, FAKE_AUTH)
 
     def test_set_invalid_epd_auth(self):
         config = Configuration()
@@ -899,7 +885,6 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration.from_file(fp)
 
         # Then
-        self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, FAKE_AUTH)
         self.assertSamePath(config.repository_cache, r_repository_cache)
         self.assertSamePath(config.prefix, r_prefix)
@@ -933,7 +918,6 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration.from_file(fp)
 
         # Then
-        self.assertEqual(config.username, FAKE_USER)
         self.assertEqual(config.auth, FAKE_AUTH)
         self.assertSamePath(config.repository_cache, r_repository_cache)
         self.assertSamePath(config.prefix, r_prefix)

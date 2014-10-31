@@ -208,12 +208,13 @@ def convert_auth_if_required(filename):
     did_convert = False
     if _is_using_epd_username(filename):
         config = Configuration.from_file(filename)
-        password = _get_keyring_password(config.username)
+        username = config.auth.username
+        password = _get_keyring_password(username)
         if password is None:
             raise EnstallerException("Cannot convert password: no password "
                                      "found in keyring")
         else:
-            config.set_auth(config.username, password)
+            config.set_auth(username, password)
             config._change_auth(filename)
             did_convert = True
 
@@ -288,11 +289,11 @@ class Configuration(object):
                 ret.set_auth(username, password)
 
             def epd_username_to_auth(username):
-                ret._username = username
                 if keyring is None:
-                    ret._password = None
+                    password = None
                 else:
-                    ret._password = _get_keyring_password(username)
+                    password = _get_keyring_password(username)
+                ret.set_auth(username, password)
 
             try:
                 parsed = parse_assignments(fp)
@@ -326,6 +327,8 @@ class Configuration(object):
             return _create(filename)
 
     def __init__(self):
+        # Kept for backward compat.
+        self._auth = UserPasswordAuth(None, None)
         self._autoupdate = True
         self._noapp = False
         self._proxy = None
@@ -338,9 +341,6 @@ class Configuration(object):
         self._store_kind = STORE_KIND_LEGACY
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
-
-        self._username = None
-        self._password = None
 
         self._filename = None
         self._platform = plat.custom_plat
@@ -355,7 +355,6 @@ class Configuration(object):
             ("verify_ssl", "_verify_ssl"),
             ("use_pypi", "_use_pypi"),
             ("use_webservice", "_use_webservice"),
-            ("username", "_username"),
         ]
         for name, private_attribute in simple_attributes:
             self._name_to_setter[name] = \
@@ -383,9 +382,9 @@ class Configuration(object):
     @property
     def auth(self):
         """
-        (username, password) pair.
+        The auth object that may be passed to Session.authenticate
         """
-        return UserPasswordAuth(self._username, self._password)
+        return self._auth
 
     @property
     def autoupdate(self):
@@ -402,7 +401,10 @@ class Configuration(object):
         if not self.is_auth_configured:
             raise InvalidConfiguration("EPD_auth is not available when "
                                        "auth has not been configured.")
-        return _encode_auth(self._username, self._password)
+        if not isinstance(self._auth, UserPasswordAuth):
+            msg = "Cannot access encoded auth for {0!r}".format(type(self._auth))
+            raise ValueError(msg)
+        return _encode_auth(self._auth.username, self._auth.password)
 
     @property
     def filename(self):
@@ -448,8 +450,11 @@ class Configuration(object):
         authentication information is correct.
 
         """
-        if self._username and self._password is not None:
-            return True
+        if isinstance(self._auth, UserPasswordAuth):
+            if self._auth.username and self._auth.password is not None:
+                return True
+            else:
+                return False
         else:
             return False
 
@@ -522,13 +527,6 @@ class Configuration(object):
         return self._verify_ssl
 
     @property
-    def username(self):
-        """
-        Username
-        """
-        return self._username
-
-    @property
     def use_pypi(self):
         """
         Whether to load pypi repositories (in `webservice` mode).
@@ -563,17 +561,15 @@ class Configuration(object):
         password : str
             The password
         """
-        if username is None or password is None:
+        if username is None:
             raise InvalidConfiguration(
                 "invalid authentication arguments: "
                 "{0}:{1}".format(username, password))
         else:
-            self._username = username
-            self._password = password
+            self._auth = UserPasswordAuth(username, password)
 
     def reset_auth(self):
-        self._username = None
-        self._password = None
+        self._auth = UserPasswordAuth(None, None)
 
     def set_auth_from_encoded(self, value):
         try:
