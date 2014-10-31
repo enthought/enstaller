@@ -122,7 +122,7 @@ Subscription level: Canopy / EPD Basic or above
 
         config = Configuration()
         config.update(store_url="https://acme.com")
-        config.set_auth(("nono", "le gros robot"))
+        config.update(auth=("nono", "le gros robot"))
 
         # When
         with self.assertRaises(SystemExit) as e:

@@ -214,7 +214,7 @@ def convert_auth_if_required(filename):
             raise EnstallerException("Cannot convert password: no password "
                                      "found in keyring")
         else:
-            config.set_auth((username, password))
+            config.update(auth=(username, password))
             config._change_auth(filename)
             did_convert = True
 
@@ -286,14 +286,14 @@ class Configuration(object):
 
             def epd_auth_to_auth(epd_auth):
                 username, password = _decode_auth(epd_auth)
-                ret.set_auth((username, password))
+                ret.update(auth=(username, password))
 
             def epd_username_to_auth(username):
                 if keyring is None:
                     password = None
                 else:
                     password = _get_keyring_password(username)
-                ret.set_auth((username, password))
+                ret.update(auth=(username, password))
 
             try:
                 parsed = parse_assignments(fp)
@@ -361,6 +361,7 @@ class Configuration(object):
                 self._simple_attribute_set_factory(private_attribute)
 
         self._name_to_setter.update({
+            "auth": self._set_auth,
             "indexed_repositories": self._set_indexed_repositories,
             "max_retries": self._set_max_retries,
             "prefix": self._set_prefix,
@@ -551,25 +552,6 @@ class Configuration(object):
     # --------------
     # Public methods
     # --------------
-    def set_auth(self, auth):
-        """ Set the internal authentication information.
-
-        Parameters
-        ----------
-        auth : Auth-like
-            The authentication information. May be a (username, password)
-            tuple, or an *Auth subclass.
-        """
-        if isinstance(auth, tuple) and len(auth) == 2:
-            username, password = auth
-            if username is None:
-                raise InvalidConfiguration(
-                    "invalid authentication arguments: "
-                    "{0}:{1}".format(username, password))
-            self._auth = UserPasswordAuth(username, password)
-        else:
-            self._auth = auth
-
     def reset_auth(self):
         self._auth = UserPasswordAuth(None, None)
 
@@ -579,7 +561,7 @@ class Configuration(object):
         except Exception:
             raise InvalidConfiguration("Invalid EPD_auth value")
         else:
-            self.set_auth((username, password))
+            self.update(auth=(username, password))
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
@@ -677,12 +659,31 @@ class Configuration(object):
         user = {}
 
         session.authenticate(auth)
-        self.set_auth(auth)
+        self.update(auth=auth)
         self._change_auth(filename)
 
         user = UserInfo.from_session(session)
         print(subscription_message(self, user))
         return user
+
+    def _set_auth(self, auth):
+        """ Set the internal authentication information.
+
+        Parameters
+        ----------
+        auth : Auth-like
+            The authentication information. May be a (username, password)
+            tuple, or an *Auth subclass.
+        """
+        if isinstance(auth, tuple) and len(auth) == 2:
+            username, password = auth
+            if username is None:
+                raise InvalidConfiguration(
+                    "invalid authentication arguments: "
+                    "{0}:{1}".format(username, password))
+            self._auth = UserPasswordAuth(username, password)
+        else:
+            self._auth = auth
 
     def _set_indexed_repositories(self, urls):
         self._indexed_repositories = tuple(fill_url(url) for url in urls)

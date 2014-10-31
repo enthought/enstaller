@@ -101,7 +101,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         config = Configuration()
 
         with self.assertRaises(InvalidConfiguration):
-            config.set_auth((None, None))
+            config.update(auth=(None, None))
 
 
 class AuthManagerBase(unittest.TestCase):

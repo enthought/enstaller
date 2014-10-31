@@ -48,7 +48,7 @@ class TestWriteConfig(unittest.TestCase):
     @make_keyring_unavailable
     def test_simple(self):
         config = Configuration()
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
@@ -95,7 +95,7 @@ class TestWriteConfig(unittest.TestCase):
     @make_keyring_unavailable
     def test_change_store_url(self):
         config = Configuration()
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         config.write(self.f)
 
         config = Configuration.from_file(self.f)
@@ -195,7 +195,7 @@ class TestGetAuth(unittest.TestCase):
     def test_with_keyring(self):
         with make_keyring_available_context() as mocked_keyring:
             config = Configuration()
-            config.set_auth((FAKE_USER, FAKE_PASSWORD))
+            config.update(auth=(FAKE_USER, FAKE_PASSWORD))
 
             self.assertEqual(config.auth,
                              UserPasswordAuth(FAKE_USER, FAKE_PASSWORD))
@@ -204,7 +204,7 @@ class TestGetAuth(unittest.TestCase):
     @make_keyring_unavailable
     def test_with_auth(self):
         config = Configuration()
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
 
         self.assertEqual(config.auth, FAKE_AUTH)
 
@@ -224,14 +224,14 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
         # Given
         config = Configuration()
-        config.set_auth(("", ""))
+        config.update(auth=("", ""))
 
         # When/Then
         self.assertFalse(config.is_auth_configured)
 
         # Given
         config = Configuration()
-        config.set_auth(("yoyoma", ""))
+        config.update(auth=("yoyoma", ""))
 
         # When/Then
         self.assertTrue(config.is_auth_configured)
@@ -245,7 +245,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config = Configuration.from_file(fp.name)
         self.assertEqual(config.auth, FAKE_AUTH)
 
-        config.set_auth((FAKE_USER, r_new_password))
+        config.update(auth=(FAKE_USER, r_new_password))
         config._change_auth(fp.name)
         new_config = Configuration.from_file(fp.name)
 
@@ -273,7 +273,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
         # When
         config = Configuration.from_file(fp.name)
-        config.set_auth(("user", "dummy"))
+        config.update(auth=("user", "dummy"))
         config._change_auth(fp.name)
 
         # Then
@@ -292,7 +292,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config = Configuration.from_file(fp.name)
         self.assertEqual(config.auth, UserPasswordAuth(None, None))
 
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         self.assertEqual(config.auth,
                          UserPasswordAuth(FAKE_USER, FAKE_PASSWORD))
 
@@ -304,7 +304,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config = Configuration()
         self.assertEqual(config.auth, UserPasswordAuth(None, None))
 
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         config.write(fp.name)
 
         new_config = Configuration.from_file(fp.name)
@@ -318,7 +318,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration.from_file(fp.name)
-        config.set_auth((FAKE_USER, FAKE_PASSWORD))
+        config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         config._change_auth(fp.name)
 
         with open(fp.name) as fp:
@@ -334,7 +334,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write(config_data)
 
         config = Configuration.from_file(fp.name)
-        config.set_auth(None, None)
+        config.update(auth=(None, None))
         config._change_auth(fp.name)
 
         with open(fp.name, "r") as fp:
@@ -737,7 +737,7 @@ class TestConfiguration(unittest.TestCase):
     def test_reset_auth_with_keyring(self):
         with make_keyring_available_context():
             config = Configuration()
-            config.set_auth((FAKE_USER, FAKE_PASSWORD))
+            config.update(auth=(FAKE_USER, FAKE_PASSWORD))
 
             config.reset_auth()
 
