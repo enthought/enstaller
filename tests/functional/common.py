@@ -86,7 +86,7 @@ def use_given_config_context(filename):
 
 def fake_configuration_and_auth(f):
     config = Configuration()
-    config.set_auth("john", "doe")
+    config.set_auth(("john", "doe"))
     @functools.wraps(f)
     @responses.activate
     def wrapper(*a, **kw):
@@ -117,7 +117,7 @@ def enstaller_version(version, is_released=True):
 @fake_keyring
 def authenticated_config(f):
     config = Configuration()
-    config.set_auth("dummy", "dummy")
+    config.set_auth(("dummy", "dummy"))
 
     m = mock.Mock()
     m.return_value = config

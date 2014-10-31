@@ -289,7 +289,7 @@ class TestInstallReq(unittest.TestCase):
 
         auth = ("nono", "le gros robot")
         session.authenticate(auth)
-        config.set_auth(*auth)
+        config.set_auth(auth)
 
         r_output = textwrap.dedent("""
         Cannot install 'scipy', as this package (or some of its requirements) are not

@@ -126,7 +126,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
             msg = "Unknown authentication type {0!r}". \
                   format(authentication_type)
             raise InvalidConfiguration(msg)
-        config.set_auth(username, password)
+        config.set_auth((username, password))
 
     if _STORE_URL in data:
         config.update(store_url=data[_STORE_URL])

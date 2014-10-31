@@ -224,7 +224,7 @@ class TestAuth(unittest.TestCase):
         repo = "http://acme.com/repo/ets/"
         config = Configuration()
         config.update(use_webservice=False, indexed_repositories=[repo])
-        config.set_auth("nono", "le petit robot")
+        config.set_auth(("nono", "le petit robot"))
         config.write(self.config)
 
         url = repo + "index.json"
@@ -258,7 +258,7 @@ class TestAuth(unittest.TestCase):
         url = "http://acme.com"
         config = Configuration()
         config.update(store_url=url)
-        config.set_auth("nono", "le petit robot")
+        config.set_auth(("nono", "le petit robot"))
         config.write(self.config)
 
         def callback(request):
@@ -292,7 +292,7 @@ class TestAuth(unittest.TestCase):
         config = Configuration()
         config.update(use_webservice=False,
                       indexed_repositories=["http://acme.com/repo/"])
-        config.set_auth("nono", "le petit robot")
+        config.set_auth(("nono", "le petit robot"))
         config.write(self.config)
 
         def callback(request):
@@ -324,7 +324,7 @@ class TestAuth(unittest.TestCase):
         url = "http://acme.com"
         config = Configuration()
         config.update(store_url=url)
-        config.set_auth("nono", "le petit robot")
+        config.set_auth(("nono", "le petit robot"))
         config.write(self.config)
 
         responses.add_callback(responses.GET, re.compile(url + "/*"),
