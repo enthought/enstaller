@@ -1,6 +1,8 @@
 from __future__ import absolute_import
 
 import base64
+import re
+import textwrap
 
 from enstaller.errors import InvalidConfiguration
 
@@ -57,6 +59,52 @@ class UserPasswordAuth(object):
         self.username = username
         self.password = password
 
+    def change_auth(self, filename):
+        pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
+        with open(filename, 'r') as fi:
+            data = fi.read()
+
+        if not self._is_auth_configured:
+            if pat.search(data):
+                data = pat.sub("", data)
+            with open(filename, 'w') as fo:
+                fo.write(data)
+            return
+
+        authline = 'EPD_auth = \'%s\'' % self._encoded_auth
+
+        if pat.search(data):
+            data = pat.sub(authline, data)
+        else:
+            lines = data.splitlines()
+            lines.append(authline)
+            data = '\n'.join(lines) + '\n'
+
+        with open(filename, 'w') as fo:
+            fo.write(data)
+
+    @property
+    def config_string(self):
+        if self.username and self.password:
+            authline = 'EPD_auth = %r' % self._encoded_auth
+            auth_section = textwrap.dedent("""
+            # A Canopy / EPD subscriber authentication is required to access the
+            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
+            # --userpass' command, which will ask you for your email address
+            # password.
+            %s
+            """ % authline)
+        else:
+            auth_section = ''
+        return auth_section
+
+    @property
+    def request_adapter(self):
+        return (self.username, self.password)
+
+    # ------------------
+    # Private properties
+    # ------------------
     @property
     def _encoded_auth(self):
         """
@@ -66,10 +114,6 @@ class UserPasswordAuth(object):
             raise InvalidConfiguration("EPD_auth is not available when "
                                        "auth has not been configured.")
         return _encode_auth(self.username, self.password)
-
-    @property
-    def request_adapter(self):
-        return (self.username, self.password)
 
     @property
     def _is_auth_configured(self):

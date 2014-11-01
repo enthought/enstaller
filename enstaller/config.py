@@ -143,21 +143,7 @@ def write_default_config(filename):
     else:
         config = Configuration()
 
-        if not isinstance(config.auth, UserPasswordAuth):
-            raise NotImplemented("Auth != UserPasswordAuth not supported")
-
-        username, password = config.auth.username, config.auth.password
-        if username and password:
-            authline = 'EPD_auth = %r' % config.auth._encoded_auth
-            auth_section = textwrap.dedent("""
-            # A Canopy / EPD subscriber authentication is required to access the
-            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
-            # --userpass' command, which will ask you for your email address
-            # password.
-            %s
-            """ % authline)
-        else:
-            auth_section = ''
+        auth_section = config.auth.config_string
 
         if config.proxy:
             proxy_line = 'proxy = %r' % str(config.proxy)
@@ -545,21 +531,7 @@ class Configuration(object):
         filename : str
             The path of the written file.
         """
-        if not isinstance(self.auth, UserPasswordAuth):
-            raise NotImplemented("Auth != UserPasswordAuth not supported")
-
-        username, password = self.auth.username, self.auth.password
-        if username and password:
-            authline = 'EPD_auth = %r' % self.auth._encoded_auth
-            auth_section = textwrap.dedent("""
-            # A Canopy / EPD subscriber authentication is required to access the
-            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
-            # --userpass' command, which will ask you for your email address
-            # password.
-            %s
-            """ % authline)
-        else:
-            auth_section = ''
+        auth_section = self.auth.config_string
 
         if self.proxy:
             proxy_line = 'proxy = %r' % str(self.proxy)
@@ -597,31 +569,7 @@ class Configuration(object):
     # Private methods
     # ---------------
     def _change_auth(self, filename):
-        pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
-        with open(filename, 'r') as fi:
-            data = fi.read()
-
-        if not isinstance(self.auth, UserPasswordAuth):
-            raise NotImplemented("Auth != UserPasswordAuth not supported")
-
-        if not self.auth._is_auth_configured:
-            if pat.search(data):
-                data = pat.sub("", data)
-            with open(filename, 'w') as fo:
-                fo.write(data)
-            return
-
-        authline = 'EPD_auth = \'%s\'' % self.auth._encoded_auth
-
-        if pat.search(data):
-            data = pat.sub(authline, data)
-        else:
-            lines = data.splitlines()
-            lines.append(authline)
-            data = '\n'.join(lines) + '\n'
-
-        with open(filename, 'w') as fo:
-            fo.write(data)
+        self.auth.change_auth(filename)
 
     def _checked_change_auth(self, auth, session, filename):
         user = {}
