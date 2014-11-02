@@ -210,7 +210,7 @@ class TestGetAuth(unittest.TestCase):
     @make_keyring_unavailable
     def test_without_auth_or_keyring(self):
         config = Configuration()
-        self.assertEqual(config.auth, UserPasswordAuth(None, None))
+        self.assertIsNone(config.auth)
 
 
 class TestWriteAndChangeAuth(unittest.TestCase):
@@ -219,21 +219,21 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config = Configuration()
 
         # When/Then
-        self.assertFalse(config.is_auth_configured)
+        self.assertIsNone(config.auth)
 
         # Given
         config = Configuration()
-        config.update(auth=("", ""))
 
         # When/Then
-        self.assertFalse(config.is_auth_configured)
+        with self.assertRaises(InvalidConfiguration):
+            config.update(auth=("", ""))
 
         # Given
         config = Configuration()
         config.update(auth=("yoyoma", ""))
 
         # When/Then
-        self.assertTrue(config.is_auth_configured)
+        self.assertIsNotNone(config.auth)
 
     @make_keyring_unavailable
     def test_change_existing_config_file(self):
@@ -263,7 +263,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config._change_auth(fp.name)
 
         new_config = Configuration.from_file(fp.name)
-        self.assertEqual(new_config.auth, UserPasswordAuth(None, None))
+        self.assertIsNone(new_config.auth)
 
     def test_change_existing_config_file_without_keyring(self):
         # Given
@@ -289,7 +289,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration.from_file(fp.name)
-        self.assertEqual(config.auth, UserPasswordAuth(None, None))
+        self.assertIsNone(config.auth)
 
         config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         self.assertEqual(config.auth,
@@ -301,7 +301,7 @@ class TestWriteAndChangeAuth(unittest.TestCase):
             fp.write("")
 
         config = Configuration()
-        self.assertEqual(config.auth, UserPasswordAuth(None, None))
+        self.assertIsNone(config.auth)
 
         config.update(auth=(FAKE_USER, FAKE_PASSWORD))
         config.write(fp.name)
@@ -347,7 +347,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
             fp.write("")
 
         config = Configuration.from_file(fp.name)
-        self.assertFalse(config.is_auth_configured)
+        self.assertIsNone(config.auth)
 
     def test_without_configuration_with_keyring(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
@@ -355,7 +355,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
 
         with mock.patch("enstaller.config.keyring"):
             config = Configuration.from_file(fp.name)
-            self.assertFalse(config.is_auth_configured)
+            self.assertIsNone(config.auth)
 
     @make_keyring_unavailable
     def test_with_configuration_no_keyring(self):
@@ -364,7 +364,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
             fp.write(auth_line)
 
         config = Configuration.from_file(fp.name)
-        self.assertTrue(config.is_auth_configured)
+        self.assertIsNotNone(config.auth)
 
     def test_with_configuration_with_keyring(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
@@ -374,7 +374,7 @@ class TestAuthenticationConfiguration(unittest.TestCase):
         mocked_keyring = mock.Mock(["get_password"])
         with mock.patch("enstaller.config.keyring", mocked_keyring):
             config = Configuration.from_file(fp.name)
-            self.assertTrue(config.is_auth_configured)
+            self.assertIsNotNone(config.auth)
 
 
 class TestConfigurationParsing(unittest.TestCase):
@@ -397,14 +397,12 @@ class TestConfigurationParsing(unittest.TestCase):
     def test_epd_username_wo_keyring(self):
         """
         Ensure config auth correctly reports itself as non configured when
-        using EPD_auth but keyring is not available to get password.
+        using EPD_username but keyring is not available to get password.
         """
         s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
 
         config = Configuration.from_file(s)
-        self.assertFalse(config.is_auth_configured)
-        with self.assertRaises(InvalidConfiguration):
-            config.auth._encoded_auth
+        self.assertIsNone(config.auth)
 
     def test_epd_username(self):
         with fake_keyring_context() as mocked_keyring:
@@ -731,9 +729,7 @@ class TestConfiguration(unittest.TestCase):
 
             config.reset_auth()
 
-            self.assertIsNone(config.auth.username)
-            self.assertIsNone(config.auth.password)
-            self.assertFalse(config.is_auth_configured)
+            self.assertIsNone(config.auth)
 
     def test_set_prefix(self):
         homedir = os.path.normpath(os.path.expanduser("~"))

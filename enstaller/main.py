@@ -601,7 +601,7 @@ def main(argv=None):
     if args.config_path:
         config_filename = args.config_path
         config = Configuration.from_yaml_filename(config_filename)
-        if not config.is_auth_configured:
+        if config.auth is None:
             print("Authentication missing from {0!r}".format(config_filename))
             sys.exit(-1)
         use_new_format = True
@@ -640,7 +640,7 @@ def main(argv=None):
                                            session):
             return
 
-        if not config.is_auth_configured:
+        if config.auth is None:
             configure_authentication_or_exit(config, config_filename,
                                              session)
         ensure_authenticated_config(config, config_filename, session,

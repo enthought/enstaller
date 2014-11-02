@@ -1,4 +1,4 @@
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import InvalidConfiguration
 from .._impl import UserPasswordAuth, _encode_string_base64
@@ -10,7 +10,7 @@ FAKE_AUTH = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)
 FAKE_CREDS = FAKE_AUTH._encoded_auth
 
 
-class TestUserPasswordAuth(TestCase):
+class TestUserPasswordAuth(unittest.TestCase):
     def test_from_encoded_auth(self):
         # Given
         auth_string = FAKE_CREDS

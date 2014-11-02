@@ -82,6 +82,10 @@ class UserPasswordAuth(object):
             raise InvalidConfiguration("Invalid auth line")
 
     def __init__(self, username, password):
+        if username is None or username == "":
+            msg = "Invalid username: {0!r}".format(username)
+            raise InvalidConfiguration(msg)
+
         self.username = username
         self.password = password
 
@@ -89,13 +93,6 @@ class UserPasswordAuth(object):
         pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
         with open(filename, 'r') as fi:
             data = fi.read()
-
-        if not self._is_auth_configured:
-            if pat.search(data):
-                data = pat.sub("", data)
-            with open(filename, 'w') as fo:
-                fo.write(data)
-            return
 
         authline = 'EPD_auth = \'%s\'' % self._encoded_auth
 

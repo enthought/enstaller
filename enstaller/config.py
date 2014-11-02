@@ -143,8 +143,6 @@ def write_default_config(filename):
     else:
         config = Configuration()
 
-        auth_section = config.auth.config_string
-
         if config.proxy:
             proxy_line = 'proxy = %r' % str(config.proxy)
         else:
@@ -152,8 +150,8 @@ def write_default_config(filename):
                           '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
 
         variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version":
-                     __version__, "proxy_line": proxy_line, "auth_section":
-                     auth_section}
+                     __version__, "proxy_line": proxy_line,
+                     "auth_section": ""}
         with open(filename, "w") as fo:
             fo.write(RC_DEFAULT_TEMPLATE % variables)
 
@@ -175,12 +173,14 @@ def convert_auth_if_required(filename):
     """
     did_convert = False
     if _is_using_epd_username(filename):
+        msg = "Cannot convert password: no password found in keyring"
         config = Configuration.from_file(filename)
+        if config.auth is None:
+            raise EnstallerException(msg)
         username = config.auth.username
         password = _get_keyring_password(username)
         if password is None:
-            raise EnstallerException("Cannot convert password: no password "
-                                     "found in keyring")
+            raise EnstallerException(msg)
         else:
             config.update(auth=(username, password))
             config._change_auth(filename)
@@ -256,11 +256,10 @@ class Configuration(object):
                 ret.update(auth=UserPasswordAuth.from_encoded_auth(epd_auth))
 
             def epd_username_to_auth(username):
-                if keyring is None:
-                    password = None
-                else:
+                if keyring is not None:
                     password = _get_keyring_password(username)
-                ret.update(auth=(username, password))
+                    if password is not None:
+                        ret.update(auth=(username, password))
 
             try:
                 parsed = parse_assignments(fp)
@@ -294,8 +293,7 @@ class Configuration(object):
             return _create(filename)
 
     def __init__(self):
-        # Kept for backward compat.
-        self._auth = UserPasswordAuth(None, None)
+        self._auth = None
         self._autoupdate = True
         self._noapp = False
         self._proxy = None
@@ -351,6 +349,11 @@ class Configuration(object):
     def auth(self):
         """
         The auth object that may be passed to Session.authenticate
+
+        Returns
+        -------
+        auth : IAuth or None
+            The configured auth. None if no auth is configured.
         """
         return self._auth
 
@@ -395,20 +398,6 @@ class Configuration(object):
         else:
             return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
                          for url in self.indexed_repositories)
-
-    @property
-    def is_auth_configured(self):
-        """ Returns True if authentication is set up for this configuration
-        object.
-
-        Note: this only checks whether the auth is configured, not whether the
-        authentication information is correct.
-
-        """
-        if isinstance(self._auth, UserPasswordAuth):
-            return self._auth._is_auth_configured
-        else:
-            return False
 
     @property
     def max_retries(self):
@@ -504,7 +493,7 @@ class Configuration(object):
     # Public methods
     # --------------
     def reset_auth(self):
-        self._auth = UserPasswordAuth(None, None)
+        self._auth = None
 
     def set_auth_from_encoded(self, value):
         try:
@@ -531,7 +520,10 @@ class Configuration(object):
         filename : str
             The path of the written file.
         """
-        auth_section = self.auth.config_string
+        if self.auth is None:
+            auth_section = ""
+        else:
+            auth_section = self.auth.config_string
 
         if self.proxy:
             proxy_line = 'proxy = %r' % str(self.proxy)
@@ -569,7 +561,19 @@ class Configuration(object):
     # Private methods
     # ---------------
     def _change_auth(self, filename):
-        self.auth.change_auth(filename)
+        if self.auth is None:
+            pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
+
+            with open(filename, 'r') as fi:
+                data = fi.read()
+
+            if pat.search(data):
+                data = pat.sub("", data)
+
+            with open(filename, 'w') as fo:
+                fo.write(data)
+        else:
+            self.auth.change_auth(filename)
 
     def _checked_change_auth(self, auth, session, filename):
         user = {}
@@ -666,7 +670,7 @@ def print_config(config, prefix, session):
 
     user = DUMMY_USER
 
-    if not config.is_auth_configured:
+    if config.auth is None:
         print("No valid auth information in configuration, cannot "
               "authenticate.")
     else:

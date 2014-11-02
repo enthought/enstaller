@@ -43,6 +43,9 @@ else:
         return ctx.exception.code
 
 
+FAKE_AUTH = ("nono", "le gros robot")
+
+
 class TestMisc(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -222,6 +225,7 @@ class TestInstallReq(unittest.TestCase):
     def test_install_not_available(self):
         # Given
         config = Configuration()
+        config.update(auth=FAKE_AUTH)
 
         nose = dummy_repository_package_factory("nose", "1.3.0", 1)
         nose.available = False
