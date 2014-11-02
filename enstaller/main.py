@@ -182,12 +182,7 @@ def _get_config_candidate():
 
 
 def _invalid_authentication_message(auth_url, auth, original_error):
-    if isinstance(auth, UserPasswordAuth):
-        header = "Could not authenticate with user '{0}' against {1!r}.". \
-                 format(auth.username, auth_url)
-    else:
-        msg = "Auth type {0!r} not yet implemented".format(type(auth))
-        raise NotImplementedError(msg)
+    header = auth.cant_login_message
     msg = textwrap.dedent("""\
         {0}
         Please check your credentials/configuration and try again

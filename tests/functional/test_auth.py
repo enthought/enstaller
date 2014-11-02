@@ -97,7 +97,7 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-        Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+        Could not authenticate as 'nono'
         Please check your credentials/configuration and try again
         (original error is: '401 Client Error: None').
 
@@ -150,7 +150,7 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-            Could not authenticate with user 'nono' against 'https://api.enthought.com'.
+            Could not authenticate as 'nono'
             Please check your credentials/configuration and try again
             (original error is: '401 Client Error: None').
 
@@ -232,7 +232,7 @@ class TestAuth(unittest.TestCase):
         responses.add(responses.HEAD, url, status=401)
 
         error_message = textwrap.dedent("""\
-            Could not authenticate with user 'nono' against 'http://acme.com/repo/ets/index.json'.
+            Could not authenticate as 'nono'
             Please check your credentials/configuration and try again
             (original error is: '401 Client Error: None').
 

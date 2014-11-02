@@ -44,7 +44,7 @@ settings:
     repository_cache = {repository_cache}
     noapp = False
     proxy = None
-You are logged in as dummy (David Cournapeau).
+You are logged in as 'dummy' (David Cournapeau).
 Subscription level: Canopy / EPD Basic or above
 """)
         r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix,

@@ -1,9 +1,11 @@
 from __future__ import absolute_import
 
+import abc
 import base64
 import re
 import textwrap
 
+from egginst._compat import with_metaclass
 from enstaller.errors import InvalidConfiguration
 
 
@@ -28,10 +30,7 @@ def subscription_message(config, user):
     message = ""
 
     if user.is_authenticated:
-        if isinstance(config.auth, UserPasswordAuth):
-            login = "You are logged in as %s" % config.auth.username
-        else:
-            login = "You are logged in with an API token"
+        login = config.auth.logged_message
         subscription = "Subscription level: %s" % user.subscription_level
         name = user.first_name + ' ' + user.last_name
         name = name.strip()
@@ -44,7 +43,34 @@ def subscription_message(config, user):
     return message
 
 
+class IAuth(with_metaclass(abc.ABCMeta)):
+    @abc.abstractmethod
+    def change_auth(self, filename):
+        """
+        Change the auth information in the configuration file.
+        """
+
+    @abc.abstractproperty
+    def config_string(self):
+        """
+        The text to write in the configuration file for this particular
+        auth.
+        """
+
+    @abc.abstractproperty
+    def logged_message(self):
+        """
+        The string to print to indicate a user is logged in.
+        """
+
+    @abc.abstractproperty
+    def request_adapter(self):
+        """ Return an object that can be passed to the auth argument of
+        requests Session and feunctions.
+        """
+
 class UserPasswordAuth(object):
+    """ Simple clear text username/password authentication."""
     @classmethod
     def from_encoded_auth(cls, encoded_auth):
         parts = base64.decodestring(encoded_auth.encode("utf8")). \
@@ -99,6 +125,14 @@ class UserPasswordAuth(object):
         return auth_section
 
     @property
+    def cant_login_message(self):
+        return "Could not authenticate as '{0}'".format(self.username)
+
+    @property
+    def logged_message(self):
+        return "You are logged in as '{0}'".format(self.username)
+
+    @property
     def request_adapter(self):
         return (self.username, self.password)
 
@@ -137,3 +171,4 @@ def _encode_auth(username, password):
     return _encode_string_base64(s).rstrip()
 
 
+IAuth.register(UserPasswordAuth)

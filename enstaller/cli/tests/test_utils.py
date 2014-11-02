@@ -293,8 +293,8 @@ class TestInstallReq(unittest.TestCase):
 
         r_output = textwrap.dedent("""
         Cannot install 'scipy', as this package (or some of its requirements) are not
-        available at your subscription level 'Canopy / EPD Free' (You are currently
-        logged in as 'nono').
+        available at your subscription level 'Canopy / EPD Free' (You are logged in as
+        'nono').
         """)
 
         self.maxDiff = None
