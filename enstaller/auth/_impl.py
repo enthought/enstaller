@@ -8,6 +8,8 @@ import textwrap
 from egginst._compat import with_metaclass
 from enstaller.errors import InvalidConfiguration
 
+from .auth_managers import BroodBearerTokenAuth
+
 
 AUTH_KIND_CLEAR = "auth_clear"
 
@@ -159,6 +161,39 @@ class UserPasswordAuth(object):
             and self.password == other.password
 
 
+class APITokenAuth(object):
+    def __init__(self, api_token):
+        self._api_token = api_token
+
+    def change_auth(self, filename):
+        pat = re.compile(r'^api_token\s*=.*$', re.M)
+        with open(filename, "rt") as fp:
+            data = fp.read()
+
+        m = pat.search(data)
+        if m:
+            data = pat.sub(self.config_string, data)
+        else:
+            lines = data.splitlines()
+            lines.append(self.config_string)
+            data = "\n".join(lines)
+
+        with open(filename, "wt") as fp:
+            fp.write(data)
+
+    @property
+    def config_string(self):
+        return "api_token = '{0}'".format(self._api_token)
+
+    @property
+    def logged_message(self):
+        return "logged in using API token"
+
+    @property
+    def request_adapter(self):
+        return BroodBearerTokenAuth(self._api_token, None)
+
+
 def _encode_string_base64(s):
     return base64.encodestring(s.encode("utf8")).decode("utf8")
 
@@ -169,3 +204,4 @@ def _encode_auth(username, password):
 
 
 IAuth.register(UserPasswordAuth)
+IAuth.register(APITokenAuth)
