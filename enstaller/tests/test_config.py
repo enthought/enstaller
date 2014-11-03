@@ -496,11 +496,8 @@ class TestConfigurationParsing(unittest.TestCase):
               "behaviour."
 
         # When
-        with mock.patch("enstaller.config.warnings.warn") as m:
+        with self.assertWarnsRegex(Warning, msg) as w:
             Configuration.from_file(data)
-
-        # Then
-        m.assert_called_with(msg)
 
 
 class TestConfigurationPrint(unittest.TestCase):
