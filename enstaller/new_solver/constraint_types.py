@@ -9,6 +9,12 @@ class Any(_ConstraintType):
     def matches(self, candidate_version):
         return True
 
+    def __eq__(self, other):
+        return self.__class__ == other.__class__
+
+    def __hash__(self):
+        return id(self.__class__)
+
 
 class _VersionConstraint(_ConstraintType):
     def __init__(self, version):
@@ -22,6 +28,13 @@ class _VersionConstraint(_ConstraintType):
             msg = "Cannot compare {0!r} and {1!r}"
             raise TypeError(msg.format(candidate_version.__class__,
                                        self.version.__class__))
+
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+                and self.version  == other.version
+
+    def __hash__(self):
+        return hash(self.version)
 
 
 class Equal(_VersionConstraint):
@@ -62,7 +75,8 @@ class LT(_VersionConstraint):
 
 class EnpkgUpstreamMatch(_VersionConstraint):
     def __init__(self, upstream_string):
-        self.version = EnpkgVersion.from_upstream_and_build(upstream_string, 0)
+        version = EnpkgVersion.from_upstream_and_build(upstream_string, 0)
+        super(EnpkgUpstreamMatch, self).__init__(version)
 
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)

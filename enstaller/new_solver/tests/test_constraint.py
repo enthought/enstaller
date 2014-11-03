@@ -30,6 +30,15 @@ class TestConstraintMisc(unittest.TestCase):
         with self.assertRaises(TypeError):
             self.assertTrue(left.matches(right))
 
+    def test_hashing(self):
+        # Given
+        v1 = V("1.2.1-1")
+        v2 = V("1.2.1-1")
+
+        # When/Then
+        self.assertEqual(hash(v1), hash(v2))
+        self.assertEqual(hash(GEQ(v1)), hash(GEQ(v2)))
+
 
 class TestAreCompatible(unittest.TestCase):
     def test_simple_equal(self):
