@@ -15,7 +15,7 @@ from enstaller.plat import custom_plat
 
 from enstaller import __version__
 
-from enstaller.auth import UserPasswordAuth
+from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.config import (prepend_url, print_config,
                               _is_using_epd_username, convert_auth_if_required,
                               _keyring_backend_name, write_default_config)
@@ -466,6 +466,41 @@ class TestConfigurationParsing(unittest.TestCase):
         # Then
         self.assertEqual(config.store_kind, "brood")
         self.assertEqual(config.store_url, "http://acme.com")
+
+    def test_api_token(self):
+        # Given
+        config = Configuration()
+
+        # When
+        config.update(auth=APITokenAuth("dummy token"))
+
+        # Then
+        self.assertEqual(config.auth, APITokenAuth("dummy token"))
+
+        # Given
+        data = StringIO("api_token = 'yoyo'")
+
+        # When
+        config = Configuration.from_file(data)
+
+        # Then
+        self.assertEqual(config.auth, APITokenAuth("yoyo"))
+
+    def test_both_auth_set(self):
+        # Given
+        data = "EPD_auth = '{0}'\napi_token = 'token'"
+        data = StringIO(data.format(FAKE_CREDS))
+
+        msg = "Both 'EPD_auth' and 'api_token' set in configuration." \
+              "\nYou should remove one of those for consistent " \
+              "behaviour."
+
+        # When
+        with mock.patch("enstaller.config.warnings.warn") as m:
+            Configuration.from_file(data)
+
+        # Then
+        m.assert_called_with(msg)
 
 
 class TestConfigurationPrint(unittest.TestCase):

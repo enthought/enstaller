@@ -199,6 +199,10 @@ class APITokenAuth(object):
     def request_adapter(self):
         return BroodBearerTokenAuth(self._api_token, None)
 
+    def __eq__(self, other):
+        return self.__class__ == other.__class__ \
+            and self._api_token == other._api_token
+
 
 def _encode_string_base64(s):
     return base64.encodestring(s.encode("utf8")).decode("utf8")

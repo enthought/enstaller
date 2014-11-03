@@ -20,7 +20,7 @@ from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
 from enstaller.auth import (_INDEX_NAME, DUMMY_USER,
-                            subscription_message, UserInfo,
+                            subscription_message, APITokenAuth, UserInfo,
                             UserPasswordAuth)
 from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
@@ -251,6 +251,9 @@ class Configuration(object):
         def _create(fp):
             ret = cls()
 
+            def api_token_to_auth(api_token):
+                ret.update(auth=APITokenAuth(api_token))
+
             def epd_auth_to_auth(epd_auth):
                 ret.update(auth=UserPasswordAuth.from_encoded_auth(epd_auth))
 
@@ -273,7 +276,14 @@ class Configuration(object):
                 "EPD_auth": epd_auth_to_auth,
                 "EPD_username": epd_username_to_auth,
                 "IndexedRepos": translator["indexed_repositories"],
+                "api_token": api_token_to_auth,
             })
+
+            if "EPD_auth" in translator and "api_token" in translator:
+                msg = "Both 'EPD_auth' and 'api_token' set in configuration." \
+                      "\nYou should remove one of those for consistent " \
+                      "behaviour."
+                warnings.warn(msg)
 
             for name, value in parsed.items():
                 if name in translator:
