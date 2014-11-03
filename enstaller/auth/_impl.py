@@ -111,7 +111,7 @@ class UserPasswordAuth(object):
     @property
     def config_string(self):
         if self.username and self.password:
-            authline = 'EPD_auth = %r' % self._encoded_auth
+            authline = "EPD_auth = '%s'" % self._encoded_auth
             auth_section = textwrap.dedent("""
             # A Canopy / EPD subscriber authentication is required to access the
             # Canopy / EPD repository.  To change your credentials, use the 'enpkg
