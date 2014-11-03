@@ -107,6 +107,22 @@ class TestUserPasswordAuth(unittest.TestCase):
             data = fp.read()
         self.assertEqual(data, "EPD_auth = '{0}'\n".format(auth._encoded_auth))
 
+    def test_change_auth_with_api(self):
+        # Given
+        path = os.path.join(self.prefix, "enstaller.cfg")
+        with open(path, "wt") as fp:
+            fp.write("api_token = 'dummy_token'")
+
+        auth = UserPasswordAuth("dummy", "auth")
+
+        # When
+        auth.change_auth(path)
+
+        # Then
+        with open(path) as fp:
+            data = fp.read()
+        self.assertEqual(data, "EPD_auth = '{0}'\n".format(auth._encoded_auth))
+
 
 class TestAPITokenAuth(unittest.TestCase):
     def setUp(self):
@@ -159,3 +175,19 @@ class TestAPITokenAuth(unittest.TestCase):
         with open(path) as fp:
             data = fp.read()
         self.assertEqual(data, "api_token = 'dummy auth'")
+
+    def test_change_auth_with_epd_auth(self):
+        # Given
+        path = os.path.join(self.prefix, "enstaller.cfg")
+        with open(path, "wt") as fp:
+            fp.write("EPD_auth = 'dummy_token'")
+
+        auth = APITokenAuth("dummy_token")
+
+        # When
+        auth.change_auth(path)
+
+        # Then
+        with open(path) as fp:
+            data = fp.read()
+        self.assertEqual(data, auth.config_string)

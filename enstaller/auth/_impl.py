@@ -11,6 +11,10 @@ from enstaller.errors import InvalidConfiguration
 from .auth_managers import BroodBearerTokenAuth
 
 
+_CLEARTEXT_AUTH_R = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
+_API_TOKEN_AUTH_R = re.compile(r'^api_token\s*=.*$', re.M)
+
+
 def subscription_message(config, user):
     """
     Return a 'subscription level' message based on the `user`
@@ -90,14 +94,16 @@ class UserPasswordAuth(object):
         self.password = password
 
     def change_auth(self, filename):
-        pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
         with open(filename, 'r') as fi:
             data = fi.read()
 
         authline = 'EPD_auth = \'%s\'' % self._encoded_auth
 
-        if pat.search(data):
-            data = pat.sub(authline, data)
+        if _API_TOKEN_AUTH_R.search(data):
+            data = _API_TOKEN_AUTH_R.sub("", data)
+
+        if _CLEARTEXT_AUTH_R.search(data):
+            data = _CLEARTEXT_AUTH_R.sub(authline, data)
         else:
             lines = data.splitlines()
             lines.append(authline)
@@ -164,13 +170,15 @@ class APITokenAuth(object):
         self._api_token = api_token
 
     def change_auth(self, filename):
-        pat = re.compile(r'^api_token\s*=.*$', re.M)
         with open(filename, "rt") as fp:
             data = fp.read()
 
-        m = pat.search(data)
+        if _CLEARTEXT_AUTH_R.search(data):
+            data = _CLEARTEXT_AUTH_R.sub("", data)
+
+        m = _API_TOKEN_AUTH_R.search(data)
         if m:
-            data = pat.sub(self.config_string, data)
+            data = _API_TOKEN_AUTH_R.sub(self.config_string, data)
         else:
             lines = data.splitlines()
             lines.append(self.config_string)
