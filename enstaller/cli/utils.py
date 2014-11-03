@@ -10,7 +10,7 @@ from egginst._compat import urllib
 from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)
 
-from enstaller.auth import UserInfo, UserPasswordAuth
+from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.legacy_stores import parse_index

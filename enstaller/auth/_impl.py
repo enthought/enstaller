@@ -11,9 +11,6 @@ from enstaller.errors import InvalidConfiguration
 from .auth_managers import BroodBearerTokenAuth
 
 
-AUTH_KIND_CLEAR = "auth_clear"
-
-
 def subscription_message(config, user):
     """
     Return a 'subscription level' message based on the `user`
@@ -70,6 +67,7 @@ class IAuth(with_metaclass(abc.ABCMeta)):
         """ Return an object that can be passed to the auth argument of
         requests Session and feunctions.
         """
+
 
 class UserPasswordAuth(object):
     """ Simple clear text username/password authentication."""

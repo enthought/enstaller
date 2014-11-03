@@ -6,7 +6,6 @@ import logging
 import re
 import os
 import sys
-import textwrap
 import platform
 import tempfile
 import warnings
@@ -20,7 +19,7 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, AUTH_KIND_CLEAR, DUMMY_USER,
+from enstaller.auth import (_INDEX_NAME, DUMMY_USER,
                             subscription_message, UserInfo,
                             UserPasswordAuth)
 from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
