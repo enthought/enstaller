@@ -6,7 +6,7 @@ When used from the command line, `enpkg` looks for the file
 
 * `sys.prefix`
 * `sys.real_prefix` (if under a virtual environment)
-* in `~`
+* the user's home directory
 
 The first found file is considered.
 
