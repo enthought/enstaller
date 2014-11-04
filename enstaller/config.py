@@ -14,7 +14,7 @@ import warnings
 
 from os.path import isfile, join
 
-from egginst._compat import string_types, urlparse
+from egginst._compat import string_types, urllib
 from egginst.utils import parse_assignments
 
 from enstaller.vendor import keyring
@@ -698,7 +698,7 @@ class Configuration(object):
         self._proxy = ProxyInfo.from_string(proxy_string)
 
     def _set_store_url(self, url):
-        p = urlparse.urlparse(url)
+        p = urllib.parse.urlparse(url)
         if p.scheme.startswith(_BROOD_PREFIX):
             url = url[len(_BROOD_PREFIX):]
             self._store_kind = STORE_KIND_BROOD

@@ -9,9 +9,10 @@ import zlib
 
 import mock
 
-from egginst._compat import TestCase
+from egginst._compat import assertCountEqual
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, mkdtemp
+from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
@@ -42,7 +43,7 @@ else:
         return ctx.exception.code
 
 
-class TestMisc(TestCase):
+class TestMisc(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -71,7 +72,7 @@ class TestMisc(TestCase):
             name_egg(name)
 
 
-class TestInfoStrings(TestCase):
+class TestInfoStrings(unittest.TestCase):
     def test_print_install_time(self):
         with mkdtemp():
             installed_entries = [dummy_installed_package_factory("dummy",
@@ -114,7 +115,7 @@ class TestInfoStrings(TestCase):
             self.assertEqual(m.value, r_out)
 
 
-class TestUpdatesCheck(TestCase):
+class TestUpdatesCheck(unittest.TestCase):
     def _create_repositories(self, entries, installed_entries):
         repository = Repository()
         for entry in entries:
@@ -147,7 +148,7 @@ class TestUpdatesCheck(TestCase):
         self.assertEqual(EPD_update, [])
         self.assertEqual(len(updates), 1)
         update0 = updates[0]
-        self.assertItemsEqual(update0.keys(), ["current", "update"])
+        assertCountEqual(self, update0.keys(), ["current", "update"])
         self.assertEqual(update0["current"]["version"], "1.0.1")
         self.assertEqual(update0["update"].version, "1.2.0")
 
@@ -206,12 +207,12 @@ class TestUpdatesCheck(TestCase):
         self.assertEqual(len(EPD_update), 1)
 
         epd_update0 = EPD_update[0]
-        self.assertItemsEqual(epd_update0.keys(), ["current", "update"])
+        assertCountEqual(self, epd_update0.keys(), ["current", "update"])
         self.assertEqual(epd_update0["current"]["version"], "7.2")
         self.assertEqual(epd_update0["update"].version, "7.3")
 
 
-class TestInstallReq(TestCase):
+class TestInstallReq(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -415,7 +416,7 @@ with pip as follows:
         self.assertMultiLineEqual(mocked_print.value, r_message)
 
 
-class TestFetchJsonWithProgress(TestCase):
+class TestFetchJsonWithProgress(unittest.TestCase):
     def _gzip_compress(self, data):
         compressor = zlib.compressobj(6, zlib.DEFLATED, 16 + zlib.MAX_WBITS)
         body = compressor.compress(data)

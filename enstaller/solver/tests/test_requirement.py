@@ -1,10 +1,11 @@
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
+
 from enstaller.repository import PackageVersionInfo
 
 from ..requirement import Requirement
 
 
-class TestRequirement(TestCase):
+class TestRequirement(unittest.TestCase):
     def assertEqualRequirements(self, left, right):
         self.assertEqual(left.as_dict(), right.as_dict())
 

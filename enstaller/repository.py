@@ -1,5 +1,3 @@
-from egginst._compat import urlparse
-
 import collections
 import operator
 import os
@@ -8,7 +6,7 @@ import sys
 import time
 
 
-from egginst._compat import pathname2url
+from egginst._compat import urllib
 from egginst.eggmeta import info_from_z
 from egginst._zipfile import ZipFile
 
@@ -108,8 +106,8 @@ class RepositoryPackageMetadata(PackageMetadata):
             metadata = info_from_z(zp)
 
         if len(store_location) == 0:
-            store_location = pathname2url(os.path.dirname(path)) + "/"
-            store_location = urlparse.urljoin("file:/", store_location)
+            store_location = urllib.request.pathname2url(os.path.dirname(path)) + "/"
+            store_location = urllib.parse.urljoin("file:/", store_location)
 
         if not store_location.endswith("/"):
             msg = "Invalid uri for store location: {0!r} (expected an uri " \
@@ -161,7 +159,7 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @property
     def source_url(self):
-        return urlparse.urljoin(self.store_location, self.key)
+        return urllib.parse.urljoin(self.store_location, self.key)
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \

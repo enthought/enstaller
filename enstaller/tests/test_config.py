@@ -5,16 +5,11 @@ import sys
 import tempfile
 import textwrap
 
-from egginst._compat import StringIO
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 import mock
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
+from egginst.vendor.six.moves import unittest
 
 from enstaller.plat import custom_plat
 

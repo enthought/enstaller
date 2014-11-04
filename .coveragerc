@@ -1,5 +1,6 @@
 [report]
-omit = enstaller/argparse*
+omit = egginst/vendor/*
+       enstaller/argparse*
        enstaller/indexed_repo*
        enstaller/vendor*
        enstaller/versions/pep386.py

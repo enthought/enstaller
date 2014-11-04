@@ -1,15 +1,11 @@
 import os.path
-import sys
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
 
 from egginst.utils import compute_md5, ensure_dir
 from egginst.tests.common import (NOSE_1_3_0, SUPPORT_SYMLINK,
     VTK_EGG_DEFERRED_SOFTLINK, ZIP_WITH_SOFTLINK, mkdtemp)
-from egginst._compat import BytesIO
+from egginst.vendor.six.moves import unittest
+
+from egginst._compat import BytesIO, assertCountEqual
 from egginst._zipfile import ZipFile
 
 
@@ -46,7 +42,7 @@ class TestZipFile(unittest.TestCase):
             paths = list_files(d)
 
         # Then
-        self.assertItemsEqual(paths, r_paths)
+        assertCountEqual(self, paths, r_paths)
 
     def test_extract(self):
         # Given
@@ -87,7 +83,7 @@ class TestZipFile(unittest.TestCase):
                 zp.extractall(d)
             paths = list_files(d)
 
-            self.assertItemsEqual(paths, ["lib/foo.so.1.3", "lib/foo.so"])
+            assertCountEqual(self, paths, ["lib/foo.so.1.3", "lib/foo.so"])
             self.assertTrue(os.path.islink(os.path.join(d, "lib", "foo.so")))
 
     @unittest.skipIf(not SUPPORT_SYMLINK,
@@ -120,6 +116,6 @@ class TestZipFile(unittest.TestCase):
             files = list_files(d)
 
             # Then
-            self.assertItemsEqual(files, expected_files)
+            assertCountEqual(self, files, expected_files)
             path = os.path.join(d, "EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so")
             self.assertTrue(os.path.islink(path))

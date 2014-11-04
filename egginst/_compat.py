@@ -2,59 +2,38 @@
 Simple py2/py3 shim
 """
 import logging
-import sys
 
-PY2 = sys.version_info[0] == 2
 
 # For compatibility with 2.6
 class NullHandler(logging.Handler):  # pragma: no cover
     def emit(self, record):
         pass
 
+import egginst.vendor.six
+
+egginst.vendor.six.add_move(egginst.vendor.six.MovedModule("unittest", "unittest2", "unittest"))
+
+# FIXME: all those moves imports should be removed in favor of imports in the
+# modules requesting it.
+from egginst.vendor.six.moves import cPickle, configparser, http_client, urllib
+from egginst.vendor.six import moves
+from egginst.vendor.six import string_types
+from egginst.vendor.six import StringIO, BytesIO
+
+PY2 = egginst.vendor.six.PY2
+
 if PY2:
-    import ConfigParser as configparser
-    import httplib as http_client
-    from cStringIO import StringIO as BytesIO, StringIO
-
-    NativeStringIO = BytesIO
-
-    text_type = unicode
-    string_types = (str, unicode)
-
-    if sys.version_info < (2, 7):
-        from unittest2 import TestCase, skipIf
-    else:
-        from unittest import TestCase, skipIf
-    TestCase.assertNotRegex = TestCase.assertNotRegexpMatches
-    TestCase.assertRegex = TestCase.assertRegexpMatches
-
-    import urlparse
-    from urllib import pathname2url, unquote, url2pathname
-    from urllib2 import splitpasswd, splitport, splituser
-
-    import cPickle as pickle
     buffer = buffer
 else:
-    import configparser
-    import http.client as http_client
-    from io import StringIO, BytesIO
-
-    from unittest import TestCase, skipIf
-    TestCase.assertItemsEqual = TestCase.assertCountEqual
-
-    NativeStringIO = StringIO
-
-    text_type = str
-    string_types = (str, )
-
-    from urllib import parse as urlparse
-    from urllib.parse import unquote
-    from urllib.request import pathname2url, url2pathname
-    from urllib.parse import splitpasswd, splitport, splituser
-
-    import builtins
-    import pickle
     buffer = memoryview
+
+
+def assertCountEqual(self, first, second, msg=None):
+    if PY2:
+        return self.assertItemsEqual(first, second, msg)
+    else:
+        return self.assertCountEqual(first, second, msg)
+
 
 def input(prompt):
     # XXX: is defined as a function so that mock.patch can patch it without
@@ -62,6 +41,7 @@ def input(prompt):
     if PY2:
         return raw_input(prompt)
     else:
+        import builtins
         return builtins.input(prompt)
 
 # Code taken from Jinja2

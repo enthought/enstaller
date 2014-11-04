@@ -8,7 +8,7 @@ import sqlite3
 
 from io import FileIO
 
-from egginst._compat import pickle, urlparse
+from egginst._compat import cPickle, urllib
 from egginst._compat import buffer
 
 from enstaller.utils import uri_to_path
@@ -138,11 +138,11 @@ class DBCache(BaseCache):
         return base64.b64encode(key.encode("utf8")).decode("utf8")
 
     def _encode_value(self, value):
-        data = pickle.dumps(value, protocol=pickle.HIGHEST_PROTOCOL)
+        data = cPickle.dumps(value, protocol=cPickle.HIGHEST_PROTOCOL)
         return buffer(data)
 
     def _decode_value(self, encoded_value):
-        return pickle.loads(bytes(encoded_value))
+        return cPickle.loads(bytes(encoded_value))
 
     def get(self, key):
         try:

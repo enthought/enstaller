@@ -4,10 +4,10 @@ import os.path
 import shutil
 import tempfile
 
-from egginst._compat import TestCase
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
+from egginst.vendor.six.moves import unittest
 
 
 from enstaller.egg_meta import split_eggname
@@ -23,7 +23,7 @@ from enstaller.tests.common import (dummy_installed_package_factory,
                                     repository_factory)
 
 
-class TestSolverNoDependencies(TestCase):
+class TestSolverNoDependencies(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -167,7 +167,7 @@ class TestSolverNoDependencies(TestCase):
         self.assertListEqual(actions, expected_actions)
 
 
-class TestSolverDependencies(TestCase):
+class TestSolverDependencies(unittest.TestCase):
     def test_simple(self):
         # Given
         entries = [

@@ -6,7 +6,7 @@ import textwrap
 
 import mock
 
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from enstaller import __version__
 
@@ -21,7 +21,7 @@ from enstaller.tests.common import mock_index, mock_print, R_JSON_AUTH_RESP
 from .common import authenticated_config
 
 
-class TestMisc(TestCase):
+class TestMisc(unittest.TestCase):
     @authenticated_config
     @responses.activate
     def test_print_config(self):

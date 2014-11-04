@@ -1,6 +1,6 @@
 import json
 
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.session import Session
@@ -9,7 +9,7 @@ from enstaller.auth.user_info import UserInfo
 from enstaller.vendor import responses
 
 
-class TestUserInfo(TestCase):
+class TestUserInfo(unittest.TestCase):
     @responses.activate
     def test_simple_legacy_canopy(self):
         # Given
@@ -72,7 +72,7 @@ class TestUserInfo(TestCase):
         self.assertTrue(user_info.is_authenticated)
 
 
-class TestSubscriptionLevel(TestCase):
+class TestSubscriptionLevel(unittest.TestCase):
     def test_unsubscribed_user(self):
         user_info = UserInfo(True)
         self.assertEqual(user_info.subscription_level, "Canopy / EPD Free")

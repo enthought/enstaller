@@ -3,12 +3,9 @@ import shutil
 import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst._compat import assertCountEqual
 from egginst.testing_utils import ControlledEnv, assert_same_fs
+from egginst.vendor.six.moves import unittest
 
 
 class TestControlledEnv(unittest.TestCase):
@@ -31,7 +28,7 @@ class TestControlledEnv(unittest.TestCase):
         env["key2"] = "value2"
 
         # Then
-        self.assertItemsEqual(env.keys(), list(os.environ.keys()) + ["key1", "key2"])
+        assertCountEqual(self, env.keys(), list(os.environ.keys()) + ["key1", "key2"])
 
     def test_get_item(self):
         # Given

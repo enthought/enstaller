@@ -3,8 +3,8 @@ import os.path
 import shutil
 import tempfile
 
-from egginst._compat import TestCase
 from egginst.tests.common import _EGGINST_COMMON_DATA
+from egginst.vendor.six.moves import unittest
 
 from enstaller.vendor import requests, responses
 
@@ -16,7 +16,7 @@ from enstaller.utils import compute_md5
 from enstaller.tests.common import mocked_session_factory
 
 
-class Test_DownloadManager(TestCase):
+class Test_DownloadManager(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 

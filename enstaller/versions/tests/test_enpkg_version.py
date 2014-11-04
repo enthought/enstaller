@@ -1,10 +1,10 @@
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from ..enpkg import EnpkgVersion
 from ..pep386_workaround import PEP386WorkaroundVersion
 
 
-class TestEnpkgVersionParsing(TestCase):
+class TestEnpkgVersionParsing(unittest.TestCase):
     def test_from_string_valid(self):
         # Given
         s = "1.3.0-1"
@@ -80,7 +80,7 @@ class TestEnpkgVersionParsing(TestCase):
             left >= right
 
 
-class TestEnpkgVersionComparison(TestCase):
+class TestEnpkgVersionComparison(unittest.TestCase):
     def test_equal(self):
         # Given
         left = EnpkgVersion.from_string("1.2.0-1")
@@ -142,7 +142,7 @@ class TestEnpkgVersionComparison(TestCase):
         self.assertFalse(left > right)
 
 
-class TestEnpkgVersionMisc(TestCase):
+class TestEnpkgVersionMisc(unittest.TestCase):
     def test_string(self):
         # Given
         r_version_string = "1.3.0-1"

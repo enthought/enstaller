@@ -7,10 +7,10 @@ import tempfile
 
 import mock
 
-from egginst._compat import skipIf, TestCase
 from egginst.main import name_version_fn
 from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
     DUMMY_EGG_MTIME, DUMMY_EGG_MD5
+from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import canonical, comparable_version, input_auth, \
     path_to_uri, uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv, \
@@ -18,7 +18,7 @@ from enstaller.utils import canonical, comparable_version, input_auth, \
 from .common import mock_input, mock_print, mock_raw_input
 
 
-class TestUtils(TestCase):
+class TestUtils(unittest.TestCase):
 
     def test_canonical(self):
         for name, cname in [
@@ -95,18 +95,18 @@ class TestUtils(TestCase):
         self.assertEqual(cleanup_url(url), r_url)
 
 
-class TestExitIfSudoOnVenv(TestCase):
+class TestExitIfSudoOnVenv(unittest.TestCase):
     @mock.patch("enstaller.utils.sys.platform", "win32")
     def test_windows(self):
         exit_if_sudo_on_venv("some_prefix")
 
-    @skipIf(sys.platform == "win32", "no getuid on windows")
+    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 0)
     def test_no_venv(self):
         exit_if_sudo_on_venv("some_prefix")
 
-    @skipIf(sys.platform == "win32", "no getuid on windows")
+    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 0)
     def test_venv_sudo(self):
@@ -117,7 +117,7 @@ class TestExitIfSudoOnVenv(TestCase):
 
         self.assertRaises(SystemExit, lambda: exit_if_sudo_on_venv(d))
 
-    @skipIf(sys.platform == "win32", "no getuid on windows")
+    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
     @mock.patch("enstaller.utils.sys.platform", "linux")
     @mock.patch("os.getuid", lambda: 1)
     def test_venv_no_sudo(self):
@@ -129,7 +129,7 @@ class TestExitIfSudoOnVenv(TestCase):
         exit_if_sudo_on_venv(d)
 
 
-class TestUri(TestCase):
+class TestUri(unittest.TestCase):
     def test_path_to_uri_simple(self):
         """Ensure path to uri conversion works."""
         # XXX: this is a bit ugly, but urllib does not allow to select which OS
@@ -165,7 +165,7 @@ class TestUri(TestCase):
         self.assertEqual(r_path, path)
 
 
-class TestPromptYesNo(TestCase):
+class TestPromptYesNo(unittest.TestCase):
     def test_simple(self):
         # Given
         message = "Do you want to do it ?"
@@ -211,7 +211,7 @@ FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 
 
-class TestInputAuth(TestCase):
+class TestInputAuth(unittest.TestCase):
     @mock.patch("enstaller.utils.getpass.getpass", lambda ignored: FAKE_PASSWORD)
     def test_simple(self):
         with mock_input(FAKE_USER):

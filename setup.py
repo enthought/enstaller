@@ -162,6 +162,7 @@ include_testing = True
 packages = [
     'egginst',
     'egginst.console',
+    'egginst.vendor',
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',
