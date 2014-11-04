@@ -69,7 +69,7 @@ class ProxyInfo(object):
         return self._user
 
 
-# Looks like those are semi-private function in the stdbli, so we bundle it
+# Looks like those are semi-private function in the stdlib, so we bundle it
 # here for 2/3 compat
 def _splitport(host):
     match = _PORT_PROG_R.match(host)
