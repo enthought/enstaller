@@ -1086,10 +1086,11 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertEqual(config.max_retries, 0)
         self.assertTrue(config.verify_ssl)
 
-    def test_basic_authentication(self):
+    def test_simple_authentication(self):
         # Given
         yaml_string = textwrap.dedent("""\
             authentication:
+              kind: simple
               username: nono@acme.com
               password: ulysse
         """)
@@ -1102,11 +1103,11 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertEqual(config.auth,
                          UserPasswordAuth("nono@acme.com", "ulysse"))
 
-    def test_digest_authentication(self):
+    def test_basic_authentication(self):
         # Given
         yaml_string = textwrap.dedent("""\
             authentication:
-              type: digest
+              kind: basic
               auth: {0}
         """.format(UserPasswordAuth("nono@acme.com", "ulysse")._encoded_auth))
 

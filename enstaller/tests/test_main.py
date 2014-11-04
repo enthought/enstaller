@@ -542,6 +542,7 @@ class TestCustomConfigPath(unittest.TestCase):
             fp.write(textwrap.dedent("""\
                     store_url: "http://acme.com"
                     authentication:
+                      kind: "simple"
                       username: "foo@acme.com"
                       password: "bar"
             """))

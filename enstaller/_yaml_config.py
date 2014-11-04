@@ -14,9 +14,9 @@ else:
 
 
 _AUTHENTICATION = "authentication"
-_AUTHENTICATION_TYPE = "type"
+_AUTHENTICATION_TYPE = "kind"
 _AUTHENTICATION_TYPE_BASIC = "basic"
-_AUTHENTICATION_TYPE_DIGEST = "digest"
+_AUTHENTICATION_TYPE_SIMPLE = "simple"
 _MAX_RETRIES = "max_retries"
 _SSL_VERIFY = "verify_ssl"
 _USERNAME = "username"
@@ -56,7 +56,7 @@ _SCHEMA = {
             "type": "object",
             "oneOf": [
                 {"$ref": "#/definitions/simple_authentication"},
-                {"$ref": "#/definitions/digest_authentication"}
+                {"$ref": "#/definitions/basic_authentication"}
             ],
             "description": "Authentication."
         },
@@ -69,24 +69,24 @@ _SCHEMA = {
     "definitions": {
         "simple_authentication": {
             "properties": {
-                "type": {
-                    "enum": [_AUTHENTICATION_TYPE_BASIC],
-                    "default": _AUTHENTICATION_TYPE_BASIC
+                "kind": {
+                    "enum": [_AUTHENTICATION_TYPE_SIMPLE],
+                    "default": _AUTHENTICATION_TYPE_SIMPLE
                 },
                 _USERNAME: {"type": "string"},
                 _PASSWORD: {"type": "string"}
             },
-            "required": [_USERNAME, _PASSWORD],
+            "required": ["kind", _USERNAME, _PASSWORD],
             "additionalProperties": False
         },
-        "digest_authentication": {
+        "basic_authentication": {
             "properties": {
-                "type": {
-                    "enum": [_AUTHENTICATION_TYPE_DIGEST]
+                "kind": {
+                    "enum": [_AUTHENTICATION_TYPE_BASIC]
                 },
                 _AUTH_STRING: {"type": "string"}
             },
-            "required": ["type", _AUTH_STRING],
+            "required": ["kind", _AUTH_STRING],
             "additionalProperties": False
         }
     },
@@ -117,12 +117,12 @@ def load_configuration_from_yaml(cls, filename_or_fp):
     if _AUTHENTICATION in data:
         authentication = data[_AUTHENTICATION]
         authentication_type = authentication.get(_AUTHENTICATION_TYPE,
-                                                 _AUTHENTICATION_TYPE_BASIC)
-        if authentication_type == _AUTHENTICATION_TYPE_BASIC:
+                                                 _AUTHENTICATION_TYPE_SIMPLE)
+        if authentication_type == _AUTHENTICATION_TYPE_SIMPLE:
             username = authentication[_USERNAME]
             password = authentication[_PASSWORD]
             auth = UserPasswordAuth(username, password)
-        elif authentication_type == _AUTHENTICATION_TYPE_DIGEST:
+        elif authentication_type == _AUTHENTICATION_TYPE_BASIC:
             auth_string = authentication[_AUTH_STRING]
             auth = UserPasswordAuth.from_encoded_auth(auth_string)
         else:
