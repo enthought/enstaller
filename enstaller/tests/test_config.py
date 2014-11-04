@@ -496,7 +496,7 @@ class TestConfigurationParsing(unittest.TestCase):
               "behaviour."
 
         # When
-        with self.assertWarnsRegex(Warning, msg) as w:
+        with self.assertWarnsRegex(Warning, msg):
             Configuration.from_file(data)
 
 
