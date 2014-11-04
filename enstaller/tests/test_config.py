@@ -1086,6 +1086,34 @@ class TestYamlConfiguration(unittest.TestCase):
         self.assertEqual(config.max_retries, 0)
         self.assertTrue(config.verify_ssl)
 
+    def test_api_token_authentication(self):
+        # Given
+        yaml_string = textwrap.dedent("""\
+            authentication:
+              kind: token
+              api_token: ulysse
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.auth, APITokenAuth("ulysse"))
+
+        # Given
+        yaml_string = textwrap.dedent("""\
+            authentication:
+              api_token: ulysse
+        """)
+
+        # When
+        config = Configuration.from_yaml_filename(StringIO(yaml_string))
+
+        # Then
+        self.assertFalse(config.use_webservice)
+        self.assertEqual(config.auth, APITokenAuth("ulysse"))
+
     def test_simple_authentication(self):
         # Given
         yaml_string = textwrap.dedent("""\
