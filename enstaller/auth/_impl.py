@@ -7,6 +7,7 @@ import textwrap
 
 from egginst._compat import with_metaclass
 from enstaller.errors import InvalidConfiguration
+from enstaller.vendor import requests
 
 from .auth_managers import BroodBearerTokenAuth
 
@@ -137,7 +138,7 @@ class UserPasswordAuth(object):
 
     @property
     def request_adapter(self):
-        return (self.username, self.password)
+        return requests.auth.HTTPBasicAuth(self.username, self.password)
 
     # ------------------
     # Private properties
@@ -197,7 +198,7 @@ class APITokenAuth(object):
 
     @property
     def request_adapter(self):
-        return BroodBearerTokenAuth(self._api_token, None)
+        return BroodBearerTokenAuth(self._api_token)
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \

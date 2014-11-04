@@ -137,7 +137,9 @@ class TestOldReposAuthManager(AuthManagerBase):
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
         # Then
-        self.assertEqual(session._raw.auth, (FAKE_USER, FAKE_PASSWORD))
+        self.assertIsInstance(session._raw.auth, requests.auth.HTTPBasicAuth)
+        self.assertEqual(session._raw.auth.username, FAKE_USER)
+        self.assertEqual(session._raw.auth.password, FAKE_PASSWORD)
 
     @responses.activate
     def test_simple(self):

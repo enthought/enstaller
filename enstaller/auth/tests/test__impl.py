@@ -6,6 +6,9 @@ import textwrap
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import InvalidConfiguration
+from enstaller.vendor import requests
+
+from ..auth_managers import BroodBearerTokenAuth
 from .._impl import APITokenAuth, UserPasswordAuth, _encode_string_base64
 
 
@@ -123,6 +126,15 @@ class TestUserPasswordAuth(unittest.TestCase):
             data = fp.read()
         self.assertEqual(data, "EPD_auth = '{0}'\n".format(auth._encoded_auth))
 
+    def test_request_adapter(self):
+        # Given
+        auth = UserPasswordAuth("nono", "le petit robot")
+
+        # When/Then
+        self.assertIsInstance(auth.request_adapter, requests.auth.HTTPBasicAuth)
+        self.assertEqual(auth.request_adapter.username, "nono")
+        self.assertEqual(auth.request_adapter.password, "le petit robot")
+
 
 class TestAPITokenAuth(unittest.TestCase):
     def setUp(self):
@@ -191,3 +203,11 @@ class TestAPITokenAuth(unittest.TestCase):
         with open(path) as fp:
             data = fp.read()
         self.assertEqual(data, auth.config_string)
+
+    def test_request_adapter(self):
+        # Given
+        auth = APITokenAuth("nono le petit robot")
+
+        # When/Then
+        self.assertIsInstance(auth.request_adapter, BroodBearerTokenAuth)
+        self.assertEqual(auth.request_adapter._token, "nono le petit robot")
