@@ -176,5 +176,5 @@ class QueryPathOnlyCacheController(CacheController):
     """
     def cache_url(self, uri):
         url = super(QueryPathOnlyCacheController, self).cache_url(uri)
-        p = urlparse.urlparse(url)
-        return urlparse.urlunparse((p.scheme, p.hostname, p.path, "", "", ""))
+        p = urllib.parse.urlparse(url)
+        return urllib.parse.urlunparse((p.scheme, p.hostname, p.path, "", "", ""))

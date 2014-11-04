@@ -32,7 +32,7 @@ from enstaller.errors import (EnpkgError, EnstallerException,
                               InvalidConfiguration,
                               EXIT_ABORTED)
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
-                              SYS_PREFIX_ENSTALLER4RC, Configuration, add_url,
+                              Configuration, add_url,
                               configuration_read_search_order,
                               convert_auth_if_required,
                               print_config, write_default_config)

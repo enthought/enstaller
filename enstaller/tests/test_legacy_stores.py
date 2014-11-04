@@ -45,7 +45,7 @@ class TestLegacyStores(unittest.TestCase):
         self.assertTrue(len(packages) > 0)
         assertCountEqual(self, [p.name for p in packages], ["numpy", "scipy"])
         assertCountEqual(self, [p.full_version for p in packages], ["1.8.0-1",
-                                                                   "0.14.0-1"])
+                                                                    "0.14.0-1"])
 
     def test_simple_no_webservice_file(self):
         # Given

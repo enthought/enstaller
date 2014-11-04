@@ -393,9 +393,8 @@ class TestRepository(unittest.TestCase):
         repository.delete_package(to_remove)
 
         # Then
-        assertCountEqual(self, 
-            [p.key for p in repository.iter_packages()],
-            ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
+        assertCountEqual(self, [p.key for p in repository.iter_packages()],
+                         ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
 
 
 # Unittest that used to belong to Enpkg
