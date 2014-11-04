@@ -115,17 +115,14 @@ class UserPasswordAuth(object):
 
     @property
     def config_string(self):
-        if self.username and self.password:
-            authline = "EPD_auth = '%s'" % self._encoded_auth
-            auth_section = textwrap.dedent("""
-            # A Canopy / EPD subscriber authentication is required to access the
-            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
-            # --userpass' command, which will ask you for your email address
-            # password.
-            %s
-            """ % authline)
-        else:
-            auth_section = ''
+        authline = "EPD_auth = '%s'" % self._encoded_auth
+        auth_section = textwrap.dedent("""
+        # A Canopy / EPD subscriber authentication is required to access the
+        # Canopy / EPD repository.  To change your credentials, use the 'enpkg
+        # --userpass' command, which will ask you for your email address
+        # password.
+        %s
+        """ % authline)
         return auth_section
 
     @property
@@ -148,17 +145,7 @@ class UserPasswordAuth(object):
         """
         Auth information, encoded as expected by EPD_auth.
         """
-        if not self._is_auth_configured:
-            raise InvalidConfiguration("EPD_auth is not available when "
-                                       "auth has not been configured.")
         return _encode_auth(self.username, self.password)
-
-    @property
-    def _is_auth_configured(self):
-        if self.username and self.password is not None:
-            return True
-        else:
-            return False
 
     def __eq__(self, other):
         return self.__class__ == other.__class__ \
