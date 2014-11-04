@@ -38,7 +38,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               convert_auth_if_required,
                               print_config, write_default_config)
 from enstaller.session import Session
-from enstaller.errors import AuthFailedError, MissingPackage
+from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
@@ -112,7 +112,7 @@ def update_enstaller(session, repository, opts):
 
     try:
         latest = repository.find_latest_package(package_name)
-    except MissingPackage:
+    except NoSuchPackage:
         updated = False
     else:
         if latest.comparable_version > current_comparable_version:

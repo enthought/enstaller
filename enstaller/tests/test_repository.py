@@ -10,7 +10,7 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, m
 from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
-from enstaller.errors import MissingPackage
+from enstaller.errors import NoSuchPackage
 from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
@@ -264,7 +264,7 @@ class TestRepository(unittest.TestCase):
 
     def test_find_unavailable_package(self):
         # Given/When/Then
-        with self.assertRaises(MissingPackage):
+        with self.assertRaises(NoSuchPackage):
             self.repository.find_package("nono", "1.4.0-1")
 
     def test_find_packages(self):
@@ -374,7 +374,7 @@ class TestRepository(unittest.TestCase):
         repository = Repository()
 
         # When/Then
-        with self.assertRaises(MissingPackage):
+        with self.assertRaises(NoSuchPackage):
             repository.delete_package(to_remove)
 
     def test_delete_simple(self):

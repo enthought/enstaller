@@ -10,7 +10,7 @@ from egginst._compat import urllib
 from egginst.eggmeta import info_from_z
 from egginst._zipfile import ZipFile
 
-from enstaller.errors import EnstallerException, MissingPackage
+from enstaller.errors import EnstallerException, NoSuchPackage
 from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import compute_md5, PY_VER
 from enstaller.versions.enpkg import EnpkgVersion
@@ -334,7 +334,7 @@ class Repository(object):
         if not self.has_package(package_metadata):
             msg = "Package '{0}-{1}' not found".format(
                 package_metadata.name, package_metadata.version)
-            raise MissingPackage(msg)
+            raise NoSuchPackage(msg)
         else:
             candidates = [p for p in
                           self._name_to_packages[package_metadata.name]
@@ -381,8 +381,8 @@ class Repository(object):
         for candidate in candidates:
             if candidate.comparable_version == version:
                 return candidate
-        raise MissingPackage("Package '{0}-{1}' not found".format(name,
-                                                                  version))
+        raise NoSuchPackage("Package '{0}-{1}' not found".format(name,
+                                                                 version))
 
     def find_latest_package(self, name):
         """Returns the latest package with the given name.
@@ -398,7 +398,7 @@ class Repository(object):
         """
         packages = self.find_sorted_packages(name)
         if len(packages) < 1:
-            raise MissingPackage("No package with name {0!r}".format(name))
+            raise NoSuchPackage("No package with name {0!r}".format(name))
         else:
             return packages[-1]
 
