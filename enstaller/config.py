@@ -359,10 +359,8 @@ class Configuration(object):
         """
         The auth object that may be passed to Session.authenticate
 
-        Returns
-        -------
-        auth : IAuth or None
-            The configured auth. None if no auth is configured.
+        :return: the auth instance, or None is configured.
+        :rtype: IAuth or None
         """
         return self._auth
 
