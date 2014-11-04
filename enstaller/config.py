@@ -279,7 +279,7 @@ class Configuration(object):
                 "api_token": api_token_to_auth,
             })
 
-            if "EPD_auth" in translator and "api_token" in translator:
+            if "EPD_auth" in parsed and "api_token" in parsed:
                 msg = "Both 'EPD_auth' and 'api_token' set in configuration." \
                       "\nYou should remove one of those for consistent " \
                       "behaviour."
