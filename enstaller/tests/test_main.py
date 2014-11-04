@@ -19,7 +19,8 @@ from egginst.vendor.six.moves import unittest
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.main import (check_prefixes, epd_install_confirm, env_option,
+from enstaller.main import (check_prefixes, ensure_authenticated_config,
+                            epd_install_confirm, env_option,
                             get_package_path, imports_option, install_req,
                             main, needs_to_downgrade_enstaller,
                             repository_factory, search, update_enstaller,
@@ -40,11 +41,12 @@ from .common import (create_prefix_with_eggs,
                      dummy_repository_package_factory, mock_print,
                      mock_raw_input, fake_keyring,
                      mocked_session_factory,
-                     FakeOptions, R_JSON_AUTH_FREE_RESP,
+                     FakeOptions, R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
 
 
 class TestEnstallerUpdate(unittest.TestCase):
+    @mock.patch("enstaller.__is_released__", True)
     def test_no_update_enstaller(self):
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
@@ -646,3 +648,34 @@ class TestEnstallerComparableVersion(unittest.TestCase):
 
         # Then
         self.assertEqual(version, r_version)
+
+
+class TestConfigurationSetup(unittest.TestCase):
+    @responses.activate
+    def test_ensure_authenticated_config(self):
+        # Given
+        r_message = textwrap.dedent("""\
+            Could not authenticate as 'nono'
+            Please check your credentials/configuration and try again
+            (original error is: 'Authentication error: Invalid user login.').
+
+
+            You can change your authentication details with 'enpkg --userpass'.
+        """)
+
+        store_url = "https://acme.com"
+        responses.add(responses.GET, store_url + "/accounts/user/info/",
+                      body=json.dumps(R_JSON_NOAUTH_RESP))
+
+        config = Configuration()
+        config.update(store_url=store_url, auth=("nono", "le petit robot"))
+
+        session = Session.from_configuration(config)
+
+        # When/Then
+        with mock_print() as m:
+            with self.assertRaises(SystemExit) as e:
+                ensure_authenticated_config(config, "", session)
+
+        self.assertEqual(e.exception.code, -1)
+        self.assertMultiLineEqual(m.value, r_message)

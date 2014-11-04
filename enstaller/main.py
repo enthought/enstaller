@@ -181,7 +181,14 @@ def _get_config_candidate():
             return path
 
 
-def _invalid_authentication_message(auth_url, auth, original_error):
+def _invalid_authentication_message(auth, exc):
+    assert isinstance(exc, AuthFailedError)
+
+    if exc.original_exception is None:
+        original_error = exc.message
+    else:
+        original_error = str(exc.original_exception)
+
     header = auth.cant_login_message
     msg = textwrap.dedent("""\
         {0}
@@ -197,17 +204,8 @@ def ensure_authenticated_config(config, config_filename, session,
         session.authenticate(config.auth)
     except requests.exceptions.SSLError as e:
         humanize_ssl_error_and_die(e, config.store_url)
-    except AuthFailedError as e:
-        if e.original_exception is None:
-            url = config.store_url
-            msg = _invalid_authentication_message(url, config.auth, e.message)
-        else:
-            if config.use_webservice:
-                url = config.store_url
-            else:
-                url = e.original_exception.request.url
-            msg = _invalid_authentication_message(url, config.auth,
-                                                  str(e.original_exception))
+    except AuthFailedError as exc:
+        msg = _invalid_authentication_message(config.auth, exc)
         print(msg)
         print("\nYou can change your authentication details with "
               "'enpkg --userpass'.")
@@ -236,15 +234,8 @@ def configure_authentication_or_exit(config, config_filename,
 
     try:
         config._checked_change_auth(auth, session, config_filename)
-    except AuthFailedError as e:
-        if e.original_exception is None:
-            msg = _invalid_authentication_message(config.store_url,
-                                                  auth,
-                                                  str(e))
-        else:
-            msg = _invalid_authentication_message(config.store_url,
-                                                  auth,
-                                                  str(e.original_exception))
+    except AuthFailedError as exc:
+        msg = _invalid_authentication_message(auth, exc)
         print(msg)
         print("\nNo modification was written.")
         sys.exit(-1)
