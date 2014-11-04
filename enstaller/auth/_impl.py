@@ -74,7 +74,7 @@ class IAuth(with_metaclass(abc.ABCMeta)):
         """
 
 
-class UserPasswordAuth(object):
+class UserPasswordAuth(IAuth):
     """ Simple clear text username/password authentication."""
     @classmethod
     def from_encoded_auth(cls, encoded_auth):
@@ -153,7 +153,7 @@ class UserPasswordAuth(object):
             and self.password == other.password
 
 
-class APITokenAuth(object):
+class APITokenAuth(IAuth):
     def __init__(self, api_token):
         self._api_token = api_token
 
@@ -199,7 +199,3 @@ def _encode_string_base64(s):
 def _encode_auth(username, password):
     s = "{0}:{1}".format(username, password)
     return _encode_string_base64(s).rstrip()
-
-
-IAuth.register(UserPasswordAuth)
-IAuth.register(APITokenAuth)
