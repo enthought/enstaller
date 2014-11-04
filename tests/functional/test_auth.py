@@ -18,8 +18,9 @@ import mock
 
 from enstaller.vendor import responses
 
+from enstaller.auth import UserPasswordAuth
 from enstaller.main import main, main_noexc
-from enstaller.config import (_encode_auth, _set_keyring_password,
+from enstaller.config import (_set_keyring_password,
                               Configuration, write_default_config)
 
 from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
@@ -33,7 +34,7 @@ from .common import (
 
 FAKE_USER = "nono"
 FAKE_PASSWORD = "le petit robot"
-FAKE_CREDS = _encode_auth(FAKE_USER, FAKE_PASSWORD)
+FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
 
 class TestAuth(unittest.TestCase):
     @contextlib.contextmanager
@@ -96,9 +97,9 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-        Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
-        your credentials/configuration and try again (original error is:
-        '401 Client Error: None').
+        Could not authenticate as 'nono'
+        Please check your credentials/configuration and try again
+        (original error is: '401 Client Error: None').
 
 
         No modification was written.
@@ -149,9 +150,9 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-            Could not authenticate with user 'nono' against 'https://api.enthought.com'. Please check
-            your credentials/configuration and try again (original error is:
-            '401 Client Error: None').
+            Could not authenticate as 'nono'
+            Please check your credentials/configuration and try again
+            (original error is: '401 Client Error: None').
 
 
             You can change your authentication details with 'enpkg --userpass'.
@@ -224,16 +225,16 @@ class TestAuth(unittest.TestCase):
         repo = "http://acme.com/repo/ets/"
         config = Configuration()
         config.update(use_webservice=False, indexed_repositories=[repo])
-        config.set_auth("nono", "le petit robot")
+        config.update(auth=("nono", "le petit robot"))
         config.write(self.config)
 
         url = repo + "index.json"
         responses.add(responses.HEAD, url, status=401)
 
         error_message = textwrap.dedent("""\
-            Could not authenticate with user 'nono' against 'http://acme.com/repo/ets/index.json'. Please check
-            your credentials/configuration and try again (original error is:
-            '401 Client Error: None').
+            Could not authenticate as 'nono'
+            Please check your credentials/configuration and try again
+            (original error is: '401 Client Error: None').
 
 
             You can change your authentication details with 'enpkg --userpass'.
@@ -258,7 +259,7 @@ class TestAuth(unittest.TestCase):
         url = "http://acme.com"
         config = Configuration()
         config.update(store_url=url)
-        config.set_auth("nono", "le petit robot")
+        config.update(auth=("nono", "le petit robot"))
         config.write(self.config)
 
         def callback(request):
@@ -292,7 +293,7 @@ class TestAuth(unittest.TestCase):
         config = Configuration()
         config.update(use_webservice=False,
                       indexed_repositories=["http://acme.com/repo/"])
-        config.set_auth("nono", "le petit robot")
+        config.update(auth=("nono", "le petit robot"))
         config.write(self.config)
 
         def callback(request):
@@ -324,7 +325,7 @@ class TestAuth(unittest.TestCase):
         url = "http://acme.com"
         config = Configuration()
         config.update(store_url=url)
-        config.set_auth("nono", "le petit robot")
+        config.update(auth=("nono", "le petit robot"))
         config.write(self.config)
 
         responses.add_callback(responses.GET, re.compile(url + "/*"),

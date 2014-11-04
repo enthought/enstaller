@@ -20,6 +20,8 @@ from enstaller.tests.common import (DummyAuthenticator, fake_keyring,
                                     R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
 
+from .._impl import UserPasswordAuth
+
 
 basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription=True)
 free_user = UserInfo(True, first_name="John", last_name="Smith", has_subscription=False)
@@ -81,7 +83,8 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
             usr = config._checked_change_auth(auth, session, self.f)
 
             self.assertTrue(usr.is_authenticated)
-            self.assertEqual(config.auth, ("valid_user", "valid_password"))
+            self.assertEqual(config.auth,
+                             UserPasswordAuth("valid_user", "valid_password"))
 
     def test_remote_success(self):
         write_default_config(self.f)
@@ -98,7 +101,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
         config = Configuration()
 
         with self.assertRaises(InvalidConfiguration):
-            config.set_auth(None, None)
+            config.update(auth=(None, None))
 
 
 class AuthManagerBase(unittest.TestCase):
@@ -134,7 +137,9 @@ class TestOldReposAuthManager(AuthManagerBase):
             session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
         # Then
-        self.assertEqual(session._raw.auth, (FAKE_USER, FAKE_PASSWORD))
+        self.assertIsInstance(session._raw.auth, requests.auth.HTTPBasicAuth)
+        self.assertEqual(session._raw.auth.username, FAKE_USER)
+        self.assertEqual(session._raw.auth.password, FAKE_PASSWORD)
 
     @responses.activate
     def test_simple(self):

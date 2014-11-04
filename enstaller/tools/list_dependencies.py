@@ -57,13 +57,13 @@ def main(argv=None):
     config._platform = namespace.platform
 
     if namespace.auth is None:
-        userpass = config.auth
+        auth = config.auth
     else:
-        userpass = tuple(namespace.auth.split(":"))
+        auth = tuple(namespace.auth.split(":"))
 
     session = Session.from_configuration(config)
     with session:
-        session.authenticate(userpass)
+        session.authenticate(auth)
 
         if namespace.platform == "all":
             platforms = ["rh5-32", "rh5-64", "osx-32", "osx-64", "win-32", "win-64"]

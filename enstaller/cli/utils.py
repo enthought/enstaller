@@ -48,14 +48,14 @@ def _is_any_package_unavailable(remote_repository, actions):
 
 
 def _notify_unavailable_package(config, requirement, session):
-    username, __ = config.auth
+    logged_in_string = config.auth.logged_message
     user_info = UserInfo.from_session(session)
     subscription = user_info.subscription_level
     msg = textwrap.dedent("""\
         Cannot install {0!r}, as this package (or some of its requirements)
-        are not available at your subscription level {1!r} (You are
-        currently logged in as {2!r}).
-        """.format(str(requirement), subscription, username))
+        are not available at your subscription level {1!r}
+        ({2}).
+        """.format(str(requirement), subscription, logged_in_string))
     print()
     print(textwrap.fill(msg, DEFAULT_TEXT_WIDTH))
 

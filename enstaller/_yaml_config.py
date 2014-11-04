@@ -2,6 +2,7 @@ import os.path
 
 from egginst._compat import PY2, string_types, urllib
 
+from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
 from enstaller.vendor import jsonschema
@@ -12,10 +13,12 @@ else:
     from enstaller.vendor import yaml_py3 as yaml
 
 
+_API_TOKEN = "api_token"
 _AUTHENTICATION = "authentication"
-_AUTHENTICATION_TYPE = "type"
+_AUTHENTICATION_TYPE = "kind"
 _AUTHENTICATION_TYPE_BASIC = "basic"
-_AUTHENTICATION_TYPE_DIGEST = "digest"
+_AUTHENTICATION_TYPE_SIMPLE = "simple"
+_AUTHENTICATION_TYPE_TOKEN = "token"
 _MAX_RETRIES = "max_retries"
 _SSL_VERIFY = "verify_ssl"
 _USERNAME = "username"
@@ -54,8 +57,9 @@ _SCHEMA = {
         "authentication": {
             "type": "object",
             "oneOf": [
+                {"$ref": "#/definitions/api_token_authentication"},
                 {"$ref": "#/definitions/simple_authentication"},
-                {"$ref": "#/definitions/digest_authentication"}
+                {"$ref": "#/definitions/basic_authentication"}
             ],
             "description": "Authentication."
         },
@@ -66,26 +70,36 @@ _SCHEMA = {
         }
     },
     "definitions": {
+        "api_token_authentication": {
+            "properties": {
+                "kind": {
+                    "enum": [_AUTHENTICATION_TYPE_TOKEN],
+                    "default": _AUTHENTICATION_TYPE_TOKEN
+                },
+                _API_TOKEN: {"type": "string"}
+            },
+            "required": [_API_TOKEN],
+            "additionalProperties": False
+        },
         "simple_authentication": {
             "properties": {
-                "type": {
-                    "enum": [_AUTHENTICATION_TYPE_BASIC],
-                    "default": _AUTHENTICATION_TYPE_BASIC
+                "kind": {
+                    "enum": [_AUTHENTICATION_TYPE_SIMPLE]
                 },
                 _USERNAME: {"type": "string"},
                 _PASSWORD: {"type": "string"}
             },
-            "required": [_USERNAME, _PASSWORD],
+            "required": ["kind", _USERNAME, _PASSWORD],
             "additionalProperties": False
         },
-        "digest_authentication": {
+        "basic_authentication": {
             "properties": {
-                "type": {
-                    "enum": [_AUTHENTICATION_TYPE_DIGEST]
+                "kind": {
+                    "enum": [_AUTHENTICATION_TYPE_BASIC]
                 },
                 _AUTH_STRING: {"type": "string"}
             },
-            "required": ["type", _AUTH_STRING],
+            "required": ["kind", _AUTH_STRING],
             "additionalProperties": False
         }
     },
@@ -95,7 +109,7 @@ _SCHEMA = {
 
 def load_configuration_from_yaml(cls, filename_or_fp):
     # FIXME: local import to workaround circular import
-    from enstaller.config import _decode_auth, STORE_KIND_BROOD
+    from enstaller.config import STORE_KIND_BROOD
     if isinstance(filename_or_fp, string_types):
         with open(filename_or_fp, "rt") as fp:
             data = yaml.load(fp)
@@ -116,17 +130,22 @@ def load_configuration_from_yaml(cls, filename_or_fp):
     if _AUTHENTICATION in data:
         authentication = data[_AUTHENTICATION]
         authentication_type = authentication.get(_AUTHENTICATION_TYPE,
-                                                 _AUTHENTICATION_TYPE_BASIC)
-        if authentication_type == _AUTHENTICATION_TYPE_BASIC:
+                                                 _AUTHENTICATION_TYPE_TOKEN)
+        if authentication_type == _AUTHENTICATION_TYPE_SIMPLE:
             username = authentication[_USERNAME]
             password = authentication[_PASSWORD]
-        elif authentication_type == _AUTHENTICATION_TYPE_DIGEST:
-            username, password = _decode_auth(authentication[_AUTH_STRING])
+            auth = UserPasswordAuth(username, password)
+        elif authentication_type == _AUTHENTICATION_TYPE_BASIC:
+            auth_string = authentication[_AUTH_STRING]
+            auth = UserPasswordAuth.from_encoded_auth(auth_string)
+        elif authentication_type == _AUTHENTICATION_TYPE_TOKEN:
+            token = authentication[_API_TOKEN]
+            auth = APITokenAuth(token)
         else:
             msg = "Unknown authentication type {0!r}". \
                   format(authentication_type)
             raise InvalidConfiguration(msg)
-        config.set_auth(username, password)
+        config.update(auth=auth)
 
     if _STORE_URL in data:
         config.update(store_url=data[_STORE_URL])

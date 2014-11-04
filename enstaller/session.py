@@ -16,6 +16,8 @@ from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)
 
+from enstaller.auth import UserPasswordAuth
+
 
 class _PatchedRawSession(requests.Session):
     """ Like requests.Session, but supporting (nested) umounting of
@@ -150,7 +152,10 @@ class Session(object):
         self._in_etag_context -= 1
 
     def authenticate(self, auth):
-        self._authenticator.authenticate(self, auth)
+        if isinstance(auth, tuple) and len(auth) == 2:
+            auth = UserPasswordAuth(auth[0], auth[1])
+
+        self._authenticator.authenticate(self, auth.request_adapter)
         self._raw.auth = self._authenticator._auth
 
     def download(self, url, target=None):

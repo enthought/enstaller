@@ -43,6 +43,9 @@ else:
         return ctx.exception.code
 
 
+FAKE_AUTH = ("nono", "le gros robot")
+
+
 class TestMisc(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
@@ -222,6 +225,7 @@ class TestInstallReq(unittest.TestCase):
     def test_install_not_available(self):
         # Given
         config = Configuration()
+        config.update(auth=FAKE_AUTH)
 
         nose = dummy_repository_package_factory("nose", "1.3.0", 1)
         nose.available = False
@@ -289,12 +293,12 @@ class TestInstallReq(unittest.TestCase):
 
         auth = ("nono", "le gros robot")
         session.authenticate(auth)
-        config.set_auth(*auth)
+        config.update(auth=auth)
 
         r_output = textwrap.dedent("""
         Cannot install 'scipy', as this package (or some of its requirements) are not
-        available at your subscription level 'Canopy / EPD Free' (You are currently
-        logged in as 'nono').
+        available at your subscription level 'Canopy / EPD Free' (You are logged in as
+        'nono').
         """)
 
         self.maxDiff = None

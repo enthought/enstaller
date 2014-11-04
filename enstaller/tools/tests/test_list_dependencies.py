@@ -53,8 +53,10 @@ class TestListDependencies(unittest.TestCase):
 
 
 def _mock_list_dependencies_configuration(f):
+    config = Configuration()
+    config.update(auth=("fake", "auth"))
     return mock.patch("enstaller.main.Configuration._from_legacy_locations",
-                      return_value=Configuration())(f)
+                      return_value=config)(f)
 
 
 class TestMainListDependencies(unittest.TestCase):
@@ -97,8 +99,7 @@ class TestMainListDependencies(unittest.TestCase):
         self.assertMultiLineEqual(m.value, r_output)
 
     @responses.activate
-    @mock.patch("enstaller.main.Configuration._from_legacy_locations",
-                return_value=Configuration())
+    @_mock_list_dependencies_configuration
     def test_simple(self, config):
         # Given
         self._mock_auth()

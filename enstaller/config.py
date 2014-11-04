@@ -2,12 +2,10 @@
 # Author: Ilan Schnell <ischnell@enthought.com>
 from __future__ import absolute_import, print_function
 
-import base64
 import logging
 import re
 import os
 import sys
-import textwrap
 import platform
 import tempfile
 import warnings
@@ -21,8 +19,9 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, DUMMY_USER, subscription_message,
-                            UserInfo)
+from enstaller.auth import (_INDEX_NAME, DUMMY_USER,
+                            subscription_message, APITokenAuth, UserInfo,
+                            UserPasswordAuth)
 from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
@@ -126,23 +125,6 @@ def _get_writable_local_dir(local_dir):
     return tempfile.mkdtemp()
 
 
-def _decode_auth(s):
-    parts = base64.decodestring(s.encode("utf8")).decode("utf8").split(":")
-    if len(parts) == 2:
-        return tuple(parts)
-    else:
-        raise InvalidConfiguration("Invalid auth line")
-
-
-def _encode_string_base64(s):
-    return base64.encodestring(s.encode("utf8")).decode("utf8")
-
-
-def _encode_auth(username, password):
-    s = "{0}:{1}".format(username, password)
-    return _encode_string_base64(s).rstrip()
-
-
 def write_default_config(filename):
     """
     Write a default configuration file at the given location.
@@ -160,19 +142,6 @@ def write_default_config(filename):
     else:
         config = Configuration()
 
-        username, password = config.auth
-        if username and password:
-            authline = 'EPD_auth = %r' % config.encoded_auth
-            auth_section = textwrap.dedent("""
-            # A Canopy / EPD subscriber authentication is required to access the
-            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
-            # --userpass' command, which will ask you for your email address
-            # password.
-            %s
-            """ % authline)
-        else:
-            auth_section = ''
-
         if config.proxy:
             proxy_line = 'proxy = %r' % str(config.proxy)
         else:
@@ -180,8 +149,8 @@ def write_default_config(filename):
                           '# e.g. "http://<user>:<passwd>@123.0.1.2:8080"')
 
         variables = {"py_ver": PY_VER, "sys_prefix": sys.prefix, "version":
-                     __version__, "proxy_line": proxy_line, "auth_section":
-                     auth_section}
+                     __version__, "proxy_line": proxy_line,
+                     "auth_section": ""}
         with open(filename, "w") as fo:
             fo.write(RC_DEFAULT_TEMPLATE % variables)
 
@@ -203,13 +172,16 @@ def convert_auth_if_required(filename):
     """
     did_convert = False
     if _is_using_epd_username(filename):
+        msg = "Cannot convert password: no password found in keyring"
         config = Configuration.from_file(filename)
-        password = _get_keyring_password(config.username)
+        if config.auth is None:
+            raise EnstallerException(msg)
+        username = config.auth.username
+        password = _get_keyring_password(username)
         if password is None:
-            raise EnstallerException("Cannot convert password: no password "
-                                     "found in keyring")
+            raise EnstallerException(msg)
         else:
-            config.set_auth(config.username, password)
+            config.update(auth=(username, password))
             config._change_auth(filename)
             did_convert = True
 
@@ -279,16 +251,17 @@ class Configuration(object):
         def _create(fp):
             ret = cls()
 
+            def api_token_to_auth(api_token):
+                ret.update(auth=APITokenAuth(api_token))
+
             def epd_auth_to_auth(epd_auth):
-                username, password = _decode_auth(epd_auth)
-                ret.set_auth(username, password)
+                ret.update(auth=UserPasswordAuth.from_encoded_auth(epd_auth))
 
             def epd_username_to_auth(username):
-                ret._username = username
-                if keyring is None:
-                    ret._password = None
-                else:
-                    ret._password = _get_keyring_password(username)
+                if keyring is not None:
+                    password = _get_keyring_password(username)
+                    if password is not None:
+                        ret.update(auth=(username, password))
 
             try:
                 parsed = parse_assignments(fp)
@@ -303,7 +276,14 @@ class Configuration(object):
                 "EPD_auth": epd_auth_to_auth,
                 "EPD_username": epd_username_to_auth,
                 "IndexedRepos": translator["indexed_repositories"],
+                "api_token": api_token_to_auth,
             })
+
+            if "EPD_auth" in parsed and "api_token" in parsed:
+                msg = "Both 'EPD_auth' and 'api_token' set in configuration." \
+                      "\nYou should remove one of those for consistent " \
+                      "behaviour."
+                warnings.warn(msg)
 
             for name, value in parsed.items():
                 if name in translator:
@@ -322,6 +302,7 @@ class Configuration(object):
             return _create(filename)
 
     def __init__(self):
+        self._auth = None
         self._autoupdate = True
         self._noapp = False
         self._proxy = None
@@ -334,9 +315,6 @@ class Configuration(object):
         self._store_kind = STORE_KIND_LEGACY
 
         self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
-
-        self._username = None
-        self._password = None
 
         self._filename = None
         self._platform = plat.custom_plat
@@ -351,13 +329,13 @@ class Configuration(object):
             ("verify_ssl", "_verify_ssl"),
             ("use_pypi", "_use_pypi"),
             ("use_webservice", "_use_webservice"),
-            ("username", "_username"),
         ]
         for name, private_attribute in simple_attributes:
             self._name_to_setter[name] = \
                 self._simple_attribute_set_factory(private_attribute)
 
         self._name_to_setter.update({
+            "auth": self._set_auth,
             "indexed_repositories": self._set_indexed_repositories,
             "max_retries": self._set_max_retries,
             "prefix": self._set_prefix,
@@ -379,9 +357,12 @@ class Configuration(object):
     @property
     def auth(self):
         """
-        (username, password) pair.
+        The auth object that may be passed to Session.authenticate
+
+        :return: the auth instance, or None is configured.
+        :rtype: IAuth or None
         """
-        return (self._username, self._password)
+        return self._auth
 
     @property
     def autoupdate(self):
@@ -389,16 +370,6 @@ class Configuration(object):
         Whether enpkg should attempt updating itself.
         """
         return self._autoupdate
-
-    @property
-    def encoded_auth(self):
-        """
-        Auth information, encoded as expected by EPD_auth.
-        """
-        if not self.is_auth_configured:
-            raise InvalidConfiguration("EPD_auth is not available when "
-                                       "auth has not been configured.")
-        return _encode_auth(self._username, self._password)
 
     @property
     def filename(self):
@@ -434,20 +405,6 @@ class Configuration(object):
         else:
             return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
                          for url in self.indexed_repositories)
-
-    @property
-    def is_auth_configured(self):
-        """ Returns True if authentication is set up for this configuration
-        object.
-
-        Note: this only checks whether the auth is configured, not whether the
-        authentication information is correct.
-
-        """
-        if self._username and self._password is not None:
-            return True
-        else:
-            return False
 
     @property
     def max_retries(self):
@@ -518,13 +475,6 @@ class Configuration(object):
         return self._verify_ssl
 
     @property
-    def username(self):
-        """
-        Username
-        """
-        return self._username
-
-    @property
     def use_pypi(self):
         """
         Whether to load pypi repositories (in `webservice` mode).
@@ -549,35 +499,16 @@ class Configuration(object):
     # --------------
     # Public methods
     # --------------
-    def set_auth(self, username, password):
-        """ Set the internal authentication information.
-
-        Parameters
-        ----------
-        username : str
-            The username/email
-        password : str
-            The password
-        """
-        if username is None or password is None:
-            raise InvalidConfiguration(
-                "invalid authentication arguments: "
-                "{0}:{1}".format(username, password))
-        else:
-            self._username = username
-            self._password = password
-
     def reset_auth(self):
-        self._username = None
-        self._password = None
+        self._auth = None
 
     def set_auth_from_encoded(self, value):
         try:
-            username, password = _decode_auth(value)
+            auth = UserPasswordAuth.from_encoded_auth(value)
         except Exception:
             raise InvalidConfiguration("Invalid EPD_auth value")
         else:
-            self.set_auth(username, password)
+            self.update(auth=auth)
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
@@ -596,18 +527,10 @@ class Configuration(object):
         filename : str
             The path of the written file.
         """
-        username, password = self.auth
-        if username and password:
-            authline = 'EPD_auth = %r' % self.encoded_auth
-            auth_section = textwrap.dedent("""
-            # A Canopy / EPD subscriber authentication is required to access the
-            # Canopy / EPD repository.  To change your credentials, use the 'enpkg
-            # --userpass' command, which will ask you for your email address
-            # password.
-            %s
-            """ % authline)
+        if self.auth is None:
+            auth_section = ""
         else:
-            auth_section = ''
+            auth_section = self.auth.config_string
 
         if self.proxy:
             proxy_line = 'proxy = %r' % str(self.proxy)
@@ -645,39 +568,49 @@ class Configuration(object):
     # Private methods
     # ---------------
     def _change_auth(self, filename):
-        pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
-        with open(filename, 'r') as fi:
-            data = fi.read()
+        if self.auth is None:
+            pat = re.compile(r'^(EPD_auth|EPD_username)\s*=.*$', re.M)
 
-        if not self.is_auth_configured:
+            with open(filename, 'r') as fi:
+                data = fi.read()
+
             if pat.search(data):
                 data = pat.sub("", data)
+
             with open(filename, 'w') as fo:
                 fo.write(data)
-            return
-
-        authline = 'EPD_auth = \'%s\'' % self.encoded_auth
-
-        if pat.search(data):
-            data = pat.sub(authline, data)
         else:
-            lines = data.splitlines()
-            lines.append(authline)
-            data = '\n'.join(lines) + '\n'
-
-        with open(filename, 'w') as fo:
-            fo.write(data)
+            self.auth.change_auth(filename)
 
     def _checked_change_auth(self, auth, session, filename):
         user = {}
 
         session.authenticate(auth)
-        self.set_auth(*auth)
+        self.update(auth=auth)
         self._change_auth(filename)
 
         user = UserInfo.from_session(session)
         print(subscription_message(self, user))
         return user
+
+    def _set_auth(self, auth):
+        """ Set the internal authentication information.
+
+        Parameters
+        ----------
+        auth : Auth-like
+            The authentication information. May be a (username, password)
+            tuple, or an *Auth subclass.
+        """
+        if isinstance(auth, tuple) and len(auth) == 2:
+            username, password = auth
+            if username is None:
+                raise InvalidConfiguration(
+                    "invalid authentication arguments: "
+                    "{0}:{1}".format(username, password))
+            self._auth = UserPasswordAuth(username, password)
+        else:
+            self._auth = auth
 
     def _set_indexed_repositories(self, urls):
         self._indexed_repositories = tuple(fill_url(url) for url in urls)
@@ -744,7 +677,7 @@ def print_config(config, prefix, session):
 
     user = DUMMY_USER
 
-    if not config.is_auth_configured:
+    if config.auth is None:
         print("No valid auth information in configuration, cannot "
               "authenticate.")
     else:
