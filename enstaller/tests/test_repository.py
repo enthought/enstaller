@@ -2,11 +2,12 @@ import operator
 import os.path
 import time
 
-from egginst._compat import TestCase
+from egginst._compat import assertCountEqual
 from egginst.main import EggInst
 from egginst.utils import compute_md5
 from egginst.testing_utils import slow
 from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
+from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
 from enstaller.errors import MissingPackage
@@ -19,7 +20,7 @@ from enstaller.tests.common import dummy_installed_package_factory
 from enstaller.utils import PY_VER
 
 
-class TestParseVersion(TestCase):
+class TestParseVersion(unittest.TestCase):
     def test_simple(self):
         # given
         version = "1.8.0-1"
@@ -40,7 +41,7 @@ class TestParseVersion(TestCase):
             parse_version(version)
 
 
-class TestEggNameToNameVersion(TestCase):
+class TestEggNameToNameVersion(unittest.TestCase):
     def test_simple(self):
         # given
         egg_name = "numpy-1.8.0-1.egg"
@@ -72,7 +73,7 @@ class TestEggNameToNameVersion(TestCase):
             egg_name_to_name_version(egg_name)
 
 
-class TestPackage(TestCase):
+class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         version = EnpkgVersion.from_string("1.3.0-1")
@@ -98,7 +99,7 @@ class TestPackage(TestCase):
         self.assertEqual(metadata.build, 1)
 
 
-class TestRepositoryPackage(TestCase):
+class TestRepositoryPackage(unittest.TestCase):
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
@@ -138,7 +139,7 @@ class TestRepositoryPackage(TestCase):
         self.assertEqual(metadata.source_url, path_to_uri(path))
 
 
-class TestInstalledPackage(TestCase):
+class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir(self):
         # Given
         json_dict = {
@@ -205,7 +206,7 @@ class TestInstalledPackage(TestCase):
         self.assertEqual(metadata.ctime, time.ctime(0.0))
 
 
-class TestRepository(TestCase):
+class TestRepository(unittest.TestCase):
     def setUp(self):
         eggs = [
             "dummy-1.0.1-1.egg",
@@ -392,13 +393,12 @@ class TestRepository(TestCase):
         repository.delete_package(to_remove)
 
         # Then
-        self.assertItemsEqual(
-            [p.key for p in repository.iter_packages()],
-            ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
+        assertCountEqual(self, [p.key for p in repository.iter_packages()],
+                         ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
 
 
 # Unittest that used to belong to Enpkg
-class TestRepositoryMisc(TestCase):
+class TestRepositoryMisc(unittest.TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
         entries = [
@@ -414,7 +414,7 @@ class TestRepositoryMisc(TestCase):
 
         # Then
         self.assertEqual(len(packages), 2)
-        self.assertItemsEqual(packages, entries)
+        assertCountEqual(self, packages, entries)
 
     def test_sorted_packages_valid(self):
         # Given
@@ -450,4 +450,4 @@ class TestRepositoryMisc(TestCase):
 
         # Then
         self.assertEqual(len(packages), 2)
-        self.assertItemsEqual([p.version for p in packages], ["1.6.1", "1.8k"])
+        assertCountEqual(self, [p.version for p in packages], ["1.6.1", "1.8k"])

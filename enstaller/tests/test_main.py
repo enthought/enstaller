@@ -11,9 +11,9 @@ import textwrap
 
 import mock
 
-from egginst._compat import TestCase
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
+from egginst.vendor.six.moves import unittest
 
 
 from enstaller.auth import UserInfo
@@ -44,7 +44,7 @@ from .common import (create_prefix_with_eggs,
                      DummyAuthenticator)
 
 
-class TestEnstallerUpdate(TestCase):
+class TestEnstallerUpdate(unittest.TestCase):
     def test_no_update_enstaller(self):
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
@@ -85,7 +85,7 @@ class TestEnstallerUpdate(TestCase):
         self.assertFalse(self._test_update_enstaller(low_version, high_version))
 
 
-class TestMisc(TestCase):
+class TestMisc(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -329,7 +329,7 @@ class TestMisc(TestCase):
         self.assertEqual(repository.find_packages("nose"), [])
 
 
-class TestSearch(TestCase):
+class TestSearch(unittest.TestCase):
     def test_no_installed(self):
         config = Configuration()
         config.update(use_webservice=False)
@@ -446,7 +446,7 @@ class TestSearch(TestCase):
 
 
 @fake_keyring
-class TestInstallRequirement(TestCase):
+class TestInstallRequirement(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -524,7 +524,7 @@ class TestInstallRequirement(TestCase):
                               ('install', 'nose-1.3.0-1.egg')])
 
 
-class TestCustomConfigPath(TestCase):
+class TestCustomConfigPath(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -551,7 +551,7 @@ class TestCustomConfigPath(TestCase):
         main(["-s", "numpy", "-c", path])
 
 
-class TestEnstallerComparableVersion(TestCase):
+class TestEnstallerComparableVersion(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

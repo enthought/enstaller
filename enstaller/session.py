@@ -2,7 +2,7 @@ import collections
 import contextlib
 import os.path
 
-from egginst._compat import urlparse
+from egginst._compat import urllib
 from egginst.utils import atomic_file, ensure_dir
 
 from enstaller import __version__
@@ -164,7 +164,7 @@ class Session(object):
         resp.raise_for_status()
 
         if target is None:
-            target = os.path.basename(urlparse.urlparse(url).path)
+            target = os.path.basename(urllib.parse.urlparse(url).path)
 
         with atomic_file(target) as fp:
             for chunk in resp.iter_content(1024):

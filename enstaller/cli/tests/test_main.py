@@ -8,8 +8,9 @@ import textwrap
 
 import mock
 
-from egginst._compat import TestCase
+from egginst._compat import assertCountEqual
 from egginst.tests.common import mkdtemp
+from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.tests.common import (FAKE_MD5, FAKE_SIZE, PY_VER,
@@ -24,7 +25,7 @@ from ..commands import (info_option, install_from_requirements, update_all,
                         whats_new)
 
 
-class TestInfoStrings(TestCase):
+class TestInfoStrings(unittest.TestCase):
     def test_info_option(self):
         self.maxDiff = None
 
@@ -68,7 +69,7 @@ class TestInfoStrings(TestCase):
         self.assertMultiLineEqual(m.value, r_output)
 
 
-class TestUpdatesCheck(TestCase):
+class TestUpdatesCheck(unittest.TestCase):
     def test_whats_new_no_new_epd(self):
         # Given
         r_output = textwrap.dedent("""\
@@ -98,7 +99,7 @@ class TestUpdatesCheck(TestCase):
         # FIXME: we splitlines and compared wo caring about order, as
         # the actual line order depends on dict ordering from
         # EggCollection.query_installed.
-        self.assertItemsEqual(m.value.splitlines(), r_output.splitlines())
+        assertCountEqual(self, m.value.splitlines(), r_output.splitlines())
 
     def test_whats_new_new_epd(self):
         # Given
@@ -222,7 +223,7 @@ class TestUpdatesCheck(TestCase):
                     mocked_install_req.assert_called()
 
 
-class TestInstallFromRequirements(TestCase):
+class TestInstallFromRequirements(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

@@ -1,6 +1,6 @@
 import os.path
 
-from egginst._compat import PY2, string_types, urlparse
+from egginst._compat import PY2, string_types, urllib
 
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
@@ -135,7 +135,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
 
         entries = data[_REPOSITORIES]
         for entry in entries:
-            p = urlparse.urlparse(entry)
+            p = urllib.parse.urlparse(entry)
             if p.scheme == "":
                 url = config.store_url + "/repo/{0}/{{PLATFORM}}".format(entry)
             elif p.scheme == "file":

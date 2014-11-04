@@ -5,7 +5,7 @@ import tempfile
 
 import enstaller
 
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           LegacyCanopyAuthManager,
@@ -18,7 +18,7 @@ from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 from enstaller.vendor.requests.adapters import HTTPAdapter
 
 
-class Test_PatchedRawSession(TestCase):
+class Test_PatchedRawSession(unittest.TestCase):
     def test_mount_simple(self):
         # Given
         session = _PatchedRawSession()
@@ -75,7 +75,7 @@ class Test_PatchedRawSession(TestCase):
         self.assertIs(session.adapters["http://"], old_adapters["http://"])
 
 
-class TestSession(TestCase):
+class TestSession(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

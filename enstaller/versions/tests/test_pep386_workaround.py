@@ -1,9 +1,9 @@
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from ..pep386_workaround import PEP386WorkaroundVersion
 
 
-class TestPEP386Workaround(TestCase):
+class TestPEP386Workaround(unittest.TestCase):
     def test_correct_equal(self):
         # Given
         left = PEP386WorkaroundVersion.from_string("1.3.0")
@@ -170,7 +170,7 @@ class TestPEP386Workaround(TestCase):
         self.assertEqual(str(version), version_string)
 
 
-class TestTrailingZeros(TestCase):
+class TestTrailingZeros(unittest.TestCase):
     def test_leading_zeros(self):
         # Given
         left = PEP386WorkaroundVersion.from_string("0.9.8")
@@ -228,7 +228,7 @@ class TestTrailingZeros(TestCase):
         self.assertEqual(str(v), version_string)
 
 
-class TestOldCases(TestCase):
+class TestOldCases(unittest.TestCase):
     def test_single_number(self):
         # Given
         version_string = "214"

@@ -3,7 +3,9 @@ import os.path
 import shutil
 import tempfile
 
-from egginst._compat import TestCase
+from egginst._compat import assertCountEqual
+from egginst.vendor.six.moves import unittest
+
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.legacy_stores import parse_index, repository_factory
@@ -24,7 +26,7 @@ def _index_provider(store_location):
     return json.dumps(dict((entry.key, entry.s3index_data) for entry in entries))
 
 
-class TestLegacyStores(TestCase):
+class TestLegacyStores(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -41,9 +43,9 @@ class TestLegacyStores(TestCase):
 
         # Then
         self.assertTrue(len(packages) > 0)
-        self.assertItemsEqual([p.name for p in packages], ["numpy", "scipy"])
-        self.assertItemsEqual([p.full_version for p in packages], ["1.8.0-1",
-                                                                   "0.14.0-1"])
+        assertCountEqual(self, [p.name for p in packages], ["numpy", "scipy"])
+        assertCountEqual(self, [p.full_version for p in packages], ["1.8.0-1",
+                                                                    "0.14.0-1"])
 
     def test_simple_no_webservice_file(self):
         # Given

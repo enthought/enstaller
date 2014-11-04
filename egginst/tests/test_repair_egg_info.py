@@ -1,12 +1,7 @@
 import os
 import shutil
-import sys
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst._compat import assertCountEqual
 from egginst.main import EggInst, setuptools_egg_info_dir
 from egginst.repair_broken_egg_info import EggInfoDirFixer, repair
 from egginst.testing_utils import slow
@@ -14,6 +9,7 @@ from egginst.tests.common import (DUMMY_EGG, DUMMY_EGG_WITH_ENTRY_POINTS,
     DUMMY_EGG_WITH_APPINST)
 from egginst.tests.common import create_venv, tempfile
 from egginst.utils import compute_md5
+from egginst.vendor.six.moves import unittest
 
 
 class TestEggInfoDirFixer(unittest.TestCase):
@@ -109,7 +105,7 @@ class TestEggInfoDirFixer(unittest.TestCase):
         fixer.repair()
 
         # Then
-        self.assertItemsEqual(os.listdir(fixer.egg_info_dir),
+        assertCountEqual(self, os.listdir(fixer.egg_info_dir),
                               ["PKG-INFO", "egginst.json", "_info.json"])
 
     @slow
@@ -124,7 +120,7 @@ class TestEggInfoDirFixer(unittest.TestCase):
         fixer.repair()
 
         # Then
-        self.assertItemsEqual(os.listdir(fixer.egg_info_dir),
+        assertCountEqual(self, os.listdir(fixer.egg_info_dir),
                               ["PKG-INFO", "egginst.json", "_info.json"])
         self.assertEqual(compute_md5(os.path.join(fixer.egg_info_dir, "PKG-INFO")),
                          old_egg_info_file_md5)
@@ -145,12 +141,12 @@ class TestEggInfoDirFixer(unittest.TestCase):
         repair(self.prefix, False)
 
         # Then
-        self.assertItemsEqual(os.listdir(self._egg_info_path(broken_as_file_egg)),
+        assertCountEqual(self, os.listdir(self._egg_info_path(broken_as_file_egg)),
                               ["PKG-INFO", "egginst.json", "_info.json"])
-        self.assertItemsEqual(os.listdir(self._egg_info_path(broken_as_empty_dir)),
+        assertCountEqual(self, os.listdir(self._egg_info_path(broken_as_empty_dir)),
                               ["entry_points.txt", "PKG-INFO", "egginst.json",
                                "_info.json"])
-        self.assertItemsEqual(os.listdir(self._egg_info_path(non_broken_egg)),
+        assertCountEqual(self, os.listdir(self._egg_info_path(non_broken_egg)),
                               ["PKG-INFO"])
 
     @slow
@@ -170,7 +166,7 @@ class TestEggInfoDirFixer(unittest.TestCase):
 
         # Then
         self.assertTrue(os.path.isfile(self._egg_info_path(broken_as_file_egg)))
-        self.assertItemsEqual(os.listdir(self._egg_info_path(broken_as_empty_dir)),
+        assertCountEqual(self, os.listdir(self._egg_info_path(broken_as_empty_dir)),
                               [])
-        self.assertItemsEqual(os.listdir(self._egg_info_path(non_broken_egg)),
+        assertCountEqual(self, os.listdir(self._egg_info_path(non_broken_egg)),
                               ["PKG-INFO"])

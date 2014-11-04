@@ -2,7 +2,7 @@ from __future__ import absolute_import
 
 import abc
 
-from egginst._compat import urlparse, with_metaclass
+from egginst._compat import urllib, with_metaclass
 from enstaller.errors import AuthFailedError
 from enstaller.vendor import requests
 
@@ -75,7 +75,7 @@ class OldRepoAuthManager(object):
 
     def authenticate(self, session, auth):
         for index_url, _ in self.index_urls:
-            parse = urlparse.urlparse(index_url)
+            parse = urllib.parse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
                 try:
                     resp = session._raw_head(index_url, auth=auth)

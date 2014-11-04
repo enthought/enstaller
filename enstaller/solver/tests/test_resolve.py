@@ -1,4 +1,5 @@
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
+
 from enstaller.repository import Repository
 from enstaller.tests.common import dummy_repository_package_factory
 
@@ -6,7 +7,7 @@ from ..requirement import Requirement
 from ..resolve import Resolve
 
 
-class TestResolve(TestCase):
+class TestResolve(unittest.TestCase):
     def _repository_factory(self, packages):
         repository = Repository()
         for p in packages:

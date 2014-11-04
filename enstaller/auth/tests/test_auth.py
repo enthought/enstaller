@@ -1,5 +1,3 @@
-from egginst._compat import TestCase
-
 import base64
 import json
 import os.path
@@ -7,6 +5,8 @@ import shutil
 import tempfile
 
 from mock import patch
+
+from egginst.vendor.six.moves import unittest
 
 from enstaller.auth import DUMMY_USER, UserInfo
 from enstaller.auth.auth_managers import (BroodAuthenticator,
@@ -39,7 +39,7 @@ FAKE_CREDS = compute_creds(FAKE_USER, FAKE_PASSWORD)
 
 
 @fake_keyring
-class CheckedChangeAuthTestCase(TestCase):
+class CheckedChangeAuthTestCase(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.f = os.path.join(self.d, "enstaller4rc")
@@ -101,7 +101,7 @@ class CheckedChangeAuthTestCase(TestCase):
             config.set_auth(None, None)
 
 
-class AuthManagerBase(TestCase):
+class AuthManagerBase(unittest.TestCase):
     klass = None
 
     def setUp(self):
@@ -327,7 +327,7 @@ class TestBroodAuthManager(AuthManagerBase):
             self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
 
-class TestAuthenticate(TestCase):
+class TestAuthenticate(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -350,9 +350,9 @@ class TestAuthenticate(TestCase):
                 session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
 
-class SearchTestCase(TestCase):
+class SearchTestCase(unittest.TestCase):
     pass
 
 
-class InstallTestCase(TestCase):
+class InstallTestCase(unittest.TestCase):
     pass

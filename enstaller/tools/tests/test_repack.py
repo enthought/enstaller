@@ -9,10 +9,11 @@ import mock
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
-from egginst._compat import TestCase
+from egginst._compat import assertCountEqual
 from egginst._zipfile import ZipFile
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import DUMMY_EGG, STANDARD_EGG, NOSE_1_2_1
+from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import EnstallerException
 from enstaller.tools.repack import main, repack
@@ -26,7 +27,7 @@ def chdir(d):
     os.chdir(old)
 
 
-class TestRepack(TestCase):
+class TestRepack(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -145,8 +146,8 @@ class TestRepack(TestCase):
         self.assertTrue(os.path.exists(target))
         with ZipFile(target) as zp:
             info = info_from_z(zp)
-        self.assertItemsEqual(info["packages"], ["foo"])
-        self.assertItemsEqual(info["name"], "babar")
+        assertCountEqual(self, info["packages"], ["foo"])
+        assertCountEqual(self, info["name"], "babar")
 
     def test_endist_add_files_simple(self):
         # Given
@@ -192,7 +193,7 @@ class TestRepack(TestCase):
                 repack(source, 2, "rh5-64")
 
 
-class TestRepackMain(TestCase):
+class TestRepackMain(unittest.TestCase):
     def test_help(self):
         # Given
         args = ["-h"]

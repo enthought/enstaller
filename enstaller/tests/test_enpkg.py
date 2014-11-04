@@ -4,9 +4,9 @@ import tempfile
 
 import mock
 
-from egginst._compat import TestCase
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
+from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
@@ -25,7 +25,7 @@ from .common import (dummy_repository_package_factory,
                      unconnected_enpkg_factory, DummyAuthenticator)
 
 
-class TestEnpkgActions(TestCase):
+class TestEnpkgActions(unittest.TestCase):
     def test_empty_actions(self):
         """
         Ensuring enpkg.execute([]) does not crash
@@ -48,7 +48,7 @@ class TestEnpkgActions(TestCase):
                 self.assertTrue(mocked_remove.called)
 
 
-class TestEnpkgExecute(TestCase):
+class TestEnpkgExecute(unittest.TestCase):
     def setUp(self):
         self.prefixes = [tempfile.mkdtemp()]
 
@@ -88,7 +88,7 @@ class TestEnpkgExecute(TestCase):
                 mocked_install.assert_called_with()
 
 
-class TestEnpkgRevert(TestCase):
+class TestEnpkgRevert(unittest.TestCase):
     def setUp(self):
         self.prefixes = [tempfile.mkdtemp()]
 
@@ -195,7 +195,7 @@ class TestEnpkgRevert(TestCase):
                 self.assertEqual(ret, r_actions)
 
 
-class TestFetchAction(TestCase):
+class TestFetchAction(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -395,7 +395,7 @@ class TestFetchAction(TestCase):
         action.execute()
 
 
-class TestRemoveAction(TestCase):
+class TestRemoveAction(unittest.TestCase):
     def setUp(self):
         self.top_prefix = tempfile.mkdtemp()
         self.top_installed_repository = Repository(self.top_prefix)

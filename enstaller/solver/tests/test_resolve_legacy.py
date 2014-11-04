@@ -4,9 +4,9 @@ import os
 
 from os.path import abspath, dirname, join
 
-from egginst._compat import TestCase
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.utils import PY_VER
+from egginst.vendor.six.moves import unittest
 
 from enstaller.indexed_repo.metadata import parse_depend_index
 
@@ -51,7 +51,7 @@ def eggs_rs(c, req_string):
     return c.install_sequence(Requirement(req_string))
 
 
-class TestChain0(TestCase):
+class TestChain0(unittest.TestCase):
     def _resolve_factory(self, python_version):
         indices = [join(INDEX_REPO_DIR, fn) for fn in ['index-add.txt',
                                                        'index-5.1.txt',
@@ -84,7 +84,7 @@ class TestChain0(TestCase):
                           'EPDCore-2.0.0-1.egg'])
 
 
-class TestChain1(TestCase):
+class TestChain1(unittest.TestCase):
     def _resolve_factory(self, python_version=PY_VER):
         indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
                    in ('epd', 'gpl')]
@@ -143,7 +143,7 @@ class TestChain1(TestCase):
                           'scipy-0.9.0-1.egg'])
 
 
-class TestChain2(TestCase):
+class TestChain2(unittest.TestCase):
     def _resolve_factory(self, python_version=PY_VER):
         indices = [join(INDEX_REPO_DIR, name, 'index-7.1.txt') for name
                    in ('open', 'runner', 'epd')]
@@ -172,7 +172,7 @@ class TestChain2(TestCase):
         self.assert_('numpy-1.5.1-2.egg' in lst)
 
 
-class TestCycle(TestCase):
+class TestCycle(unittest.TestCase):
     """Avoid an infinite recursion when the dependencies contain a cycle."""
 
     def _resolve_factory(self, python_version):

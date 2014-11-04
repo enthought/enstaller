@@ -3,7 +3,7 @@ import textwrap
 
 import mock
 
-from egginst._compat import TestCase
+from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.plat import custom_plat
@@ -27,7 +27,7 @@ def _mock_index(entries, platform=None):
                   content_type='application/json')
 
 
-class TestListDependencies(TestCase):
+class TestListDependencies(unittest.TestCase):
     @responses.activate
     def test_simple(self):
         # Given
@@ -57,7 +57,7 @@ def _mock_list_dependencies_configuration(f):
                       return_value=Configuration())(f)
 
 
-class TestMainListDependencies(TestCase):
+class TestMainListDependencies(unittest.TestCase):
     def _mock_auth(self):
         responses.add(responses.GET,
                       "https://api.enthought.com/accounts/user/info/",

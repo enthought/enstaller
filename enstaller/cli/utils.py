@@ -5,7 +5,7 @@ import io
 import sys
 import textwrap
 
-from egginst._compat import urlparse
+from egginst._compat import urllib
 
 from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)
@@ -249,7 +249,7 @@ def humanize_ssl_error_and_die(ssl_exception, store_url):
         url = ssl_exception.request.url
     else:
         url = store_url
-    p = urlparse.urlparse(url)
+    p = urllib.parse.urlparse(url)
     print("SSL error: {0}".format(str(ssl_exception)))
     print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
           "command".format(p.hostname))
@@ -277,5 +277,5 @@ def _fetch_json_with_progress(resp, store_location, quiet=False):
 
 
 def _display_store_name(store_location):
-    parts = urlparse.urlsplit(store_location)
-    return urlparse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
+    parts = urllib.parse.urlsplit(store_location)
+    return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))

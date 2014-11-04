@@ -1,15 +1,15 @@
-from egginst._compat import StringIO, TestCase
-
 import os.path
 import shutil
 import tempfile
 import textwrap
 
+from egginst.vendor.six.moves import unittest
+from egginst._compat import StringIO
 from egginst.utils import atomic_file, parse_assignments, samefile
 from enstaller.errors import InvalidFormat
 
 
-class TestParseAssignments(TestCase):
+class TestParseAssignments(unittest.TestCase):
     def test_parse_simple(self):
         r_data = {"IndexedRepos": ["http://acme.com/{SUBDIR}"],
                   "webservice_entry_point": "http://acme.com/eggs/{PLATFORM}/"}
@@ -31,7 +31,7 @@ class TestParseAssignments(TestCase):
         with self.assertRaises(InvalidFormat):
             parse_assignments(StringIO("1 + 2"))
 
-class TestAtomicFile(TestCase):
+class TestAtomicFile(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()
 
@@ -123,7 +123,7 @@ class TestAtomicFile(TestCase):
         self.assertEqual(content, r_content)
 
 
-class TestSameFile(TestCase):
+class TestSameFile(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 

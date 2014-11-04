@@ -1,5 +1,3 @@
-from egginst._compat import configparser, TestCase, StringIO
-
 import hashlib
 import os.path
 import sys
@@ -8,18 +6,22 @@ import mock
 
 from egginst import exe_data
 
-from egginst._compat import text_type
+from egginst._compat import StringIO, configparser
 from egginst.main import EggInst
 from egginst.scripts import create, create_proxies, fix_script, get_executable
 from egginst.utils import compute_md5
 from egginst._zipfile import ZipFile
+
+from egginst.vendor import six
+from egginst.vendor.six.moves import unittest
 
 from .common import mkdtemp
 
 DUMMY_EGG_WITH_PROXY = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy-1.3.40-3.egg")
 DUMMY_EGG_WITH_PROXY_SCRIPTS = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy_scripts-1.0.0-1.egg")
 
-class TestScripts(TestCase):
+
+class TestScripts(unittest.TestCase):
     def test_get_executable(self):
         # FIXME: EggInst init overwrite egginst.scripts.executable. Need to
         # mock this until we remove that insanity
@@ -42,7 +44,7 @@ class TestScripts(TestCase):
                 executable = get_executable(pythonw=True)
                 self.assertEqual(executable, "pythonw.exe")
 
-class TestFixScript(TestCase):
+class TestFixScript(unittest.TestCase):
     def test_egginst_script_untouched(self):
         """
         Ensure we don't touch a script which has already been written by
@@ -115,7 +117,7 @@ if __name__ == '__main__':
             with open(path, "rt") as fp:
                 self.assertMultiLineEqual(fp.read(), r_egginst_script)
 
-class TestCreateScript(TestCase):
+class TestCreateScript(unittest.TestCase):
     @mock.patch("egginst.utils.on_win", False)
     def test_simple(self):
         if sys.platform == "win32":
@@ -231,7 +233,7 @@ dummy-gui = dummy:main_gui
                 self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
                                  hashlib.md5(exe_data.gui).hexdigest())
 
-class TestProxy(TestCase):
+class TestProxy(unittest.TestCase):
     @mock.patch("sys.platform", "win32")
     @mock.patch("egginst.main.bin_dir_name", "Scripts")
     @mock.patch("egginst.utils.on_win", True)
@@ -256,7 +258,7 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                 proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
                 r_python_proxy_data = r_python_proxy_data_template % \
                         {'executable': os.path.join(prefix, "python.exe"),
-                         'src': text_type(proxy_path)}
+                         'src': six.u(proxy_path)}
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:

@@ -1,14 +1,9 @@
 import os.path
 import sqlite3
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 from egginst.utils import rm_rf
+from egginst.vendor.six.moves import unittest
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter

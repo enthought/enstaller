@@ -1,22 +1,26 @@
-from egginst._compat import splitpasswd, splitport, splituser, urlparse
+import re
+
+from egginst._compat import urllib
 
 from enstaller.errors import InvalidConfiguration
 
 
 _DEFAULT_PORT = 3128
+_PORT_PROG_R = re.compile('^(.*):([0-9]+)$')
+_PASSWD_PROG_R = re.compile('^([^:]*):(.*)$', re.S)
 
 
 class ProxyInfo(object):
     @classmethod
     def from_string(cls, s):
-        parts = urlparse.urlparse(s)
+        parts = urllib.parse.urlparse(s)
         scheme = parts.scheme
-        userpass, hostport = splituser(parts.netloc)
+        userpass, hostport = urllib.parse.splituser(parts.netloc)
         if userpass is None:
             user, password = "", ""
         else:
-            user, password = splitpasswd(userpass)
-        host, port = splitport(hostport)
+            user, password = _splitpasswd(userpass)
+        host, port = _splitport(hostport)
         if port is None:
             port = _DEFAULT_PORT
         else:
@@ -42,7 +46,7 @@ class ProxyInfo(object):
         if self.user:
             netloc = "{0}:{1}@{2}".format(self.user, self.password, netloc)
 
-        return urlparse.urlunparse((self.scheme, netloc, "", "", "", ""))
+        return urllib.parse.urlunparse((self.scheme, netloc, "", "", "", ""))
 
     @property
     def host(self):
@@ -63,3 +67,21 @@ class ProxyInfo(object):
     @property
     def user(self):
         return self._user
+
+
+# Looks like those are semi-private function in the stdlib, so we bundle it
+# here for 2/3 compat
+def _splitport(host):
+    match = _PORT_PROG_R.match(host)
+    if match:
+        return match.group(1, 2)
+    else:
+        return host, None
+
+
+def _splitpasswd(user):
+    match = _PASSWD_PROG_R.match(user)
+    if match:
+        return match.group(1, 2)
+    else:
+        return user, None
