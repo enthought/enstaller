@@ -164,7 +164,7 @@ class TestAreCompatible(unittest.TestCase):
 
     def test_simple_enpkg_upstream_match(self):
         # Given
-        constraint = EnpkgUpstreamMatch("1.2")
+        constraint = EnpkgUpstreamMatch(V("1.2"))
 
         # When/Then
         self.assertTrue(are_compatible(constraint, V("1.2-3")))

@@ -74,10 +74,6 @@ class LT(_VersionConstraint):
 
 
 class EnpkgUpstreamMatch(_VersionConstraint):
-    def __init__(self, upstream_string):
-        version = EnpkgVersion.from_upstream_and_build(upstream_string, 0)
-        super(EnpkgUpstreamMatch, self).__init__(version)
-
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version.upstream == self.version.upstream
