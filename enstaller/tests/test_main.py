@@ -39,7 +39,7 @@ from enstaller.vendor import responses
 from enstaller.versions.enpkg import EnpkgVersion
 
 import enstaller.tests.common
-from .common import (create_prefix_with_eggs,
+from .common import (authenticated_config, create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, exception_code,
                      mock_print, mock_index, mock_raw_input, fake_keyring,
@@ -718,25 +718,12 @@ class TestConfigurationSetup(unittest.TestCase):
 
 
 @mock.patch("enstaller.main.install_req")
-class TestMain(unittest.TestCase):
+class TestMainYamlConfig(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
-
-    @mock_index({})
-    def test_setup_proxy(self, install_req):
-        # Given
-        args = ["--proxy=http://acme.com:3128", "foo"]
-
-        # When
-        with mock.patch("enstaller.main.setup_proxy_or_die") as m:
-            main(args)
-
-        # Then
-        m.assert_called()
-        self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
 
     @mock_index({})
     def test_non_existing_config_path(self, install_req):
@@ -767,6 +754,29 @@ class TestMain(unittest.TestCase):
         # Then
         self.assertEqual(exception_code(exc), -1)
         self.assertEqual(m.value, r_msg)
+
+
+@mock.patch("enstaller.main.install_req")
+@authenticated_config
+class TestMain(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    @mock_index({})
+    def test_setup_proxy(self, install_req):
+        # Given
+        args = ["--proxy=http://acme.com:3128", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.setup_proxy_or_die") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
 
     @mock_index({})
     def test_user_valid_config(self, install_req):
