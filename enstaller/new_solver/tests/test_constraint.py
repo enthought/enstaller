@@ -2,7 +2,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.versions.enpkg import EnpkgVersion
 
-from ..constraint import are_compatible
+from ..constraint import are_compatible, MultiConstraints
 from ..constraint_types import _VersionConstraint
 from ..constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
                                 LEQ, LT, Not)
@@ -173,3 +173,20 @@ class TestAreCompatible(unittest.TestCase):
         self.assertFalse(are_compatible(constraint, V("1.2.1-1")))
         self.assertFalse(are_compatible(constraint, V("1.3-2")))
         self.assertFalse(are_compatible(constraint, V("2.0-3")))
+
+
+class TestMultiConstraints(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        constraints_string = ">= 1.3, < 2.0"
+
+        # When
+        constraints = MultiConstraints._from_string(constraints_string)
+
+        # Then
+        self.assertFalse(constraints.matches(V("1.2-3")))
+        self.assertTrue(constraints.matches(V("1.3.0")))
+        self.assertTrue(constraints.matches(V("1.3.0-1")))
+        self.assertTrue(constraints.matches(V("1.3.0-3")))
+        self.assertTrue(constraints.matches(V("1.4.0-1")))
+        self.assertFalse(constraints.matches(V("2.0-1")))
