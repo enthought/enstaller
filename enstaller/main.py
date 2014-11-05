@@ -244,7 +244,7 @@ def configure_authentication_or_exit(config, config_filename,
 def setup_proxy_or_die(config, proxy):
     if proxy:
         try:
-            config.set_proxy_from_string(proxy)
+            config.update(proxy=proxy)
         except InvalidConfiguration as e:
             print("Error: invalid proxy setting {0!r}".format(e))
             sys.exit(1)

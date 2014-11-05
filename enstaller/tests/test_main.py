@@ -23,8 +23,9 @@ from enstaller.main import (check_prefixes, ensure_authenticated_config,
                             epd_install_confirm, env_option,
                             get_package_path, imports_option, install_req,
                             main, needs_to_downgrade_enstaller,
-                            repository_factory, search, update_enstaller,
-                            _ensure_config_path, _get_enstaller_comparable_version)
+                            repository_factory, search, setup_proxy_or_die,
+                            update_enstaller, _ensure_config_path,
+                            _get_enstaller_comparable_version)
 from enstaller.main import HOME_ENSTALLER4RC
 from enstaller.eggcollect import meta_info_from_prefix
 from enstaller.plat import custom_plat
@@ -39,7 +40,7 @@ import enstaller.tests.common
 from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, mock_print,
-                     mock_raw_input, fake_keyring,
+                     mock_index, mock_raw_input, fake_keyring,
                      mocked_session_factory,
                      FakeOptions, R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
@@ -329,6 +330,36 @@ class TestMisc(unittest.TestCase):
         repository.find_package("scipy", "0.13.3-1")
 
         self.assertEqual(repository.find_packages("nose"), [])
+
+    def test_setup_proxy_or_die(self):
+        # Given
+        proxy_string = "http://acme.com:3128"
+        config = Configuration()
+
+        # When
+        setup_proxy_or_die(config, proxy_string)
+
+        # Then
+        self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
+
+        # Given
+        proxy_string = "acme.com:3128"
+        config = Configuration()
+
+        # When
+        setup_proxy_or_die(config, proxy_string)
+
+        # Then
+        self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
+
+        # Given
+        proxy_string = ":3128"
+        config = Configuration()
+
+        # When/Then
+        with self.assertRaises(SystemExit) as exc:
+            setup_proxy_or_die(config, proxy_string)
+        self.assertEqual(exc.exception.code, 1)
 
 
 class TestSearch(unittest.TestCase):
@@ -679,3 +710,19 @@ class TestConfigurationSetup(unittest.TestCase):
 
         self.assertEqual(e.exception.code, -1)
         self.assertMultiLineEqual(m.value, r_message)
+
+
+@mock.patch("enstaller.main.install_req")
+class TestMain(unittest.TestCase):
+    @mock_index({})
+    def test_setup_proxy(self, install_req):
+        # Given
+        args = ["--proxy=http://acme.com:3128", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.setup_proxy_or_die") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
