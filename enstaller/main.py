@@ -185,7 +185,7 @@ def _invalid_authentication_message(auth, exc):
     assert isinstance(exc, AuthFailedError)
 
     if exc.original_exception is None:
-        original_error = exc.message
+        original_error = str(exc)
     else:
         original_error = str(exc.original_exception)
 
