@@ -41,10 +41,10 @@ from enstaller.versions.enpkg import EnpkgVersion
 import enstaller.tests.common
 from .common import (create_prefix_with_eggs,
                      dummy_installed_package_factory,
-                     dummy_repository_package_factory, mock_print,
-                     mock_index, mock_raw_input, fake_keyring,
-                     mocked_session_factory,
-                     FakeOptions, R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
+                     dummy_repository_package_factory, exception_code,
+                     mock_print, mock_index, mock_raw_input, fake_keyring,
+                     mocked_session_factory, FakeOptions,
+                     R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
 
 
@@ -344,6 +344,9 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
 
+    @unittest.skipIf(sys.version_info < (2, 7),
+                     "Bug in 2.6 stdlib for parsing url without scheme")
+    def test_setup_proxy_or_die_without_scheme(self):
         # Given
         proxy_string = "acme.com:3128"
         config = Configuration()
@@ -710,7 +713,7 @@ class TestConfigurationSetup(unittest.TestCase):
             with self.assertRaises(SystemExit) as e:
                 ensure_authenticated_config(config, "", session)
 
-        self.assertEqual(e.exception.code, -1)
+        self.assertEqual(exception_code(e), -1)
         self.assertMultiLineEqual(m.value, r_message)
 
 
@@ -743,7 +746,7 @@ class TestMain(unittest.TestCase):
         # When/Then
         with self.assertRaises(SystemExit) as exc:
             main(args)
-        self.assertEqual(exc.exception.code, -1)
+        self.assertEqual(exception_code(exc), -1)
 
     @mock_index({})
     def test_config_path_missing_auth(self, install_req):
@@ -762,7 +765,7 @@ class TestMain(unittest.TestCase):
                 main(args)
 
         # Then
-        self.assertEqual(exc.exception.code, -1)
+        self.assertEqual(exception_code(exc), -1)
         self.assertEqual(m.value, r_msg)
 
     @mock_index({})

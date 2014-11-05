@@ -1,6 +1,7 @@
-import unittest
 from os.path import dirname, join, isfile
 from os import unlink
+
+from egginst.vendor.six.moves import unittest
 
 from enstaller.history import History
 

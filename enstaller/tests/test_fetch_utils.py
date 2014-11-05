@@ -1,13 +1,9 @@
 import hashlib
 import os.path
 import shutil
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
+from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch_utils import (MD5File, checked_content)

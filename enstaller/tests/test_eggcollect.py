@@ -1,13 +1,8 @@
 import os.path
-import sys
 import tempfile
 import textwrap
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst.vendor.six.moves import unittest
 from enstaller.eggcollect import info_from_metadir
 
 

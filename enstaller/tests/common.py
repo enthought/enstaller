@@ -66,6 +66,16 @@ SIMPLE_INDEX = {
 }
 
 
+if sys.version_info < (2, 7):
+    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
+    # context manager does not contain the actual exception object ?
+    def exception_code(ctx):
+        return ctx.exception
+else:
+    def exception_code(ctx):
+        return ctx.exception.code
+
+
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
         self._auth = None
