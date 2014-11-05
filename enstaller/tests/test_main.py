@@ -1,5 +1,6 @@
 import errno
 import json
+import logging
 import ntpath
 import os.path
 import posixpath
@@ -11,6 +12,7 @@ import textwrap
 
 import mock
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
 from egginst.vendor.six.moves import unittest
@@ -786,3 +788,94 @@ class TestMain(unittest.TestCase):
         # When/Then
         with self.assertWarnsRegex(Warning, r_msg):
             main(args)
+
+    @mock_index({})
+    def test_max_retries(self, install_req):
+        # Given
+        args = ["--max-retries", "42"]
+
+        # When
+        with mock.patch("enstaller.main.dispatch_commands_with_enpkg") as m:
+            main(args)
+        config = m.call_args[0][2]
+
+        # Then
+        m.assert_called()
+        self.assertEqual(config.max_retries, 42)
+
+    @mock_index({})
+    def test_quiet(self, install_req):
+        # Given
+        args = ["foo"]
+
+        # When
+        with mock.patch("sys.stdout", new=StringIO()) as m:
+            main(args)
+
+        # Then
+        self.assertNotEqual(m.getvalue(), "")
+
+        # Given
+        args = ["foo", "--quiet"]
+
+        # When
+        with mock.patch("sys.stdout", new=StringIO()) as m:
+            main(args)
+
+        # Then
+        self.assertEqual(m.getvalue(), "")
+
+    @mock_index({})
+    def test_verbose_flag(self, install_req):
+        # Given
+        args = ["foo"]
+
+        # When
+        with mock.patch("enstaller.logging.basicConfig") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.WARN)
+
+        # Given
+        args = ["foo", "-v"]
+
+        # When
+        with mock.patch("enstaller.logging.basicConfig") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.INFO)
+
+        # Given
+        args = ["foo", "-vv"]
+
+        # When
+        with mock.patch("enstaller.main.http_client.HTTPConnection") \
+                as fake_connection:
+            with mock.patch("enstaller.logging.basicConfig") as m:
+                main(args)
+
+        # Then
+        fake_connection.assert_not_called()
+
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
+
+        # Given
+        args = ["foo", "-vvv"]
+
+        # When
+        with mock.patch("enstaller.main.http_client.HTTPConnection") \
+                as fake_connection:
+            with mock.patch("enstaller.logging.basicConfig") as m:
+                main(args)
+
+        # Then
+        fake_connection.assert_called()
+        self.assertEqual(fake_connection.debuglevel, 1)
+
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
