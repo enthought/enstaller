@@ -1,9 +1,10 @@
 import posixpath
 import sys
-import unittest
 from os.path import abspath, dirname, normpath
 
 import mock
+
+from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import PY_VER
 from enstaller.indexed_repo import Chain

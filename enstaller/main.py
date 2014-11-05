@@ -38,7 +38,7 @@ from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               convert_auth_if_required,
                               print_config, write_default_config)
 from enstaller.session import Session
-from enstaller.errors import AuthFailedError, MissingPackage
+from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
@@ -112,7 +112,7 @@ def update_enstaller(session, repository, opts):
 
     try:
         latest = repository.find_latest_package(package_name)
-    except MissingPackage:
+    except NoSuchPackage:
         updated = False
     else:
         if latest.comparable_version > current_comparable_version:
@@ -181,7 +181,14 @@ def _get_config_candidate():
             return path
 
 
-def _invalid_authentication_message(auth_url, auth, original_error):
+def _invalid_authentication_message(auth, exc):
+    assert isinstance(exc, AuthFailedError)
+
+    if exc.original_exception is None:
+        original_error = str(exc)
+    else:
+        original_error = str(exc.original_exception)
+
     header = auth.cant_login_message
     msg = textwrap.dedent("""\
         {0}
@@ -197,17 +204,8 @@ def ensure_authenticated_config(config, config_filename, session,
         session.authenticate(config.auth)
     except requests.exceptions.SSLError as e:
         humanize_ssl_error_and_die(e, config.store_url)
-    except AuthFailedError as e:
-        if e.original_exception is None:
-            url = config.store_url
-            msg = _invalid_authentication_message(url, config.auth, e.message)
-        else:
-            if config.use_webservice:
-                url = config.store_url
-            else:
-                url = e.original_exception.request.url
-            msg = _invalid_authentication_message(url, config.auth,
-                                                  str(e.original_exception))
+    except AuthFailedError as exc:
+        msg = _invalid_authentication_message(config.auth, exc)
         print(msg)
         print("\nYou can change your authentication details with "
               "'enpkg --userpass'.")
@@ -236,15 +234,8 @@ def configure_authentication_or_exit(config, config_filename,
 
     try:
         config._checked_change_auth(auth, session, config_filename)
-    except AuthFailedError as e:
-        if e.original_exception is None:
-            msg = _invalid_authentication_message(config.store_url,
-                                                  auth,
-                                                  str(e))
-        else:
-            msg = _invalid_authentication_message(config.store_url,
-                                                  auth,
-                                                  str(e.original_exception))
+    except AuthFailedError as exc:
+        msg = _invalid_authentication_message(auth, exc)
         print(msg)
         print("\nNo modification was written.")
         sys.exit(-1)
@@ -253,7 +244,7 @@ def configure_authentication_or_exit(config, config_filename,
 def setup_proxy_or_die(config, proxy):
     if proxy:
         try:
-            config.set_proxy_from_string(proxy)
+            config.update(proxy=proxy)
         except InvalidConfiguration as e:
             print("Error: invalid proxy setting {0!r}".format(e))
             sys.exit(1)
@@ -600,11 +591,17 @@ def main(argv=None):
 
     if args.config_path:
         config_filename = args.config_path
-        config = Configuration.from_yaml_filename(config_filename)
-        if config.auth is None:
-            print("Authentication missing from {0!r}".format(config_filename))
+        try:
+            config = Configuration.from_yaml_filename(config_filename)
+        except IOError:
+            msg = "Error: File {0!r} could not be read".format(config_filename)
+            print(msg)
             sys.exit(-1)
-        use_new_format = True
+        else:
+            if config.auth is None:
+                print("Authentication missing from {0!r}".format(config_filename))
+                sys.exit(-1)
+            use_new_format = True
     else:
         config = _ensure_config_or_die()
         config_filename = config.filename

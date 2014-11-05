@@ -1,6 +1,7 @@
 import os
 import tempfile
-import unittest
+
+from egginst.vendor.six.moves import unittest
 
 from egginst._post_install_lib import safe_write, update_pkg_config_prefix
 

@@ -10,7 +10,7 @@ from egginst._compat import PY2
 from enstaller.config import Configuration
 from enstaller.repository import Repository
 from enstaller.plat import custom_plat
-from enstaller.tests.common import (fake_keyring,
+from enstaller.tests.common import (authenticated_config,
                                     dummy_repository_package_factory)
 from enstaller.vendor import responses
 
@@ -113,21 +113,6 @@ def enstaller_version(version, is_released=True):
     def dec(f):
         return wrap1(wrap2(f))
     return dec
-
-@fake_keyring
-def authenticated_config(f):
-    config = Configuration()
-    config.update(auth=("dummy", "dummy"))
-
-    m = mock.Mock()
-    m.return_value = config
-    m.from_file.return_value = config
-
-    wrapper = mock.patch("enstaller.main.Configuration", m)
-    mock_authenticated_config = mock.patch(
-        "enstaller.main.ensure_authenticated_config",
-         mock.Mock())
-    return mock_authenticated_config(wrapper(f))
 
 def remote_enstaller_available(versions):
     repository = Repository()

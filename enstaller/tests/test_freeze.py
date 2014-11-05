@@ -1,12 +1,6 @@
-import sys
-
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, create_venv, mkdtemp
+from egginst.vendor.six.moves import unittest
 
 from enstaller.freeze import get_freeze_list
 

@@ -1,14 +1,9 @@
 import json
 import os.path
 import shutil
-import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
+from egginst.vendor.six.moves import unittest
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.egg_meta import info_from_egg, update_index

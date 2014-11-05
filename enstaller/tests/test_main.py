@@ -1,5 +1,6 @@
 import errno
 import json
+import logging
 import ntpath
 import os.path
 import posixpath
@@ -11,6 +12,7 @@ import textwrap
 
 import mock
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
 from egginst.vendor.six.moves import unittest
@@ -19,11 +21,13 @@ from egginst.vendor.six.moves import unittest
 from enstaller.auth import UserInfo
 from enstaller.config import Configuration
 from enstaller.errors import InvalidPythonPathConfiguration
-from enstaller.main import (check_prefixes, epd_install_confirm, env_option,
+from enstaller.main import (check_prefixes, ensure_authenticated_config,
+                            epd_install_confirm, env_option,
                             get_package_path, imports_option, install_req,
                             main, needs_to_downgrade_enstaller,
-                            repository_factory, search, update_enstaller,
-                            _ensure_config_path, _get_enstaller_comparable_version)
+                            repository_factory, search, setup_proxy_or_die,
+                            update_enstaller, _ensure_config_path,
+                            _get_enstaller_comparable_version)
 from enstaller.main import HOME_ENSTALLER4RC
 from enstaller.eggcollect import meta_info_from_prefix
 from enstaller.plat import custom_plat
@@ -35,16 +39,17 @@ from enstaller.vendor import responses
 from enstaller.versions.enpkg import EnpkgVersion
 
 import enstaller.tests.common
-from .common import (create_prefix_with_eggs,
+from .common import (authenticated_config, create_prefix_with_eggs,
                      dummy_installed_package_factory,
-                     dummy_repository_package_factory, mock_print,
-                     mock_raw_input, fake_keyring,
-                     mocked_session_factory,
-                     FakeOptions, R_JSON_AUTH_FREE_RESP,
+                     dummy_repository_package_factory, exception_code,
+                     mock_print, mock_index, mock_raw_input, fake_keyring,
+                     mocked_session_factory, FakeOptions,
+                     R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
 
 
 class TestEnstallerUpdate(unittest.TestCase):
+    @mock.patch("enstaller.__is_released__", True)
     def test_no_update_enstaller(self):
         config = Configuration()
         session = mocked_session_factory(config.repository_cache)
@@ -327,6 +332,39 @@ class TestMisc(unittest.TestCase):
         repository.find_package("scipy", "0.13.3-1")
 
         self.assertEqual(repository.find_packages("nose"), [])
+
+    def test_setup_proxy_or_die(self):
+        # Given
+        proxy_string = "http://acme.com:3128"
+        config = Configuration()
+
+        # When
+        setup_proxy_or_die(config, proxy_string)
+
+        # Then
+        self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
+
+    @unittest.skipIf(sys.version_info < (2, 7),
+                     "Bug in 2.6 stdlib for parsing url without scheme")
+    def test_setup_proxy_or_die_without_scheme(self):
+        # Given
+        proxy_string = "acme.com:3128"
+        config = Configuration()
+
+        # When
+        setup_proxy_or_die(config, proxy_string)
+
+        # Then
+        self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
+
+        # Given
+        proxy_string = ":3128"
+        config = Configuration()
+
+        # When/Then
+        with self.assertRaises(SystemExit) as exc:
+            setup_proxy_or_die(config, proxy_string)
+        self.assertEqual(exc.exception.code, 1)
 
 
 class TestSearch(unittest.TestCase):
@@ -647,3 +685,211 @@ class TestEnstallerComparableVersion(unittest.TestCase):
 
         # Then
         self.assertEqual(version, r_version)
+
+
+class TestConfigurationSetup(unittest.TestCase):
+    @responses.activate
+    def test_ensure_authenticated_config(self):
+        # Given
+        r_message = textwrap.dedent("""\
+            Could not authenticate as 'nono'
+            Please check your credentials/configuration and try again
+            (original error is: 'Authentication error: Invalid user login.').
+
+
+            You can change your authentication details with 'enpkg --userpass'.
+        """)
+
+        store_url = "https://acme.com"
+        responses.add(responses.GET, store_url + "/accounts/user/info/",
+                      body=json.dumps(R_JSON_NOAUTH_RESP))
+
+        config = Configuration()
+        config.update(store_url=store_url, auth=("nono", "le petit robot"))
+
+        session = Session.from_configuration(config)
+
+        # When/Then
+        with mock_print() as m:
+            with self.assertRaises(SystemExit) as e:
+                ensure_authenticated_config(config, "", session)
+
+        self.assertEqual(exception_code(e), -1)
+        self.assertMultiLineEqual(m.value, r_message)
+
+
+@mock.patch("enstaller.main.install_req")
+class TestMainYamlConfig(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    @mock_index({})
+    def test_non_existing_config_path(self, install_req):
+        # Given
+        args = ["--config-path=config.yaml", "foo"]
+
+        # When/Then
+        with self.assertRaises(SystemExit) as exc:
+            main(args)
+        self.assertEqual(exception_code(exc), -1)
+
+    @mock_index({})
+    def test_config_path_missing_auth(self, install_req):
+        # Given
+        path = os.path.join(self.prefix, "config.yaml")
+        with open(path, "wt") as fp:
+            fp.write("")
+
+        args = ["--config-path=" + path, "foo"]
+
+        r_msg = "Authentication missing from {0!r}\n".format(path)
+
+        # When
+        with mock_print() as m:
+            with self.assertRaises(SystemExit) as exc:
+                main(args)
+
+        # Then
+        self.assertEqual(exception_code(exc), -1)
+        self.assertEqual(m.value, r_msg)
+
+
+@mock.patch("enstaller.main.install_req")
+@authenticated_config
+class TestMain(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    @mock_index({})
+    def test_setup_proxy(self, install_req):
+        # Given
+        args = ["--proxy=http://acme.com:3128", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.setup_proxy_or_die") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
+
+    @mock_index({})
+    def test_user_valid_config(self, install_req):
+        # Given
+        args = ["--user", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.check_prefixes") as m:
+            main(args)
+
+        # Then
+        m.assert_called_with([os.path.expanduser("~/.local"), sys.prefix])
+
+    @mock_index({})
+    def test_user_invalid_config(self, install_req):
+        # Given
+        r_msg = "Using the --user option, but your PYTHONPATH is not setup " \
+                "accordingly"
+
+        args = ["--user", "foo"]
+
+        # When/Then
+        with self.assertWarnsRegex(Warning, r_msg):
+            main(args)
+
+    @mock_index({})
+    def test_max_retries(self, install_req):
+        # Given
+        args = ["--max-retries", "42"]
+
+        # When
+        with mock.patch("enstaller.main.dispatch_commands_with_enpkg") as m:
+            main(args)
+        config = m.call_args[0][2]
+
+        # Then
+        m.assert_called()
+        self.assertEqual(config.max_retries, 42)
+
+    @mock_index({})
+    def test_quiet(self, install_req):
+        # Given
+        args = ["foo"]
+
+        # When
+        with mock.patch("sys.stdout", new=StringIO()) as m:
+            main(args)
+
+        # Then
+        self.assertNotEqual(m.getvalue(), "")
+
+        # Given
+        args = ["foo", "--quiet"]
+
+        # When
+        with mock.patch("sys.stdout", new=StringIO()) as m:
+            main(args)
+
+        # Then
+        self.assertEqual(m.getvalue(), "")
+
+    @mock_index({})
+    def test_verbose_flag(self, install_req):
+        # Given
+        args = ["foo"]
+
+        # When
+        with mock.patch("enstaller.logging.basicConfig") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.WARN)
+
+        # Given
+        args = ["foo", "-v"]
+
+        # When
+        with mock.patch("enstaller.logging.basicConfig") as m:
+            main(args)
+
+        # Then
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.INFO)
+
+        # Given
+        args = ["foo", "-vv"]
+
+        # When
+        with mock.patch("enstaller.main.http_client.HTTPConnection") \
+                as fake_connection:
+            with mock.patch("enstaller.logging.basicConfig") as m:
+                main(args)
+
+        # Then
+        fake_connection.assert_not_called()
+
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
+
+        # Given
+        args = ["foo", "-vvv"]
+
+        # When
+        with mock.patch("enstaller.main.http_client.HTTPConnection") \
+                as fake_connection:
+            with mock.patch("enstaller.logging.basicConfig") as m:
+                main(args)
+
+        # Then
+        fake_connection.assert_called()
+        self.assertEqual(fake_connection.debuglevel, 1)
+
+        m.assert_called()
+        self.assertEqual(m.call_args[1]["level"], logging.DEBUG)

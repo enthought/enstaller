@@ -66,6 +66,16 @@ SIMPLE_INDEX = {
 }
 
 
+if sys.version_info < (2, 7):
+    # FIXME: this looks quite fishy. On 2.6, with unittest2, the assertRaises
+    # context manager does not contain the actual exception object ?
+    def exception_code(ctx):
+        return ctx.exception
+else:
+    def exception_code(ctx):
+        return ctx.exception.code
+
+
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
         self._auth = None
@@ -305,3 +315,19 @@ def mock_index(index_data, store_url="https://api.enthought.com"):
             return f(*a, **kw)
         return wrapped
     return decorator
+
+
+@fake_keyring
+def authenticated_config(f):
+    config = Configuration()
+    config.update(auth=("dummy", "dummy"))
+
+    m = mock.Mock()
+    m.return_value = config
+    m.from_file.return_value = config
+
+    wrapper = mock.patch("enstaller.main.Configuration", m)
+    mock_authenticated_config = mock.patch(
+        "enstaller.main.ensure_authenticated_config",
+        mock.Mock())
+    return mock_authenticated_config(wrapper(f))

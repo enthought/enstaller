@@ -32,7 +32,6 @@ class InvalidFormat(InvalidConfiguration):
 class AuthFailedError(EnstallerException):
     def __init__(self, *args):
         super(AuthFailedError, self).__init__(*args)
-        self.message = args[0]
         if len(args) > 1:
             self.original_exception = args[1]
         else:
@@ -42,7 +41,7 @@ class EnpkgError(EnstallerException):
     # FIXME: why is this a class-level attribute ?
     req = None
 
-class MissingPackage(EnstallerException):
+class NoSuchPackage(EnstallerException):
     pass
 
 class SolverException(EnstallerException):
