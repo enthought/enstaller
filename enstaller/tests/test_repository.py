@@ -16,6 +16,7 @@ from enstaller.versions.enpkg import EnpkgVersion
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version, parse_version)
+from enstaller.solver import Requirement
 from enstaller.tests.common import dummy_installed_package_factory
 from enstaller.utils import PY_VER
 
@@ -395,6 +396,64 @@ class TestRepository(unittest.TestCase):
         # Then
         assertCountEqual(self, [p.key for p in repository.iter_packages()],
                          ["flake8-2.0.0-2.egg", "nose-1.2.1-1.egg"])
+
+    def test_find_package_from_requirement_name_only(self):
+        # Given
+        requirement = Requirement.from_anything("nose")
+
+        # When
+        package = self.repository.find_package_from_requirement(requirement)
+
+        # Then
+        self.assertEqual(package.full_version, "1.3.0-2")
+
+    def test_find_package_from_requirement_name_and_version(self):
+        # Given
+        requirement = Requirement.from_anything("nose 1.3.0")
+
+        # When
+        package = self.repository.find_package_from_requirement(requirement)
+
+        # Then
+        self.assertEqual(package.full_version, "1.3.0-2")
+
+        # Given
+        requirement = Requirement.from_anything("nose 1.2.1")
+
+        # When
+        package = self.repository.find_package_from_requirement(requirement)
+
+        # Then
+        self.assertEqual(package.full_version, "1.2.1-1")
+
+    def test_find_package_from_requirement_missing(self):
+        # Given
+        requirement_strings = ["fubar", "nose 1.3.1"]
+
+        # When
+        for requirement_string in requirement_strings:
+            requirement = Requirement.from_anything(requirement_string)
+            with self.assertRaises(NoSuchPackage):
+                self.repository.find_package_from_requirement(requirement)
+
+    def test_find_package_from_requirement_all(self):
+        # Given
+        requirement = Requirement.from_anything("nose 1.3.0-1")
+
+        # When
+        package = self.repository.find_package_from_requirement(requirement)
+
+        # Then
+        self.assertEqual(package.full_version, "1.3.0-1")
+
+        # Given
+        requirement = Requirement.from_anything("nose 1.2.1-1")
+
+        # When
+        package = self.repository.find_package_from_requirement(requirement)
+
+        # Then
+        self.assertEqual(package.full_version, "1.2.1-1")
 
 
 # Unittest that used to belong to Enpkg
