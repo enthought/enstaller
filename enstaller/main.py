@@ -591,11 +591,17 @@ def main(argv=None):
 
     if args.config_path:
         config_filename = args.config_path
-        config = Configuration.from_yaml_filename(config_filename)
-        if config.auth is None:
-            print("Authentication missing from {0!r}".format(config_filename))
+        try:
+            config = Configuration.from_yaml_filename(config_filename)
+        except IOError:
+            msg = "Error: File {0!r} could not be read".format(config_filename)
+            print(msg)
             sys.exit(-1)
-        use_new_format = True
+        else:
+            if config.auth is None:
+                print("Authentication missing from {0!r}".format(config_filename))
+                sys.exit(-1)
+            use_new_format = True
     else:
         config = _ensure_config_or_die()
         config_filename = config.filename

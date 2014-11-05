@@ -714,6 +714,12 @@ class TestConfigurationSetup(unittest.TestCase):
 
 @mock.patch("enstaller.main.install_req")
 class TestMain(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     @mock_index({})
     def test_setup_proxy(self, install_req):
         # Given
@@ -726,3 +732,57 @@ class TestMain(unittest.TestCase):
         # Then
         m.assert_called()
         self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
+
+    @mock_index({})
+    def test_non_existing_config_path(self, install_req):
+        # Given
+        args = ["--config-path=config.yaml", "foo"]
+
+        # When/Then
+        with self.assertRaises(SystemExit) as exc:
+            main(args)
+        self.assertEqual(exc.exception.code, -1)
+
+    @mock_index({})
+    def test_config_path_missing_auth(self, install_req):
+        # Given
+        path = os.path.join(self.prefix, "config.yaml")
+        with open(path, "wt") as fp:
+            fp.write("")
+
+        args = ["--config-path=" + path, "foo"]
+
+        r_msg = "Authentication missing from {0!r}\n".format(path)
+
+        # When
+        with mock_print() as m:
+            with self.assertRaises(SystemExit) as exc:
+                main(args)
+
+        # Then
+        self.assertEqual(exc.exception.code, -1)
+        self.assertEqual(m.value, r_msg)
+
+    @mock_index({})
+    def test_user_valid_config(self, install_req):
+        # Given
+        args = ["--user", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.check_prefixes") as m:
+            main(args)
+
+        # Then
+        m.assert_called_with([os.path.expanduser("~/.local"), sys.prefix])
+
+    @mock_index({})
+    def test_user_invalid_config(self, install_req):
+        # Given
+        r_msg = "Using the --user option, but your PYTHONPATH is not setup " \
+                "accordingly"
+
+        args = ["--user", "foo"]
+
+        # When/Then
+        with self.assertWarnsRegex(Warning, r_msg):
+            main(args)
