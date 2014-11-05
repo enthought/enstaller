@@ -10,6 +10,20 @@ from enstaller.proxy_info import ProxyInfo
 
 
 class TestProxyInfoFromString(unittest.TestCase):
+    def test_without_scheme(self):
+        # Given
+        s = "acme.com:3129"
+
+        # When
+        info = ProxyInfo.from_string(s)
+
+        # Then
+        self.assertEqual(info.scheme, "http")
+        self.assertEqual(info.host, "acme.com")
+        self.assertEqual(info.user, "")
+        self.assertEqual(info.password, "")
+        self.assertEqual(info.port, 3129)
+
     def test_simple(self):
         # Given
         s = "http://acme.com"

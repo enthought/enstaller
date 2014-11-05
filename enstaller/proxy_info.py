@@ -14,8 +14,21 @@ class ProxyInfo(object):
     @classmethod
     def from_string(cls, s):
         parts = urllib.parse.urlparse(s)
-        scheme = parts.scheme
-        userpass, hostport = urllib.parse.splituser(parts.netloc)
+        if len(parts.scheme) > 0:
+            scheme = parts.scheme
+        else:
+            scheme = "http"
+
+        if len(parts.netloc) == 0:
+            if len(parts.path) > 0:
+                # this is to support url such as 'acme.com:3128'
+                netloc = parts.path
+            else:
+                raise InvalidConfiguration("Invalid proxy string: {0!r}".format(s))
+        else:
+            netloc = parts.netloc
+
+        userpass, hostport = urllib.parse.splituser(netloc)
         if userpass is None:
             user, password = "", ""
         else:
