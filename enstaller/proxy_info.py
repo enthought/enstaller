@@ -24,7 +24,8 @@ class ProxyInfo(object):
                 # this is to support url such as 'acme.com:3128'
                 netloc = parts.path
             else:
-                raise InvalidConfiguration("Invalid proxy string: {0!r}".format(s))
+                msg = "Invalid proxy string {0!r} (no host found)".format(s)
+                raise InvalidConfiguration(msg)
         else:
             netloc = parts.netloc
 
@@ -38,6 +39,11 @@ class ProxyInfo(object):
             port = _DEFAULT_PORT
         else:
             port = int(port)
+
+        if len(host) == 0:
+            msg = "Invalid proxy string {0!r} (no host found)"
+            raise InvalidConfiguration(msg.format(s))
+
         return cls(host, scheme, port, user, password)
 
     def __init__(self, host, scheme="http", port=_DEFAULT_PORT, user=None,

@@ -10,6 +10,21 @@ from enstaller.proxy_info import ProxyInfo
 
 
 class TestProxyInfoFromString(unittest.TestCase):
+    def test_without_host(self):
+        # Given
+        s = ""
+
+        # When/Then
+        with self.assertRaises(InvalidConfiguration):
+            ProxyInfo.from_string(s)
+
+        # Given
+        s = ":3128"
+
+        # When/Then
+        with self.assertRaises(InvalidConfiguration):
+            ProxyInfo.from_string(s)
+
     def test_without_scheme(self):
         # Given
         s = "acme.com:3129"
