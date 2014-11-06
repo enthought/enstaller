@@ -35,7 +35,7 @@ class MultiConstraints(object):
         return cls(parser.parse(requirement_string, version_factory))
 
     def __init__(self, constraints=None):
-        self._constraints = set() or constraints
+        self._constraints = frozenset(constraints or [])
 
     def matches(self, version_candidate):
         """ Returns True if the given version matches this set of
@@ -61,3 +61,10 @@ class MultiConstraints(object):
             A valid constraint instance.
         """
         self._constraints.add(constraint)
+
+    def __eq__(self, other):
+        return isinstance(other, self.__class__) \
+                and self._constraints == other._constraints
+
+    def __hash__(self):
+        return hash(self._constraints)
