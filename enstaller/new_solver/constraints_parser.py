@@ -8,18 +8,31 @@ from .constraint_types import (EnpkgUpstreamMatch, Equal, GEQ, GT,
                                LEQ, LT, Not)
 
 
-_DEFAULT_SCANNER = re.Scanner([
-    (r"[^=><!,\s~][^,\s]+", lambda scanner, token: VersionToken(token)),
-    (r"==", lambda scanner, token: EqualToken(token)),
-    (r">=", lambda scanner, token: GEQToken(token)),
-    (r">", lambda scanner, token: GTToken(token)),
-    (r"<=", lambda scanner, token: LEQToken(token)),
-    (r"<", lambda scanner, token: LTToken(token)),
-    (r"!=", lambda scanner, token: NotToken(token)),
-    (r"~=", lambda scanner, token: EnpkgUpstreamMatchToken(token)),
-    (",", lambda scanner, token: CommaToken(token)),
-    (r"\*", lambda scanner, token: AnyToken(token)),
-    (" +", lambda scanner, token: None),
+_VERSION_R = "[^=><!,\s~][^,\s]+"
+_EQUAL_R = "=="
+_GEQ_R = ">="
+_GT_R = r">"
+_LEQ_R = r"<="
+_LT_R = r"<"
+_NOT_R = r"!="
+_ENPKG_UPSTREAM_MATCH_R = r"~="
+_COMMA_R = ","
+_ANY_R = r"\*"
+_WS_R = " +"
+
+_CONSTRAINTS_SCANNER = re.Scanner([
+    (_VERSION_R, lambda scanner, token: VersionToken(token)),
+    (_EQUAL_R, lambda scanner, token: EqualToken(token)),
+    (_GEQ_R, lambda scanner, token: GEQToken(token)),
+    (_GT_R, lambda scanner, token: GTToken(token)),
+    (_LEQ_R, lambda scanner, token: LEQToken(token)),
+    (_LT_R, lambda scanner, token: LTToken(token)),
+    (_NOT_R, lambda scanner, token: NotToken(token)),
+    (_ENPKG_UPSTREAM_MATCH_R,
+        lambda scanner, token: EnpkgUpstreamMatchToken(token)),
+    (_COMMA_R, lambda scanner, token: CommaToken(token)),
+    (_ANY_R, lambda scanner, token: AnyToken(token)),
+    (_WS_R, lambda scanner, token: None),
 ])
 
 
@@ -123,7 +136,7 @@ def _spec_factory(comparison_token):
 class _RawConstraintsParser(object):
     """A simple parser for requirement strings."""
     def __init__(self):
-        self._scanner = _DEFAULT_SCANNER
+        self._scanner = _CONSTRAINTS_SCANNER
 
     def tokenize(self, requirement_string):
         scanned, remaining = self._scanner.scan(requirement_string)
