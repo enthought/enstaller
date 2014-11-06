@@ -61,7 +61,11 @@ def _looks_like_setuptools_egg(path):
 def _get_spec(source_egg_path, build_number, platform_string=None):
     if _looks_like_setuptools_egg(source_egg_path):
         filename = os.path.basename(source_egg_path)
-        name, version, pyver, _ = parse_filename(filename)
+        name, version, pyver, platform = parse_filename(filename)
+        if platform is not None and platform_string is None:
+            msg = "Platform-specific egg detected (platform tag is " \
+                  "{0!r}), you *must* specify the platform."
+            raise EnstallerException(msg.format(platform))
     elif _looks_like_enthought_egg(source_egg_path):
         name, version, _ = split_egg_name(os.path.basename(source_egg_path))
         pyver = None

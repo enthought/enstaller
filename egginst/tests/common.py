@@ -56,6 +56,8 @@ STANDARD_EGG_METADATA_FILES = ("dependency_links.txt", "entry_points.txt",
         "not-zip-safe", "PKG-INFO", "requires.txt", "SOURCES.txt",
         "top_level.txt")
 
+STANDARD_EGG_WITH_EXT = os.path.join(_EGGINST_COMMON_DATA, "PyYAML-3.11-py2.7-linux-x86_64.egg")
+
 LEGACY_EGG_INFO_EGG = os.path.join(_EGGINST_COMMON_DATA, "flake8-2.0.0-2.egg")
 LEGACY_EGG_INFO_EGG_METADATA_FILES = ("PKG-INFO", "requires.txt",
         "SOURCES.txt", "dependency_links.txt", "top_level.txt",
