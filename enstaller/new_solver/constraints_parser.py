@@ -1,3 +1,4 @@
+import collections
 import re
 
 import six
@@ -21,6 +22,24 @@ _ANY_R = r"\*"
 _WS_R = " +"
 
 _CONSTRAINTS_SCANNER = re.Scanner([
+    (_VERSION_R, lambda scanner, token: VersionToken(token)),
+    (_EQUAL_R, lambda scanner, token: EqualToken(token)),
+    (_GEQ_R, lambda scanner, token: GEQToken(token)),
+    (_GT_R, lambda scanner, token: GTToken(token)),
+    (_LEQ_R, lambda scanner, token: LEQToken(token)),
+    (_LT_R, lambda scanner, token: LTToken(token)),
+    (_NOT_R, lambda scanner, token: NotToken(token)),
+    (_ENPKG_UPSTREAM_MATCH_R,
+        lambda scanner, token: EnpkgUpstreamMatchToken(token)),
+    (_COMMA_R, lambda scanner, token: CommaToken(token)),
+    (_ANY_R, lambda scanner, token: AnyToken(token)),
+    (_WS_R, lambda scanner, token: None),
+])
+
+_DISTRIBUTION_R = "[a-zA-Z_]\w*"
+
+_REQUIREMENTS_SCANNER = re.Scanner([
+    (_DISTRIBUTION_R, lambda scanner, token: DistributionNameToken(token)),
     (_VERSION_R, lambda scanner, token: VersionToken(token)),
     (_EQUAL_R, lambda scanner, token: EqualToken(token)),
     (_GEQ_R, lambda scanner, token: GEQToken(token)),
@@ -157,6 +176,39 @@ class _RawConstraintsParser(object):
                 operator = _spec_factory(operator)
                 version = version_factory(version.value)
                 constraints.add(operator(version))
+            else:
+                msg = "Invalid requirement block: {0!r}". \
+                        format(requirement_block)
+                raise SolverException(msg)
+
+        return constraints
+
+
+class _RawRequirementParser(object):
+    """A simple parser for requirement strings."""
+    def __init__(self):
+        self._scanner = _REQUIREMENTS_SCANNER
+
+    def tokenize(self, requirement_string):
+        scanned, remaining = self._scanner.scan(requirement_string)
+        if len(remaining) > 0:
+            msg = "Invalid requirement string: {0!r}". \
+                    format(requirement_string)
+            raise SolverException(msg)
+        else:
+            return iter(scanned)
+
+    def parse(self, requirement_string, version_factory):
+        constraints = collections.defaultdict(set)
+
+        tokens_stream = self.tokenize(requirement_string)
+        for requirement_block in iter_over_requirement(tokens_stream):
+            if len(requirement_block) == 3:
+                distribution, operator, version = requirement_block
+                name = distribution.value
+                operator = _spec_factory(operator)
+                version = version_factory(version.value)
+                constraints[name].add(operator(version))
             else:
                 msg = "Invalid requirement block: {0!r}". \
                         format(requirement_block)

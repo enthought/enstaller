@@ -3,8 +3,8 @@ from egginst.vendor.six.moves import unittest
 from enstaller.errors import SolverException
 from enstaller.versions.enpkg import EnpkgVersion
 
-from ..constraints_parser import _RawConstraintsParser
-from ..constraint_types import EnpkgUpstreamMatch, GT, GEQ, LT, LEQ, Not
+from ..constraints_parser import _RawConstraintsParser, _RawRequirementParser
+from ..constraint_types import EnpkgUpstreamMatch, Equal, GT, GEQ, LT, LEQ, Not
 
 
 V = EnpkgVersion.from_string
@@ -97,3 +97,54 @@ class Test_RawConstraintsParser(unittest.TestCase):
         # When/Then
         with self.assertRaises(SolverException):
             self._parse(constraints_string)
+
+
+class Test_RawRequirementParser(unittest.TestCase):
+    def setUp(self):
+        self.parser = _RawRequirementParser()
+
+    def _parse(self, s):
+        return self.parser.parse(s, V)
+
+    def test_simple(self):
+        # Given
+        requirement_string = "numpy == 1.8.1-1"
+        r_constraints = {"numpy": set([Equal(V("1.8.1-1"))])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+    def test_multiple(self):
+        # Given
+        requirement_string = "numpy >= 1.8.1, numpy < 1.9.0"
+        r_constraints = {"numpy": set([GEQ(V("1.8.1-0")),
+                                       LT(V("1.9.0"))])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+    def test_multiple_names(self):
+        # Given
+        requirement_string = "numpy >= 1.8.1, scipy >= 0.14.0"
+        r_constraints = {"numpy": set([GEQ(V("1.8.1-0"))]),
+                         "scipy": set([GEQ(V("0.14.0"))])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+    def test_invalid(self):
+        # Given
+        requirement_string = "numpy >= "
+
+        # When/Then
+        with self.assertRaises(SolverException):
+            self._parse(requirement_string)
