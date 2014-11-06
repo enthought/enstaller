@@ -12,7 +12,7 @@ from egginst.progress import (console_progress_manager_factory,
 
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import MissingDependency, NoPackageFound
+from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
@@ -64,11 +64,14 @@ def _requirement_from_pypi(request, repository):
     are_pypi = []
     for job in request.jobs:
         if job.kind in ("install", "update", "upgrade"):
-            candidates = repository.find_packages(job.requirement.name)
-            if len(candidates) > 0 \
-                    and any(candidate.product == "pypi"
-                            for candidate in candidates):
-                are_pypi.append(job.requirement)
+            try:
+                candidate = \
+                        repository.find_package_from_requirement(job.requirement)
+            except NoSuchPackage:
+                pass
+            else:
+                if candidate.product == "pypi":
+                    are_pypi.append(job.requirement)
     return are_pypi
 
 

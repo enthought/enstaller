@@ -419,6 +419,122 @@ with pip as follows:
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
 
+    def _assert_ask_for_pypi(self, mocked_print):
+        line = "The following packages/requirements are coming from the " \
+               "PyPi repo:"
+        self.assertTrue(mocked_print.value.startswith(line))
+
+    def _assert_dont_ask_for_pypi(self, mocked_print):
+        line = "The following packages/requirements are coming from the " \
+               "PyPi repo:"
+        self.assertFalse(mocked_print.value.startswith(line))
+
+    @mock_index({
+        "swig-2.0.2-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "swig",
+            "packages": [],
+            "product": "pypi",
+            "python": PY_VER,
+            "size": 9227,
+            "type": "egg",
+            "version": "2.0.2"
+        },
+        "swig-2.0.12-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "swig",
+            "packages": [],
+            "product": "free",
+            "python": PY_VER,
+            "size": 9227,
+            "type": "egg",
+            "version": "2.0.12"
+        }
+    })
+    def test_install_non_pypi_after_pypi(self):
+        # Given
+        config = Configuration()
+        config.update(auth=("nono", "le petit robot"))
+
+        session = Session.from_configuration(config)
+        session.authenticate(config.auth)
+
+        repository = repository_factory(session, config.indices)
+
+        enpkg = Enpkg(repository, session, [self.prefix])
+        enpkg.execute = mock.Mock()
+
+        # When
+        with mock_print() as mocked_print:
+            with mock_raw_input("yes"):
+                install_req(enpkg, config, "swig", FakeOptions())
+
+        # Then
+        self._assert_dont_ask_for_pypi(mocked_print)
+
+    @mock_index({
+        "swig-2.0.2-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "swig",
+            "packages": [],
+            "product": "pypi",
+            "python": PY_VER,
+            "size": 9227,
+            "type": "egg",
+            "version": "2.0.2"
+        },
+        "swig-2.0.12-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "41640f27172d248ccf6dcbfafe53ba4d",
+            "mtime": 1300825734.0,
+            "name": "swig",
+            "packages": [],
+            "product": "free",
+            "python": PY_VER,
+            "size": 9227,
+            "type": "egg",
+            "version": "2.0.12"
+        }
+    })
+    def test_install_pypi_before_non_pypi(self):
+        # Given
+        config = Configuration()
+        config.update(auth=("nono", "le petit robot"))
+
+        session = Session.from_configuration(config)
+        session.authenticate(config.auth)
+
+        repository = repository_factory(session, config.indices)
+
+        enpkg = Enpkg(repository, session, [self.prefix])
+        enpkg.execute = mock.Mock()
+
+        # When
+        with mock_print() as mocked_print:
+            with mock_raw_input("yes"):
+                install_req(enpkg, config, "swig 2.0.2", FakeOptions())
+
+        # Then
+        self._assert_ask_for_pypi(mocked_print)
+
+        # When
+        with mock_print() as mocked_print:
+            with mock_raw_input("yes"):
+                install_req(enpkg, config, "swig 2.0.2-1", FakeOptions())
+
+        # Then
+        self._assert_ask_for_pypi(mocked_print)
+
 
 class TestFetchJsonWithProgress(unittest.TestCase):
     def _gzip_compress(self, data):

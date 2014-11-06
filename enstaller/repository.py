@@ -384,6 +384,39 @@ class Repository(object):
         raise NoSuchPackage("Package '{0}-{1}' not found".format(name,
                                                                  version))
 
+    def find_package_from_requirement(self, requirement):
+        """Search for latest package matching the given requirement.
+
+        Parameters
+        ----------
+        requirement : Requirement
+            The requirement to match for.
+
+        Returns
+        -------
+        package : RepositoryPackageMetadata
+            The corresponding metadata.
+        """
+        name = requirement.name
+        version = requirement.version
+        build = requirement.build
+        if version is None:
+            return self.find_latest_package(name)
+        else:
+            if build is None:
+                candidates = [p for p in self.find_packages(name)
+                              if p.version == version]
+                candidates.sort(key=operator.attrgetter("comparable_version"))
+
+                if len(candidates) == 0:
+                    msg = "No package found for requirement {0!r}"
+                    raise NoSuchPackage(msg.format(requirement))
+
+                return candidates[-1]
+            else:
+                version = EnpkgVersion.from_upstream_and_build(version, build)
+                return self.find_package(name, str(version))
+
     def find_latest_package(self, name):
         """Returns the latest package with the given name.
 
