@@ -1,8 +1,31 @@
-from enstaller.errors import SolverException
+import re
+
+from enstaller.errors import EnstallerException, SolverException
 from enstaller.versions.enpkg import EnpkgVersion
 
-from .constraints_parser import _RawRequirementParser
 from .constraint import MultiConstraints
+from .constraint_types import Any, EnpkgUpstreamMatch, Equal
+from .constraints_parser import _RawRequirementParser
+
+
+_FULL_PACKAGE_RE = re.compile("""\
+                              (?P<name>[^-.]+)
+                              -
+                              (?P<version>(.*))
+                              $""", re.VERBOSE)
+
+
+def parse_package_full_name(full_name):
+    """
+    Parse a package full name (e.g. 'numpy-1.6.0-1') into a (name,
+    version_string) pair.
+    """
+    m = _FULL_PACKAGE_RE.match(full_name)
+    if m:
+        return m.group("name"), m.group("version")
+    else:
+        msg = "Invalid package full name {0!r}".format(full_name)
+        raise EnstallerException(msg)
 
 
 def _first(iterable):
@@ -33,6 +56,35 @@ class Requirement(object):
         assert len(named_constraints) > 0
         name = _first(named_constraints.keys())
         return cls(name, named_constraints[name])
+
+    @classmethod
+    def from_legay_requirement_string(cls, requirement_string,
+                                      version_factory=EnpkgVersion.from_string):
+        """ Creates a requirement from a legacy requirement string, e.g.
+        'MKL 10.3', as found in egg metadata < 2.
+        """
+        parts = requirement_string.split(None, 1)
+        if len(parts) == 2:
+            name, version_string = parts
+            version = version_factory(version_string)
+            if version.build == 0:
+                return cls(name.lower(), [EnpkgUpstreamMatch(version)])
+            else:
+                return cls(name.lower(), [Equal(version)])
+        elif len(parts) == 1:
+            name = parts[0]
+            return cls(name.lower(), [Any()])
+        else:
+            raise ValueError(parts)
+
+    @classmethod
+    def from_package_string(cls, package_string,
+                            version_factory=EnpkgVersion.from_string):
+        """ Creates a requirement from a package full version.
+        """
+        name, version_string = parse_package_full_name(package_string)
+        version = version_factory(version_string)
+        return cls(name, [Equal(version)])
 
     def __init__(self, name, constraints=None):
         self.name = name
