@@ -6,7 +6,6 @@ from os.path import dirname, isdir, join
 
 from egginst.utils import rm_rf
 
-
 logger = logging.getLogger(__name__)
 
 

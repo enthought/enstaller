@@ -66,7 +66,7 @@ def _requirement_from_pypi(request, repository):
         if job.kind in ("install", "update", "upgrade"):
             try:
                 candidate = \
-                        repository.find_package_from_requirement(job.requirement)
+                    repository.find_package_from_requirement(job.requirement)
             except NoSuchPackage:
                 pass
             else:

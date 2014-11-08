@@ -3,9 +3,7 @@ from __future__ import absolute_import
 import os
 import shutil
 import string
-import sys
 import zipfile
-
 
 ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000
 
@@ -22,6 +20,7 @@ class ZipFile(zipfile.ZipFile):
 
     This also support context management on 2.6.
     """
+
     def extract_to(self, member, destination, path=None, pwd=None):
         if not isinstance(member, zipfile.ZipInfo):
             member = self.getinfo(member)
@@ -59,7 +58,7 @@ class ZipFile(zipfile.ZipFile):
         # UNC path, redundant separators, "." and ".." components.
         arcname = os.path.splitdrive(arcname)[1]
         arcname = os.path.sep.join(x for x in arcname.split(os.path.sep)
-                    if x not in ('', os.path.curdir, os.path.pardir))
+                                   if x not in ('', os.path.curdir, os.path.pardir))
         if os.path.sep == '\\':
             # filter illegal characters on Windows
             illegal = ':<>|"?*'

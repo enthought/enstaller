@@ -31,6 +31,7 @@ python = '2.7'
 packages = []
 """
 
+
 def _create_inmemory_egg(archives):
     s = BytesIO()
     with ZipFile(s, "w") as z:
@@ -39,6 +40,7 @@ def _create_inmemory_egg(archives):
     s.seek(0)
 
     return s
+
 
 class TestParseRawSpec(unittest.TestCase):
     def test_simple(self):
@@ -57,6 +59,7 @@ class TestParseRawSpec(unittest.TestCase):
         metadata = parse_rawspec(data)
 
         self.assertEqual(metadata, r_metadata)
+
 
 class TestInfoFromZ(unittest.TestCase):
     def test_simple(self):

@@ -3,10 +3,8 @@ import logging
 import os
 import re
 import sys
-import tempfile
 import uuid
 
-import os.path as op
 
 def win32_rename(src, dst):
     """A rename that does not fail if dst already exists.
@@ -25,12 +23,14 @@ def win32_rename(src, dst):
         os.unlink(dst)
         os.rename(src, dst)
 
+
 def rename(src, dst):
     """Atomic rename that works on windows."""
     if sys.platform == "win32":
         return win32_rename(src, dst)
     else:
         return os.rename(src, dst)
+
 
 def safe_write(target, writer, mode="wt"):
     """a 'safe' way to write to files.
@@ -63,9 +63,11 @@ def safe_write(target, writer, mode="wt"):
         f.close()
     rename(tmp_target, target)
 
+
 def pkg_config_dir(prefix):
     """Return the full path of the pkgconfig directory for the given prefix."""
     return os.path.join(prefix, "lib", "pkgconfig")
+
 
 def update_pkg_config_prefix(pc_file, prefix):
     """Overwrite the prefix variable for the given .pc pkg-config file with the

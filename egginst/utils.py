@@ -20,7 +20,6 @@ from egginst.errors import InvalidFormat
 
 from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
 
-
 on_win = bool(sys.platform == 'win32')
 
 if on_win:
@@ -32,6 +31,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
+
 def rm_empty_dir(path):
     """
     Remove the directory `path` if it is a directory and empty.
@@ -39,7 +39,7 @@ def rm_empty_dir(path):
     """
     try:
         os.rmdir(path)
-    except OSError: # directory might not exist or not be empty
+    except OSError:  # directory might not exist or not be empty
         pass
 
 
@@ -98,7 +98,8 @@ def human_bytes(n):
     k = (n - 1) / 1024 + 1
     if k < 1024:
         return '%i KB' % k
-    return '%.2f MB' % (float(n) / (2**20))
+    return '%.2f MB' % (float(n) / (2 ** 20))
+
 
 def makedirs(path):
     """Recursive directory creation function that does not fail if the
@@ -109,15 +110,18 @@ def makedirs(path):
         if e.errno != errno.EEXIST:
             raise
 
+
 def ensure_dir(path):
     """
     Create the parent directory of the give path, recursively is necessary.
     """
     makedirs(os.path.dirname(path))
 
+
 def is_zipinfo_dir(zip_info):
     """Returns True if the given zip_info refers to a directory."""
     return stat.S_ISDIR(zip_info.external_attr >> 16)
+
 
 def zip_write_symlink(fp, link_name, source):
     """Add to the zipfile the given link_name as a softlink to source
@@ -286,6 +290,7 @@ def atomic_file(filename, mode='w+b'):
     A future version may use win32 API to support atomicity on this platform as
     well.
     """
+
     class _FileWrapper(object):
         def __init__(self, fp):
             self._fp = fp
