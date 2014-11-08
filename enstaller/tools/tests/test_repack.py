@@ -12,7 +12,8 @@ from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 from egginst._compat import assertCountEqual
 from egginst._zipfile import ZipFile
 from egginst.eggmeta import info_from_z
-from egginst.tests.common import DUMMY_EGG, STANDARD_EGG, NOSE_1_2_1
+from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
+                                  STANDARD_EGG_WITH_EXT, NOSE_1_2_1)
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import EnstallerException
@@ -94,6 +95,34 @@ class TestRepack(unittest.TestCase):
             repack(source, 1, "rh5-64")
 
         self.assertTrue(str(e.exception).startswith(r_msg))
+
+    def test_setuptools_egg_with_ext(self):
+        # Given
+        source = os.path.join(self.prefix, os.path.basename(STANDARD_EGG_WITH_EXT))
+        shutil.copy(STANDARD_EGG_WITH_EXT, source)
+
+        target = os.path.join(self.prefix, "PyYAML-3.11-1.egg")
+
+        # When
+        repack(source, 1, "rh5-64")
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        with ZipFile(target) as zp:
+            zp.read("EGG-INFO/spec/depend")
+
+    def test_setuptools_egg_with_ext_without_platform(self):
+        # Given
+        r_msg = "Platform-specific egg detected (platform tag is " \
+                "'linux-x86_64'), you *must* specify the platform."
+        source = os.path.join(self.prefix, os.path.basename(STANDARD_EGG_WITH_EXT))
+        shutil.copy(STANDARD_EGG_WITH_EXT, source)
+
+        # When/Then
+        with self.assertRaises(EnstallerException) as exc:
+            repack(source, 1)
+
+        self.assertEqual(str(exc.exception), r_msg)
 
     def test_simple_setuptools_egg(self):
         # Given
