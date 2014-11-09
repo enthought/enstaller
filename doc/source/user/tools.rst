@@ -16,7 +16,7 @@ Repack
 ------
 
 Repack is a tool to repack eggs built by setuptools into a format
-understaood by enstaller. While enstaller can install any standard egg,
+understood by enstaller. While enstaller can install any standard egg,
 converting them to the Enthought format allows you to specify dependencies
 (including non-egg dependencies), etc...
 
@@ -34,9 +34,9 @@ you should use the ``-a`` flag::
 Customizing metadata
 ~~~~~~~~~~~~~~~~~~~~
 
-The repack tool supports customization of egg medata through the ``endist.dat``
-file. The ``endist.dat`` is actually exec-ed, and the following variables
-are understood::
+The repack tool supports customization of egg metadata through the
+``endist.dat`` file. The ``endist.dat`` is actually exec-ed, and the following
+variables are understood::
 
     # endist.dat
 
