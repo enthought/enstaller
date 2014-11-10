@@ -231,19 +231,15 @@ def updates_check(remote_repository, installed_repository):
     updates = []
     EPD_update = []
     for package in installed_repository.iter_packages():
-        key = package.key
-        info = package._compat_dict
-
-        info["key"] = key
-        av_metadatas = remote_repository.find_sorted_packages(info['name'])
+        av_metadatas = remote_repository.find_sorted_packages(package.name)
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
-        if av_metadata.comparable_version > comparable_info(info):
-            if info['name'] == "epd":
-                EPD_update.append({'current': info, 'update': av_metadata})
+        if av_metadata.comparable_version > package.comparable_version:
+            if package.name == "epd":
+                EPD_update.append({'current': package, 'update': av_metadata})
             else:
-                updates.append({'current': info, 'update': av_metadata})
+                updates.append({'current': package, 'update': av_metadata})
     return updates, EPD_update
 
 

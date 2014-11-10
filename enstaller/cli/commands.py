@@ -150,11 +150,11 @@ def update_all(enpkg, config, args):
             print(FMT % ('Name', 'installed', 'available'))
             print(60 * "=")
             for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
+                print(FMT % (update['current'].name,
+                             update['current'].full_version,
                              update['update'].full_version))
             for update in updates:
-                install_req(enpkg, config, update['current']['name'], args)
+                install_req(enpkg, config, update['current'].name, args)
 
 
 def whats_new(remote_repository, installed_repository):
@@ -172,6 +172,6 @@ def whats_new(remote_repository, installed_repository):
             print(FMT % ('Name', 'installed', 'available'))
             print(60 * "=")
             for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
+                print(FMT % (name_egg(update['current'].key),
+                             update['current'].full_version,
                              update['update'].full_version))
