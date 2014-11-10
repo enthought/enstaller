@@ -166,9 +166,7 @@ class RepositoryPackageMetadata(PackageMetadata):
             "'{self.name}-{self.version}-{self.build}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
             "store_location={self.store_location!r})".format(self=self)
-        return template.format(self.name, self.version, self.build, self.key,
-                               self.available, self.product,
-                               self.store_location)
+        return template
 
 
 class InstalledPackageMetadata(PackageMetadata):
