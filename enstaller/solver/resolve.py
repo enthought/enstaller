@@ -3,20 +3,10 @@ from collections import defaultdict
 
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.repository import egg_name_to_name_version
-from enstaller.versions.enpkg import EnpkgVersion
 
 from .requirement import Requirement
 
 logger = logging.getLogger(__name__)
-
-
-def comparable_info(spec):
-    """
-    Returns a EnpkgVersion object from the given spec. May be used for version
-    comparison.
-    """
-    return EnpkgVersion.from_upstream_and_build(spec['version'],
-                                                spec['build'])
 
 
 class Resolve(object):

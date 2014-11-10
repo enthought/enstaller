@@ -214,16 +214,6 @@ class InstalledPackageMetadata(PackageMetadata):
         self.ctime = ctime
         self.store_location = store_location
 
-    @property
-    def _compat_dict(self):
-        """
-        Returns a dict that is used in some old APIs
-        """
-        # FIXME: this method is to be removed
-        keys = ("name", "name", "version", "build", "packages", "python",
-                "ctime")
-        return dict((k, getattr(self, k)) for k in keys)
-
 
 def parse_version(version):
     """
