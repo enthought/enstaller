@@ -46,8 +46,8 @@ BOOTSTRAP_ARCNAME = EGG_INFO + "/spec/__bootstrap__.py"
 
 R_EGG_INFO = re.compile("^{0}".format(EGG_INFO))
 R_EGG_INFO_BLACK_LIST = re.compile(
-        "^{0}/(usr|spec|PKG-INFO.bak|prefix|.gitignore|"
-        "inst|post_egginst.py|pre_egguninst.py)".format(EGG_INFO))
+    "^{0}/(usr|spec|PKG-INFO.bak|prefix|.gitignore|"
+    "inst|post_egginst.py|pre_egguninst.py)".format(EGG_INFO))
 R_LEGACY_EGG_INFO = re.compile("(^.+.egg-info)")
 
 PY_PAT = re.compile(r'^(.+)\.py(c|o)?$')
@@ -67,6 +67,7 @@ def name_version_fn(fn):
         return tuple(fn.split('-', 1))
     else:
         return fn, ''
+
 
 def is_in_legacy_egg_info(f, is_custom_egg):
     """
@@ -88,6 +89,7 @@ def is_in_legacy_egg_info(f, is_custom_egg):
     else:
         return False
 
+
 def should_copy_in_egg_info(f, is_custom_egg):
     """
     Return True if the given archive name needs to be copied in to
@@ -103,6 +105,7 @@ def should_copy_in_egg_info(f, is_custom_egg):
             return True
     else:
         return False
+
 
 def has_legacy_egg_info_format(arcnames, is_custom_egg):
     if is_custom_egg:
@@ -133,6 +136,7 @@ def should_skip(zp, arcname):
         return True
     else:
         return False
+
 
 def setuptools_egg_info_dir(path):
     """
@@ -345,8 +349,8 @@ class EggInst(object):
                 # (enstaller test data contain some osx/linux binaries)
                 if self.cname != "enstaller":
                     object_code.apply_placeholder_hack(self.files,
-                                                    list(self.iter_targets()),
-                                                    self.prefix)
+                                                       list(self.iter_targets()),
+                                                       self.prefix)
 
                 self._create_links()
 
@@ -380,7 +384,7 @@ class EggInst(object):
 
     def _entry_points(self):
         lines = list(self._lines_from_arcname('EGG-INFO/entry_points.txt',
-                                             ignore_empty=False))
+                                              ignore_empty=False))
         if lines == []:
             return
         conf = configparser.ConfigParser()
@@ -396,18 +400,17 @@ class EggInst(object):
             logger.debug('creating scripts')
             scripts.create(self, conf)
 
-
     def _rel_prefix(self, path):
         return abspath(path).replace(self.prefix, '.').replace('\\', '/')
 
     def _write_meta(self):
         d = dict(
-            egg_name = self.fn,
-            prefix = self.prefix,
-            installed_size = self.installed_size,
-            files = [self._rel_prefix(p)
-                           if abspath(p).startswith(self.prefix) else p
-                     for p in self.files + [self.meta_json]]
+            egg_name=self.fn,
+            prefix=self.prefix,
+            installed_size=self.installed_size,
+            files=[self._rel_prefix(p)
+                   if abspath(p).startswith(self.prefix) else p
+                   for p in self.files + [self.meta_json]]
         )
         with open(self.meta_json, 'w') as f:
             json.dump(d, f, indent=2, sort_keys=True)
@@ -491,9 +494,9 @@ class EggInst(object):
                         from_egg_info)
             self._write_egg_info_arcname(name, dest)
         else:
-            raise ValueError(
-                    "BUG: Unexpected name for legacy egg info in {0}: {1}". \
-                    format(self.fn, name))
+            msg = ("BUG: Unexpected name for legacy egg info in {0}: {1}".
+                   format(self.fn, name))
+            raise ValueError(msg)
 
     def _write_standard_egg_info_metadata(self, zip_info):
         if is_zipinfo_dir(zip_info):
@@ -502,7 +505,7 @@ class EggInst(object):
         name = zip_info.filename
         from_egg_info = posixpath.relpath(name, EGG_INFO)
         dest = posixpath.join(self.pyloc, setuptools_egg_info_dir(self.path),
-                from_egg_info)
+                              from_egg_info)
 
         self._write_egg_info_arcname(name, dest)
 
@@ -515,7 +518,6 @@ class EggInst(object):
                 self.files.append(dest)
         finally:
             source.close()
-
 
     def _get_dst(self, arcname):
         def _transform_path(arcname, egg_prefix, dest_prefix):
@@ -639,27 +641,27 @@ def main(argv=None):
     p.add_argument("requirements", help="Requirements to install", nargs='*')
 
     p.add_argument('-l', "--list",
-                 action="store_true",
-                 help="list all installed packages")
+                   action="store_true",
+                   help="list all installed packages")
 
     p.add_argument("--noapp",
-                 action="store_true",
-                 help="don't install/remove application menu items")
+                   action="store_true",
+                   help="don't install/remove application menu items")
 
     p.add_argument("--prefix",
-                 action="store",
-                 default=sys.prefix,
-                 help="install prefix",
-                 metavar='PATH')
+                   action="store",
+                   default=sys.prefix,
+                   help="install prefix",
+                   metavar='PATH')
 
     p.add_argument("--pkgs-dir",
-                 action="store",
-                 help="Do nothing, kept for backward compatibility.",
-                 metavar='PATH')
+                   action="store",
+                   help="Do nothing, kept for backward compatibility.",
+                   metavar='PATH')
 
     p.add_argument('-r', "--remove",
-                 action="store_true",
-                 help="remove package(s), requires the egg or project name(s)")
+                   action="store_true",
+                   help="remove package(s), requires the egg or project name(s)")
 
     p.add_argument('-v', "--verbose", action="store_true")
     p.add_argument('--version', action="store_true")
@@ -674,7 +676,7 @@ def main(argv=None):
     prefix = normpath(abspath(ns.prefix))
     if prefix != normpath(sys.prefix):
         warnings.warn("Using the --prefix option is potentially dangerous. "
-                      "You should use enpkg installed in {0} instead.". \
+                      "You should use enpkg installed in {0} instead.".
                       format(ns.prefix))
 
     if ns.list:
@@ -693,5 +695,5 @@ def main(argv=None):
             install_egg_cli(path, prefix, ns.noapp)
 
 
-if __name__ == '__main__': # pragma: no cover
+if __name__ == '__main__':  # pragma: no cover
     main()

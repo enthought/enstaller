@@ -5,7 +5,6 @@ import functools
 import logging
 import os
 
-
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +30,7 @@ def slow(t):
 
     return slow_wrapper
 
+
 class ControlledEnv(object):
     """
     A special os.environ that can be used for mocking os.environ.
@@ -52,6 +52,7 @@ class ControlledEnv(object):
     >>> "USERNAME" in env:
     False
     """
+
     def __init__(self, ignored_keys=None, environ=None):
         if ignored_keys is None:
             ignored_keys = set()
@@ -69,16 +70,16 @@ class ControlledEnv(object):
             return self._data[name]
 
     def get(self, name, default=None):
-        if name in self._data and not name in self._ignored_keys:
+        if name in self._data and name not in self._ignored_keys:
             return self._data[name]
         else:
             return default
 
     def keys(self):
-        return [k for k in self._data if not k in self._ignored_keys]
+        return [k for k in self._data if k not in self._ignored_keys]
 
     def __contains__(self, key):
-        return not key in self._ignored_keys and key in self._data
+        return key not in self._ignored_keys and key in self._data
 
     def __setitem__(self, name, value):
         self._data[name] = value

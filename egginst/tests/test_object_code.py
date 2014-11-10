@@ -20,6 +20,7 @@ from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
                      MACHO_ARCH_TO_FILE,
                      PYEXT_WITH_LEGACY_PLACEHOLD_DEPENDENCY, PYEXT_DEPENDENCY)
 
+
 class TestObjectCode(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
@@ -93,7 +94,7 @@ class TestObjectCode(unittest.TestCase):
 
         self.assertTrue(installed_pyext_dependency in deps)
 
-    @unittest.skipIf(sys.platform=="win32", "This feature is not used on windows.")
+    @unittest.skipIf(sys.platform == "win32", "This feature is not used on windows.")
     def test_find_lib_with_targets(self):
         def _compute_target_list(path, d):
             # FIXME: we need this hack as the internal EggInst zipfile

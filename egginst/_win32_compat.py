@@ -1,8 +1,8 @@
 import ctypes
 import os.path
 
-from ctypes.wintypes import (BOOL, DWORD, HANDLE, LPWSTR, POINTER, WORD, c_wchar_p,
-                             c_void_p, pointer)
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPWSTR, POINTER, c_void_p
+
 
 # CreateFile ctypes implementation from SO
 GENERIC_READ = 0x80000000
@@ -21,7 +21,7 @@ REPARSE_MOUNTPOINT_HEADER_SIZE = 8
 FSCTL_SET_REPARSE_POINT = 589988
 FILE_FLAG_OPEN_REPARSE_POINT = 2097152
 FILE_FLAG_BACKUP_SEMANTICS = 33554432
-FILE_FLAG_REPARSE_BACKUP = 35651584 # FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS
+FILE_FLAG_REPARSE_BACKUP = 35651584  # FILE_FLAG_OPEN_REPARSE_POINT | FILE_FLAG_BACKUP_SEMANTICS
 
 INVALID_HANDLE_VALUE = -1
 LPOVERLAPPED = c_void_p
@@ -30,6 +30,7 @@ LPSECURITY_ATTRIBUTES = c_void_p
 NULL = 0
 FALSE = BOOL(0)
 TRUE = BOOL(1)
+
 
 class _FileHandle(object):
     def __init__(self, handle):
@@ -43,15 +44,14 @@ def CreateFile(filename, access, sharemode, attributes, creation, flags,
                template_file):
     # attributes and template_file ignored, kept for backward compat with
     # win32file
-    return _FileHandle(
-                HANDLE(ctypes.windll.kernel32.CreateFileW(
-                   LPWSTR(filename),
-                   DWORD(access),
-                   DWORD(sharemode),
-                   LPSECURITY_ATTRIBUTES(NULL),
-                   DWORD(creation),
-                   DWORD(flags),
-                   HANDLE(NULL))))
+    return _FileHandle(HANDLE(ctypes.windll.kernel32.CreateFileW(
+                       LPWSTR(filename),
+                       DWORD(access),
+                       DWORD(sharemode),
+                       LPSECURITY_ATTRIBUTES(NULL),
+                       DWORD(creation),
+                       DWORD(flags),
+                       HANDLE(NULL))))
 
 
 class FILETIME(ctypes.Structure):
@@ -74,7 +74,6 @@ class BY_HANDLE_FILE_INFORMATION(ctypes.Structure):
         ("nFileIndexHigh", DWORD),
         ("nFileIndexLow", DWORD)
     ]
-
 
 # http://msdn.microsoft.com/en-us/library/windows/desktop/aa364952
 GetFileInformationByHandle = ctypes.windll.kernel32.GetFileInformationByHandle
