@@ -15,31 +15,10 @@ from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
-                                  egg_name_to_name_version, parse_version)
+                                  egg_name_to_name_version)
 from enstaller.solver import Requirement
 from enstaller.tests.common import dummy_installed_package_factory
 from enstaller.utils import PY_VER
-
-
-class TestParseVersion(unittest.TestCase):
-    def test_simple(self):
-        # given
-        version = "1.8.0-1"
-
-        # When
-        upstream, build = parse_version(version)
-
-        # Then
-        self.assertEqual(upstream, "1.8.0")
-        self.assertEqual(build, 1)
-
-    def test_invalid(self):
-        # given
-        version = "1.8.0"
-
-        # When
-        with self.assertRaises(ValueError):
-            parse_version(version)
 
 
 class TestEggNameToNameVersion(unittest.TestCase):

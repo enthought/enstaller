@@ -207,26 +207,6 @@ class InstalledPackageMetadata(PackageMetadata):
         self.store_location = store_location
 
 
-def parse_version(version):
-    """
-    Parse a full version (e.g. '1.8.0-1' into upstream and build)
-
-    Parameters
-    ----------
-    version: str
-
-    Returns
-    -------
-    upstream_version: str
-    build: int
-    """
-    parts = version.split("-")
-    if len(parts) != 2:
-        raise ValueError("Version not understood {0!r}".format(version))
-    else:
-        return parts[0], int(parts[1])
-
-
 def egg_name_to_name_version(egg_name):
     """
     Convert a eggname (filename) to a (name, version) pair.
