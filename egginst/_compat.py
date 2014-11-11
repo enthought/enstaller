@@ -15,10 +15,11 @@ egginst.vendor.six.add_move(egginst.vendor.six.MovedModule("unittest", "unittest
 
 # FIXME: all those moves imports should be removed in favor of imports in the
 # modules requesting it.
-from egginst.vendor.six.moves import cPickle, configparser, http_client, urllib
-from egginst.vendor.six import moves
-from egginst.vendor.six import string_types
-from egginst.vendor.six import StringIO, BytesIO
+from egginst.vendor.six.moves import (cPickle, configparser,  # noqa
+                                      http_client, urllib)  # noqa
+from egginst.vendor.six import moves  # noqa
+from egginst.vendor.six import string_types  # noqa
+from egginst.vendor.six import StringIO, BytesIO  # noqa
 
 PY2 = egginst.vendor.six.PY2
 
@@ -44,6 +45,7 @@ def input(prompt):
         import builtins
         return builtins.input(prompt)
 
+
 # Code taken from Jinja2
 def with_metaclass(meta, *bases):
     # This requires a bit of explanation: the basic idea is to make a
@@ -58,6 +60,7 @@ def with_metaclass(meta, *bases):
     class metaclass(meta):
         __call__ = type.__call__
         __init__ = type.__init__
+
         def __new__(cls, name, this_bases, d):
             if this_bases is None:
                 return type.__new__(cls, name, (), d)

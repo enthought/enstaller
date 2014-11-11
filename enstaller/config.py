@@ -92,9 +92,9 @@ def configuration_read_search_order():
     Return a list of directories where to look for the configuration file.
     """
     paths = [sys.prefix]
+    paths.append(abs_expanduser("~"))
     if under_venv():
         paths.append(real_prefix())
-    paths.append(abs_expanduser("~"))
 
     return [os.path.normpath(p) for p in paths]
 

@@ -503,6 +503,9 @@ def _enable_logging(verbosity_level):
     if verbosity_level >= 3:
         http_client.HTTPConnection.debuglevel = 1
 
+    msg = ("Using enstaller version {0!r} (git rev {1!r})".
+           format(enstaller.__version__, enstaller.__git_revision__))
+    logger.info(msg)
 
 def _preprocess_options(argv):
     p = _create_parser()

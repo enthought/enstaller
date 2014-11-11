@@ -15,6 +15,7 @@ the main tools available from enstaller.
    user/installation.rst
    user/legacy_config.rst
    user/yaml_config.rst
+   user/tools.rst
 
 
 Dev Guide

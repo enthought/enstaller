@@ -19,6 +19,7 @@ APPINST_PATH = join("inst", "appinst.dat")
 SPEC_DEPEND_KEYS = ('name', 'version', 'build', 'arch', 'platform', 'osdist',
                     'python', 'packages')
 
+
 def parse_rawspec(data):
     # XXX: hack to workaround 2.6-specific bug with ast-parser and
     # unicode.
@@ -66,6 +67,7 @@ def create_info(egg, extra_info=None):
 
     return info
 
+
 def is_custom_egg(egg):
     """
     Return True if the egg is built using Enthought build infrastructure, False
@@ -79,7 +81,7 @@ def is_custom_egg(egg):
     with ZipFile(egg) as zp:
         for dest in ("spec/depend", "inst/targets.dat"):
             try:
-                info = zp.getinfo("EGG-INFO/{0}".format(dest))
+                zp.getinfo("EGG-INFO/{0}".format(dest))
                 return True
             except KeyError:
                 pass

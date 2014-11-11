@@ -31,6 +31,7 @@ class TestParseAssignments(unittest.TestCase):
         with self.assertRaises(InvalidFormat):
             parse_assignments(StringIO("1 + 2"))
 
+
 class TestAtomicFile(unittest.TestCase):
     def setUp(self):
         self.tempdir = tempfile.mkdtemp()

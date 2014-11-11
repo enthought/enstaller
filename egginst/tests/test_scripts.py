@@ -44,6 +44,7 @@ class TestScripts(unittest.TestCase):
                 executable = get_executable(pythonw=True)
                 self.assertEqual(executable, "pythonw.exe")
 
+
 class TestFixScript(unittest.TestCase):
     def test_egginst_script_untouched(self):
         """
@@ -116,6 +117,7 @@ if __name__ == '__main__':
 
             with open(path, "rt") as fp:
                 self.assertMultiLineEqual(fp.read(), r_egginst_script)
+
 
 class TestCreateScript(unittest.TestCase):
     @mock.patch("egginst.utils.on_win", False)
@@ -213,9 +215,9 @@ dummy-gui = dummy:main_gui
                 cli_entry_point_path = os.path.join(egginst.bin_dir, "dummy-script.py")
                 gui_entry_point_path = os.path.join(egginst.bin_dir, "dummy-gui-script.pyw")
                 entry_points = [
-                        os.path.join(egginst.bin_dir, "dummy.exe"),
-                        os.path.join(egginst.bin_dir, "dummy-gui.exe"),
-                        cli_entry_point_path, gui_entry_point_path,
+                    os.path.join(egginst.bin_dir, "dummy.exe"),
+                    os.path.join(egginst.bin_dir, "dummy-gui.exe"),
+                    cli_entry_point_path, gui_entry_point_path,
                 ]
                 for entry_point in entry_points:
                     self.assertTrue(os.path.exists(entry_point))
@@ -232,6 +234,7 @@ dummy-gui = dummy:main_gui
                                  hashlib.md5(exe_data.cli).hexdigest())
                 self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
                                  hashlib.md5(exe_data.gui).hexdigest())
+
 
 class TestProxy(unittest.TestCase):
     @mock.patch("sys.platform", "win32")
@@ -257,8 +260,8 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
             with mock.patch("sys.executable", os.path.join(prefix, "python.exe")):
                 proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
                 r_python_proxy_data = r_python_proxy_data_template % \
-                        {'executable': os.path.join(prefix, "python.exe"),
-                         'src': six.u(proxy_path)}
+                    {'executable': os.path.join(prefix, "python.exe"),
+                     'src': six.u(proxy_path)}
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:
@@ -277,9 +280,8 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
 
                     with open(python_proxy, "rt") as fp:
                         python_proxy_data = fp.read()
-                        self.assertMultiLineEqual(
-                                python_proxy_data,
-                                r_python_proxy_data)
+                        self.assertMultiLineEqual(python_proxy_data,
+                                                  r_python_proxy_data)
 
     @mock.patch("sys.platform", "win32")
     @mock.patch("egginst.main.bin_dir_name", "Scripts")
@@ -297,8 +299,8 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                     create_proxies(egginst)
 
                     proxied_files = [
-                       os.path.join(prefix, "Scripts", "dummy.dll"),
-                       os.path.join(prefix, "Scripts", "dummy.lib"),
+                        os.path.join(prefix, "Scripts", "dummy.dll"),
+                        os.path.join(prefix, "Scripts", "dummy.lib"),
                     ]
                     for proxied_file in proxied_files:
                         self.assertTrue(os.path.exists(proxied_file))

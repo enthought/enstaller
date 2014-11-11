@@ -3,7 +3,7 @@ import os.path
 
 import egginst._compat
 
-from egginst.main import EggInst, get_installed, name_version_fn
+from egginst.main import EggInst, get_installed, name_version_fn  # noqa
 
 logging.getLogger("egginst").addHandler(egginst._compat.NullHandler())
 

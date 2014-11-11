@@ -19,8 +19,8 @@ from fabric.decorators import task
 
 PY_VER = ".".join(str(part) for part in sys.version_info[:2])
 
-DEFAULT_MASTER_VERSION = "2.0.0.dev1-c9fa3fa"
-MASTER_REPO = "https://s3.amazonaws.com/canopy-deployment-server"
+DEFAULT_MASTER_VERSION = "2.0.0.dev1463-a1bb912"
+MASTER_REPO = "https://s3.amazonaws.com/enstaller-assets/masters"
 SCRIPTS_ROOT = op.abspath(op.dirname(__file__))
 
 MASTER_ROOT = op.abspath(os.getcwd())

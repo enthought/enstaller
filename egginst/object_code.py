@@ -6,7 +6,6 @@ import sys
 import re
 from os.path import abspath, join, islink, isfile, exists
 
-
 logger = logging.getLogger(__name__)
 
 # extensions which are assumed to belong to files which don't contain
@@ -22,7 +21,6 @@ MAGIC = {
     b'\xfe\xed\xfa\xcf': 'MachO-ppc64',
     b'\x7fELF': 'ELF',
 }
-
 
 PLACEHOLD_PAT = re.compile(5 * b'/PLACEHOLD' + b'([^\0\\s]*)\0')
 
@@ -82,7 +80,7 @@ def _fix_object_code(path, targets):
             logger.info("replacing rpath %r with %r", original_r, r)
 
             padding = len(m.group(0)) - len(r)
-            if padding < 1: # we need at least one null-character
+            if padding < 1:  # we need at least one null-character
                 raise Exception("placeholder %r too short" % m.group(0))
             r += padding * b'\0'
             assert m.start() + len(r) == m.end()

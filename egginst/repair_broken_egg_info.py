@@ -1,19 +1,19 @@
 from __future__ import print_function
 
 import argparse
-import errno
 import os.path
 import shutil
 import sys
 
 from egginst import logger
-from egginst.main import (EggInst, get_installed, read_meta,
-        setuptools_egg_info_dir, should_copy_in_egg_info)
+from egginst.main import (EggInst, get_installed, setuptools_egg_info_dir,
+                          should_copy_in_egg_info)
 from egginst.utils import makedirs, rm_rf
 
 
 def package_egg_info_dir(egginst):
     return os.path.join(egginst.site_packages, setuptools_egg_info_dir(egginst.path))
+
 
 def convert_path_to_posix(p):
     if os.path.sep != "/":
@@ -70,7 +70,7 @@ def _in_place_repair(source_egg_info_dir, dest_egg_info_dir, dry_run):
             if should_copy_in_egg_info(convert_path_to_posix(path), True):
                 source = os.path.join(root, f)
                 target = os.path.join(dest_egg_info_dir,
-                        os.path.relpath(source, source_egg_info_dir))
+                                      os.path.relpath(source, source_egg_info_dir))
                 if dry_run:
                     logger.dry_run.info("Would copy %r to %r", source, target)
                 else:
@@ -132,6 +132,7 @@ def repair(prefix, dry_run):
         fixer = EggInfoDirFixer(egg, prefix, dry_run=dry_run)
         if fixer.needs_repair():
             fixer.repair()
+
 
 def main(argv=None):
     if argv is None:
