@@ -270,7 +270,7 @@ class TestRepository(unittest.TestCase):
         V = EnpkgVersion.from_string
         # Given/When
         metadata = list(self.repository.find_packages("nose"))
-        metadata = sorted(metadata, key=operator.attrgetter("comparable_version"))
+        metadata = sorted(metadata, key=operator.attrgetter("version"))
 
         # Then
         self.assertEqual(len(metadata), 3)

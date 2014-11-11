@@ -40,7 +40,7 @@ class Resolve(object):
         if len(matches) == 0:
             return None
         else:
-            return max(matches, key=lambda k: d[k].comparable_version)
+            return max(matches, key=lambda k: d[k].version)
 
     def _dependencies_from_egg(self, egg):
         """

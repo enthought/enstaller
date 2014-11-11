@@ -87,7 +87,7 @@ def _get_enstaller_comparable_version(prefix, package_name):
             # latter takes precedence
             current_comparable_version = runtime_version
         else:
-            current_comparable_version = enstaller_package.comparable_version
+            current_comparable_version = enstaller_package.version
     except EnstallerException:
         # Installed from sources, no build number
         current_comparable_version = runtime_version
@@ -115,7 +115,7 @@ def update_enstaller(session, repository, opts):
     except NoSuchPackage:
         updated = False
     else:
-        if latest.comparable_version > current_comparable_version:
+        if latest.version > current_comparable_version:
             if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
                              opts.yes):
                 inplace_update(session, repository, latest)

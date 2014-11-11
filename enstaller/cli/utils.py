@@ -232,7 +232,7 @@ def updates_check(remote_repository, installed_repository):
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
-        if av_metadata.comparable_version > package.comparable_version:
+        if av_metadata.version > package.version:
             if package.name == "epd":
                 EPD_update.append({'current': package, 'update': av_metadata})
             else:

@@ -77,15 +77,6 @@ class PackageMetadata(object):
         """
         return str(self.version)
 
-    @property
-    def comparable_version(self):
-        """
-        Returns an object that may be used to compare the version of two
-        package metadata (only make sense for two packages which differ only in
-        versions).
-        """
-        return self.version
-
 
 class RepositoryPackageMetadata(PackageMetadata):
     """
@@ -368,7 +359,7 @@ class Repository(object):
         version = EnpkgVersion.from_string(version)
         candidates = self._name_to_packages.get(name, [])
         for candidate in candidates:
-            if candidate.comparable_version == version:
+            if candidate.version == version:
                 return candidate
         raise NoSuchPackage("Package '{0}-{1}' not found".format(name,
                                                                  version))
@@ -396,7 +387,7 @@ class Repository(object):
                 upstream = PEP386WorkaroundVersion.from_string(version)
                 candidates = [p for p in self.find_packages(name)
                               if p.version.upstream == upstream]
-                candidates.sort(key=operator.attrgetter("comparable_version"))
+                candidates.sort(key=operator.attrgetter("version"))
 
                 if len(candidates) == 0:
                     msg = "No package found for requirement {0!r}"
@@ -442,7 +433,7 @@ class Repository(object):
         packages = self.find_packages(name)
         try:
             return sorted(packages,
-                          key=operator.attrgetter("comparable_version"))
+                          key=operator.attrgetter("version"))
         except TypeError:
             # FIXME: allowing uncomparable versions should be disallowed at
             # some point
@@ -493,5 +484,5 @@ class Repository(object):
         """
         for name, packages in self._name_to_packages.items():
             sorted_by_version = sorted(packages,
-                                       key=operator.attrgetter("comparable_version"))
+                                       key=operator.attrgetter("version"))
             yield sorted_by_version[-1]
