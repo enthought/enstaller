@@ -35,7 +35,9 @@ Internals:
   * test suite does not access network anymore. Http tests handled through
     the response library (#285)
   * add a new YAML-based configuration (not enabled yet).
-  * auth storage in Configuration is consolidated and pluggable.
+  * Auth configuration has been consolidated and is now pluggable
+    (currently supports storing authentication as username/password or api
+    token).
   * enstaller.tools.repack added (replacement of endist `build_egg -r`).
     This feature requires okonomiyaki >= 0.3.3 (available in Enthought'
     repositories and on pypi).
