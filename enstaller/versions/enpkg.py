@@ -56,6 +56,9 @@ class EnpkgVersion(object):
     def __str__(self):
         return str(self.upstream) + "-" + str(self.build)
 
+    def __hash__(self):
+        return hash(self._parts)
+
     def _cannot_compare(self, other):
         msg = "Cannot compare {0!r} and {1!r}"
         raise TypeError(msg.format(type(self), type(other)))

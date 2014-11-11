@@ -18,6 +18,29 @@ class TestPEP386Workaround(unittest.TestCase):
         self.assertFalse(left < right)
         self.assertFalse(left > right)
 
+    def test_hashing(self):
+        # Given version string without workaround
+        s = "1.3.0"
+
+        # When
+        v1 = PEP386WorkaroundVersion.from_string(s)
+        v2 = PEP386WorkaroundVersion.from_string(s)
+
+        # Then
+        self.assertEqual(v1, v2)
+        self.assertEqual(hash(v1), hash(v2))
+
+        # Given version string with workaround
+        s = "0.9.8j"
+
+        # When
+        v1 = PEP386WorkaroundVersion.from_string(s)
+        v2 = PEP386WorkaroundVersion.from_string(s)
+
+        # Then
+        self.assertEqual(v1, v2)
+        self.assertEqual(hash(v1), hash(v2))
+
     def test_correct_greater(self):
         # Given
         left = PEP386WorkaroundVersion.from_string("1.2.0")

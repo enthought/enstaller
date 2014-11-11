@@ -5,6 +5,18 @@ from ..pep386_workaround import PEP386WorkaroundVersion
 
 
 class TestEnpkgVersionParsing(unittest.TestCase):
+    def test_hashing(self):
+        # Given
+        s = "1.3.0-1"
+
+        # When
+        v1 = EnpkgVersion.from_string(s)
+        v2 = EnpkgVersion.from_string(s)
+
+        # Then
+        self.assertEqual(v1, v2)
+        self.assertEqual(hash(v1), hash(v2))
+
     def test_from_string_valid(self):
         # Given
         s = "1.3.0-1"
