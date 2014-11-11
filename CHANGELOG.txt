@@ -15,8 +15,10 @@ Main highlights:
     before bailing out (#278), and retry connection failures as well (#350)
   * new bootstrap script that works on every platform and is more reliable
     than the old build.sh hack (#320)
-  * `.enstaller4rc` is now searched in sys.prefix, user's home directory
-    and parent virtualenv (when applicable).
+  * `.enstaller4rc` is now searched in the following order:
+    * sys.prefix
+    * user's home directory
+    * parent virtualenv (when applicable)
 
 Bug fixes:
 
@@ -35,7 +37,7 @@ Internals:
   * add a new YAML-based configuration (not enabled yet).
   * auth storage in Configuration is consolidated and pluggable.
   * enstaller.tools.repack added (replacement of endist `build_egg -r`).
-    This feature requires okonomiyaki (availabel in Enthought'
+    This feature requires okonomiyaki >= 0.3.3 (available in Enthought'
     repositories and on pypi).
 
 2014-08-29   4.7.0:
