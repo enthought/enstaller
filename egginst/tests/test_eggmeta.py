@@ -1,8 +1,7 @@
-from egginst._compat import BytesIO
-
 import unittest
 
 from egginst.eggmeta import info_from_z, parse_rawspec
+from egginst.vendor.six import BytesIO
 from egginst._zipfile import ZipFile
 
 NUMPY_1_4_0_WIN32 = """\

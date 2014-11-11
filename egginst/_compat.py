@@ -11,15 +11,9 @@ class NullHandler(logging.Handler):  # pragma: no cover
 
 import egginst.vendor.six
 
-egginst.vendor.six.add_move(egginst.vendor.six.MovedModule("unittest", "unittest2", "unittest"))
-
-# FIXME: all those moves imports should be removed in favor of imports in the
-# modules requesting it.
-from egginst.vendor.six.moves import (cPickle, configparser,  # noqa
-                                      http_client, urllib)  # noqa
-from egginst.vendor.six import moves  # noqa
-from egginst.vendor.six import string_types  # noqa
-from egginst.vendor.six import StringIO, BytesIO  # noqa
+egginst.vendor.six.add_move(egginst.vendor.six.MovedModule("unittest",
+                                                           "unittest2",
+                                                           "unittest"))
 
 PY2 = egginst.vendor.six.PY2
 

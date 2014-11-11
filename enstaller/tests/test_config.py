@@ -7,8 +7,8 @@ import textwrap
 
 import mock
 
-from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
+from egginst.vendor.six import StringIO
 from egginst.vendor.six.moves import unittest
 
 from enstaller.plat import custom_plat

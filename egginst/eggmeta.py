@@ -2,8 +2,6 @@ from __future__ import print_function
 
 import sys
 
-from ._compat import StringIO
-
 import json
 import time
 
@@ -11,6 +9,8 @@ from os.path import join
 
 from egginst._zipfile import ZipFile
 from egginst.utils import parse_assignments
+from egginst.vendor.six.moves import StringIO
+
 
 # Path relative to EGG-INFO in egg, or $RPPT/EGG-INFO/$package_name when
 # installed

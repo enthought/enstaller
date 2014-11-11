@@ -1,4 +1,4 @@
-from egginst._compat import urllib
+from egginst.vendor.six.moves import urllib
 
 
 def close_file_or_response(fp):

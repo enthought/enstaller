@@ -9,7 +9,7 @@ import zipfile
 from collections import defaultdict
 from os.path import basename, isfile, join, getmtime, getsize
 
-from egginst._compat import StringIO
+from egginst.vendor.six import StringIO
 
 from .dist_naming import is_valid_eggname
 from .requirement import Req

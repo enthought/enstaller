@@ -2,7 +2,9 @@ from __future__ import absolute_import
 
 import abc
 
-from egginst._compat import urllib, with_metaclass
+from egginst._compat import with_metaclass
+from egginst.vendor.six.moves import urllib
+
 from enstaller.errors import AuthFailedError
 from enstaller.vendor import requests
 

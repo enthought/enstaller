@@ -12,8 +12,9 @@ import warnings
 
 from os.path import isfile, join
 
-from egginst._compat import string_types, urllib
 from egginst.utils import parse_assignments
+from egginst.vendor.six import string_types
+from egginst.vendor.six.moves import urllib
 
 from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
