@@ -62,11 +62,11 @@ class Requirement(object):
             return False
         if self.strictness == 1:
             return True
-        if candidate.version != self.version:
+        if str(candidate.version.upstream) != self.version:
             return False
         if self.strictness == 2:
             return True
-        return candidate.build == self.build
+        return candidate.version.build == self.build
 
     def __str__(self):
         if self.strictness == 0:

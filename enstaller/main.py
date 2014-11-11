@@ -82,7 +82,7 @@ def _get_enstaller_comparable_version(prefix, package_name):
         # Installed as an egg in sys.prefix
         enstaller_package = \
             InstalledPackageMetadata.from_meta_dir(egg_info_dir)
-        if enstaller_package.version != enstaller.__version__:
+        if str(enstaller_package.version.upstream) != enstaller.__version__:
             # It is both installed as an egg and from sources/develop mode, the
             # latter takes precedence
             current_comparable_version = runtime_version

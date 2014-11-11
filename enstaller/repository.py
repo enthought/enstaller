@@ -13,14 +13,14 @@ from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException, NoSuchPackage
 from enstaller.eggcollect import info_from_metadir
 from enstaller.utils import compute_md5, PY_VER
+from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
 from enstaller.versions.enpkg import EnpkgVersion
 
 
 class PackageVersionInfo(object):
-    def __init__(self, name, version, build):
+    def __init__(self, name, version):
         self.name = name
         self.version = version
-        self.build = build
 
 
 class PackageMetadata(object):
@@ -55,16 +55,14 @@ class PackageMetadata(object):
         self.key = key
 
         self.name = name
-        self._version = version
-        self.version = str(version.upstream)
-        self.build = version.build
+        self.version = version
 
         self.packages = packages
         self.python = python
 
     def __repr__(self):
         return "PackageMetadata('{0}-{1}', key={2!r})".format(
-            self.name, self._version, self.key)
+            self.name, self.version, self.key)
 
     @property
     def dependencies(self):
@@ -77,7 +75,7 @@ class PackageMetadata(object):
         """
         The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
         """
-        return str(self._version)
+        return str(self.version)
 
     @property
     def comparable_version(self):
@@ -86,7 +84,7 @@ class PackageMetadata(object):
         package metadata (only make sense for two packages which differ only in
         versions).
         """
-        return self._version
+        return self.version
 
 
 class RepositoryPackageMetadata(PackageMetadata):
@@ -153,9 +151,12 @@ class RepositoryPackageMetadata(PackageMetadata):
         Returns a dict that may be converted to json to re-create our legacy S3
         index content
         """
-        keys = ("available", "build", "md5", "name", "packages", "product",
-                "python", "mtime", "size", "type", "version")
-        return dict((k, getattr(self, k)) for k in keys)
+        keys = ("available", "md5", "name", "packages", "product",
+                "python", "mtime", "size", "type")
+        ret = dict((k, getattr(self, k)) for k in keys)
+        ret["version"] = str(self.version.upstream)
+        ret["build"] = self.version.build
+        return ret
 
     @property
     def source_url(self):
@@ -392,8 +393,9 @@ class Repository(object):
             return self.find_latest_package(name)
         else:
             if build is None:
+                upstream = PEP386WorkaroundVersion.from_string(version)
                 candidates = [p for p in self.find_packages(name)
-                              if p.version == version]
+                              if p.version.upstream == upstream]
                 candidates.sort(key=operator.attrgetter("comparable_version"))
 
                 if len(candidates) == 0:
