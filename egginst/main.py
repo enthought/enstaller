@@ -257,7 +257,8 @@ class _EggInstRemove(object):
                     progress(step=i)
         """
         if not self.is_installed:
-            logger.error("Error: Can't find meta data for:", self.cname)
+            logger.error("Error: Can't find meta data for: {0!r}".
+                         format(self.cname))
             return
 
         if not self.noapp:

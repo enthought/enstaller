@@ -137,6 +137,22 @@ class TestEggInstMain(unittest.TestCase):
             self.assertEqual(installed_eggs, r_installed_eggs)
 
 
+class Test_EggInstRemove(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_simple_(self):
+        # Given
+        remover = EggInst(DUMMY_EGG, self.prefix)
+
+        # When
+        # No exception occurs when removing non-installed egg
+        remover.remove()
+
+
 class TestEggInstInstall(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()
