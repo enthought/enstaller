@@ -1,13 +1,13 @@
 from __future__ import print_function
 
-from egginst._compat import PY2, StringIO
-
 import collections
 import contextlib
 import json
 import sys
 
 import mock
+
+from egginst.vendor.six import PY2, StringIO
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg

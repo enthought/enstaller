@@ -1,6 +1,7 @@
 from __future__ import print_function
 
-from egginst._compat import PY2, input, urllib
+from egginst._compat import PY2, input
+from egginst.vendor.six.moves import urllib
 
 import getpass
 import json

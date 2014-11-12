@@ -4,9 +4,10 @@ from egginst.utils import compute_md5, ensure_dir
 from egginst.tests.common import (NOSE_1_3_0, SUPPORT_SYMLINK,
                                   VTK_EGG_DEFERRED_SOFTLINK, ZIP_WITH_SOFTLINK,
                                   mkdtemp)
+from egginst.vendor.six import BytesIO
 from egginst.vendor.six.moves import unittest
 
-from egginst._compat import BytesIO, assertCountEqual
+from egginst._compat import assertCountEqual
 from egginst._zipfile import ZipFile
 
 

@@ -8,7 +8,7 @@ import sqlite3
 
 from io import FileIO
 
-from egginst._compat import cPickle, urllib
+from egginst.vendor.six.moves import cPickle, urllib
 from egginst._compat import buffer
 
 from enstaller.utils import uri_to_path

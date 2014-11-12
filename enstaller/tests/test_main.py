@@ -12,9 +12,9 @@ import textwrap
 
 import mock
 
-from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
+from egginst.vendor.six import StringIO
 from egginst.vendor.six.moves import unittest
 
 

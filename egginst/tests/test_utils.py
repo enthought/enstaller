@@ -3,9 +3,9 @@ import shutil
 import tempfile
 import textwrap
 
-from egginst.vendor.six.moves import unittest
-from egginst._compat import StringIO
 from egginst.utils import atomic_file, parse_assignments, samefile
+from egginst.vendor.six import StringIO
+from egginst.vendor.six.moves import unittest
 from enstaller.errors import InvalidFormat
 
 

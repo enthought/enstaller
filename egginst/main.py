@@ -10,8 +10,6 @@ enpkg or Canopy's package manager instead to deal with dependencies correctly.
 """
 from __future__ import absolute_import, print_function
 
-from ._compat import configparser, StringIO
-
 import argparse
 import json
 import logging
@@ -40,6 +38,9 @@ from .utils import (on_win, bin_dir_name, rel_site_packages, ensure_dir,
                     rm_empty_dir, rm_rf, get_executable, is_zipinfo_dir,
                     zip_has_arcname)
 from ._zipfile import ZipFile
+
+from .vendor.six import StringIO
+from .vendor.six.moves import configparser
 
 EGG_INFO = "EGG-INFO"
 BOOTSTRAP_ARCNAME = EGG_INFO + "/spec/__bootstrap__.py"

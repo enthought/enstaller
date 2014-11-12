@@ -21,9 +21,9 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
-from egginst._compat import http_client
 from egginst.main import EGG_INFO
 from egginst.progress import console_progress_manager_factory
+from egginst.vendor.six.moves import http_client
 
 import enstaller
 

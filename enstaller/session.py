@@ -2,8 +2,8 @@ import collections
 import contextlib
 import os.path
 
-from egginst._compat import urllib
 from egginst.utils import atomic_file, ensure_dir
+from egginst.vendor.six.moves import urllib
 
 from enstaller import __version__
 from enstaller.auth.auth_managers import (BroodAuthenticator,

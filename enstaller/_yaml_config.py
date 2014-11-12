@@ -1,6 +1,8 @@
 import os.path
 
-from egginst._compat import PY2, string_types, urllib
+from egginst._compat import PY2
+from egginst.vendor.six import string_types
+from egginst.vendor.six.moves import urllib
 
 from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.errors import InvalidConfiguration

@@ -5,7 +5,7 @@ import io
 import sys
 import textwrap
 
-from egginst._compat import urllib
+from egginst.vendor.six.moves import urllib
 
 from egginst.progress import (console_progress_manager_factory,
                               dummy_progress_bar_factory)

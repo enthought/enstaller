@@ -1,6 +1,6 @@
 import re
 
-from egginst._compat import urllib
+from egginst.vendor.six.moves import urllib
 
 from enstaller.errors import InvalidConfiguration
 

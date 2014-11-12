@@ -1,7 +1,5 @@
 from __future__ import absolute_import, print_function
 
-from ._compat import string_types
-
 import ast
 import contextlib
 import errno
@@ -17,6 +15,7 @@ import zipfile
 from os.path import basename, isdir, isfile, islink, join
 
 from egginst.errors import InvalidFormat
+from egginst.vendor.six import string_types
 
 from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
 
