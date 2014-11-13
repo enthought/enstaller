@@ -6,4 +6,5 @@ mock
 okonomiyaki>=0.2.0
 haas
 six
+testfixtures
 tox
