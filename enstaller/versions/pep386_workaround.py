@@ -68,7 +68,7 @@ class PEP386WorkaroundVersion(object):
                 # ?
                 prerel_parts = tuple(['`'] + list(prerel_parts[1:]))
 
-            comparable_parts = (numdot, prerel_parts, parts[2])
+            comparable_parts = (tuple(numdot), prerel_parts, parts[2])
 
         self._comparable_parts = comparable_parts
         self._is_worked_around = is_worked_around
@@ -78,6 +78,9 @@ class PEP386WorkaroundVersion(object):
             return ".".join(self._parts)
         else:
             return NormalizedVersion.parts_to_str(self._parts)
+
+    def __hash__(self):
+        return hash(self._comparable_parts)
 
     def _cannot_compare(self, other):
         raise TypeError("cannot compare %s and %s"

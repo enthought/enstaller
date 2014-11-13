@@ -9,7 +9,7 @@ from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
 
-from .utils import (FMT, FMT4, VB_FMT, install_req, install_time_string,
+from .utils import (FMT, FMT4, install_req, install_time_string,
                     name_egg, print_installed, updates_check)
 
 
@@ -31,9 +31,8 @@ def imports_option(repository):
     names = set(package.name for package in repository.iter_packages())
     for name in sorted(names, key=lambda s: s.lower()):
         packages = repository.find_packages(name)
-        info = packages[0]._compat_dict
         loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
-        print(FMT % (name, VB_FMT % info, loc))
+        print(FMT % (name, packages[0].full_version, loc))
 
 
 def info_option(remote_repository, installed_repository, name):
@@ -106,7 +105,7 @@ def search(remote_repository, installed_repository, config, session, pat=None):
 
     installed = {}
     for package in installed_repository.iter_packages():
-        installed[package.name] = VB_FMT % package._compat_dict
+        installed[package.name] = package.full_version
 
     for name in sorted(names, key=lambda s: s.lower()):
         if pat and not pat.search(name):
@@ -150,11 +149,11 @@ def update_all(enpkg, config, args):
             print(FMT % ('Name', 'installed', 'available'))
             print(60 * "=")
             for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
+                print(FMT % (update['current'].name,
+                             update['current'].full_version,
                              update['update'].full_version))
             for update in updates:
-                install_req(enpkg, config, update['current']['name'], args)
+                install_req(enpkg, config, update['current'].name, args)
 
 
 def whats_new(remote_repository, installed_repository):
@@ -172,6 +171,6 @@ def whats_new(remote_repository, installed_repository):
             print(FMT % ('Name', 'installed', 'available'))
             print(60 * "=")
             for update in updates:
-                print(FMT % (name_egg(update['current']['key']),
-                             VB_FMT % update['current'],
+                print(FMT % (name_egg(update['current'].key),
+                             update['current'].full_version,
                              update['update'].full_version))

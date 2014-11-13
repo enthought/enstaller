@@ -26,6 +26,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
                                     mock_index, mock_print, mock_raw_input,
                                     PY_VER)
 from enstaller.vendor import requests, responses
+from enstaller.versions.enpkg import EnpkgVersion
 
 from ..utils import (disp_store_info, install_req, install_time_string,
                      name_egg, print_installed, repository_factory,
@@ -44,6 +45,7 @@ else:
 
 
 FAKE_AUTH = ("nono", "le gros robot")
+V = EnpkgVersion.from_string
 
 
 class TestMisc(unittest.TestCase):
@@ -54,14 +56,13 @@ class TestMisc(unittest.TestCase):
         shutil.rmtree(self.tempdir)
 
     def test_disp_store_info(self):
-        info = {"store_location": "https://api.enthought.com/eggs/osx-64/"}
-        self.assertEqual(disp_store_info(info), "api osx-64")
+        store_location = "https://api.enthought.com/eggs/osx-64/"
+        self.assertEqual(disp_store_info(store_location), "api osx-64")
 
-        info = {"store_location": "https://api.enthought.com/eggs/win-32/"}
-        self.assertEqual(disp_store_info(info), "api win-32")
+        store_location = "https://api.enthought.com/eggs/win-32/"
+        self.assertEqual(disp_store_info(store_location), "api win-32")
 
-        info = {}
-        self.assertEqual(disp_store_info(info), "-")
+        self.assertEqual(disp_store_info(""), "-")
 
     def test_name_egg(self):
         name = "foo-1.0.0-1.egg"
@@ -97,8 +98,8 @@ class TestInfoStrings(unittest.TestCase):
             r_out = textwrap.dedent("""\
                 Name                 Version              Store
                 ============================================================
-                dummy                1.0.1-1              -
-                """)
+                dummy                1.0.1-1              {0}
+                """.format(disp_store_info(d)))
             ec = EggInst(DUMMY_EGG, d)
             ec.install()
 
@@ -152,8 +153,8 @@ class TestUpdatesCheck(unittest.TestCase):
         self.assertEqual(len(updates), 1)
         update0 = updates[0]
         assertCountEqual(self, update0.keys(), ["current", "update"])
-        self.assertEqual(update0["current"]["version"], "1.0.1")
-        self.assertEqual(update0["update"].version, "1.2.0")
+        self.assertEqual(update0["current"].version, V("1.0.1-1"))
+        self.assertEqual(update0["update"].version, V("1.2.0-1"))
 
     def test_update_check_no_new_available(self):
         # Given
@@ -211,8 +212,8 @@ class TestUpdatesCheck(unittest.TestCase):
 
         epd_update0 = EPD_update[0]
         assertCountEqual(self, epd_update0.keys(), ["current", "update"])
-        self.assertEqual(epd_update0["current"]["version"], "7.2")
-        self.assertEqual(epd_update0["update"].version, "7.3")
+        self.assertEqual(epd_update0["current"].version, V("7.2-1"))
+        self.assertEqual(epd_update0["update"].version, V("7.3-1"))
 
 
 class TestInstallReq(unittest.TestCase):

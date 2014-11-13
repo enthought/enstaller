@@ -16,24 +16,22 @@ from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
 from enstaller.legacy_stores import parse_index
 from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.solver import Request, Requirement, comparable_info
+from enstaller.solver import Request, Requirement
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
 
 
 FMT = '%-20s %-20s %s'
-VB_FMT = '%(version)s-%(build)s'
 FMT4 = '%-20s %-20s %-20s %s'
 
 DEFAULT_TEXT_WIDTH = 79
 
 
-def disp_store_info(info):
-    sl = info.get('store_location')
-    if not sl:
+def disp_store_info(store_location):
+    if not store_location:
         return '-'
     for rm in 'http://', 'https://', 'www', '.enthought.com', '/repo/':
-        sl = sl.replace(rm, '')
-    return sl.replace('/eggs/', ' ').strip('/')
+        store_location = store_location.replace(rm, '')
+    return store_location.replace('/eggs/', ' ').strip('/')
 
 
 def _is_any_package_unavailable(remote_repository, actions):
@@ -205,9 +203,8 @@ def print_installed(repository, pat=None):
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
-        info = package._compat_dict
-        print(FMT % (name_egg(package.key), VB_FMT % info,
-              disp_store_info(info)))
+        print(FMT % (package.name, package.full_version,
+                     disp_store_info(package.store_location)))
 
 
 def repository_factory(session, indices, quiet=False):
@@ -231,19 +228,15 @@ def updates_check(remote_repository, installed_repository):
     updates = []
     EPD_update = []
     for package in installed_repository.iter_packages():
-        key = package.key
-        info = package._compat_dict
-
-        info["key"] = key
-        av_metadatas = remote_repository.find_sorted_packages(info['name'])
+        av_metadatas = remote_repository.find_sorted_packages(package.name)
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]
-        if av_metadata.comparable_version > comparable_info(info):
-            if info['name'] == "epd":
-                EPD_update.append({'current': info, 'update': av_metadata})
+        if av_metadata.version > package.version:
+            if package.name == "epd":
+                EPD_update.append({'current': package, 'update': av_metadata})
             else:
-                updates.append({'current': info, 'update': av_metadata})
+                updates.append({'current': package, 'update': av_metadata})
     return updates, EPD_update
 
 

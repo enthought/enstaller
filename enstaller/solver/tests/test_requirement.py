@@ -1,8 +1,12 @@
 from egginst.vendor.six.moves import unittest
 
 from enstaller.repository import PackageVersionInfo
+from enstaller.versions.enpkg import EnpkgVersion
 
 from ..requirement import Requirement
+
+
+V = EnpkgVersion.from_string
 
 
 class TestRequirement(unittest.TestCase):
@@ -45,7 +49,7 @@ class TestRequirement(unittest.TestCase):
         self.assertNotEqual(Requirement('foo 1.4'), Requirement('foo 1.4-5'))
 
     def test_matches(self):
-        spec = PackageVersionInfo('foo_bar', '2.4.1', 3)
+        spec = PackageVersionInfo('foo_bar', V('2.4.1-3'))
         for req_string, m in [
             ('', True),
             ('foo', False),

@@ -15,31 +15,10 @@ from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
-                                  egg_name_to_name_version, parse_version)
+                                  egg_name_to_name_version)
 from enstaller.solver import Requirement
 from enstaller.tests.common import dummy_installed_package_factory
 from enstaller.utils import PY_VER
-
-
-class TestParseVersion(unittest.TestCase):
-    def test_simple(self):
-        # given
-        version = "1.8.0-1"
-
-        # When
-        upstream, build = parse_version(version)
-
-        # Then
-        self.assertEqual(upstream, "1.8.0")
-        self.assertEqual(build, 1)
-
-    def test_invalid(self):
-        # given
-        version = "1.8.0"
-
-        # When
-        with self.assertRaises(ValueError):
-            parse_version(version)
 
 
 class TestEggNameToNameVersion(unittest.TestCase):
@@ -96,8 +75,7 @@ class TestPackage(unittest.TestCase):
 
         # Then
         self.assertEqual(metadata.name, "nose")
-        self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.build, 1)
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
 
 
 class TestRepositoryPackage(unittest.TestCase):
@@ -135,8 +113,9 @@ class TestRepositoryPackage(unittest.TestCase):
 
         # Then
         self.assertEqual(metadata.name, "nose")
-        self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.store_location, "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
+        self.assertEqual(metadata.store_location,
+                         "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
         self.assertEqual(metadata.source_url, path_to_uri(path))
 
 
@@ -237,8 +216,7 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.key, "nose-1.3.0-1.egg")
 
         self.assertEqual(metadata.name, "nose")
-        self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.build, 1)
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
 
         self.assertEqual(metadata.packages, [])
         self.assertEqual(metadata.python, "2.7")
@@ -260,8 +238,7 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.key, "nose-1.3.0-2.egg")
 
         self.assertEqual(metadata.name, "nose")
-        self.assertEqual(metadata.version, "1.3.0")
-        self.assertEqual(metadata.build, 2)
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-2"))
 
     def test_find_unavailable_package(self):
         # Given/When/Then
@@ -269,20 +246,17 @@ class TestRepository(unittest.TestCase):
             self.repository.find_package("nono", "1.4.0-1")
 
     def test_find_packages(self):
+        V = EnpkgVersion.from_string
         # Given/When
         metadata = list(self.repository.find_packages("nose"))
-        metadata = sorted(metadata, key=operator.attrgetter("comparable_version"))
+        metadata = sorted(metadata, key=operator.attrgetter("version"))
 
         # Then
         self.assertEqual(len(metadata), 3)
 
-        self.assertEqual(metadata[0].version, "1.2.1")
-        self.assertEqual(metadata[1].version, "1.3.0")
-        self.assertEqual(metadata[2].version, "1.3.0")
-
-        self.assertEqual(metadata[0].build, 1)
-        self.assertEqual(metadata[1].build, 1)
-        self.assertEqual(metadata[2].build, 2)
+        self.assertEqual(metadata[0].version, V("1.2.1-1"))
+        self.assertEqual(metadata[1].version, V("1.3.0-1"))
+        self.assertEqual(metadata[2].version, V("1.3.0-2"))
 
     def test_find_packages_with_version(self):
         # Given/When
@@ -291,8 +265,8 @@ class TestRepository(unittest.TestCase):
         # Then
         self.assertEqual(len(metadata), 1)
 
-        self.assertEqual(metadata[0].version, "1.3.0")
-        self.assertEqual(metadata[0].build, 1)
+        self.assertEqual(metadata[0].version,
+                         EnpkgVersion.from_string("1.3.0-1"))
 
     def test_has_package(self):
         # Given
@@ -322,7 +296,8 @@ class TestRepository(unittest.TestCase):
 
         # Then
         self.assertEqual(len(metadata), 1)
-        self.assertEqual(metadata[0].version, "1.3.0")
+        self.assertEqual(metadata[0].version,
+                         EnpkgVersion.from_string("1.3.0-1"))
 
     def test_iter_packages(self):
         # Given
@@ -339,7 +314,8 @@ class TestRepository(unittest.TestCase):
         # Then
         self.assertEqual(len(metadata), 2)
         self.assertEqual(set(m.version for m in metadata),
-                         set(["1.2.1", "1.3.0"]))
+                         set([EnpkgVersion.from_string("1.2.1-1"),
+                              EnpkgVersion.from_string("1.3.0-1")]))
 
     @slow
     def test_from_prefix(self):
@@ -491,8 +467,9 @@ class TestRepositoryMisc(unittest.TestCase):
 
         # Then
         self.assertEqual(len(packages), 3)
-        self.assertEqual([p.version for p in packages], ["1.6.1", "1.7.1",
-                                                         "1.8.0"])
+        self.assertEqual([p.version for p in packages],
+                         [EnpkgVersion.from_string(v)
+                          for v in ("1.6.1-1", "1.7.1-1", "1.8.0-2")])
 
     def test_sorted_packages_invalid(self):
         # Given
@@ -509,4 +486,6 @@ class TestRepositoryMisc(unittest.TestCase):
 
         # Then
         self.assertEqual(len(packages), 2)
-        assertCountEqual(self, [p.version for p in packages], ["1.6.1", "1.8k"])
+        assertCountEqual(self, [p.version for p in packages],
+                         [EnpkgVersion.from_string(v)
+                          for v in ("1.6.1-1", "1.8k-2")])
