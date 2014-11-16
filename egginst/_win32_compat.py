@@ -1,7 +1,8 @@
 import ctypes
 import os.path
 
-from ctypes.wintypes import BOOL, DWORD, HANDLE, LPWSTR, POINTER, c_void_p
+from ctypes.wintypes import BOOL, DWORD, HANDLE, LPWSTR
+from ctypes import POINTER, c_void_p
 
 
 # CreateFile ctypes implementation from SO
