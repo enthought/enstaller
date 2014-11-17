@@ -10,6 +10,7 @@ else:
     import unittest
 
 import mock
+import testfixtures
 
 from egginst.main import (
     EggInst, get_installed, is_in_legacy_egg_info, main,
@@ -135,6 +136,28 @@ class TestEggInstMain(unittest.TestCase):
 
             installed_eggs = list(get_installed(d))
             self.assertEqual(installed_eggs, r_installed_eggs)
+
+
+class Test_EggInstRemove(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    def test_simple_(self):
+        # Given
+        remover = EggInst(DUMMY_EGG, self.prefix)
+
+        # When
+        with testfixtures.LogCapture() as logger:
+            remover.remove()
+
+        # Then
+        logger.check(
+            ('egginst.main', 'ERROR',
+             "Error: Can't find meta data for: 'dummy'")
+        )
 
 
 class TestEggInstInstall(unittest.TestCase):
