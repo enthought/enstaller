@@ -9,7 +9,7 @@ from egginst import exe_data
 from egginst.main import EggInst
 from egginst.scripts import create, create_proxies, fix_script, get_executable
 from egginst.utils import compute_md5
-from egginst.vendor.six import StringIO
+from egginst.vendor.six import PY2, StringIO
 from egginst.vendor.six.moves import configparser
 from egginst._zipfile import ZipFile
 
@@ -260,9 +260,11 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
         with mkdtemp() as prefix:
             with mock.patch("sys.executable", os.path.join(prefix, "python.exe")):
                 proxy_path = os.path.join(prefix, "EGG-INFO", "dummy_with_proxy", "usr", "swig.exe")
+                if PY2:
+                    proxy_path = proxy_path.decode("utf8")
                 r_python_proxy_data = r_python_proxy_data_template % \
                     {'executable': os.path.join(prefix, "python.exe"),
-                     'src': six.u(proxy_path)}
+                     'src': proxy_path}
 
                 egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
                 with ZipFile(egginst.path) as zp:
