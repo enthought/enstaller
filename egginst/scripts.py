@@ -173,8 +173,13 @@ def fix_script(path):
     if islink(path) or not isfile(path):
         return
 
-    with open(path) as fi:
+    with open(path, "rb") as fi:
         data = fi.read()
+
+    try:
+        data = data.decode("utf8")
+    except UnicodeDecodeError:
+        return
 
     if ' egginst ' in data:
         # This string is in the comment when write_script() creates
@@ -192,8 +197,8 @@ def fix_script(path):
         return
     logger.info("Updating: %r", path)
 
-    with open(path, 'w') as fo:
-        fo.write(new_data)
+    with open(path, 'wb') as fo:
+        fo.write(new_data.encode("utf8"))
 
     os.chmod(path, 0o755)
 
