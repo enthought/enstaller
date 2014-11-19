@@ -37,7 +37,7 @@ def git_version():
         env['LANGUAGE'] = 'C'
         env['LANG'] = 'C'
         env['LC_ALL'] = 'C'
-        out = subprocess.Popen(cmd, stdout = subprocess.PIPE, env=env).communicate()[0]
+        out = subprocess.Popen(cmd, stdout=subprocess.PIPE, env=env).communicate()[0]
         return out
 
     try:
@@ -54,6 +54,7 @@ def git_version():
 
     return git_revision, git_count
 
+
 def write_version_py(filename='enstaller/_version.py'):
     template = """\
 # THIS FILE IS GENERATED FROM ENSTALLER SETUP.PY
@@ -68,7 +69,7 @@ if not is_released:
     force_mode = os.environ.get("FORCE_ENSTALLER_VERSION", None)
     if force_mode is not None:
         assert not IS_RELEASED, \
-                "FORCE_ENSTALLER_VERSION mode in release mode !"
+            "FORCE_ENSTALLER_VERSION mode in release mode !"
         version = full_version = force_mode
         is_released = True
     else:
@@ -85,8 +86,8 @@ if not is_released:
         try:
             from enstaller._version import git_revision as git_rev
         except ImportError:
-            raise ImportError("Unable to import git_revision. Try removing " \
-                              "enstaller/_version.py and the build directory " \
+            raise ImportError("Unable to import git_revision. Try removing "
+                              "enstaller/_version.py and the build directory "
                               "before building.")
 
     if not is_released:
@@ -97,6 +98,7 @@ if not is_released:
                                  full_version=full_version,
                                  git_revision=git_rev,
                                  is_released=is_released))
+
 
 class bdist_enegg(old_bdist_egg):
     def finalize_options(self):
@@ -144,7 +146,7 @@ class bdist_enegg(old_bdist_egg):
 
 write_version_py()
 
-kwds = {} # Additional keyword arguments for setup
+kwds = {}  # Additional keyword arguments for setup
 
 d = {}
 exec(compile(open(convert_path('enstaller/__init__.py')).read(),
@@ -224,20 +226,20 @@ setup(
     name="enstaller",
     author="Enthought, Inc.",
     author_email="info@enthought.com",
-    url = "https://github.com/enthought/enstaller",
+    url="https://github.com/enthought/enstaller",
     license="BSD",
-    description = "Install and managing tool for egg-based packages",
-    packages = packages,
+    description="Install and managing tool for egg-based packages",
+    packages=packages,
     package_data=package_data,
-    entry_points = {
+    entry_points={
         "console_scripts": [
-             "enpkg = enstaller.main:main_noexc",
-             "egginst = egginst.main:main",
-             "enpkg-repair = egginst.repair_broken_egg_info:main",
-             "update-patches = enstaller.patch:main",
+            "enpkg = enstaller.main:main_noexc",
+            "egginst = egginst.main:main",
+            "enpkg-repair = egginst.repair_broken_egg_info:main",
+            "update-patches = enstaller.patch:main",
         ],
     },
-    classifiers = [
+    classifiers=[
         "License :: OSI Approved :: BSD License",
         "Development Status :: 5 - Production/Stable",
         "Intended Audience :: Developers",
