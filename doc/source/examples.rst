@@ -47,8 +47,7 @@ objects. To start a session, one may simply do::
 
     from enstaller Configuration, Session
 
-    configuration = Configuration()
-    configuration.update(auth=("username", "password"))
+    configuration = Configuration(auth=("username", "password"))
 
     session = Session.authenticated_from_configuration(configuration)
 
