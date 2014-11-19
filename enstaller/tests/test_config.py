@@ -945,6 +945,18 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(config.autoupdate, True)
         self.assertEqual(config.noapp, True)
 
+    def test_setup_in_init(self):
+        # Given
+        store_url = "acme.com"
+        max_retries = 5
+
+        # When
+        config = Configuration(store_url=store_url, max_retries=max_retries)
+
+        # Then
+        self.assertEqual(config.max_retries, max_retries)
+        self.assertEqual(config.store_url, store_url)
+
 
 class TestMisc(unittest.TestCase):
     def test_writable_repository_cache(self):

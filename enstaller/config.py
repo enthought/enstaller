@@ -302,7 +302,18 @@ class Configuration(object):
         else:
             return _create(filename)
 
-    def __init__(self):
+    def __init__(self, **kw):
+        """ Create a new configuration instance.
+
+        Any argument passed to the constructor need to be a keyword argument,
+        and is understood as an argument to the update method, e.g.::
+
+            config = Configuration(store_url="http://acme.com")
+
+            # equivalent to
+            config = Configuration()
+            config.update(store_url="http://acme.com")
+        """
         self._auth = None
         self._autoupdate = True
         self._noapp = False
@@ -344,6 +355,8 @@ class Configuration(object):
             "repository_cache": self._set_repository_cache,
             "store_url": self._set_store_url,
         })
+
+        self.update(**kw)
 
     # ----------
     # Properties
