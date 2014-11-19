@@ -45,12 +45,12 @@ Connecting and authenticating
 Http connections are handled through :py:class:`~enstaller.session.Session`
 objects. To start a session, one may simply do::
 
-    from enstaller.configuration import Configuration
-    from enstaller.session import Session
+    from enstaller Configuration, Session
 
     configuration = Configuration()
-    session = Session.from_configuration(configuration)
-    session.authenticate(configuration.auth)
+    configuration.update(auth=("username", "password"))
+
+    session = Session.authenticated_from_configuration(configuration)
 
 :py:class:`~enstaller.session.Session` are thin wrappers around requests'
 Session. Its main features over requests' Session are etag handling,
@@ -66,6 +66,23 @@ stalled/cancelled downloads::
     # target is the path for the created file. Will not exist if download fails
     # (including cancelled by e.g. `Ctr+C`).
     target = session.download(some_url)
+
+Delayed authenticated sessions
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If one needs to authenticate the session later than creation time, e.g. if the
+auth information is set up in the configuration, that's possible as follows::
+
+    from enstaller Configuration, Session
+
+    configuration = Configuration()
+    session = Session.from_configuration(configuration)
+
+    # Prompt the user for authentication, etc...
+    ...
+
+    configuration.update(auth=("username", "password"))
+    session.authenticate(configuration.auth)
 
 Creating remote repositories
 ============================
