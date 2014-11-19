@@ -10,6 +10,7 @@ from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.config import STORE_KIND_BROOD
+from enstaller.errors import EnstallerException
 from enstaller.vendor import requests
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
@@ -89,6 +90,22 @@ class Session(object):
         self._raw.headers["user-agent"] = user_agent
 
         self._in_etag_context = 0
+
+    @classmethod
+    def authenticated_from_configuration(cls, configuration):
+        """ Create a new authenticated session from a configuration.
+
+        Parameters
+        ----------
+        configuration : Configuration
+            The configuration to use.
+        """
+        if configuration.auth is None:
+            msg = "No auth configured for the given configuration."
+            raise EnstallerException(msg)
+        session = cls.from_configuration(configuration)
+        session.authenticate(configuration.auth)
+        return session
 
     @classmethod
     def from_configuration(cls, configuration):

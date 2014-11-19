@@ -1,3 +1,4 @@
+import json
 import mock
 import os
 import shutil
@@ -11,8 +12,9 @@ from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           LegacyCanopyAuthManager,
                                           OldRepoAuthManager)
 from enstaller.config import Configuration
+from enstaller.errors import EnstallerException
 from enstaller.session import _PatchedRawSession, Session
-from enstaller.tests.common import mocked_session_factory
+from enstaller.tests.common import R_JSON_AUTH_RESP, mocked_session_factory
 from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 from enstaller.vendor.requests.adapters import HTTPAdapter
@@ -207,6 +209,40 @@ class TestSession(unittest.TestCase):
         # When/Then
         with Session.from_configuration(config) as session:
             self.assertIsInstance(session._authenticator, BroodAuthenticator)
+
+    @responses.activate
+    def test_authenticated_from_configuration(self):
+        # Given
+        url = "http://acme.com"
+        responses.add(responses.GET, url)
+        responses.add(responses.GET, url + "/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_RESP))
+
+        config = Configuration()
+        config.update(store_url=url, auth=("yoyo", "yeye"))
+
+        # When
+        with Session.authenticated_from_configuration(config) as session:
+            resp = session._raw_get(url)
+
+        # Then
+        self.assertTrue(resp.status_code, 200)
+
+    @responses.activate
+    def test_authenticated_from_configuration_wo_auth(self):
+        # Given
+        url = "http://acme.com"
+        responses.add(responses.GET, url)
+        responses.add(responses.GET, url + "/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_RESP))
+
+        config = Configuration()
+        config.update(store_url=url)
+
+        # When/Then
+        with self.assertRaises(EnstallerException):
+            with Session.authenticated_from_configuration(config):
+                pass
 
     @responses.activate
     def test_agent(self):
