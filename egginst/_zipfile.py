@@ -5,6 +5,9 @@ import shutil
 import string
 import zipfile
 
+from egginst.vendor.six import text_type
+
+
 ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000
 
 
@@ -35,7 +38,7 @@ class ZipFile(zipfile.ZipFile):
         return self._extract_member_to(member, member.filename, targetpath, pwd)
 
     def _extract_symlink(self, member, link_name, pwd=None):
-        source = self.read(member)
+        source = self.read(member).decode("utf8")
         if os.path.lexists(link_name):
             os.unlink(link_name)
         os.symlink(source, link_name)
@@ -62,7 +65,7 @@ class ZipFile(zipfile.ZipFile):
         if os.path.sep == '\\':
             # filter illegal characters on Windows
             illegal = ':<>|"?*'
-            if isinstance(arcname, unicode):
+            if isinstance(arcname, text_type):
                 table = dict((ord(c), ord('_')) for c in illegal)
             else:
                 table = string.maketrans(illegal, '_' * len(illegal))

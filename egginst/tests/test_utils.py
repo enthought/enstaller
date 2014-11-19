@@ -1,5 +1,6 @@
 import os.path
 import shutil
+import sys
 import tempfile
 import textwrap
 
@@ -162,7 +163,12 @@ class TestGetExecutable(unittest.TestCase):
     def test_simple(self):
         # Given
         with mkdtemp() as prefix:
-            r_executable = os.path.join(prefix, "bin", "python")
+            if sys.platform == "win32":
+                # python.exe is in scripts because we use virtualenv
+                r_executable = os.path.join(prefix, "Scripts", "python.exe")
+            else:
+                r_executable = os.path.join(prefix, "bin", "python")
+
             create_venv(prefix)
 
             # When

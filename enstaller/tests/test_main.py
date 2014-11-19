@@ -6,6 +6,7 @@ import os.path
 import posixpath
 import re
 import shutil
+import site
 import sys
 import tempfile
 import textwrap
@@ -789,7 +790,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # Then
-        m.assert_called_with([os.path.expanduser("~/.local"), sys.prefix])
+        m.assert_called_with([site.USER_BASE, sys.prefix])
 
     @mock_index({})
     def test_user_invalid_config(self, install_req):
