@@ -5,6 +5,9 @@ import shutil
 import string
 import zipfile
 
+from egginst.vendor.six import text_type
+
+
 ZIP_SOFTLINK_ATTRIBUTE_MAGIC = 0xA1ED0000
 
 
@@ -62,7 +65,7 @@ class ZipFile(zipfile.ZipFile):
         if os.path.sep == '\\':
             # filter illegal characters on Windows
             illegal = ':<>|"?*'
-            if isinstance(arcname, unicode):
+            if isinstance(arcname, text_type):
                 table = dict((ord(c), ord('_')) for c in illegal)
             else:
                 table = string.maketrans(illegal, '_' * len(illegal))
