@@ -7,7 +7,7 @@ from egginst.repair_broken_egg_info import EggInfoDirFixer, repair
 from egginst.testing_utils import slow
 from egginst.tests.common import (DUMMY_EGG, DUMMY_EGG_WITH_ENTRY_POINTS,
                                   DUMMY_EGG_WITH_APPINST)
-from egginst.tests.common import create_venv, tempfile
+from egginst.tests.common import tempfile
 from egginst.utils import compute_md5
 from egginst.vendor.six.moves import unittest
 
@@ -15,7 +15,6 @@ from egginst.vendor.six.moves import unittest
 class TestEggInfoDirFixer(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
-        create_venv(self.prefix)
 
     def tearDown(self):
         shutil.rmtree(self.prefix)

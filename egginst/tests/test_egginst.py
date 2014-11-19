@@ -15,7 +15,7 @@ import testfixtures
 from egginst.main import (
     EggInst, get_installed, is_in_legacy_egg_info, main,
     should_copy_in_egg_info)
-from egginst.testing_utils import slow, assert_same_fs
+from egginst.testing_utils import assert_same_fs
 from egginst.utils import makedirs, zip_write_symlink
 from egginst._zipfile import ZipFile
 
@@ -26,7 +26,7 @@ from .common import (DUMMY_EGG, DUMMY_EGG_WITH_APPINST,
                      LEGACY_EGG_INFO_EGG, LEGACY_EGG_INFO_EGG_METADATA_FILES,
                      NOSE_1_3_0, PYTHON_VERSION, STANDARD_EGG,
                      STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK,
-                     VTK_EGG_DEFERRED_SOFTLINK, mkdtemp, create_venv)
+                     VTK_EGG_DEFERRED_SOFTLINK, mkdtemp)
 
 
 def _create_egg_with_symlink(filename, name):
@@ -53,7 +53,6 @@ class TestEggInst(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.base_dir)
 
-    @slow
     @unittest.skipIf(not SUPPORT_SYMLINK, "this platform does not support symlink")
     def test_symlink(self):
         """Test installing an egg with softlink in it."""
@@ -73,7 +72,6 @@ class TestEggInst(unittest.TestCase):
         self.assertEqual(os.readlink(link), "include")
         self.assertTrue(os.path.exists(os.path.join(link, "foo.h")))
 
-    @slow
     @unittest.skipIf(not SUPPORT_SYMLINK,
                      "this platform does not support symlink")
     def test_softlink_with_broken_entry(self):
@@ -163,15 +161,12 @@ class Test_EggInstRemove(unittest.TestCase):
 class TestEggInstInstall(unittest.TestCase):
     def setUp(self):
         self.base_dir = tempfile.mkdtemp()
-        create_venv(self.base_dir)
 
         if sys.platform == "win32":
             self.bindir = os.path.join(self.base_dir, "Scripts")
-            self.executable = os.path.join(self.base_dir, "python")
             self.site_packages = os.path.join(self.base_dir, "lib", "site-packages")
         else:
             self.bindir = os.path.join(self.base_dir, "bin")
-            self.executable = os.path.join(self.base_dir, "bin", "python")
             self.site_packages = os.path.join(self.base_dir, "lib", "python" + PYTHON_VERSION, "site-packages")
 
         self.meta_dir = os.path.join(self.base_dir, "EGG-INFO")
@@ -179,7 +174,6 @@ class TestEggInstInstall(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.base_dir)
 
-    @slow
     def test_simple(self):
         egginst = EggInst(DUMMY_EGG, self.base_dir)
 
@@ -189,7 +183,6 @@ class TestEggInstInstall(unittest.TestCase):
         egginst.remove()
         self.assertFalse(os.path.exists(os.path.join(self.site_packages, "dummy.py")))
 
-    @slow
     def test_non_existing_removal(self):
         """
         Regression test for #208
@@ -200,7 +193,6 @@ class TestEggInstInstall(unittest.TestCase):
         # When/Then
         main(["--remove", non_existing_package])
 
-    @slow
     def test_entry_points(self):
         """
         Test we install console entry points correctly.
@@ -221,7 +213,6 @@ class TestEggInstInstall(unittest.TestCase):
         self.assertFalse(os.path.exists(py_script))
         self.assertFalse(os.path.exists(wrapper_script))
 
-    @slow
     def test_appinst(self):
         """
         Test we install appinst bits correctly.
@@ -239,7 +230,6 @@ class TestEggInstInstall(unittest.TestCase):
             egginst.remove()
             m.assert_called_with(appinst_path, self.base_dir)
 
-    @slow
     def test_old_appinst(self):
         """
         Test that we still work with old (<= 2.1.1) appinst, where
@@ -280,7 +270,6 @@ class TestEggInstInstall(unittest.TestCase):
             egginst.install()
             egginst.remove()
 
-    @slow
     def test_appinst_failed(self):
         """
         Test egginst does not crash when appinst is not available and we try
@@ -303,11 +292,9 @@ class TestEggInfoInstall(unittest.TestCase):
 
         if sys.platform == "win32":
             self.bindir = os.path.join(self.base_dir, "Scripts")
-            self.executable = os.path.join(self.base_dir, "python")
             self.site_packages = os.path.join(self.base_dir, "lib", "site-packages")
         else:
             self.bindir = os.path.join(self.base_dir, "bin")
-            self.executable = os.path.join(self.base_dir, "bin", "python")
             self.site_packages = os.path.join(self.base_dir, "lib", "python" + PYTHON_VERSION, "site-packages")
 
         self.meta_dir = os.path.join(self.base_dir, "EGG-INFO")
