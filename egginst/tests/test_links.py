@@ -1,4 +1,5 @@
 import os
+import sys
 
 from egginst.main import EggInst
 from egginst.vendor.six.moves import unittest
@@ -10,7 +11,8 @@ DUMMY_EGG_WITH_PROXY_SOFTLINK = os.path.join(os.path.dirname(__file__), "data",
 
 
 class TestLinks(unittest.TestCase):
-    @unittest.skipIf(not SUPPORT_SYMLINK, "this platform does not support symlink")
+    @unittest.skipIf(not SUPPORT_SYMLINK or sys.platform == "win32",
+                    "this platform does not support symlink or proxy softlink")
     def test_simple(self):
         r_link = "libfoo.so"
         r_source = "libfoo.so.0.0.0"

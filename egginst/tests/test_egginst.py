@@ -84,7 +84,7 @@ class TestEggInst(unittest.TestCase):
         self.assertTrue(os.path.exists(os.path.join(link, "foo.h")))
 
     @slow
-    @unittest.skipIf(not SUPPORT_SYMLINK,
+    @unittest.skipIf(not SUPPORT_SYMLINK or sys.platform == "win32",
                      "this platform does not support symlink")
     def test_softlink_with_broken_entry(self):
         # Given
