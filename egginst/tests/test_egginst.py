@@ -53,19 +53,30 @@ class TestEggInst(unittest.TestCase):
         shutil.rmtree(self.base_dir)
 
     @slow
-    @unittest.skipIf(not SUPPORT_SYMLINK, "this platform does not support symlink")
+    @unittest.skipIf(not SUPPORT_SYMLINK,
+                     "this platform does not support symlink")
     def test_symlink(self):
         """Test installing an egg with softlink in it."""
+        # Given
+        if sys.platform == "win32":
+            incdir = os.path.join(self.prefix, "EGG-INFO", "foo", "usr",
+                                  "include")
+            header = os.path.join(incdir, "foo.h")
+            link = os.path.join(self.prefix, "EGG-INFO", "foo", "usr",
+                                "HEADERS")
+        else:
+            incdir = os.path.join(self.prefix, "include")
+            header = os.path.join(incdir, "foo.h")
+            link = os.path.join(self.prefix, "HEADERS")
+
         egg_filename = os.path.join(self.base_dir, "foo-1.0.egg")
         _create_egg_with_symlink(egg_filename, "foo")
 
+        # When
         installer = EggInst(egg_filename, prefix=self.prefix)
         installer.install()
 
-        incdir = os.path.join(self.prefix, "include")
-        header = os.path.join(incdir, "foo.h")
-        link = os.path.join(self.prefix, "HEADERS")
-
+        # Then
         self.assertTrue(os.path.exists(header))
         self.assertTrue(os.path.exists(link))
         self.assertTrue(os.path.islink(link))
