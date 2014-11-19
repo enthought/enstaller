@@ -15,7 +15,7 @@ import zipfile
 from os.path import basename, isdir, isfile, islink, join
 
 from egginst.errors import InvalidFormat
-from egginst.vendor.six import string_types
+from egginst.vendor.six import PY2, string_types
 
 from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
 
@@ -84,7 +84,11 @@ def get_executable(prefix):
             from subprocess import Popen, PIPE
             cmd = [path, '-c', 'import sys;print(sys.executable)']
             p = Popen(cmd, stdout=PIPE)
-            return p.communicate()[0].strip()
+            executable = p.communicate()[0].strip()
+            if not PY2:
+                return executable.decode()
+            else:
+                return executable
     return sys.executable
 
 
