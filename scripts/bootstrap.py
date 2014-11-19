@@ -304,7 +304,7 @@ def main(argv=None):
 
     if options.list_available:
         for version in VERSION_TO_SHA256_KEYS:
-            print version
+            print(version)
         sys.exit(0)
 
     if len(args) == 1:
