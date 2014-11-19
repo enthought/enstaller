@@ -38,7 +38,7 @@ class ZipFile(zipfile.ZipFile):
         return self._extract_member_to(member, member.filename, targetpath, pwd)
 
     def _extract_symlink(self, member, link_name, pwd=None):
-        source = self.read(member)
+        source = self.read(member).decode("utf8")
         if os.path.lexists(link_name):
             os.unlink(link_name)
         os.symlink(source, link_name)

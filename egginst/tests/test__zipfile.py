@@ -85,7 +85,8 @@ class TestZipFile(unittest.TestCase):
                 zp.extractall(d)
             paths = list_files(d)
 
-            assertCountEqual(self, paths, ["lib/foo.so.1.3", "lib/foo.so"])
+            assertCountEqual(self, paths, [os.path.join("lib", "foo.so.1.3"),
+                                           os.path.join("lib", "foo.so")])
             self.assertTrue(os.path.islink(os.path.join(d, "lib", "foo.so")))
 
     @unittest.skipIf(not SUPPORT_SYMLINK,
@@ -96,16 +97,16 @@ class TestZipFile(unittest.TestCase):
         # Given
         path = VTK_EGG_DEFERRED_SOFTLINK
         expected_files = [
-            'EGG-INFO/PKG-INFO',
-            'EGG-INFO/inst/targets.dat',
-            'EGG-INFO/inst/files_to_install.txt',
-            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so.5.10.1',
-            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so.5.10',
-            'EGG-INFO/usr/lib/vtk-5.10/libvtkViews.so',
-            'EGG-INFO/spec/lib-provide',
-            'EGG-INFO/spec/depend',
-            'EGG-INFO/spec/lib-depend',
-            'EGG-INFO/spec/summary'
+            os.path.join('EGG-INFO', 'PKG-INFO'),
+            os.path.join('EGG-INFO', 'inst', 'targets.dat'),
+            os.path.join('EGG-INFO', 'inst', 'files_to_install.txt'),
+            os.path.join('EGG-INFO', 'usr', 'lib', 'vtk-5.10', 'libvtkViews.so.5.10.1'),
+            os.path.join('EGG-INFO', 'usr', 'lib', 'vtk-5.10', 'libvtkViews.so.5.10'),
+            os.path.join('EGG-INFO', 'usr', 'lib', 'vtk-5.10', 'libvtkViews.so'),
+            os.path.join('EGG-INFO', 'spec', 'lib-provide'),
+            os.path.join('EGG-INFO', 'spec', 'depend'),
+            os.path.join('EGG-INFO', 'spec', 'lib-depend'),
+            os.path.join('EGG-INFO', 'spec', 'summary'),
         ]
 
         with mkdtemp() as d:
