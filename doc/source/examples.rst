@@ -45,8 +45,7 @@ Connecting and authenticating
 Http connections are handled through :py:class:`~enstaller.session.Session`
 objects. To start a session, one may simply do::
 
-    from enstaller.configuration import Configuration
-    from enstaller.session import Session
+    from enstaller Configuration, Session
 
     configuration = Configuration()
     configuration.update(auth=("username", "password"))
@@ -74,8 +73,7 @@ Delayed authenticated sessions
 If one needs to authenticate the session later than creation time, e.g. if the
 auth information is set up in the configuration, that's possible as follows::
 
-    from enstaller.configuration import Configuration
-    from enstaller.session import Session
+    from enstaller Configuration, Session
 
     configuration = Configuration()
     session = Session.from_configuration(configuration)
