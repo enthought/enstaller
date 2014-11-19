@@ -1,9 +1,12 @@
 import os.path
 import shutil
+import sys
 import tempfile
 import textwrap
 
-from egginst.utils import atomic_file, parse_assignments, samefile
+from egginst.tests.common import create_venv, mkdtemp
+from egginst.utils import (atomic_file, get_executable, parse_assignments,
+                           samefile)
 from egginst.vendor.six import StringIO
 from egginst.vendor.six.moves import unittest
 from enstaller.errors import InvalidFormat
@@ -154,3 +157,22 @@ class TestSameFile(unittest.TestCase):
 
         # When/Then
         self.assertFalse(samefile(left, right))
+
+
+class TestGetExecutable(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        with mkdtemp() as prefix:
+            if sys.platform == "win32":
+                # python.exe is in scripts because we use virtualenv
+                r_executable = os.path.join(prefix, "Scripts", "python.exe")
+            else:
+                r_executable = os.path.join(prefix, "bin", "python")
+
+            create_venv(prefix)
+
+            # When
+            executable = get_executable(prefix)
+
+        # Then
+        self.assertEqual(executable, r_executable)
