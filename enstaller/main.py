@@ -507,6 +507,7 @@ def _enable_logging(verbosity_level):
            format(enstaller.__version__, enstaller.__git_revision__))
     logger.info(msg)
 
+
 def _preprocess_options(argv):
     p = _create_parser()
     args = p.parse_args(argv)
@@ -650,11 +651,12 @@ def main(argv=None):
         if args.quiet:
             progress_bar_context = None
         else:
+            def fetch_progress_factory(*a, **kw):
+                return console_progress_manager_factory(*a, show_speed=True,
+                                                        **kw)
 
             progress_bar_context = ProgressBarContext(
-                console_progress_manager_factory,
-                fetch=lambda *a, **kw:
-                    console_progress_manager_factory(*a, show_speed=True, **kw))
+                console_progress_manager_factory, fetch=fetch_progress_factory)
         enpkg = Enpkg(repository, session, prefixes, progress_bar_context,
                       args.force or args.forceall,
                       max_retries=config.max_retries)

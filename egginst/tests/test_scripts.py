@@ -13,7 +13,6 @@ from egginst.vendor.six import PY2, StringIO
 from egginst.vendor.six.moves import configparser
 from egginst._zipfile import ZipFile
 
-from egginst.vendor import six
 from egginst.vendor.six.moves import unittest
 
 from .common import mkdtemp
