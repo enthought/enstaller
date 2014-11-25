@@ -234,6 +234,7 @@ setup(
     entry_points={
         "console_scripts": [
             "enpkg = enstaller.main:main_noexc",
+            "enpkg_machine_cli = enstaller.machine_cli:main",
             "egginst = egginst.main:main",
             "enpkg-repair = egginst.repair_broken_egg_info:main",
             "update-patches = enstaller.patch:main",
