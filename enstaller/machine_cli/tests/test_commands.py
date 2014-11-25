@@ -24,7 +24,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # then
-        self.assertEqual(exception_code(exc), 0)
+        self.assertEqual(exc.exception.code, 0)
 
     @mock.patch("enstaller.machine_cli.commands.install")
     def test_install(self, install_command):
