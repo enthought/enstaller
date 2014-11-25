@@ -1,5 +1,7 @@
 import json
 import mock
+import shutil
+import tempfile
 
 from egginst.vendor.six.moves import unittest
 
@@ -36,6 +38,12 @@ class TestMain(unittest.TestCase):
 
 
 class TestInstall(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_parse_json_string(self):
         # Given
         data = {
@@ -44,6 +52,7 @@ class TestInstall(unittest.TestCase):
                 "username": "nono",
                 "password": "le petit robot",
             },
+            "files_cache": self.prefix,
             "repositories": ["enthought/free", "enthought/commercial"],
             "requirement": "numpy",
             "store_url": "https://acme.com",
@@ -73,6 +82,7 @@ class TestInstall(unittest.TestCase):
                 "username": "nono",
                 "password": "le petit robot",
             },
+            "files_cache": self.prefix,
             "repositories": ["enthought/free", "enthought/commercial"],
             "requirement": "numpy",
             "store_url": "https://acme.com",

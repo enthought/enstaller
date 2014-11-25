@@ -11,6 +11,10 @@ INSTALL_SCHEMA = {
             ],
             "description": "Authentication."
         },
+        "files_cache": {
+            "description": "Where to cache downloaded files.",
+            "type": "string"
+        },
         "repositories": {
             "type": "array",
             "items": {"type": "string"},
@@ -40,5 +44,6 @@ INSTALL_SCHEMA = {
         }
     },
     "additionalProperties": False,
-    "required": ["authentication", "repositories", "requirement", "store_url"]
+    "required": ["authentication", "files_cache", "repositories",
+                 "requirement", "store_url"]
 }
