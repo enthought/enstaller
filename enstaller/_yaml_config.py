@@ -2,7 +2,6 @@ import os.path
 
 from egginst._compat import PY2
 from egginst.vendor.six import string_types
-from egginst.vendor.six.moves import urllib
 
 from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.errors import InvalidConfiguration
@@ -152,20 +151,7 @@ def load_configuration_from_yaml(cls, filename_or_fp):
     if _STORE_URL in data:
         config.update(store_url=data[_STORE_URL])
     if _REPOSITORIES in data:
-        repository_urls = []
-
-        entries = data[_REPOSITORIES]
-        for entry in entries:
-            p = urllib.parse.urlparse(entry)
-            if p.scheme == "":
-                url = config.store_url + "/repo/{0}/{{PLATFORM}}".format(entry)
-            elif p.scheme == "file":
-                url = entry
-            else:
-                msg = "Unsupported syntax: {0!r}".format(entry)
-                raise InvalidConfiguration(msg)
-            repository_urls.append(url)
-        config.update(indexed_repositories=repository_urls)
+        config.set_repositories_from_names(data[_REPOSITORIES])
 
     if _FILES_CACHE in data:
         files_cache = os.path.expanduser(data[_FILES_CACHE]). \
