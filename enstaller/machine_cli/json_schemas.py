@@ -19,6 +19,11 @@ INSTALL_SCHEMA = {
         "requirement": {
             "description": "The package requirement",
             "type": "string"
+        },
+        "store_url": {
+            "description": "The url (schema + hostname only of the store to "
+                           "connect to).",
+            "type": "string"
         }
     },
     "definitions": {
@@ -35,5 +40,5 @@ INSTALL_SCHEMA = {
         }
     },
     "additionalProperties": False,
-    "required": ["authentication", "repositories", "requirement"]
+    "required": ["authentication", "repositories", "requirement", "store_url"]
 }

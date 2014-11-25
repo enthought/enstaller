@@ -39,19 +39,20 @@ class TestInstall(unittest.TestCase):
     def test_parse_json_string(self):
         # Given
         data = {
-            "repositories": ["enthought/free", "enthought/commercial"],
-            "requirement": "numpy",
             "authentication": {
                 "kind": "simple",
                 "username": "nono",
                 "password": "le petit robot",
-            }
+            },
+            "repositories": ["enthought/free", "enthought/commercial"],
+            "requirement": "numpy",
+            "store_url": "https://acme.com",
         }
         r_repository_urls = (
             fill_url(
-                "https://api.enthought.com/repo/enthought/free/{PLATFORM}"),
+                "https://acme.com/repo/enthought/free/{PLATFORM}"),
             fill_url(
-                "https://api.enthought.com/repo/enthought/commercial/{PLATFORM}"),
+                "https://acme.com/repo/enthought/commercial/{PLATFORM}"),
         )
 
         # When
@@ -62,18 +63,19 @@ class TestInstall(unittest.TestCase):
         self.assertEqual(config.indexed_repositories, r_repository_urls)
         self.assertEqual(requirement.name, "numpy")
 
-    @mock_index({})
+    @mock_index({}, store_url="https://acme.com")
     @mock.patch("enstaller.machine_cli.commands.install_req")
     def test_simple(self, install_req):
         # Given
         data = {
-            "repositories": ["enthought/free", "enthought/commercial"],
-            "requirement": "numpy",
             "authentication": {
                 "kind": "simple",
                 "username": "nono",
                 "password": "le petit robot",
-            }
+            },
+            "repositories": ["enthought/free", "enthought/commercial"],
+            "requirement": "numpy",
+            "store_url": "https://acme.com",
         }
 
         # When
