@@ -11,7 +11,9 @@ from enstaller.errors import EnpkgError, EnstallerException
 from enstaller.solver import Request, Requirement
 from enstaller.vendor import jsonschema
 
-from .json_schemas import INSTALL_SCHEMA
+from .json_schemas import INSTALL_SCHEMA, UPDATE_ALL_SCHEMA
+
+import enstaller.cli.commands
 
 
 _REQUIREMENT = "requirement"
@@ -27,16 +29,7 @@ def fetch_progress_factory(*a, **kw):
     return console_progress_manager_factory(*a, show_speed=True, **kw)
 
 
-def install_parse_json_string(json_string):
-    json_data = json.loads(json_string)
-
-    try:
-        jsonschema.validate(json_data, INSTALL_SCHEMA)
-    except jsonschema.ValidationError as e:
-        msg = "Invalid configuration: {0!r}".format(e.message)
-        raise EnstallerException(msg)
-
-    requirement_string = json_data[_REQUIREMENT]
+def _config_from_json_data(json_data):
     authentication_data = json_data["authentication"]
     authentication_kind = authentication_data[_AUTHENTICATION_KIND]
 
@@ -51,6 +44,33 @@ def install_parse_json_string(json_string):
     config.update(store_url=json_data["store_url"])
     config.set_repositories_from_names(json_data["repositories"])
 
+    return config
+
+
+def update_all_parse_json_string(json_string):
+    json_data = json.loads(json_string)
+
+    try:
+        jsonschema.validate(json_data, UPDATE_ALL_SCHEMA)
+    except jsonschema.ValidationError as e:
+        msg = "Invalid configuration: {0!r}".format(e.message)
+        raise EnstallerException(msg)
+
+    return _config_from_json_data(json_data)
+
+
+def install_parse_json_string(json_string):
+    json_data = json.loads(json_string)
+
+    try:
+        jsonschema.validate(json_data, INSTALL_SCHEMA)
+    except jsonschema.ValidationError as e:
+        msg = "Invalid configuration: {0!r}".format(e.message)
+        raise EnstallerException(msg)
+
+    config = _config_from_json_data(json_data)
+
+    requirement_string = json_data[_REQUIREMENT]
     requirement = Requirement.from_anything(requirement_string)
 
     return config, requirement
@@ -94,6 +114,25 @@ def remove(json_string):
         print(str(e))
 
 
+def update_all(json_string):
+    config = update_all_parse_json_string(json_string)
+
+    session = Session.authenticated_from_configuration(config)
+    repository = repository_factory(session, config.indices)
+
+    progress_bar_context = ProgressBarContext(console_progress_manager_factory,
+                                              fetch=fetch_progress_factory)
+    enpkg = Enpkg(repository, session, [sys.prefix], progress_bar_context, False)
+
+    opts = _FakeOpts()
+    opts.yes = False
+    opts.force = False
+    opts.forceall = False
+    opts.no_deps = False
+
+    enstaller.cli.commands.update_all(enpkg, config, opts)
+
+
 def handle_args(argv):
     p = argparse.ArgumentParser()
     subparsers = p.add_subparsers(help='sub-command help')
@@ -107,6 +146,11 @@ def handle_args(argv):
     remove_p.add_argument("args_as_json",
                           help="The json arguments")
     remove_p.set_defaults(func=remove)
+
+    update_all_p = subparsers.add_parser("update_all")
+    update_all_p.add_argument("args_as_json",
+                              help="The json arguments")
+    update_all_p.set_defaults(func=update_all)
 
     return p.parse_args(argv)
 

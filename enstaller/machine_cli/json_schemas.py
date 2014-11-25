@@ -1,4 +1,7 @@
-INSTALL_SCHEMA = {
+import copy
+
+
+UPDATE_ALL_SCHEMA = {
     "$schema": "http://json-schema.org/draft-04/schema#",
     "title": "install",
     "description": "machine CLI install args",
@@ -19,10 +22,6 @@ INSTALL_SCHEMA = {
             "type": "array",
             "items": {"type": "string"},
             "description": "List of repositories."
-        },
-        "requirement": {
-            "description": "The package requirement",
-            "type": "string"
         },
         "store_url": {
             "description": "The url (schema + hostname only of the store to "
@@ -45,7 +44,17 @@ INSTALL_SCHEMA = {
     },
     "additionalProperties": False,
     "required": ["authentication", "files_cache", "repositories",
-                 "requirement", "store_url"]
+                 "store_url"]
 }
 
-UNINSTALL_SCHEMA = INSTALL_SCHEMA
+INSTALL_SCHEMA = copy.deepcopy(UPDATE_ALL_SCHEMA)
+INSTALL_SCHEMA["required"] = [
+    "authentication", "files_cache", "repositories", "requirement",
+    "store_url"
+]
+INSTALL_SCHEMA["properties"].update({
+    "requirement": {
+        "description": "The package requirement",
+        "type": "string"
+    },
+})
