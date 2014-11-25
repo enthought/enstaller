@@ -6,9 +6,10 @@ import tempfile
 from egginst.vendor.six.moves import unittest
 
 from enstaller.auth import UserPasswordAuth
+from enstaller.errors import EnstallerException
 from enstaller.machine_cli.commands import (install, install_parse_json_string,
-                                            main, remove, update_all)
-from enstaller.solver import Solver
+                                            main, remove, update_all,
+                                            update_all_parse_json_string)
 from enstaller.tests.common import exception_code, mock_index
 from enstaller.utils import fill_url
 
@@ -71,6 +72,15 @@ class TestInstall(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
+
+    def test_invalid_parse_json_string(self):
+        # Given
+        data = {}
+
+        # When/Then
+        # Ensure we raise an EnstallerException for invalid json input data
+        with self.assertRaises(EnstallerException):
+            install_parse_json_string(json.dumps(data))
 
     def test_parse_json_string(self):
         # Given
@@ -187,6 +197,15 @@ class TestUpdateAll(unittest.TestCase):
 
     def tearDown(self):
         shutil.rmtree(self.prefix)
+
+    def test_invalid_parse_json_string(self):
+        # Given
+        data = {}
+
+        # When/Then
+        # Ensure we raise an EnstallerException for invalid json input data
+        with self.assertRaises(EnstallerException):
+            update_all_parse_json_string(json.dumps(data))
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
     @mock_index({}, store_url="https://acme.com")
