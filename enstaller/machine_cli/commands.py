@@ -44,6 +44,7 @@ def install_parse_json_string(json_string):
         msg = "Unsupported authentication kind: {0!r}". \
               format(authentication_kind)
         raise EnstallerException(msg)
+    config.set_repositories_from_names(json_data["repositories"])
 
     requirement = Requirement.from_anything(requirement_string)
 

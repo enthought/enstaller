@@ -11,6 +11,11 @@ INSTALL_SCHEMA = {
             ],
             "description": "Authentication."
         },
+        "repositories": {
+            "type": "array",
+            "items": {"type": "string"},
+            "description": "List of repositories."
+        },
         "requirement": {
             "description": "The package requirement",
             "type": "string"
@@ -30,5 +35,5 @@ INSTALL_SCHEMA = {
         }
     },
     "additionalProperties": False,
-    "required": ["authentication", "requirement"]
+    "required": ["authentication", "repositories", "requirement"]
 }
