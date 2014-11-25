@@ -7,8 +7,8 @@ from egginst.progress import console_progress_manager_factory
 from enstaller import Configuration, Session
 from enstaller.cli.utils import install_req, repository_factory
 from enstaller.enpkg import Enpkg, ProgressBarContext
-from enstaller.errors import EnstallerException
-from enstaller.solver import Requirement
+from enstaller.errors import EnpkgError, EnstallerException
+from enstaller.solver import Request, Requirement
 from enstaller.vendor import jsonschema
 
 from .json_schemas import INSTALL_SCHEMA
@@ -21,6 +21,10 @@ _AUTHENTICATION_KIND = "kind"
 
 class _FakeOpts(object):
     pass
+
+
+def fetch_progress_factory(*a, **kw):
+    return console_progress_manager_factory(*a, show_speed=True, **kw)
 
 
 def install_parse_json_string(json_string):
@@ -58,9 +62,6 @@ def install(json_string):
     session = Session.authenticated_from_configuration(config)
     repository = repository_factory(session, config.indices)
 
-    def fetch_progress_factory(*a, **kw):
-        return console_progress_manager_factory(*a, show_speed=True, **kw)
-
     progress_bar_context = ProgressBarContext(console_progress_manager_factory,
                                               fetch=fetch_progress_factory)
     enpkg = Enpkg(repository, session, [sys.prefix], progress_bar_context, False)
@@ -74,6 +75,25 @@ def install(json_string):
     install_req(enpkg, config, requirement, opts)
 
 
+def remove(json_string):
+    config, requirement = install_parse_json_string(json_string)
+
+    session = Session.authenticated_from_configuration(config)
+    repository = repository_factory(session, config.indices)
+
+    progress_bar_context = ProgressBarContext(console_progress_manager_factory,
+                                              fetch=fetch_progress_factory)
+    enpkg = Enpkg(repository, session, [sys.prefix], progress_bar_context, False)
+
+    solver = enpkg._solver_factory()
+    try:
+        request = Request()
+        request.remove(requirement)
+        enpkg.execute(solver.resolve(request))
+    except EnpkgError as e:
+        print(str(e))
+
+
 def handle_args(argv):
     p = argparse.ArgumentParser()
     subparsers = p.add_subparsers(help='sub-command help')
@@ -82,6 +102,11 @@ def handle_args(argv):
     install_p.add_argument("args_as_json",
                            help="The json arguments")
     install_p.set_defaults(func=install)
+
+    remove_p = subparsers.add_parser("remove")
+    remove_p.add_argument("args_as_json",
+                          help="The json arguments")
+    remove_p.set_defaults(func=remove)
 
     return p.parse_args(argv)
 

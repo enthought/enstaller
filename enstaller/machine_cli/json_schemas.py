@@ -47,3 +47,5 @@ INSTALL_SCHEMA = {
     "required": ["authentication", "files_cache", "repositories",
                  "requirement", "store_url"]
 }
+
+UNINSTALL_SCHEMA = INSTALL_SCHEMA
