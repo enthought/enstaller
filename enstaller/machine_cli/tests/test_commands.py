@@ -8,62 +8,10 @@ from egginst.vendor.six.moves import unittest
 from enstaller.auth import UserPasswordAuth
 from enstaller.errors import EnstallerException
 from enstaller.machine_cli.commands import (install, install_parse_json_string,
-                                            main, remove, update_all,
+                                            remove, update_all,
                                             update_all_parse_json_string)
-from enstaller.tests.common import exception_code, mock_index
+from enstaller.tests.common import mock_index
 from enstaller.utils import fill_url
-
-
-class TestMain(unittest.TestCase):
-    def test_help(self):
-        # given
-        args = ["--help"]
-
-        # when
-        with self.assertRaises(SystemExit) as exc:
-            main(args)
-
-        # then
-        self.assertEqual(exc.exception.code, 0)
-
-    @mock.patch("enstaller.machine_cli.commands.install")
-    def test_install(self, install_command):
-        # given
-        args = ["install", "{}"]
-
-        # when
-        with self.assertRaises(SystemExit) as exc:
-            main(args)
-
-        # then
-        self.assertEqual(exception_code(exc), 0)
-        install_command.assert_called_with("{}")
-
-    @mock.patch("enstaller.machine_cli.commands.remove")
-    def test_remove(self, remove_command):
-        # given
-        args = ["remove", "{}"]
-
-        # when
-        with self.assertRaises(SystemExit) as exc:
-            main(args)
-
-        # then
-        self.assertEqual(exception_code(exc), 0)
-        remove_command.assert_called_with("{}")
-
-    @mock.patch("enstaller.machine_cli.commands.update_all")
-    def test_update_all(self, update_all_command):
-        # given
-        args = ["update_all", "{}"]
-
-        # when
-        with self.assertRaises(SystemExit) as exc:
-            main(args)
-
-        # then
-        self.assertEqual(exception_code(exc), 0)
-        update_all_command.assert_called_with("{}")
 
 
 class TestInstall(unittest.TestCase):
