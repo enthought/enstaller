@@ -75,13 +75,21 @@ def install_parse_json_string(json_string):
     return config, requirement
 
 
+def _read_stdin_as_bytes():
+    has_buffer = getattr(sys.stdin, "buffer", False)
+    if has_buffer:
+        return sys.stdin.buffer.read().decode("utf8")
+    else:
+        return sys.stdin.read().decode("utf8")
+
+
 def install():
     """ Install the given requirement.
 
     Parameter is expected to be a JSON UTF8 encoded bytestring passed through
     stdin.
     """
-    json_string = sys.stdin.read()
+    json_string = _read_stdin_as_bytes()
 
     config, requirement = install_parse_json_string(json_string)
 
@@ -107,7 +115,7 @@ def remove():
     Parameter is expected to be a JSON UTF8 encoded bytestring passed through
     stdin.
     """
-    json_string = sys.stdin.read()
+    json_string = _read_stdin_as_bytes()
     config, requirement = install_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
@@ -132,7 +140,7 @@ def update_all():
     Parameter is expected to be a JSON UTF8 encoded bytestring passed through
     stdin.
     """
-    json_string = sys.stdin.read()
+    json_string = _read_stdin_as_bytes()
     config = update_all_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
