@@ -75,7 +75,14 @@ def install_parse_json_string(json_string):
     return config, requirement
 
 
-def install(json_string):
+def install():
+    """ Install the given requirement.
+
+    Parameter is expected to be a JSON UTF8 encoded bytestring passed through
+    stdin.
+    """
+    json_string = sys.stdin.read()
+
     config, requirement = install_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
@@ -94,7 +101,13 @@ def install(json_string):
     install_req(enpkg, config, requirement, opts)
 
 
-def remove(json_string):
+def remove():
+    """ Remove the given requirement.
+
+    Parameter is expected to be a JSON UTF8 encoded bytestring passed through
+    stdin.
+    """
+    json_string = sys.stdin.read()
     config, requirement = install_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
@@ -113,7 +126,13 @@ def remove(json_string):
         print(str(e))
 
 
-def update_all(json_string):
+def update_all():
+    """ Update every package in site-packages to the latest version.
+
+    Parameter is expected to be a JSON UTF8 encoded bytestring passed through
+    stdin.
+    """
+    json_string = sys.stdin.read()
     config = update_all_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)

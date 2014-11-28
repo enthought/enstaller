@@ -21,7 +21,7 @@ class TestMain(unittest.TestCase):
     @mock.patch("enstaller.machine_cli.__main__.install")
     def test_install(self, install_command):
         # given
-        args = ["install", "{}"]
+        args = ["install"]
 
         # when
         with self.assertRaises(SystemExit) as exc:
@@ -29,12 +29,12 @@ class TestMain(unittest.TestCase):
 
         # then
         self.assertEqual(exception_code(exc), 0)
-        install_command.assert_called_with("{}")
+        install_command.assert_called_with()
 
     @mock.patch("enstaller.machine_cli.__main__.remove")
     def test_remove(self, remove_command):
         # given
-        args = ["remove", "{}"]
+        args = ["remove"]
 
         # when
         with self.assertRaises(SystemExit) as exc:
@@ -42,12 +42,12 @@ class TestMain(unittest.TestCase):
 
         # then
         self.assertEqual(exception_code(exc), 0)
-        remove_command.assert_called_with("{}")
+        remove_command.assert_called_with()
 
     @mock.patch("enstaller.machine_cli.__main__.update_all")
     def test_update_all(self, update_all_command):
         # given
-        args = ["update_all", "{}"]
+        args = ["update_all"]
 
         # when
         with self.assertRaises(SystemExit) as exc:
@@ -55,4 +55,4 @@ class TestMain(unittest.TestCase):
 
         # then
         self.assertEqual(exception_code(exc), 0)
-        update_all_command.assert_called_with("{}")
+        update_all_command.assert_called_with()

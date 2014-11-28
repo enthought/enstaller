@@ -10,6 +10,7 @@ from enstaller.errors import EnstallerException
 from enstaller.machine_cli.commands import (install, install_parse_json_string,
                                             remove, update_all,
                                             update_all_parse_json_string)
+from enstaller.solver import Requirement
 from enstaller.tests.common import mock_index
 from enstaller.utils import fill_url
 
@@ -60,7 +61,8 @@ class TestInstall(unittest.TestCase):
 
     @mock_index({}, store_url="https://acme.com")
     @mock.patch("enstaller.machine_cli.commands.install_req")
-    def test_simple(self, install_req):
+    @mock.patch("sys.stdin")
+    def test_simple(self, stdin, install_req):
         # Given
         data = {
             "authentication": {
@@ -75,10 +77,12 @@ class TestInstall(unittest.TestCase):
         }
 
         # When
-        install(json.dumps(data))
+        stdin.read.return_value = json.dumps(data).encode("utf8")
+        install()
 
         # Then
         install_req.assert_called()
+        install_req.call_args[0][2] == Requirement.from_anything("numpy")
 
 
 class TestRemove(unittest.TestCase):
@@ -89,8 +93,9 @@ class TestRemove(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
+    @mock.patch("sys.stdin")
     @mock_index({}, store_url="https://acme.com")
-    def test_simple(self, execute):
+    def test_simple(self, stdin, execute):
         # Given
         data = {
             "authentication": {
@@ -108,17 +113,19 @@ class TestRemove(unittest.TestCase):
         mocked_solver.resolve = mock.Mock(return_value=r_operations)
 
         # When
+        stdin.read.return_value = json.dumps(data).encode("utf8")
         with mock.patch(
                 "enstaller.machine_cli.commands.Enpkg._solver_factory",
                 return_value=mocked_solver):
-            remove(json.dumps(data))
+            remove()
 
         # Then
         execute.assert_called_with(r_operations)
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
+    @mock.patch("sys.stdin")
     @mock_index({}, store_url="https://acme.com")
-    def test_simple_non_installed(self, execute):
+    def test_simple_non_installed(self, stdin, execute):
         # Given
         data = {
             "authentication": {
@@ -133,7 +140,8 @@ class TestRemove(unittest.TestCase):
         }
 
         # When
-        remove(json.dumps(data))
+        stdin.read.return_value = json.dumps(data).encode("utf8")
+        remove()
 
         # Then
         execute.assert_not_called()
@@ -156,8 +164,9 @@ class TestUpdateAll(unittest.TestCase):
             update_all_parse_json_string(json.dumps(data))
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
+    @mock.patch("sys.stdin")
     @mock_index({}, store_url="https://acme.com")
-    def test_simple(self, execute):
+    def test_simple(self, stdin, execute):
         # Given
         data = {
             "authentication": {
@@ -171,4 +180,5 @@ class TestUpdateAll(unittest.TestCase):
         }
 
         # When
-        update_all(json.dumps(data))
+        stdin.read.return_value = json.dumps(data).encode("utf8")
+        update_all()
