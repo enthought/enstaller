@@ -54,6 +54,12 @@ class IAuth(with_metaclass(abc.ABCMeta)):
         Change the auth information in the configuration file.
         """
 
+    @abc.abstractmethod
+    def to_config_dict(self):
+        """
+        Return a dict that can be used for json/yaml serialization.
+        """
+
     @abc.abstractproperty
     def config_string(self):
         """
@@ -112,6 +118,11 @@ class UserPasswordAuth(IAuth):
 
         with open(filename, 'w') as fo:
             fo.write(data)
+
+    def to_config_dict(self):
+        return {"kind": "simple",
+                "username": self.username,
+                "password": self.password}
 
     @property
     def config_string(self):
@@ -174,6 +185,9 @@ class APITokenAuth(IAuth):
 
         with open(filename, "wt") as fp:
             fp.write(data)
+
+    def to_config_dict(self):
+        return {"kind": "token", "api_token": self.api_token}
 
     @property
     def config_string(self):
