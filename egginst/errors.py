@@ -14,6 +14,10 @@ class InvalidChecksum(EnstallerException):
         return self.msg
 
 
+class ProcessCommunicationError(EnstallerException):
+    pass
+
+
 class ConnectionError(EnstallerException):
     pass
 
