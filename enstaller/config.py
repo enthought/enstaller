@@ -524,6 +524,27 @@ class Configuration(object):
         else:
             self.update(auth=auth)
 
+    def set_repositories_from_names(self, names):
+        """ Set repositories from their names alone, e.g. 'enthought/free'.
+
+        Parameters
+        ----------
+        names : list
+            List of repository names
+        """
+        repository_urls = []
+        for name in names:
+            p = urllib.parse.urlparse(name)
+            if p.scheme == "":
+                url = self.store_url + "/repo/{0}/{{PLATFORM}}".format(name)
+            elif p.scheme == "file":
+                url = name
+            else:
+                msg = "Unsupported syntax: {0!r}".format(name)
+                raise InvalidConfiguration(msg)
+            repository_urls.append(url)
+        self.update(indexed_repositories=repository_urls)
+
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
         for name, value in kw.items():
