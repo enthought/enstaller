@@ -199,8 +199,8 @@ class Session(object):
         resp.raise_for_status()
         return resp
 
-    def get(self, url):
-        return self._raw.get(url)
+    def get(self, url, stream=False):
+        return self._raw.get(url, stream=stream)
 
     def head(self, url):
         return self._raw.head(url)

@@ -207,16 +207,41 @@ def print_installed(repository, pat=None):
                      disp_store_info(package.store_location)))
 
 
-def repository_factory(session, indices, quiet=False):
+def _should_raise(resp, raise_on_error):
+    if not raise_on_error:
+        if resp.status_code in (403, 404):
+            return False
+    return True
+
+
+def _print_warning(msg, width=DEFAULT_TEXT_WIDTH):
+    preambule = "warning: "
+    wrapper = textwrap.TextWrapper(initial_indent=preambule,
+                                   subsequent_indent=len(preambule) * " ",
+                                   width=width)
+    msg = wrapper.fill(msg)
+    print(msg + "\n")
+
+
+def repository_factory(session, indices, quiet=False, raise_on_error=False):
     repository = Repository()
     for url, store_location in indices:
         with session.etag():
-            resp = session.fetch(url)
-            for package in parse_index(_fetch_json_with_progress(resp,
-                                                                 store_location,
-                                                                 quiet),
-                                       store_location):
-                repository.add_package(package)
+            resp = session.get(url, stream=True)
+            if resp.status_code != 200:
+                if _should_raise(resp, raise_on_error):
+                    resp.raise_for_status()
+                else:
+                    display = _display_store_name(store_location)
+                    msg = ("could not fetch index for {0!r}: no such "
+                           "repository (or you do not have the rights to "
+                           "access it).".format(display))
+                    _print_warning(msg)
+            else:
+                json_data = _fetch_json_with_progress(resp, store_location,
+                                                      quiet)
+                for package in parse_index(json_data, store_location):
+                    repository.add_package(package)
     return repository
 
 
