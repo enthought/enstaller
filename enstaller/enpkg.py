@@ -189,8 +189,8 @@ class RemoveAction(_BaseAction):
                                                 len(remover.files))
 
         with self._progress:
-            for n, filename in enumerate(remover.remove_iterator()):
-                yield n
+            for filename in remover.remove_iterator():
+                yield 1
 
         self._top_installed_repository.delete_package(package)
         self._installed_repository.delete_package(package)

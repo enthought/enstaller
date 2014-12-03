@@ -1,7 +1,11 @@
+from __future__ import absolute_import
+
 import os
-import struct
 import sys
 import time
+
+
+from ._termui import get_terminal_size
 
 
 if os.name == 'nt':
@@ -10,6 +14,9 @@ if os.name == 'nt':
 else:
     BEFORE_BAR = '\r\033[?25l'
     AFTER_BAR = '\033[?25h\n'
+
+
+_KIB = 1024
 
 
 class _DummyStream(object):
@@ -42,6 +49,24 @@ class ExpAverager(object):
     @property
     def value(self):
         return self._cur
+
+
+def _human_speed(speed):
+    if speed < 1.:
+        return "-- b/sec"
+    else:
+        if speed > _KIB ** 2:
+            speed = speed / _KIB ** 2
+            unit = "MiB"
+        elif speed > _KIB:
+            speed = speed / _KIB
+            unit = "KiB"
+        else:
+            unit = "b"
+        return "%.1f %s/sec" % (speed, unit)
+
+
+_MAX_SPEED_LABEL_DISPLAY = len(_human_speed((_KIB - 1) * _KIB))
 
 
 class ProgressBar(object):
@@ -114,20 +139,6 @@ class ProgressBar(object):
         self._last_pos = self._pos
         self._last = now
 
-    def _human_speed(self, speed):
-        if speed < 1.:
-            return "-- b/sec"
-        else:
-            if speed > 1024 ** 2:
-                speed = speed / 1024 ** 2
-                unit = "Mb"
-            elif speed > 1024:
-                speed = speed / 1024
-                unit = "kb"
-            else:
-                unit = "b"
-            return "%.1f %s/sec" % (speed, unit)
-
     def update(self, n_steps):
         self._pos += n_steps
 
@@ -141,7 +152,7 @@ class ProgressBar(object):
                 if self._avg_speed.is_filled:
                     speed = self._avg_speed.value
 
-                self.info = self._human_speed(speed)
+                self.info = _human_speed(speed)
             else:
                 self.info = ""
 
@@ -174,43 +185,3 @@ class ProgressBar(object):
             msg = "You need to use progress bars in a `with` block."
             raise RuntimeError(msg)
         return self
-
-
-def get_terminal_size():
-    """Returns the current size of the terminal as tuple in the form
-    ``(width, height)`` in columns and rows.
-    """
-    # If shutil has get_terminal_size() (Python 3.3 and later) use that
-    if sys.version_info >= (3, 3):
-        import shutil
-        shutil_get_terminal_size = getattr(shutil, 'get_terminal_size', None)
-        if shutil_get_terminal_size:
-            sz = shutil_get_terminal_size()
-            return sz.columns, sz.lines
-
-    DEFAULT_COLUMNS = 80
-
-    def ioctl_gwinsz(fd):
-        try:
-            import fcntl
-            import termios
-            cr = struct.unpack(
-                'hh', fcntl.ioctl(fd, termios.TIOCGWINSZ, '1234'))
-        except Exception:
-            return
-        return cr
-
-    cr = ioctl_gwinsz(0) or ioctl_gwinsz(1) or ioctl_gwinsz(2)
-    if not cr:
-        try:
-            fd = os.open(os.ctermid(), os.O_RDONLY)
-            try:
-                cr = ioctl_gwinsz(fd)
-            finally:
-                os.close(fd)
-        except Exception:
-            pass
-    if not cr or not cr[0] or not cr[1]:
-        cr = (os.environ.get('LINES', 25),
-              os.environ.get('COLUMNS', DEFAULT_COLUMNS))
-    return int(cr[1]), int(cr[0])
