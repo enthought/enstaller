@@ -44,6 +44,21 @@ class ExpAverager(object):
         return self._cur
 
 
+def _human_speed(speed):
+    if speed < 1.:
+        return "-- b/sec"
+    else:
+        if speed > 1024 ** 2:
+            speed = speed / 1024 ** 2
+            unit = "Mb"
+        elif speed > 1024:
+            speed = speed / 1024
+            unit = "kb"
+        else:
+            unit = "b"
+        return "%.1f %s/sec" % (speed, unit)
+
+
 class ProgressBar(object):
     def __init__(self, length=None, bar_template='%(bar)s', width=30,
                  fill_char='#', show_speed=False):
@@ -114,20 +129,6 @@ class ProgressBar(object):
         self._last_pos = self._pos
         self._last = now
 
-    def _human_speed(self, speed):
-        if speed < 1.:
-            return "-- b/sec"
-        else:
-            if speed > 1024 ** 2:
-                speed = speed / 1024 ** 2
-                unit = "Mb"
-            elif speed > 1024:
-                speed = speed / 1024
-                unit = "kb"
-            else:
-                unit = "b"
-            return "%.1f %s/sec" % (speed, unit)
-
     def update(self, n_steps):
         self._pos += n_steps
 
@@ -141,7 +142,7 @@ class ProgressBar(object):
                 if self._avg_speed.is_filled:
                     speed = self._avg_speed.value
 
-                self.info = self._human_speed(speed)
+                self.info = _human_speed(speed)
             else:
                 self.info = ""
 
