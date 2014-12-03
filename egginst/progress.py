@@ -19,12 +19,11 @@ def _compute_optimal_first_line(message, filename):
     first_line_right = 20
     first_line_left = first_line_length - first_line_right - 1
 
-    first_line_template = "%%-%ss %%%ss" % (first_line_left,
-                                          first_line_right)
+    first_line_template = "%%-%ss %%%ss" % (first_line_left, first_line_right)
     if len(filename) >= first_line_left:
         ellipsis = "... "
-        display_filename = filename[:first_line_left - len(ellipsis)] + \
-                           ellipsis
+        display_filename = (filename[:first_line_left - len(ellipsis)] +
+                            ellipsis)
     else:
         display_filename = filename
 
