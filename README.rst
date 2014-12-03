@@ -23,7 +23,8 @@ script and then execute it with the python interpreter::
    enstaller-4.7.5-1.egg                              [installing egg]
       4.34 MB [......................................................]
 
-You can also use it to install a specific version offline::
+If you already have an enstaller egg, you can use the bootstrap script
+offline::
 
    $ python bootstrap.py enstaller-4.7.3-py2.7.egg
    enstaller-4.7.3-1.egg                              [installing egg]
@@ -42,7 +43,18 @@ or request a specific version::
 Once Enstaller is installed, it can update itself.  Note that, as Enstaller is
 the install tool for Canopy and EPD, those products already include enstaller.
 The bootstrap script may be used to repair broken environments where enpkg is
-not usable.
+not usable anymore.
+
+Installing a dev version
+------------------------
+
+To install a dev version, you should do as follows::
+
+    # Build an egg compatible with Enthought format
+    $ python setup.py bdist_enegg
+
+    # Install it
+    $ python scripts/bootstrap.py dist/<produced_egg>
 
 Available features
 ==================
