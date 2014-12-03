@@ -4,6 +4,7 @@ import sys
 
 import mock
 
+from egginst.vendor.six import binary_type
 from egginst.vendor.six.moves import unittest
 from enstaller.auth import UserPasswordAuth
 from enstaller.errors import ProcessCommunicationError
@@ -38,6 +39,7 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -67,6 +69,7 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -95,6 +98,7 @@ class TestAPI(unittest.TestCase):
             'files_cache': self.repository_cache,
             'repositories': self.repositories,
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -121,8 +125,8 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
-        r_json_string = json.dumps(r_json_data).encode("utf8")
         r_cmd = [sys.executable, "-m", "enstaller.machine_cli.__main__", "install"]
 
         # When
@@ -137,7 +141,14 @@ class TestAPI(unittest.TestCase):
 
         # Then
         p.Popen.assert_called_with(r_cmd, stdin=p.PIPE)
-        p.Popen.return_value.communicate.assert_called_with(r_json_string)
+
+        # We cannot test assert_called_with as the json string depends on dict
+        # order. Instead, we decode the passed argument to check we have the
+        # right data
+        self.assertEqual(p.Popen.return_value.communicate.called, 1)
+        args = p.Popen.return_value.communicate.call_args[0]
+        self.assertIsInstance(args[0], binary_type)
+        self.assertEqual(json.loads(args[0].decode("utf8")), r_json_data)
 
     def test__run_command_invalid_python_path(self):
         # When/Then

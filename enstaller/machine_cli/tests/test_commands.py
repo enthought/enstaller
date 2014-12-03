@@ -29,7 +29,7 @@ def mock_stdin(bdata):
     yield p
 
 
-class TestInstall(unittest.TestCase):
+class TestParseJsonString(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()
 
@@ -45,7 +45,7 @@ class TestInstall(unittest.TestCase):
         with self.assertRaises(EnstallerException):
             install_parse_json_string(json.dumps(data))
 
-    def test_parse_json_string(self):
+    def test_simple(self):
         # Given
         data = {
             "authentication": {
@@ -71,7 +71,84 @@ class TestInstall(unittest.TestCase):
         # Then
         self.assertEqual(config.auth, UserPasswordAuth("nono", "le petit robot"))
         self.assertEqual(config.indexed_repositories, r_repository_urls)
+        self.assertIsNone(config.proxy)
+        self.assertTrue(config.verify_ssl)
         self.assertEqual(requirement.name, "numpy")
+
+    def test_proxy(self):
+        # Given
+        data = {
+            "authentication": {
+                "kind": "simple",
+                "username": "nono",
+                "password": "le petit robot",
+            },
+            "files_cache": self.prefix,
+            "repositories": ["enthought/free", "enthought/commercial"],
+            "requirement": "numpy",
+            "store_url": "https://acme.com",
+        }
+
+        # When
+        config, requirement = install_parse_json_string(json.dumps(data))
+
+        # Then
+        self.assertIsNone(config.proxy)
+
+        # Given
+        data["proxy"] = "http://acme.com"
+
+        # When
+        config, requirement = install_parse_json_string(json.dumps(data))
+
+        # Then
+        self.assertEqual(config.proxy_dict, {"http": "http://acme.com:3128"})
+
+    def test_verify_ssl(self):
+        # Given
+        data = {
+            "authentication": {
+                "kind": "simple",
+                "username": "nono",
+                "password": "le petit robot",
+            },
+            "files_cache": self.prefix,
+            "repositories": ["enthought/free", "enthought/commercial"],
+            "requirement": "numpy",
+            "store_url": "https://acme.com",
+        }
+
+        # When
+        config, requirement = install_parse_json_string(json.dumps(data))
+
+        # Then
+        self.assertTrue(config.verify_ssl)
+
+        # Given
+        data["verify_ssl"] = False
+
+        # When
+        config, requirement = install_parse_json_string(json.dumps(data))
+
+        # Then
+        self.assertFalse(config.verify_ssl)
+
+        # Given
+        data["verify_ssl"] = True
+
+        # When
+        config, requirement = install_parse_json_string(json.dumps(data))
+
+        # Then
+        self.assertTrue(config.verify_ssl)
+
+
+class TestInstall(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
 
     @mock_index({}, store_url="https://acme.com")
     @mock.patch("enstaller.machine_cli.commands.install_req")
