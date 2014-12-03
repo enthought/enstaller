@@ -215,7 +215,7 @@ def _should_raise(resp, raise_on_error):
 
 
 def _print_warning(msg, width=DEFAULT_TEXT_WIDTH):
-    preambule = "warning: "
+    preambule = "Warning: "
     wrapper = textwrap.TextWrapper(initial_indent=preambule,
                                    subsequent_indent=len(preambule) * " ",
                                    width=width)

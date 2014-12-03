@@ -31,7 +31,7 @@ from enstaller.versions.enpkg import EnpkgVersion
 from ..utils import (disp_store_info, install_req, install_time_string,
                      name_egg, print_installed, repository_factory,
                      updates_check)
-from ..utils import _fetch_json_with_progress
+from ..utils import _fetch_json_with_progress, _print_warning
 
 
 if sys.version_info < (2, 7):
@@ -55,6 +55,18 @@ class TestMisc(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.tempdir)
 
+    def test__print_warning(self):
+        # Given
+        message = "fail to crash"
+        r_output = "Warning: fail to crash\n\n"
+
+        # When
+        with mock_print() as m:
+            _print_warning(message)
+
+        # Then
+        self.assertMultiLineEqual(m.value, r_output)
+
     def test_disp_store_info(self):
         store_location = "https://api.enthought.com/eggs/osx-64/"
         self.assertEqual(disp_store_info(store_location), "api osx-64")
@@ -74,6 +86,30 @@ class TestMisc(unittest.TestCase):
         with self.assertRaises(AssertionError):
             name = "some/dir/fu_bar-1.0.0-1.egg"
             name_egg(name)
+
+    @responses.activate
+    def test_repository_factory(self):
+        # Given
+        store_url = "https://acme.com"
+        config = Configuration(store_url=store_url, use_webservice=False)
+        config.set_repositories_from_names(["enthought/foo"])
+
+        responses.add(responses.GET, config.indices[0][0],
+                      status=404)
+
+        session = mocked_session_factory(self.tempdir)
+
+        # When
+        with mock.patch("enstaller.cli.utils._display_store_name") as display:
+            repository = repository_factory(session, config.indices)
+
+        # Then
+        display.assert_called()
+        self.assertEqual(len(list(repository.iter_packages())), 0)
+
+        # When/Then
+        with self.assertRaises(requests.exceptions.HTTPError):
+            repository_factory(session, config.indices, raise_on_error=True)
 
 
 class TestInfoStrings(unittest.TestCase):
