@@ -1,7 +1,7 @@
 import sys
 
 from egginst.console import ProgressBar, get_terminal_size
-from egginst.console.simple import _human_speed
+from egginst.console.simple import _MAX_SPEED_LABEL_DISPLAY
 from egginst.utils import human_bytes
 
 
@@ -11,11 +11,10 @@ def dummy_progress_bar_factory(*a, **kw):
 
 def _compute_optimal_first_line(message, filename):
     term_width = get_terminal_size()[0]
-    max_speed_label_display = len(_human_speed(1023 * 1024))
     # -------------------------------------------- term width
     # first_line_left first_line_right speed_label
     # The '1' are for spaces
-    first_line_length = term_width - 1 - max_speed_label_display
+    first_line_length = term_width - 1 - _MAX_SPEED_LABEL_DISPLAY
     first_line_right = 20
     first_line_left = first_line_length - first_line_right - 1
 

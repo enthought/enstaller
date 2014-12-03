@@ -16,6 +16,9 @@ else:
     AFTER_BAR = '\033[?25h\n'
 
 
+_KIB = 1024
+
+
 class _DummyStream(object):
     def flush(self):
         pass
@@ -52,15 +55,18 @@ def _human_speed(speed):
     if speed < 1.:
         return "-- b/sec"
     else:
-        if speed > 1024 ** 2:
-            speed = speed / 1024 ** 2
-            unit = "Mb"
-        elif speed > 1024:
-            speed = speed / 1024
-            unit = "kb"
+        if speed > _KIB ** 2:
+            speed = speed / _KIB ** 2
+            unit = "MiB"
+        elif speed > _KIB:
+            speed = speed / _KIB
+            unit = "KiB"
         else:
             unit = "b"
         return "%.1f %s/sec" % (speed, unit)
+
+
+_MAX_SPEED_LABEL_DISPLAY = len(_human_speed((_KIB - 1) * _KIB))
 
 
 class ProgressBar(object):
