@@ -41,6 +41,9 @@ def _config_from_json_data(json_data):
               format(authentication_kind)
         raise EnstallerException(msg)
     config.update(store_url=json_data["store_url"])
+    config.update(verify_ssl=json_data.get("verify_ssl", True))
+    if json_data.get("proxy") is not None:
+        config.update(proxy=json_data["proxy"])
     config.set_repositories_from_names(json_data["repositories"])
 
     return config

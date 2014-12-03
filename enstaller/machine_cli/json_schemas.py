@@ -18,6 +18,10 @@ UPDATE_ALL_SCHEMA = {
             "description": "Where to cache downloaded files.",
             "type": "string"
         },
+        "proxy": {
+            "description": "Proxy setting (full URL).",
+            "type": "string"
+        },
         "repositories": {
             "type": "array",
             "items": {"type": "string"},
@@ -27,6 +31,11 @@ UPDATE_ALL_SCHEMA = {
             "description": "The url (schema + hostname only of the store to "
                            "connect to).",
             "type": "string"
+        },
+        "verify_ssl": {
+            "description": "If false, SSL certificates are not validated "
+                           "(INSECURE)",
+            "type": "boolean"
         }
     },
     "definitions": {

@@ -38,6 +38,7 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -67,6 +68,7 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -95,6 +97,7 @@ class TestAPI(unittest.TestCase):
             'files_cache': self.repository_cache,
             'repositories': self.repositories,
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
 
         # When
@@ -121,6 +124,7 @@ class TestAPI(unittest.TestCase):
             'repositories': self.repositories,
             'requirement': 'numpy',
             'store_url': self.store_url,
+            'verify_ssl': True,
         }
         r_json_string = json.dumps(r_json_data).encode("utf8")
         r_cmd = [sys.executable, "-m", "enstaller.machine_cli.__main__", "install"]

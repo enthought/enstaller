@@ -7,7 +7,7 @@ from enstaller.errors import ProcessCommunicationError
 
 class SubprocessEnpkgExecutor(object):
     def __init__(self, python_path, store_url, auth, repositories,
-                 repository_cache):
+                 repository_cache, verify_ssl=True, proxy=None):
         """ This class allows manipulating runtimes' enpkg using subprocesses.
 
         Parameters
@@ -30,6 +30,8 @@ class SubprocessEnpkgExecutor(object):
         self.auth = auth
         self.repositories = repositories
         self.repository_cache = repository_cache
+        self.verify_ssl = verify_ssl
+        self.proxy = proxy
 
     def _run_command(self, command, json_data):
         cmd = [self.python_path, "-m", "enstaller.machine_cli.__main__",
@@ -55,6 +57,10 @@ class SubprocessEnpkgExecutor(object):
             "repositories": self.repositories,
             "store_url": self.store_url,
         }
+        if self.proxy is not None:
+            json_data["proxy"] = str(self.proxy)
+        json_data["verify_ssl"] = self.verify_ssl
+
         return json_data
 
     def install(self, requirement_string):
