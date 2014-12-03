@@ -18,6 +18,9 @@ class TestPEP386Workaround(unittest.TestCase):
         self.assertFalse(left < right)
         self.assertFalse(left > right)
 
+        self.assertIs(left.is_worked_around, False)
+        self.assertIs(right.is_worked_around, False)
+
     def test_hashing(self):
         # Given version string without workaround
         s = "1.3.0"
@@ -117,6 +120,8 @@ class TestPEP386Workaround(unittest.TestCase):
         self.assertTrue(left >= right)
         self.assertFalse(left < right)
         self.assertFalse(left > right)
+        self.assertIs(left.is_worked_around, True)
+        self.assertIs(right.is_worked_around, True)
 
     def test_incorrect_greater(self):
         # Given
