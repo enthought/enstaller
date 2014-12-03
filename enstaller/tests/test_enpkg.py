@@ -4,6 +4,7 @@ import tempfile
 
 import mock
 
+from egginst.progress import console_progress_manager_factory, ProgressBar
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
 from egginst.vendor.six.moves import unittest
@@ -26,6 +27,12 @@ from .common import (dummy_repository_package_factory,
 
 
 class TestEnpkgActions(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
     def test_empty_actions(self):
         """
         Ensuring enpkg.execute([]) does not crash
@@ -46,6 +53,48 @@ class TestEnpkgActions(unittest.TestCase):
                 actions = [("remove", DUMMY_EGG)]
                 enpkg.execute(actions)
                 self.assertTrue(mocked_remove.called)
+
+    def _prepared_mocked_egginst(self, nfiles):
+        installed_size = 1024 ** 2 * 2
+
+        remover = mock.Mock()
+        remover.installed_size = installed_size
+
+        files = ["foo{0}".format(i) for i in range(nfiles)]
+        remover.files = files
+        remover.remove_iterator.return_value = iter(files)
+
+        return remover
+
+    @mock.patch("enstaller.enpkg.EggInst")
+    def test_progress(self, EggInst):
+        # Ensure the accumulated arg of updates is exactly the number of files
+        # to be removed
+
+        # Given
+        nfiles = 245
+        remover = self._prepared_mocked_egginst(nfiles)
+
+        EggInst.return_value._egginst_remover = remover
+        top_repository = mock.Mock()
+        remote_repository = mock.Mock()
+
+        def factory(*a, **kw):
+            return console_progress_manager_factory("fetching", *a, **kw)
+
+        action = RemoveAction("yoyo-1.1-1.egg", self.prefix, top_repository,
+                              remote_repository, factory)
+
+        # When
+        with mock.patch("egginst.progress.ProgressBar",
+                        auto_spec=ProgressBar) as MockedProgressBar:
+                for step in action.iter_execute():
+                    action.progress_update(step)
+
+        # Then
+        accumulated = sum(args[0] for args, kw in
+                          MockedProgressBar.return_value.update.call_args_list)
+        self.assertEqual(accumulated, nfiles)
 
 
 class TestEnpkgExecute(unittest.TestCase):
