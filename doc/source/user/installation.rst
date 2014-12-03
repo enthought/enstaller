@@ -16,15 +16,15 @@ script::
 Installing from sources
 -----------------------
 
-While you can install with the usual `setup.py install` dance, it is
+While you can install with the usual ``setup.py install`` dance, it is
 advised to build enstaller and install it through the bootstrap script::
 
     $ python setup.py bdist_enegg # build dist/enstaller-<version>.egg
     $ python scripts/bootstrap.py dist/enstaller-<version>.egg
 
-..note:: you can safely reinstall various versions of enstaller by
-         re-executing the boostrap script, as it ensures the old enstaller
-         is removed before installing the new one.
+.. note:: you can safely reinstall various versions of enstaller by
+          re-executing the boostrap script, as it ensures the old enstaller
+          is removed before installing the new one.
 
 Testing the installation
 ------------------------
