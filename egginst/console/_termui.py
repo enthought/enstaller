@@ -59,6 +59,7 @@ def get_terminal_size():
 
     if columns <= 0 or lines <= 0:
         if os.name == "nt":
-            return (_DEFAULT_COLUMNS, _DEFAULT_LINES)
+            from ._termui_win32 import get_terminal_size
+            return get_terminal_size()
         else:
             return _posix_get_terminal_size()
