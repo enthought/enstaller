@@ -24,7 +24,7 @@ class TestProgressBar(unittest.TestCase):
                                                             show_speed=True)
 
                 with progress:
-                    for _ in range(size / 1024):
+                    for _ in range(int(size / 1024)):
                         progress.update(1024)
 
         # Then
