@@ -11,7 +11,7 @@ def dummy_progress_bar_factory(*a, **kw):
 
 def _compute_optimal_first_line(message, filename):
     term_width = 79
-    max_speed_label_display = len(_human_speed(999 * 1024))
+    max_speed_label_display = len(_human_speed(1023 * 1024))
     # -------------------------------------------- term width
     # first_line_left first_line_right speed_label
     # The '1' are for spaces

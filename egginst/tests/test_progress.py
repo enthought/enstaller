@@ -30,4 +30,4 @@ class TestProgressBar(unittest.TestCase):
         # Then
         for i, (args, kw) in enumerate(mocked_stdout.write.call_args_list):
             line = args[0].rstrip(AFTER_BAR).lstrip(BEFORE_BAR)
-            self.assertTrue(len(line) <= terminal_size)
+            self.assertTrue(len(line) < terminal_size)
