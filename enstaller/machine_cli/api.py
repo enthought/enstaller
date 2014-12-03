@@ -48,6 +48,15 @@ class SubprocessEnpkgExecutor(object):
             msg = "Error while communicating with runtime"
             raise ProcessCommunicationError(msg)
 
+    def _common_settings(self):
+        json_data = {
+            "authentication": self.auth.to_config_dict(),
+            "files_cache": self.repository_cache,
+            "repositories": self.repositories,
+            "store_url": self.store_url,
+        }
+        return json_data
+
     def install(self, requirement_string):
         """ Install the given requirement
 
@@ -56,13 +65,8 @@ class SubprocessEnpkgExecutor(object):
         requirement_string: str
             The requirement to install, e.g. 'numpy'
         """
-        json_data = {
-            "authentication": self.auth.to_config_dict(),
-            "files_cache": self.repository_cache,
-            "repositories": self.repositories,
-            "requirement": requirement_string,
-            "store_url": self.store_url,
-        }
+        json_data = self._common_settings()
+        json_data["requirement"] = requirement_string
 
         return self._run_command("install", json_data)
 
@@ -74,24 +78,14 @@ class SubprocessEnpkgExecutor(object):
         package_name: str
             The package to remove
         """
-        json_data = {
-            "authentication": self.auth.to_config_dict(),
-            "files_cache": self.repository_cache,
-            "repositories": self.repositories,
-            "requirement": package_name,
-            "store_url": self.store_url,
-        }
+        json_data = self._common_settings()
+        json_data["requirement"] = package_name
 
         return self._run_command("remove", json_data)
 
     def update_all(self):
         """ Update every installed package.
         """
-        json_data = {
-            "authentication": self.auth.to_config_dict(),
-            "files_cache": self.repository_cache,
-            "repositories": self.repositories,
-            "store_url": self.store_url,
-        }
+        json_data = self._common_settings()
 
         return self._run_command("update_all", json_data)
