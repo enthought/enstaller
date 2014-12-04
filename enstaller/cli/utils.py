@@ -222,7 +222,7 @@ def _print_warning(msg, width=DEFAULT_TEXT_WIDTH):
     print(wrapper.fill(msg) + "\n")
 
 
-def _fetch_repository(session, url, store_location, quiet, raise_on_error):
+def _fetch_repository(session, url, store_location, raise_on_error):
     with session.etag():
         resp = session.get(url, stream=True)
         if resp.status_code != 200:
@@ -231,7 +231,10 @@ def _fetch_repository(session, url, store_location, quiet, raise_on_error):
             else:
                 return None  # failed.append(store_location)
         else:
-            json_data = _fetch_json_with_progress(resp, store_location, quiet)
+            data = io.BytesIO()
+            for chunk in _ResponseIterator(resp):
+                data.write(chunk)
+            json_data = decode_json_from_buffer(data.getvalue())
             return Repository(parse_index(json_data, store_location))
 
 
@@ -258,18 +261,29 @@ def _print_unavailables_warning(unavailables):
     print()
 
 
+def _write_and_flush(s, quiet):
+    if not quiet:
+        sys.stdout.write(s)
+        sys.stdout.flush()
+
+
 def repository_factory(session, indices, quiet=False, raise_on_error=False):
     unavailables = []
     full_repository = Repository()
 
+    _write_and_flush("Fetching indices: ", quiet)
+
     for url, store_location in indices:
         repository_or_none = _fetch_repository(session, url, store_location,
-                                               quiet, raise_on_error)
+                                               raise_on_error)
         if repository_or_none is None:
             unavailables.append(store_location)
         else:
             for package in repository_or_none.iter_packages():
                 full_repository.add_package(package)
+        _write_and_flush(".", quiet)
+
+    _write_and_flush("\n\n", quiet)
 
     if len(unavailables) > 0 and not quiet:
         _print_unavailables_warning(unavailables)
