@@ -14,9 +14,7 @@ except (AttributeError, ImportError):
     windll = None
     SetConsoleTextAttribute = lambda *_: None
 else:
-    from ctypes import (
-        byref, Structure, c_char, c_short, c_uint32, c_ushort, POINTER
-    )
+    from ctypes import byref, Structure, POINTER
 
     class CONSOLE_SCREEN_BUFFER_INFO(Structure):
         """struct in wincon.h."""
@@ -27,13 +25,15 @@ else:
             ("srWindow", wintypes.SMALL_RECT),
             ("dwMaximumWindowSize", wintypes._COORD),
         ]
+
         def __str__(self):
             return '(%d,%d,%d,%d,%d,%d,%d,%d,%d,%d,%d)' % (
-                self.dwSize.Y, self.dwSize.X
-                , self.dwCursorPosition.Y, self.dwCursorPosition.X
-                , self.wAttributes
-                , self.srWindow.Top, self.srWindow.Left, self.srWindow.Bottom, self.srWindow.Right
-                , self.dwMaximumWindowSize.Y, self.dwMaximumWindowSize.X
+                self.dwSize.Y, self.dwSize.X,
+                self.dwCursorPosition.Y, self.dwCursorPosition.X,
+                self.wAttributes,
+                self.srWindow.Top, self.srWindow.Left, self.srWindow.Bottom,
+                self.srWindow.Right,
+                self.dwMaximumWindowSize.Y, self.dwMaximumWindowSize.X
             )
 
     _GetStdHandle = windll.kernel32.GetStdHandle
@@ -57,9 +57,9 @@ else:
     def GetConsoleScreenBufferInfo(stream_id=STDOUT):
         handle = handles[stream_id]
         csbi = CONSOLE_SCREEN_BUFFER_INFO()
-        success = _GetConsoleScreenBufferInfo(
-            handle, byref(csbi))
+        _GetConsoleScreenBufferInfo(handle, byref(csbi))
         return csbi
+
 
 def get_terminal_size():
     srWindow = GetConsoleScreenBufferInfo(STDOUT).srWindow
