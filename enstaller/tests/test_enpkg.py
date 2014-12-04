@@ -447,8 +447,8 @@ class TestFetchAction(unittest.TestCase):
 class TestRemoveAction(unittest.TestCase):
     def setUp(self):
         self.top_prefix = tempfile.mkdtemp()
-        self.top_installed_repository = Repository(self.top_prefix)
-        self.installed_repository = Repository(self.top_prefix)
+        self.top_installed_repository = Repository()
+        self.installed_repository = Repository()
 
     def tearDown(self):
         shutil.rmtree(self.top_prefix)

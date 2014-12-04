@@ -272,10 +272,18 @@ class Repository(object):
         repository._populate_from_prefixes(prefixes)
         return repository
 
-    def __init__(self, store_info=""):
+    def __init__(self, packages=None):
         self._name_to_packages = collections.defaultdict(list)
 
         self._store_info = ""
+
+        packages = packages or []
+        for package in packages:
+            self.add_package(package)
+
+    def __len__(self):
+        return sum(len(self._name_to_packages[p])
+                   for p in self._name_to_packages)
 
     def add_package(self, package_metadata):
         self._name_to_packages[package_metadata.name].append(package_metadata)

@@ -205,6 +205,34 @@ class TestRepository(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             self.repository.add_package(package)
 
+    def test_ctor(self):
+        # When
+        repository = Repository()
+
+        # Then
+        self.assertEqual(len(repository), 0)
+
+        # Given
+        eggs = [
+            "dummy-1.0.1-1.egg",
+            "dummy_with_appinst-1.0.0-1.egg",
+            "dummy_with_entry_points-1.0.0-1.egg",
+            "dummy_with_proxy-1.3.40-3.egg",
+            "dummy_with_proxy_scripts-1.0.0-1.egg",
+            "dummy_with_proxy_softlink-1.0.0-1.egg",
+            "nose-1.2.1-1.egg",
+            "nose-1.3.0-1.egg",
+            "nose-1.3.0-2.egg",
+        ]
+        paths = (os.path.join(_EGGINST_COMMON_DATA, egg) for egg in eggs)
+        packages = [RepositoryPackageMetadata.from_egg(path) for path in paths]
+
+        # When
+        repository = Repository(packages)
+
+        # Then
+        self.assertEqual(len(repository), len(eggs))
+
     def test_find_package(self):
         # Given
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
