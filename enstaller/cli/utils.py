@@ -18,6 +18,7 @@ from enstaller.repository import Repository, egg_name_to_name_version
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.solver import Request, Requirement
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
+from enstaller.vendor.futures import ThreadPoolExecutor, as_completed
 
 
 FMT = '%-20s %-20s %s'
@@ -273,15 +274,21 @@ def repository_factory(session, indices, quiet=False, raise_on_error=False):
 
     _write_and_flush("Fetching indices: ", quiet)
 
-    for url, store_location in indices:
-        repository_or_none = _fetch_repository(session, url, store_location,
-                                               raise_on_error)
-        if repository_or_none is None:
-            unavailables.append(store_location)
-        else:
-            for package in repository_or_none.iter_packages():
-                full_repository.add_package(package)
-        _write_and_flush(".", quiet)
+    with ThreadPoolExecutor(max_workers=4) as executor:
+        tasks = []
+        for url, store_location in indices:
+            task = executor.submit(_fetch_repository, session, url,
+                                   store_location, raise_on_error)
+            tasks.append(task)
+
+        for task in as_completed(tasks):
+            repository_or_none = task.result()
+            if repository_or_none is None:
+                unavailables.append(store_location)
+            else:
+                for package in repository_or_none.iter_packages():
+                    full_repository.add_package(package)
+            _write_and_flush(".", quiet)
 
     _write_and_flush("\n\n", quiet)
 

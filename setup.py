@@ -174,6 +174,7 @@ packages = [
     'enstaller.vendor',
     'enstaller.vendor.cachecontrol',
     'enstaller.vendor.cachecontrol.caches',
+    'enstaller.vendor.futures',
     'enstaller.vendor.jsonschema',
     'enstaller.vendor.keyring',
     'enstaller.vendor.keyring.backends',

@@ -123,7 +123,8 @@ class DBCache(BaseCache):
     """
     def __init__(self, uri=":memory:", capacity=10):
         try:
-            self._cache = sqlite_cache.SQLiteCache(uri, capacity)
+            self._cache = sqlite_cache.SQLiteCache(uri, capacity,
+                                                   use_separate_connection=True)
         except sqlite3.Error as e:
             logger.warn("Could not create sqlite cache: %r", e)
             self._cache = _NullCache()
