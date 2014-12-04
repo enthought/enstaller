@@ -13,6 +13,7 @@ Main highlights:
     use API token instead of passwords.
   * enpkg now retries downloading eggs when checksum mismatch occurs
     before bailing out (#278), and retry connection failures as well (#350)
+  * indices are fetched in parallel (#424)
   * new bootstrap script that works on every platform and is more reliable
     than the old build.sh hack (#320)
   * `.enstaller4rc` is now searched in the following order:
