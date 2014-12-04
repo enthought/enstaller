@@ -193,7 +193,7 @@ class TestMisc(unittest.TestCase):
             dummy                1.0.1-1              sys
             """)
 
-        repository = Repository(sys.prefix)
+        repository = Repository()
         metadata = InstalledPackageMetadata.from_egg(DUMMY_EGG,
                                                      "random string",
                                                      sys.prefix)

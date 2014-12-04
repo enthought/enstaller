@@ -89,6 +89,8 @@ class TestMisc(unittest.TestCase):
 
     @responses.activate
     def test_repository_factory(self):
+        self.maxDiff = None
+
         # Given
         store_url = "https://acme.com"
         config = Configuration(store_url=store_url, use_webservice=False)
@@ -98,14 +100,26 @@ class TestMisc(unittest.TestCase):
                       status=404)
 
         session = mocked_session_factory(self.tempdir)
+        r_warning = textwrap.dedent("""\
+            Warning: Could not fetch the following indices:
+
+                     - 'neko'
+
+                     Those repositories do not exist (or you do not have the rights to
+                     access them). You should edit your configuration to remove those
+                     repositories.
+
+        """)
 
         # When
-        with mock.patch("enstaller.cli.utils._display_store_name") as display:
-            repository = repository_factory(session, config.indices)
+        with mock_print() as m:
+            with mock.patch("enstaller.cli.utils._display_store_name",
+                            return_value="neko"):
+                repository = repository_factory(session, config.indices)
 
         # Then
-        display.assert_called()
         self.assertEqual(len(list(repository.iter_packages())), 0)
+        self.assertMultiLineEqual(m.value, r_warning)
 
         # When/Then
         with self.assertRaises(requests.exceptions.HTTPError):
