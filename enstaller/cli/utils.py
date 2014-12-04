@@ -219,30 +219,61 @@ def _print_warning(msg, width=DEFAULT_TEXT_WIDTH):
     wrapper = textwrap.TextWrapper(initial_indent=preambule,
                                    subsequent_indent=len(preambule) * " ",
                                    width=width)
-    msg = wrapper.fill(msg)
-    print(msg + "\n")
+    print(wrapper.fill(msg) + "\n")
+
+
+def _fetch_repository(session, url, store_location, quiet, raise_on_error):
+    with session.etag():
+        resp = session.get(url, stream=True)
+        if resp.status_code != 200:
+            if _should_raise(resp, raise_on_error):
+                resp.raise_for_status()
+            else:
+                return None  # failed.append(store_location)
+        else:
+            json_data = _fetch_json_with_progress(resp, store_location, quiet)
+            return Repository(parse_index(json_data, store_location))
+
+
+def _print_unavailables_warning(unavailables):
+    store_names = [_display_store_name(store_location) for store_location in
+                   unavailables]
+    preambule = "Warning: "
+    template = textwrap.dedent("""\
+        {0}Could not fetch the following indices:
+
+        {1}
+    """)
+    displayed = "\n".join("{0}- {1!r}".format(" " * len(preambule), name)
+                          for name in store_names)
+
+    after = ("Those repositories do not exist (or you do not have the "
+             "rights to access them). You should edit your configuration "
+             "to remove those repositories.")
+    print(template.format(preambule, displayed))
+    wrapper = textwrap.TextWrapper(initial_indent=len(preambule) * " ",
+                                   subsequent_indent=len(preambule) * " ",
+                                   width=DEFAULT_TEXT_WIDTH)
+    print(wrapper.fill(after))
+    print()
 
 
 def repository_factory(session, indices, quiet=False, raise_on_error=False):
-    repository = Repository()
+    unavailables = []
+    full_repository = Repository()
+
     for url, store_location in indices:
-        with session.etag():
-            resp = session.get(url, stream=True)
-            if resp.status_code != 200:
-                if _should_raise(resp, raise_on_error):
-                    resp.raise_for_status()
-                else:
-                    display = _display_store_name(store_location)
-                    msg = ("could not fetch index for {0!r}: no such "
-                           "repository (or you do not have the rights to "
-                           "access it).".format(display))
-                    _print_warning(msg)
-            else:
-                json_data = _fetch_json_with_progress(resp, store_location,
-                                                      quiet)
-                for package in parse_index(json_data, store_location):
-                    repository.add_package(package)
-    return repository
+        repository_or_none = _fetch_repository(session, url, store_location,
+                                               quiet, raise_on_error)
+        if repository_or_none is None:
+            unavailables.append(store_location)
+        else:
+            for package in repository_or_none.iter_packages():
+                full_repository.add_package(package)
+
+    if len(unavailables) > 0 and not quiet:
+        _print_unavailables_warning(unavailables)
+    return full_repository
 
 
 def name_egg(egg):
