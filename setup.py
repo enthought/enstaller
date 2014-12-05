@@ -17,9 +17,9 @@ MAJOR = 4
 MINOR = 8
 MICRO = 0
 
-IS_RELEASED = False
+IS_RELEASED = True
 
-VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
+VERSION = '%d.%d.%db1' % (MAJOR, MINOR, MICRO)
 
 BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "scripts", "bootstrap.py")
 
