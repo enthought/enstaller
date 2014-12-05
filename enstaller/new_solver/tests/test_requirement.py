@@ -86,6 +86,18 @@ class TestRequirement(unittest.TestCase):
         with self.assertRaises(ValueError):
             Requirement.from_legay_requirement_string(requirement_s)
 
+    def test_from_package_string(self):
+        # Given
+        package_s = "numpy-1.8.1-1"
+
+        # When
+        requirement = Requirement.from_package_string(package_s)
+
+        # Then
+        self.assertEqual(requirement.name, "numpy")
+        self.assertEqual(requirement._constraints,
+                         MultiConstraints([Equal(V("1.8.1-1"))]))
+
 
 class TestParsePackageFullName(unittest.TestCase):
     def test_simple(self):

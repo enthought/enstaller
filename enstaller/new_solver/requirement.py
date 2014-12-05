@@ -47,6 +47,13 @@ class Requirement(object):
     @classmethod
     def _from_string(cls, string,
                      version_factory=EnpkgVersion.from_string):
+        """ Creates a requirement from a legacy requirement string.
+
+        Parameters
+        ----------
+        requirement_string : str
+            The legacy requirement string, e.g. 'MKL 10.3'
+        """
         parser = _RawRequirementParser()
         named_constraints = parser.parse(string, version_factory)
         if len(named_constraints) > 1:
@@ -60,8 +67,13 @@ class Requirement(object):
     @classmethod
     def from_legay_requirement_string(cls, requirement_string,
                                       version_factory=EnpkgVersion.from_string):
-        """ Creates a requirement from a legacy requirement string, e.g.
-        'MKL 10.3', as found in egg metadata < 2.
+        """ Creates a requirement from a legacy requirement string (as
+        found in our current egg metadata, format < 2).
+
+        Parameters
+        ----------
+        requirement_string : str
+            The legacy requirement string, e.g. 'MKL 10.3'
         """
         parts = requirement_string.split(None, 1)
         if len(parts) == 2:
@@ -81,6 +93,11 @@ class Requirement(object):
     def from_package_string(cls, package_string,
                             version_factory=EnpkgVersion.from_string):
         """ Creates a requirement from a package full version.
+
+        Parameters
+        ----------
+        package_string : str
+            The package string, e.g. 'numpy-1.8.1-1'
         """
         name, version_string = parse_package_full_name(package_string)
         version = version_factory(version_string)
@@ -92,6 +109,15 @@ class Requirement(object):
         self._constraints = MultiConstraints(constraints)
 
     def matches(self, version_candidate):
+        """ Returns True if the given version matches this set of
+        requirements, False otherwise.
+
+        Parameters
+        ----------
+        version_candidate : obj
+            A valid version object (must match the version factory of the
+            requirement instance).
+        """
         return self._constraints.matches(version_candidate)
 
     def __eq__(self, other):
