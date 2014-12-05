@@ -118,6 +118,20 @@ class TestRepositoryPackage(unittest.TestCase):
                          "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
         self.assertEqual(metadata.source_url, path_to_uri(path))
 
+    def test_repr(self):
+        # Given
+        path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+        store_location = path_to_uri(os.path.dirname(path)) + "/"
+        r_repr = ("RepositoryPackageMetadata('nose-1.3.0-1', "
+                  "key='nose-1.3.0-1.egg', available=True, product=None, "
+                  "store_location='{0}')".format(store_location))
+
+        # When
+        metadata = RepositoryPackageMetadata.from_egg(path)
+
+        # Then
+        self.assertEqual(repr(metadata), r_repr)
+
 
 class TestInstalledPackage(unittest.TestCase):
     def test_from_meta_dir(self):

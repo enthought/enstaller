@@ -11,7 +11,7 @@ from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, NoSuchPackage
 from enstaller.eggcollect import info_from_metadir
-from enstaller.utils import compute_md5, PY_VER
+from enstaller.utils import compute_md5, path_to_uri, PY_VER
 from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
 from enstaller.versions.enpkg import EnpkgVersion
 
@@ -94,8 +94,7 @@ class RepositoryPackageMetadata(PackageMetadata):
             metadata = info_from_z(zp)
 
         if len(store_location) == 0:
-            store_location = urllib.request.pathname2url(os.path.dirname(path)) + "/"
-            store_location = urllib.parse.urljoin("file:/", store_location)
+            store_location = path_to_uri(os.path.dirname(path)) + "/"
 
         if not store_location.endswith("/"):
             msg = "Invalid uri for store location: {0!r} (expected an uri " \
@@ -154,7 +153,7 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \
-            "'{self.name}-{self.version}-{self.build}', key={self.key!r}, " \
+            "'{self.name}-{self.version}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
             "store_location={self.store_location!r})".format(self=self)
         return template
