@@ -1,8 +1,7 @@
 import collections
 import re
 
-import six
-
+from egginst.vendor import six
 from enstaller.errors import SolverException
 
 from .constraint_types import (EnpkgUpstreamMatch, Equal, GEQ, GT,
