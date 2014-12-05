@@ -328,7 +328,7 @@ def build_enstaller_egg(forced_version, forced_build=1):
         The build number to inject in the egg metadata
     """
     environ = os.environ.copy()
-    environ["FORCE_ENSTALLER_VERSION"] = forced_version
+    environ["__TEST_FORCE_ENSTALLER_VERSION"] = forced_version
     subprocess.check_call([sys.executable, "setup.py", "bdist_enegg"],
                           env=environ)
 

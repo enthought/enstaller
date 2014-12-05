@@ -66,10 +66,9 @@ is_released = {is_released}
 if not is_released:
     version = full_version
 """
-    force_mode = os.environ.get("FORCE_ENSTALLER_VERSION", None)
+    # This is only used for upgrade test. Kids, never use this by yourself !
+    force_mode = os.environ.get("__TEST_FORCE_ENSTALLER_VERSION", None)
     if force_mode is not None:
-        assert not IS_RELEASED, \
-            "FORCE_ENSTALLER_VERSION mode in release mode !"
         version = full_version = force_mode
         is_released = True
     else:
