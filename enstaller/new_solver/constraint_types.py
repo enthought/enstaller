@@ -1,6 +1,3 @@
-from enstaller.versions.enpkg import EnpkgVersion
-
-
 class _ConstraintType(object):
     pass
 
@@ -30,8 +27,8 @@ class _VersionConstraint(_ConstraintType):
                                        self.version.__class__))
 
     def __eq__(self, other):
-        return self.__class__ == other.__class__ \
-                and self.version  == other.version
+        return (self.__class__ == other.__class__
+                and self.version == other.version)
 
     def __hash__(self):
         return hash(self.version)

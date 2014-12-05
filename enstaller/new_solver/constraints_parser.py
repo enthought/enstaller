@@ -132,13 +132,13 @@ def iter_over_requirement(tokens):
 
 
 _OPERATOR_TO_SPEC = {
-        EnpkgUpstreamMatchToken: EnpkgUpstreamMatch,
-        EqualToken: Equal,
-        GEQToken: GEQ,
-        GTToken: GT,
-        LEQToken: LEQ,
-        LTToken: LT,
-        NotToken: Not,
+    EnpkgUpstreamMatchToken: EnpkgUpstreamMatch,
+    EqualToken: Equal,
+    GEQToken: GEQ,
+    GTToken: GT,
+    LEQToken: LEQ,
+    LTToken: LT,
+    NotToken: Not,
 }
 
 
@@ -159,8 +159,8 @@ class _RawConstraintsParser(object):
     def tokenize(self, requirement_string):
         scanned, remaining = self._scanner.scan(requirement_string)
         if len(remaining) > 0:
-            msg = "Invalid requirement string: {0!r}". \
-                    format(requirement_string)
+            msg = ("Invalid requirement string: {0!r}".
+                   format(requirement_string))
             raise SolverException(msg)
         else:
             return iter(scanned)
@@ -176,8 +176,8 @@ class _RawConstraintsParser(object):
                 version = version_factory(version.value)
                 constraints.add(operator(version))
             else:
-                msg = "Invalid requirement block: {0!r}". \
-                        format(requirement_block)
+                msg = ("Invalid requirement block: {0!r}".
+                       format(requirement_block))
                 raise SolverException(msg)
 
         return constraints
@@ -191,8 +191,8 @@ class _RawRequirementParser(object):
     def tokenize(self, requirement_string):
         scanned, remaining = self._scanner.scan(requirement_string)
         if len(remaining) > 0:
-            msg = "Invalid requirement string: {0!r}". \
-                    format(requirement_string)
+            msg = ("Invalid requirement string: {0!r}".
+                   format(requirement_string))
             raise SolverException(msg)
         else:
             return iter(scanned)
@@ -209,8 +209,8 @@ class _RawRequirementParser(object):
                 version = version_factory(version.value)
                 constraints[name].add(operator(version))
             else:
-                msg = "Invalid requirement block: {0!r}". \
-                        format(requirement_block)
+                msg = ("Invalid requirement block: {0!r}".
+                       format(requirement_block))
                 raise SolverException(msg)
 
         return constraints

@@ -3,8 +3,6 @@ import os.path
 from egginst._compat import assertCountEqual
 from egginst.vendor.six.moves import unittest
 
-from enstaller import Repository
-from enstaller.legacy_stores import parse_index
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..pool import Pool

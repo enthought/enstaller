@@ -3,7 +3,6 @@ from egginst.vendor.six.moves import unittest
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraint import are_compatible, MultiConstraints
-from ..constraint_types import _VersionConstraint
 from ..constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
                                 LEQ, LT, Not)
 
@@ -22,6 +21,7 @@ class TestConstraintMisc(unittest.TestCase):
     def test_ensure_can_compare(self):
         # Given
         left = Equal(V("1.2-1"))
+
         class DummyVersion(object):
             pass
         right = Equal(DummyVersion())

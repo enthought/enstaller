@@ -20,7 +20,7 @@ class Pool(object):
 
     def add_repository(self, repository):
         """ Add the repository to this pool.
-        
+
         Parameters
         ----------
         repository : Repository
@@ -37,7 +37,7 @@ class Pool(object):
     def what_provides(self, requirement):
         """ Computes the list of packages fulfilling the given
         requirement.
-        
+
         Parameters
         ----------
         requirement : Requirement

@@ -1,8 +1,6 @@
 from enstaller.versions.enpkg import EnpkgVersion
 
 from .constraints_parser import _RawConstraintsParser
-from .constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
-                               LEQ, LT, Not)
 
 
 def are_compatible(left_constraint, candidate_version):
@@ -63,8 +61,8 @@ class MultiConstraints(object):
         self._constraints.add(constraint)
 
     def __eq__(self, other):
-        return isinstance(other, self.__class__) \
-                and self._constraints == other._constraints
+        return (isinstance(other, self.__class__)
+                and self._constraints == other._constraints)
 
     def __hash__(self):
         return hash(self._constraints)

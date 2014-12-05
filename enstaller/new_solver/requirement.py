@@ -59,7 +59,7 @@ class Requirement(object):
         if len(named_constraints) > 1:
             names = named_constraints.keys()
             msg = "Multiple package name for constraint: {0!r}".format(names)
-            raise SolverException(names)
+            raise SolverException(msg)
         assert len(named_constraints) > 0
         name = _first(named_constraints.keys())
         return cls(name, named_constraints[name])
@@ -121,8 +121,8 @@ class Requirement(object):
         return self._constraints.matches(version_candidate)
 
     def __eq__(self, other):
-        return self.name == other.name \
-                and self._constraints == other._constraints
+        return (self.name == other.name
+                and self._constraints == other._constraints)
 
     def __hash__(self):
         return hash((self.name, self._constraints))
