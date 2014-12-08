@@ -12,6 +12,18 @@ V = EnpkgVersion.from_string
 
 
 class TestRequirement(unittest.TestCase):
+    def test_comparison(self):
+        # Given
+        requirement_string1 = "numpy >= 1.8.1-3, numpy < 1.9.0"
+        requirement_string2 = "numpy >= 1.8.1-3, numpy < 1.9.1"
+
+        # When
+        requirement1 = Requirement._from_string(requirement_string1)
+        requirement2 = Requirement._from_string(requirement_string2)
+
+        # Then
+        self.assertTrue(requirement1 != requirement2)
+
     def test_hashing(self):
         # Given
         requirement_string = "numpy >= 1.8.1-3, numpy < 1.9.0"

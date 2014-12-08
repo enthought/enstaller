@@ -33,6 +33,9 @@ class _VersionConstraint(_ConstraintType):
         return (self.__class__ == other.__class__
                 and self.version == other.version)
 
+    def __ne__(self, other):
+        return not (self == other)
+
     def __hash__(self):
         return hash(self.version)
 

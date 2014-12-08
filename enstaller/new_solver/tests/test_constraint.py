@@ -4,7 +4,7 @@ from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraint import are_compatible, MultiConstraints
 from ..constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
-                                LEQ, LT, Not)
+                                LEQ, LT, Not, _VersionConstraint)
 
 
 V = EnpkgVersion.from_string
@@ -31,6 +31,14 @@ class TestConstraintMisc(unittest.TestCase):
         # When/Then
         self.assertEqual(hash(v1), hash(v2))
         self.assertEqual(hash(GEQ(v1)), hash(GEQ(v2)))
+
+    def test_comparison(self):
+        # Given
+        v1 = V("1.2.1-1")
+        v2 = V("1.2.1-1")
+
+        self.assertEqual(_VersionConstraint(v1), _VersionConstraint(v2))
+        self.assertFalse(_VersionConstraint(v1) != _VersionConstraint(v2))
 
 
 class TestAreCompatible(unittest.TestCase):
