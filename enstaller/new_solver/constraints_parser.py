@@ -119,15 +119,19 @@ def iter_over_requirement(tokens):
     """
     while True:
         block = []
-        token = next(tokens)
+        try:
+            token = next(tokens)
+        except StopIteration:
+            return
+
         try:
             while not isinstance(token, CommaToken):
                 block.append(token)
                 token = next(tokens)
             yield block
-        except StopIteration as e:
+        except StopIteration:
             yield block
-            raise e
+            return
 
 
 _OPERATOR_TO_SPEC = {
