@@ -50,16 +50,6 @@ class MultiConstraints(object):
                 return False
         return True
 
-    def add_constraint(self, constraint):
-        """ Add a constraint to the existing set.
-
-        Parameters
-        ----------
-        constraint : _Constraint
-            A valid constraint instance.
-        """
-        self._constraints.add(constraint)
-
     def __eq__(self, other):
         return (isinstance(other, self.__class__)
                 and self._constraints == other._constraints)

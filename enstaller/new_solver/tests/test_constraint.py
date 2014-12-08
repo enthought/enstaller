@@ -183,3 +183,16 @@ class TestMultiConstraints(unittest.TestCase):
         self.assertTrue(constraints.matches(V("1.3.0-3")))
         self.assertTrue(constraints.matches(V("1.4.0-1")))
         self.assertFalse(constraints.matches(V("2.0-1")))
+
+    def test_comparison(self):
+        # Given
+        constraints_string1 = ">= 1.3, < 2.0"
+        constraints_string2 = "< 2.0, >= 1.3"
+
+        # When
+        constraints1 = MultiConstraints._from_string(constraints_string1)
+        constraints2 = MultiConstraints._from_string(constraints_string2)
+
+        # Then
+        self.assertEqual(constraints1, constraints2)
+        self.assertFalse(constraints1 != constraints2)
