@@ -65,7 +65,7 @@ class MultiConstraints(object):
                 and self._constraints == other._constraints)
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not (self == other)
 
     def __hash__(self):
         return hash(self._constraints)

@@ -10,7 +10,7 @@ class Any(_ConstraintType):
         return self.__class__ == other.__class__
 
     def __ne__(self, other):
-        return not self.__eq__(other)
+        return not (self == other)
 
     def __hash__(self):
         return hash(self.__class__)
