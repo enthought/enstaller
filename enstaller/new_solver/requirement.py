@@ -47,12 +47,12 @@ class Requirement(object):
     @classmethod
     def _from_string(cls, string,
                      version_factory=EnpkgVersion.from_string):
-        """ Creates a requirement from a legacy requirement string.
+        """ Creates a requirement from a requirement string.
 
         Parameters
         ----------
         requirement_string : str
-            The legacy requirement string, e.g. 'MKL 10.3'
+            The requirement string, e.g. 'MKL >= 10.3, MKL < 11.0'
         """
         parser = _RawRequirementParser()
         named_constraints = parser.parse(string, version_factory)
