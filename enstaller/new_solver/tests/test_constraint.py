@@ -11,13 +11,6 @@ V = EnpkgVersion.from_string
 
 
 class TestConstraintMisc(unittest.TestCase):
-    def test_repr(self):
-        # Given
-        constraint = Equal(V("1.2-1"))
-
-        # When/Then
-        self.assertTrue(repr(constraint), "Equal('1.2-1')")
-
     def test_ensure_can_compare(self):
         # Given
         left = Equal(V("1.2-1"))

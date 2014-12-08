@@ -23,9 +23,6 @@ class _VersionConstraint(_ConstraintType):
     def matches(self, candidate_version):
         raise NotImplementedError()
 
-    def __repr__(self):
-        return "%s(%r)" % (self.__class__.__name__, self.version)
-
     def _ensure_can_compare(self, candidate_version):
         if candidate_version.__class__ != self.version.__class__:
             msg = "Cannot compare {0!r} and {1!r}"
