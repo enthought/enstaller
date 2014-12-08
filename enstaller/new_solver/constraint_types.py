@@ -20,6 +20,9 @@ class _VersionConstraint(_ConstraintType):
     def __init__(self, version):
         self.version = version
 
+    def matches(self, candidate_version):
+        raise NotImplementedError()
+
     def __repr__(self):
         return "%s(%r)" % (self.__class__.__name__, self.version)
 
