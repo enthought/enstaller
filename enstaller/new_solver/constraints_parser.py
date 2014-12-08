@@ -150,19 +150,22 @@ def _spec_factory(comparison_token):
         return klass
 
 
+def _tokenize(scanner, requirement_string):
+    scanned, remaining = scanner.scan(requirement_string)
+    if len(remaining) > 0:
+        msg = "Invalid requirement string: {0!r}".  format(requirement_string)
+        raise SolverException(msg)
+    else:
+        return iter(scanned)
+
+
 class _RawConstraintsParser(object):
     """A simple parser for requirement strings."""
     def __init__(self):
         self._scanner = _CONSTRAINTS_SCANNER
 
     def tokenize(self, requirement_string):
-        scanned, remaining = self._scanner.scan(requirement_string)
-        if len(remaining) > 0:
-            msg = ("Invalid requirement string: {0!r}".
-                   format(requirement_string))
-            raise SolverException(msg)
-        else:
-            return iter(scanned)
+        return _tokenize(self._scanner, requirement_string)
 
     def parse(self, requirement_string, version_factory):
         constraints = set()
@@ -188,13 +191,7 @@ class _RawRequirementParser(object):
         self._scanner = _REQUIREMENTS_SCANNER
 
     def tokenize(self, requirement_string):
-        scanned, remaining = self._scanner.scan(requirement_string)
-        if len(remaining) > 0:
-            msg = ("Invalid requirement string: {0!r}".
-                   format(requirement_string))
-            raise SolverException(msg)
-        else:
-            return iter(scanned)
+        return _tokenize(self._scanner, requirement_string)
 
     def parse(self, requirement_string, version_factory):
         constraints = collections.defaultdict(set)
