@@ -9,6 +9,9 @@ class Any(_ConstraintType):
     def __eq__(self, other):
         return self.__class__ == other.__class__
 
+    def __ne__(self, other):
+        return not self.__eq__(other)
+
     def __hash__(self):
         return id(self.__class__)
 
