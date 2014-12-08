@@ -159,28 +159,33 @@ def _tokenize(scanner, requirement_string):
         return iter(scanned)
 
 
+def _operator_factory(operator, version, version_factory):
+    operator = _spec_factory(operator)
+    version = version_factory(version.value)
+    return operator(version)
+
+
 class _RawConstraintsParser(object):
     """A simple parser for requirement strings."""
     def __init__(self):
         self._scanner = _CONSTRAINTS_SCANNER
 
-    def tokenize(self, requirement_string):
-        return _tokenize(self._scanner, requirement_string)
-
     def parse(self, requirement_string, version_factory):
-        constraints = set()
-
-        tokens_stream = self.tokenize(requirement_string)
-        for requirement_block in iter_over_requirement(tokens_stream):
+        def add_constraint(constraints, requirement_block):
             if len(requirement_block) == 2:
                 operator, version = requirement_block
-                operator = _spec_factory(operator)
-                version = version_factory(version.value)
-                constraints.add(operator(version))
+                constraints.add(_operator_factory(operator, version,
+                                                  version_factory))
             else:
                 msg = ("Invalid requirement block: {0!r}".
                        format(requirement_block))
                 raise SolverException(msg)
+
+        constraints = set()
+        tokens_stream = _tokenize(self._scanner, requirement_string)
+
+        for requirement_block in iter_over_requirement(tokens_stream):
+            add_constraint(constraints, requirement_block)
 
         return constraints
 
@@ -190,23 +195,22 @@ class _RawRequirementParser(object):
     def __init__(self):
         self._scanner = _REQUIREMENTS_SCANNER
 
-    def tokenize(self, requirement_string):
-        return _tokenize(self._scanner, requirement_string)
-
     def parse(self, requirement_string, version_factory):
-        constraints = collections.defaultdict(set)
-
-        tokens_stream = self.tokenize(requirement_string)
-        for requirement_block in iter_over_requirement(tokens_stream):
+        def add_constraint(constraints, requirement_block):
             if len(requirement_block) == 3:
                 distribution, operator, version = requirement_block
                 name = distribution.value
-                operator = _spec_factory(operator)
-                version = version_factory(version.value)
-                constraints[name].add(operator(version))
+                constraints[name].add(_operator_factory(operator, version,
+                                                        version_factory))
             else:
                 msg = ("Invalid requirement block: {0!r}".
                        format(requirement_block))
                 raise SolverException(msg)
+
+        constraints = collections.defaultdict(set)
+        tokens_stream = _tokenize(self._scanner, requirement_string)
+
+        for requirement_block in iter_over_requirement(tokens_stream):
+            add_constraint(constraints, requirement_block)
 
         return constraints
