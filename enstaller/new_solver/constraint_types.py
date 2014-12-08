@@ -13,7 +13,7 @@ class Any(_ConstraintType):
         return not self.__eq__(other)
 
     def __hash__(self):
-        return id(self.__class__)
+        return hash(self.__class__)
 
 
 class _VersionConstraint(_ConstraintType):
