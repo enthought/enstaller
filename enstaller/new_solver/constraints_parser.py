@@ -1,7 +1,6 @@
 import collections
 import re
 
-from egginst.vendor import six
 from enstaller.errors import SolverException
 
 from .constraint_types import (EnpkgUpstreamMatch, Equal, GEQ, GT,
@@ -120,11 +119,11 @@ def iter_over_requirement(tokens):
     """
     while True:
         block = []
-        token = six.advance_iterator(tokens)
+        token = next(tokens)
         try:
             while not isinstance(token, CommaToken):
                 block.append(token)
-                token = six.advance_iterator(tokens)
+                token = next(tokens)
             yield block
         except StopIteration as e:
             yield block
