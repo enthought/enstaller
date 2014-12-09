@@ -27,7 +27,7 @@ import sys
 from distutils import log
 
 
-DEFAULT_VERSION = "4.7.6-1"
+DEFAULT_VERSION = "4.8.0-1"
 DEFAULT_URL = "https://s3.amazonaws.com/enstaller-assets/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
@@ -41,6 +41,8 @@ VERSION_RE = re.compile(r'''
 # OrderedDict to stay compatible with 2.6)
 # We put dev versions at the end.
 VERSION_TO_SHA256 = [
+    ("4.8.0-1",
+        "034ab05208d93f490c35358eb03d826c06ed64c47617281875f7a8850e094132"),
     ("4.7.6-1",
         "f438269a02880e270425f573a22e205c6732e03b8450d316f9f3747bd5859faa"),
     ("4.6.5-1",
