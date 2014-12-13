@@ -64,6 +64,22 @@ class PackageMetadata(object):
             self.name, self.version, self.key)
 
     @property
+    def _key(self):
+        return (self.name, self.version, self._dependencies, self.python)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        else:
+            return self._key == other._key
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __hash__(self):
+        return hash(self._key)
+
+    @property
     def dependencies(self):
         return self._dependencies
 
@@ -139,6 +155,12 @@ class RepositoryPackageMetadata(PackageMetadata):
         self.type = "egg"
 
     @property
+    def _key(self):
+        return super(RepositoryPackageMetadata, self)._key + \
+               (self.size, self.md5, self.mtime, self.product, self.available,
+                self.store_location, self.type)
+
+    @property
     def s3index_data(self):
         """
         Returns a dict that may be converted to json to re-create our legacy S3
@@ -208,6 +230,11 @@ class InstalledPackageMetadata(PackageMetadata):
 
         self.ctime = ctime
         self.store_location = store_location
+
+    @property
+    def _key(self):
+        return super(InstalledPackageMetadata, self)._key + \
+               (self.ctime, self.store_location)
 
 
 def egg_name_to_name_version(egg_name):

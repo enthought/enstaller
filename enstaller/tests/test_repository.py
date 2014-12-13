@@ -54,6 +54,24 @@ class TestEggNameToNameVersion(unittest.TestCase):
 
 
 class TestPackage(unittest.TestCase):
+    def test_eq(self):
+        # Given
+        V = EnpkgVersion.from_string
+        package1 = PackageMetadata("nose-1.3.0-1.egg", "nose",
+                                   V("1.3.0-1"), [], "2.7")
+        package2 = PackageMetadata("nose-1.3.0-1.egg", "nose",
+                                   V("1.3.0-1"), [], "2.7")
+        package3 = PackageMetadata("nose-1.3.0-1.egg", "nose",
+                                   V("1.3.0-1"), [], "2.8")
+
+
+        # Then
+        self.assertTrue(package1 == package2)
+        self.assertTrue(hash(package1) == hash(package2))
+        self.assertFalse(package1 != package2)
+        self.assertTrue(package1 != package3)
+        self.assertFalse(package1 == package3)
+
     def test_repr(self):
         # Given
         version = EnpkgVersion.from_string("1.3.0-1")
@@ -79,6 +97,28 @@ class TestPackage(unittest.TestCase):
 
 
 class TestRepositoryPackage(unittest.TestCase):
+    def test_eq(self):
+        # Given
+        V = EnpkgVersion.from_string
+        md5 = "a" * 32
+        package1 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7", 1,
+                                             md5, 0.0, "free", True, "")
+        package2 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7", 1,
+                                             md5, 0.0, "free", True, "")
+        package3 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7", 1,
+                                             "b" * 32, 0.0, "free", True, "")
+
+
+        # Then
+        self.assertTrue(package1 == package2)
+        self.assertTrue(hash(package1) == hash(package2))
+        self.assertFalse(package1 != package2)
+        self.assertTrue(package1 != package3)
+        self.assertFalse(package1 == package3)
+
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
@@ -134,6 +174,27 @@ class TestRepositoryPackage(unittest.TestCase):
 
 
 class TestInstalledPackage(unittest.TestCase):
+    def test_eq(self):
+        # Given
+        V = EnpkgVersion.from_string
+        package1 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7",
+                                             0.0, "loc1")
+        package2 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7",
+                                             0.0, "loc1")
+        package3 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
+                                             V("1.3.0-1"), [], "2.7",
+                                             0.0, "loc2")
+
+
+        # Then
+        self.assertTrue(package1 == package2)
+        self.assertTrue(hash(package1) == hash(package2))
+        self.assertFalse(package1 != package2)
+        self.assertTrue(package1 != package3)
+        self.assertFalse(package1 == package3)
+
     def test_from_meta_dir(self):
         # Given
         json_dict = {
