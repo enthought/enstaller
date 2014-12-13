@@ -56,7 +56,7 @@ class PackageMetadata(object):
         self.name = name
         self.version = version
 
-        self.packages = packages
+        self._dependencies = frozenset(packages)
         self.python = python
 
     def __repr__(self):
@@ -65,9 +65,13 @@ class PackageMetadata(object):
 
     @property
     def dependencies(self):
+        return self._dependencies
+
+    @property
+    def packages(self):
         # FIXME: we keep packages for backward compatibility (called as is in
         # the index).
-        return self.packages
+        return self._dependencies
 
     @property
     def full_version(self):
@@ -140,11 +144,12 @@ class RepositoryPackageMetadata(PackageMetadata):
         Returns a dict that may be converted to json to re-create our legacy S3
         index content
         """
-        keys = ("available", "md5", "name", "packages", "product",
+        keys = ("available", "md5", "name", "product",
                 "python", "mtime", "size", "type")
         ret = dict((k, getattr(self, k)) for k in keys)
         ret["version"] = str(self.version.upstream)
         ret["build"] = self.version.build
+        ret["packages"] = list(self.packages)
         return ret
 
     @property

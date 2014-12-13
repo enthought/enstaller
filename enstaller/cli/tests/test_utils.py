@@ -355,8 +355,8 @@ class TestInstallReq(unittest.TestCase):
         self.maxDiff = None
         numpy = dummy_repository_package_factory("numpy", "1.7.1", 1)
         numpy.available = False
-        scipy = dummy_repository_package_factory("scipy", "0.12.0", 1)
-        scipy.packages = ["numpy 1.7.1"]
+        scipy = dummy_repository_package_factory("scipy", "0.12.0", 1,
+                                                 dependencies=["numpy 1.7.1"])
 
         remote_entries = [numpy, scipy]
 
