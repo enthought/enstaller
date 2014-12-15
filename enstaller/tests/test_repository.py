@@ -64,7 +64,6 @@ class TestPackage(unittest.TestCase):
         package3 = PackageMetadata("nose-1.3.0-1.egg", "nose",
                                    V("1.3.0-1"), [], "2.8")
 
-
         # Then
         self.assertTrue(package1 == package2)
         self.assertTrue(hash(package1) == hash(package2))
@@ -112,7 +111,6 @@ class TestRepositoryPackage(unittest.TestCase):
         package3 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
                                              V("1.3.0-1"), [], "2.7", 1,
                                              "b" * 32, 0.0, "free", True, "")
-
 
         # Then
         self.assertTrue(package1 == package2)
@@ -180,15 +178,14 @@ class TestInstalledPackage(unittest.TestCase):
         # Given
         V = EnpkgVersion.from_string
         package1 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7",
-                                             0.0, "loc1")
+                                            V("1.3.0-1"), [], "2.7",
+                                            0.0, "loc1")
         package2 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7",
-                                             0.0, "loc1")
+                                            V("1.3.0-1"), [], "2.7",
+                                            0.0, "loc1")
         package3 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7",
-                                             0.0, "loc2")
-
+                                            V("1.3.0-1"), [], "2.7",
+                                            0.0, "loc2")
 
         # Then
         self.assertTrue(package1 == package2)

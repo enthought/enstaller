@@ -156,9 +156,9 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @property
     def _key(self):
-        return super(RepositoryPackageMetadata, self)._key + \
-               (self.size, self.md5, self.mtime, self.product, self.available,
-                self.store_location, self.type)
+        return (super(RepositoryPackageMetadata, self)._key +
+                (self.size, self.md5, self.mtime, self.product, self.available,
+                 self.store_location, self.type))
 
     @property
     def s3index_data(self):
@@ -233,8 +233,8 @@ class InstalledPackageMetadata(PackageMetadata):
 
     @property
     def _key(self):
-        return super(InstalledPackageMetadata, self)._key + \
-               (self.ctime, self.store_location)
+        return (super(InstalledPackageMetadata, self)._key +
+                (self.ctime, self.store_location))
 
 
 def egg_name_to_name_version(egg_name):
