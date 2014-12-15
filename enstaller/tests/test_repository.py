@@ -94,6 +94,8 @@ class TestPackage(unittest.TestCase):
         # Then
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
+        self.assertEqual(metadata.dependencies, frozenset())
+        self.assertEqual(metadata.packages, [])
 
 
 class TestRepositoryPackage(unittest.TestCase):
@@ -239,7 +241,7 @@ class TestInstalledPackage(unittest.TestCase):
 
         # Then
         self.assertEqual(metadata.key, "VTK-5.10.1-1.egg")
-        self.assertEqual(metadata.packages, frozenset())
+        self.assertEqual(metadata.dependencies, frozenset())
 
     def test_from_old_meta_dir(self):
         # Given
@@ -257,7 +259,7 @@ class TestInstalledPackage(unittest.TestCase):
         # Then
         self.assertEqual(metadata.key, "appinst-2.1.2-1.egg")
         self.assertEqual(metadata.python, PY_VER)
-        self.assertEqual(metadata.packages, frozenset())
+        self.assertEqual(metadata.dependencies, frozenset())
         self.assertEqual(metadata.ctime, time.ctime(0.0))
 
 
@@ -321,7 +323,7 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
 
-        self.assertEqual(metadata.packages, frozenset())
+        self.assertEqual(metadata.dependencies, frozenset())
         self.assertEqual(metadata.python, "2.7")
 
         self.assertEqual(metadata.available, True)

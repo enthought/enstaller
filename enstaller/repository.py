@@ -87,7 +87,7 @@ class PackageMetadata(object):
     def packages(self):
         # FIXME: we keep packages for backward compatibility (called as is in
         # the index).
-        return self._dependencies
+        return list(self._dependencies)
 
     @property
     def full_version(self):
