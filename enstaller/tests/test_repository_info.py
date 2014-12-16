@@ -6,7 +6,10 @@ import enstaller.plat
 from egginst.tests.common import DUMMY_EGG
 from egginst.vendor.six.moves import unittest
 
-from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo, LegacyRepositoryInfo
+from enstaller.repository_info import (BroodRepositoryInfo,
+                                       CanopyRepositoryInfo,
+                                       FSRepositoryInfo,
+                                       LegacyRepositoryInfo)
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.utils import path_to_uri
 
@@ -28,6 +31,38 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
         self.assertEqual(info.index_url, r_index_url)
         self.assertEqual(info.name, store_url)
         self.assertEqual(info._package_url(package), r_package_url)
+
+
+class TestCanopyRepositoryInfo(unittest.TestCase):
+    def test_pypi(self):
+        # Given
+        store_url = "https://acme.com"
+        path = DUMMY_EGG
+
+        r_index_url = ("https://acme.com/eggs/{0}/index.json?pypi=true".
+                       format(enstaller.plat.custom_plat))
+        r_package_url = ("https://acme.com/eggs/{0}/{1}".
+                         format(enstaller.plat.custom_plat,
+                                os.path.basename(path)))
+
+        # When
+        info = CanopyRepositoryInfo(store_url, use_pypi=True)
+        package = RepositoryPackageMetadata.from_egg(path)
+
+        # Then
+        self.assertEqual(info.index_url, r_index_url)
+        self.assertEqual(info.name, "webservice")
+        self.assertEqual(info._package_url(package), r_package_url)
+
+        # Given
+        r_index_url = ("https://acme.com/eggs/{0}/index.json?pypi=false".
+                       format(enstaller.plat.custom_plat))
+
+        # When
+        info = CanopyRepositoryInfo(store_url, use_pypi=False)
+
+        # Then
+        self.assertEqual(info.index_url, r_index_url)
 
 
 class TestLegacyBroodRepositoryInfo(unittest.TestCase):

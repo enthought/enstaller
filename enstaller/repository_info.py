@@ -29,6 +29,32 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
         """
 
 
+class CanopyRepositoryInfo(IRepositoryInfo):
+    def __init__(self, store_url, use_pypi=False, platform=None):
+        self._platform = platform or enstaller.plat.custom_plat
+        self._store_url = store_url
+        self._use_pypi = use_pypi
+        self._path = "/eggs/{0._platform}".format(self)
+
+    @property
+    def index_url(self):
+        url = urllib.parse.urljoin(self._store_url,
+                                   self._path + "/" + _INDEX_NAME)
+        if self._use_pypi:
+            url += "?pypi=true"
+        else:
+            url += "?pypi=false"
+        return url
+
+    @property
+    def name(self):
+        return "webservice"
+
+    def _package_url(self, package):
+        return urllib.parse.urljoin(self._store_url,
+                                    self._path + "/" + package.key)
+
+
 class LegacyRepositoryInfo(IRepositoryInfo):
     def __init__(self, store_url):
         self._store_url = store_url
