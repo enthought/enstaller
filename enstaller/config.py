@@ -20,13 +20,17 @@ from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
 
 from enstaller import __version__
-from enstaller.auth import (_INDEX_NAME, DUMMY_USER,
+from enstaller.auth import (DUMMY_USER,
                             subscription_message, APITokenAuth, UserInfo,
                             UserPasswordAuth)
 from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
+from enstaller.repository_info import (BroodRepositoryInfo,
+                                       CanopyRepositoryInfo,
+                                       FSRepositoryInfo,
+                                       OldstyleRepository)
 from enstaller.utils import real_prefix, under_venv
 from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
@@ -323,6 +327,7 @@ class Configuration(object):
 
         self._prefix = sys.prefix
         self._indexed_repositories = []
+        self._repositories = []
         self._store_url = "https://api.enthought.com"
         self._store_kind = STORE_KIND_LEGACY
 
@@ -409,16 +414,8 @@ class Configuration(object):
 
         Takes into account webservice/no webservice and pypi True/False
         """
-        if self.use_webservice:
-            index_url = store_url = self.webservice_entry_point + _INDEX_NAME
-            if self.use_pypi:
-                index_url += "?pypi=true"
-            else:
-                index_url += "?pypi=false"
-            return tuple([(index_url, store_url)])
-        else:
-            return tuple((url + _INDEX_NAME, url + _INDEX_NAME)
-                         for url in self.indexed_repositories)
+        return tuple((repository_info.index_url, repository_info._base_url)
+                     for repository_info in self.repositories)
 
     @property
     def max_retries(self):
@@ -459,6 +456,14 @@ class Configuration(object):
             return {self._proxy.scheme: str(self._proxy)}
         else:
             return {}
+
+    @property
+    def repositories(self):
+        if self.use_webservice:
+            return (CanopyRepositoryInfo(self.store_url, self.use_pypi,
+                                         self._platform),)
+        else:
+            return self._repositories
 
     @property
     def repository_cache(self):
@@ -532,18 +537,18 @@ class Configuration(object):
         names : list
             List of repository names
         """
-        repository_urls = []
+        repositories = []
         for name in names:
             p = urllib.parse.urlparse(name)
             if p.scheme == "":
-                url = self.store_url + "/repo/{0}/{{PLATFORM}}".format(name)
+                repositories.append(BroodRepositoryInfo(self.store_url, name,
+                                                        self._platform))
             elif p.scheme == "file":
-                url = name
+                repositories.append(FSRepositoryInfo(name))
             else:
                 msg = "Unsupported syntax: {0!r}".format(name)
                 raise InvalidConfiguration(msg)
-            repository_urls.append(url)
-        self.update(indexed_repositories=repository_urls)
+        self._repositories = tuple(repositories)
 
     def update(self, **kw):
         """ Set configuration attributes given as keyword arguments."""
@@ -649,6 +654,8 @@ class Configuration(object):
 
     def _set_indexed_repositories(self, urls):
         self._indexed_repositories = tuple(fill_url(url) for url in urls)
+        self._repositories = tuple(OldstyleRepository(url) for url in
+                                   self._indexed_repositories)
 
     def _set_max_retries(self, raw_max_retries):
         try:

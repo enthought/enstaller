@@ -5,6 +5,7 @@ from egginst.progress import console_progress_manager_factory
 
 from enstaller import Configuration, Session
 from enstaller.cli.utils import install_req, repository_factory
+from enstaller.config import STORE_KIND_BROOD
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.errors import EnpkgError, EnstallerException
 from enstaller.solver import Request, Requirement
@@ -32,7 +33,8 @@ def _config_from_json_data(json_data):
     authentication_data = json_data["authentication"]
     authentication_kind = authentication_data[_AUTHENTICATION_KIND]
 
-    config = Configuration()
+    config = Configuration(use_webservice=False)
+    config._store_kind = STORE_KIND_BROOD
     if authentication_kind == "simple":
         config.update(auth=(authentication_data["username"],
                             authentication_data["password"]))

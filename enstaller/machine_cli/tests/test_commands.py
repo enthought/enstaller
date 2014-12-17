@@ -13,9 +13,9 @@ from enstaller.errors import EnstallerException
 from enstaller.machine_cli.commands import (install, install_parse_json_string,
                                             remove, update_all,
                                             update_all_parse_json_string)
+from enstaller.repository_info import BroodRepositoryInfo
 from enstaller.solver import Requirement
-from enstaller.tests.common import mock_index
-from enstaller.utils import fill_url
+from enstaller.tests.common import mock_brood_repository_indices
 
 
 @contextlib.contextmanager
@@ -58,11 +58,9 @@ class TestParseJsonString(unittest.TestCase):
             "requirement": "numpy",
             "store_url": "https://acme.com",
         }
-        r_repository_urls = (
-            fill_url(
-                "https://acme.com/repo/enthought/free/{PLATFORM}"),
-            fill_url(
-                "https://acme.com/repo/enthought/commercial/{PLATFORM}"),
+        r_repositories = (
+            BroodRepositoryInfo("https://acme.com", "enthought/free"),
+            BroodRepositoryInfo("https://acme.com", "enthought/commercial"),
         )
 
         # When
@@ -70,7 +68,7 @@ class TestParseJsonString(unittest.TestCase):
 
         # Then
         self.assertEqual(config.auth, UserPasswordAuth("nono", "le petit robot"))
-        self.assertEqual(config.indexed_repositories, r_repository_urls)
+        self.assertEqual(config.repositories, r_repositories)
         self.assertIsNone(config.proxy)
         self.assertTrue(config.verify_ssl)
         self.assertEqual(requirement.name, "numpy")
@@ -150,7 +148,10 @@ class TestInstall(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    @mock_index({}, store_url="https://acme.com")
+    @mock_brood_repository_indices(
+        {}, ["enthought/free", "enthought/commercial"],
+        store_url="https://acme.com"
+    )
     @mock.patch("enstaller.machine_cli.commands.install_req")
     def test_simple(self, install_req):
         # Given
@@ -183,7 +184,7 @@ class TestRemove(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
-    @mock_index({}, store_url="https://acme.com")
+    @mock_brood_repository_indices({}, ["enthought/free", "enthought/commercial"], store_url="https://acme.com")
     def test_simple(self, execute):
         # Given
         data = {
@@ -212,7 +213,10 @@ class TestRemove(unittest.TestCase):
         execute.assert_called_with(r_operations)
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
-    @mock_index({}, store_url="https://acme.com")
+    @mock_brood_repository_indices(
+        {}, ["enthought/commercial", "enthought/free"],
+        store_url="https://acme.com"
+    )
     def test_simple_non_installed(self, execute):
         # Given
         data = {
@@ -252,7 +256,11 @@ class TestUpdateAll(unittest.TestCase):
             update_all_parse_json_string(json.dumps(data))
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
-    @mock_index({}, store_url="https://acme.com")
+    @mock_brood_repository_indices(
+        {},
+        ["enthought/commercial", "enthought/free"],
+        store_url="https://acme.com"
+    )
     def test_simple(self, execute):
         # Given
         data = {

@@ -302,6 +302,7 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
 
 
 def mock_index(index_data, store_url="https://api.enthought.com"):
+    """ Mock index for the webservice case."""
     def decorator(f):
         @responses.activate
         def wrapped(*a, **kw):
@@ -312,6 +313,24 @@ def mock_index(index_data, store_url="https://api.enthought.com"):
             responses.add(responses.GET,
                           url.format(store_url, custom_plat),
                           body=json.dumps(index_data))
+            return f(*a, **kw)
+        return wrapped
+    return decorator
+
+
+def mock_brood_repository_indices(index_data, names, store_url="https://api.enthought.com"):
+    """ Mock index for brood repositories."""
+    def decorator(f):
+        @responses.activate
+        def wrapped(*a, **kw):
+            responses.add(responses.POST,
+                          "{0}/api/v0/json/auth/tokens/auth".format(store_url),
+                          body=json.dumps({"token": "dummy token"}))
+            url_template = "{0}/repo/{1}/{2}/index.json"
+            for name in names:
+                url = url_template.format(store_url, name, custom_plat)
+                responses.add(responses.GET, url,
+                              body=json.dumps(index_data))
             return f(*a, **kw)
         return wrapped
     return decorator
