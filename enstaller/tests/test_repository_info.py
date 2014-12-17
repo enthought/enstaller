@@ -9,7 +9,7 @@ from egginst.vendor.six.moves import unittest
 from enstaller.repository_info import (BroodRepositoryInfo,
                                        CanopyRepositoryInfo,
                                        FSRepositoryInfo,
-                                       LegacyRepositoryInfo)
+                                       OldstyleRepository)
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.utils import path_to_uri
 
@@ -24,12 +24,11 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
         r_package_url = "https://acme.com/{0}".format(os.path.basename(path))
 
         # When
-        info = LegacyRepositoryInfo(store_url)
+        info = OldstyleRepository(store_url)
         package = RepositoryPackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
-        self.assertEqual(info.name, store_url)
         self.assertEqual(info._package_url(package), r_package_url)
 
 
@@ -51,7 +50,6 @@ class TestCanopyRepositoryInfo(unittest.TestCase):
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
-        self.assertEqual(info.name, "webservice")
         self.assertEqual(info._package_url(package), r_package_url)
 
         # Given
@@ -65,7 +63,7 @@ class TestCanopyRepositoryInfo(unittest.TestCase):
         self.assertEqual(info.index_url, r_index_url)
 
 
-class TestLegacyBroodRepositoryInfo(unittest.TestCase):
+class TestBroodRepositoryInfo(unittest.TestCase):
     def test_simple(self):
         # Given
         store_url = "https://acme.com"
@@ -93,16 +91,15 @@ class TestFSRepositoryInfo(unittest.TestCase):
         # Given
         path = DUMMY_EGG
         store_url = path_to_uri(os.path.dirname(path))
-        name = "enthought/free"
 
         r_index_url = posixpath.join(store_url, "index.json")
         r_package_url = path_to_uri(path)
 
         # When
-        info = FSRepositoryInfo(store_url, name)
+        info = FSRepositoryInfo(store_url)
         package = RepositoryPackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
-        self.assertEqual(info.name, name)
+        self.assertEqual(info.name, store_url)
         self.assertEqual(info._package_url(package), r_package_url)

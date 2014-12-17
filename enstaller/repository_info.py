@@ -14,10 +14,6 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
     def index_url(self):
         """ The exact url to fetch the index at."""
 
-    @abc.abstractproperty
-    def name(self):
-        """ An arbitrary string identifying the repository."""
-
     @abc.abstractmethod
     def _package_url(self, package):
         """ The exact url to fetch the given package at.
@@ -29,7 +25,11 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
         """
 
 
-class CanopyRepositoryInfo(IRepositoryInfo):
+class ILegacyRepositoryInfo(IRepositoryInfo):
+    pass
+
+
+class CanopyRepositoryInfo(ILegacyRepositoryInfo):
     def __init__(self, store_url, use_pypi=False, platform=None):
         self._platform = platform or enstaller.plat.custom_plat
         self._store_url = store_url
@@ -46,16 +46,12 @@ class CanopyRepositoryInfo(IRepositoryInfo):
             url += "?pypi=false"
         return url
 
-    @property
-    def name(self):
-        return "webservice"
-
     def _package_url(self, package):
         return urllib.parse.urljoin(self._store_url,
                                     self._path + "/" + package.key)
 
 
-class LegacyRepositoryInfo(IRepositoryInfo):
+class OldstyleRepository(ILegacyRepositoryInfo):
     def __init__(self, store_url):
         self._store_url = store_url
 
@@ -63,12 +59,14 @@ class LegacyRepositoryInfo(IRepositoryInfo):
     def index_url(self):
         return urllib.parse.urljoin(self._store_url, _INDEX_NAME)
 
-    @property
-    def name(self):
-        return self._store_url
-
     def _package_url(self, package):
         return urllib.parse.urljoin(self._store_url, package.key)
+
+
+class IBroodRepositoryInfo(IRepositoryInfo):
+    @abc.abstractproperty
+    def name(self):
+        """ An arbitrary string identifying the repository."""
 
 
 class BroodRepositoryInfo(IRepositoryInfo):
@@ -92,8 +90,7 @@ class BroodRepositoryInfo(IRepositoryInfo):
 
 
 class FSRepositoryInfo(IRepositoryInfo):
-    def __init__(self, store_url, name):
-        self._name = name
+    def __init__(self, store_url):
         self._store_url = store_url
 
     @property
@@ -102,7 +99,7 @@ class FSRepositoryInfo(IRepositoryInfo):
 
     @property
     def name(self):
-        return self._name
+        return self._store_url
 
     def _package_url(self, package):
         return posixpath.join(self._store_url, package.key)
