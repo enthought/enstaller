@@ -11,7 +11,7 @@ from egginst.tests.common import mkdtemp
 from egginst.vendor.six import StringIO
 from egginst.vendor.six.moves import unittest
 
-from enstaller.plat import custom_plat
+from enstaller.plat import custom_plat, subdir
 
 from enstaller import __version__
 
@@ -21,6 +21,11 @@ from enstaller.config import (prepend_url, print_config,
                               _keyring_backend_name, write_default_config)
 from enstaller.config import (KEYRING_SERVICE_NAME,
                               Configuration, add_url)
+from enstaller.repository_info import (CanopyRepositoryInfo,
+                                       BroodRepositoryInfo,
+                                       FSRepositoryInfo,
+                                       IBroodRepositoryInfo,
+                                       OldstyleRepository)
 from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
@@ -815,7 +820,7 @@ class TestConfiguration(unittest.TestCase):
         r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
              format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
+             "https://api.enthought.com/eggs/{0}/".format(custom_plat)),
         ])
         config = Configuration()
 
@@ -828,7 +833,7 @@ class TestConfiguration(unittest.TestCase):
         r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
              format(platform),
-             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+             "https://api.enthought.com/eggs/{0}/".format(platform)),
         ])
 
         # When
@@ -843,7 +848,7 @@ class TestConfiguration(unittest.TestCase):
         r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=true".
              format(platform),
-             "https://api.enthought.com/eggs/{0}/index.json".format(platform)),
+             "https://api.enthought.com/eggs/{0}/".format(platform)),
         ])
 
         # When
@@ -858,7 +863,7 @@ class TestConfiguration(unittest.TestCase):
         r_indices = tuple([
             ("https://api.enthought.com/eggs/{0}/index.json?pypi=false".
              format(custom_plat),
-             "https://api.enthought.com/eggs/{0}/index.json".format(custom_plat)),
+             "https://api.enthought.com/eggs/{0}/".format(custom_plat)),
         ])
         config = Configuration()
         config.update(use_pypi=False)
@@ -870,7 +875,7 @@ class TestConfiguration(unittest.TestCase):
         # Given
         r_indices = tuple((
             ("https://acme.com/{0}/index.json".format(custom_plat),
-             "https://acme.com/{0}/index.json".format(custom_plat)),
+             "https://acme.com/{0}/".format(custom_plat)),
         ))
         config = Configuration()
         config.update(use_webservice=False,
@@ -956,6 +961,77 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.max_retries, max_retries)
         self.assertEqual(config.store_url, store_url)
+
+
+class TestRepositoriesSetup(unittest.TestCase):
+    def test_use_webservice_simple(self):
+        # Given
+        r_index_url = ("https://api.enthought.com/eggs/{0}/index.json{1}".
+                       format(custom_plat, "?pypi=true"))
+        use_pypi = True
+        use_webservice = True
+
+        # When
+        config = Configuration(use_pypi=use_pypi,
+                               use_webservice=use_webservice)
+
+        # Then
+        self.assertEqual(len(config.repositories), 1)
+        repository = config.repositories[0]
+        self.assertEqual(repository.index_url, r_index_url)
+        self.assertIsInstance(repository, CanopyRepositoryInfo)
+
+    def test_use_webservice_false(self):
+        # Given
+        use_webservice = False
+        indexed_repositories = [
+            'https://www.enthought.com/repo/ets/eggs/{0}/'.format(subdir),
+            'https://www.enthought.com/repo/epd/GPL-eggs/{0}/'.format(subdir),
+        ]
+        r_indices = tuple(repo + "index.json" for repo in indexed_repositories)
+
+        # When
+        config = Configuration(use_webservice=use_webservice,
+                               indexed_repositories=indexed_repositories)
+
+        # Then
+        self.assertEqual(len(config.repositories), 2)
+        self.assertIsInstance(config.repositories[0], OldstyleRepository)
+        self.assertIsInstance(config.repositories[1], OldstyleRepository)
+        self.assertEqual(r_indices,
+                         tuple(repository.index_url for repository in
+                               config.repositories))
+
+    def test_use_webservice_false_brood_repository(self):
+        # Given
+        use_webservice = False
+        store_url = "https://acme.com"
+        repositories = [
+            'enthought/commercial',
+            'enthought/free',
+            'file:///foo/bar',
+        ]
+        r_indices = (
+            "{0}/repo/enthought/commercial/{1}/index.json".format(store_url,
+                                                                  custom_plat),
+            "{0}/repo/enthought/free/{1}/index.json".format(store_url,
+                                                            custom_plat),
+            "file:///foo/bar/index.json",
+        )
+
+        # When
+        config = Configuration(use_webservice=use_webservice,
+                               store_url=store_url)
+        config.set_repositories_from_names(repositories)
+
+        # Then
+        self.assertEqual(len(config.repositories), 3)
+        self.assertIsInstance(config.repositories[0], IBroodRepositoryInfo)
+        self.assertIsInstance(config.repositories[1], IBroodRepositoryInfo)
+        self.assertIsInstance(config.repositories[2], IBroodRepositoryInfo)
+        self.assertEqual(r_indices,
+                         tuple(repository.index_url for repository in
+                               config.repositories))
 
 
 class TestMisc(unittest.TestCase):
@@ -1053,9 +1129,9 @@ class TestYamlConfiguration(unittest.TestCase):
         platform = custom_plat
         r_indices = tuple((
             ('https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform),
-             'https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform)),
+             'https://api.enthought.com/repo/enthought/free/{0}/'.format(platform)),
             ('https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform),
-             'https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform))
+             'https://api.enthought.com/repo/enthought/commercial/{0}/'.format(platform))
         ))
 
         with mkdtemp() as prefix:
@@ -1083,9 +1159,9 @@ class TestYamlConfiguration(unittest.TestCase):
         platform = custom_plat
         r_indices = tuple((
             ('http://acme.com/repo/enthought/free/{0}/index.json'.format(platform),
-             'http://acme.com/repo/enthought/free/{0}/index.json'.format(platform)),
+             'http://acme.com/repo/enthought/free/{0}/'.format(platform)),
             ('http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform),
-             'http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform))
+             'http://acme.com/repo/enthought/commercial/{0}/'.format(platform))
         ))
 
         # When
@@ -1230,12 +1306,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - "file:///foo"
         """)
         r_repositories = (
-            "http://www.acme.com/repo/enthought/free/{0}/".format(custom_plat),
-            "file:///foo/".format(custom_plat),
+            BroodRepositoryInfo("http://www.acme.com", "enthought/free"),
+            FSRepositoryInfo("file:///foo"),
         )
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))
 
         # Then
-        self.assertEqual(config.indexed_repositories, r_repositories)
+        self.assertEqual(config.repositories, r_repositories)
