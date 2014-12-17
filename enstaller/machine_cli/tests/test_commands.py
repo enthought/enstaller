@@ -13,7 +13,7 @@ from enstaller.errors import EnstallerException
 from enstaller.machine_cli.commands import (install, install_parse_json_string,
                                             remove, update_all,
                                             update_all_parse_json_string)
-from enstaller.repository_info import BroodRepositoryInfo
+from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
 from enstaller.tests.common import mock_brood_repository_indices
 
@@ -54,13 +54,15 @@ class TestParseJsonString(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "requirement": "numpy",
             "store_url": "https://acme.com",
         }
         r_repositories = (
             BroodRepositoryInfo("https://acme.com", "enthought/free"),
             BroodRepositoryInfo("https://acme.com", "enthought/commercial"),
+            FSRepositoryInfo("file://foo/bar"),
         )
 
         # When
@@ -82,7 +84,8 @@ class TestParseJsonString(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "requirement": "numpy",
             "store_url": "https://acme.com",
         }

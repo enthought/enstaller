@@ -25,7 +25,8 @@ class TestAPI(unittest.TestCase):
         self.python_path = os.path.join("fubar", "bin", "python")
         self.store_url = "https://acme.com"
         self.simple_auth = UserPasswordAuth("nono@fake.domain", "yeye")
-        self.repositories = ["enthought/free", "enthought/commercial"]
+        self.repositories = ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"]
         self.repository_cache = os.path.abspath(os.path.join("unused",
                                                              "directory"))
 
