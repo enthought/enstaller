@@ -135,6 +135,16 @@ class TestUserPasswordAuth(unittest.TestCase):
         self.assertEqual(auth.request_adapter.username, "nono")
         self.assertEqual(auth.request_adapter.password, "le petit robot")
 
+    def test_cant_login_message(self):
+        # Given
+        r_message = "Could not authenticate as {0!r}".format("nono")
+
+        # When
+        auth = UserPasswordAuth("nono", "le petit robot")
+
+        # Then
+        self.assertEqual(auth.cant_login_message, r_message)
+
 
 class TestAPITokenAuth(unittest.TestCase):
     def setUp(self):
@@ -211,3 +221,14 @@ class TestAPITokenAuth(unittest.TestCase):
         # When/Then
         self.assertIsInstance(auth.request_adapter, BroodBearerTokenAuth)
         self.assertEqual(auth.request_adapter._token, "nono le petit robot")
+
+    def test_cant_login_message(self):
+        # Given
+        r_message = ("Could not authenticate with the given token: check "
+                     "your token settings")
+
+        # When
+        auth = APITokenAuth("le petit robot")
+
+        # Then
+        self.assertEqual(auth.cant_login_message, r_message)
