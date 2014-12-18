@@ -198,7 +198,7 @@ class APITokenAuth(IAuth):
     @property
     def cant_login_message(self):
         msg = ("Could not authenticate with the given token: check your token"
-               "settings")
+               " settings")
         return msg
 
     @property
