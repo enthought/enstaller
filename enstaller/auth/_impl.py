@@ -61,6 +61,12 @@ class IAuth(with_metaclass(abc.ABCMeta)):
         """
 
     @abc.abstractproperty
+    def cant_login_message(self):
+        """
+        Return a string to show when cannot authenticate.
+        """
+
+    @abc.abstractproperty
     def config_string(self):
         """
         The text to write in the configuration file for this particular
@@ -188,6 +194,12 @@ class APITokenAuth(IAuth):
 
     def to_config_dict(self):
         return {"kind": "token", "api_token": self.api_token}
+
+    @property
+    def cant_login_message(self):
+        msg = ("Could not authenticate with the given token: check your token"
+               " settings")
+        return msg
 
     @property
     def config_string(self):
