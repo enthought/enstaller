@@ -1,6 +1,7 @@
 import collections
 import contextlib
 import os.path
+import threading
 
 from egginst.utils import atomic_file, ensure_dir
 from egginst.vendor.six.moves import urllib
@@ -90,6 +91,7 @@ class Session(object):
         self._raw.headers["user-agent"] = user_agent
 
         self._in_etag_context = 0
+        self._etag_context_lock = threading.Lock()
 
     @classmethod
     def authenticated_from_configuration(cls, configuration):
@@ -138,11 +140,13 @@ class Session(object):
 
     @contextlib.contextmanager
     def etag(self):
-        self._etag_setup()
+        with self._etag_context_lock:
+            self._etag_setup()
         try:
             yield
         finally:
-            self._etag_tear()
+            with self._etag_context_lock:
+                self._etag_tear()
 
     def _etag_setup(self):
         if self._in_etag_context == 0:
