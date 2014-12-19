@@ -91,7 +91,7 @@ class Session(object):
         self._raw.headers["user-agent"] = user_agent
 
         self._in_etag_context = 0
-        self._etag_context_lock = threading.Lock()
+        self._etag_context_lock = threading.RLock()
 
     @classmethod
     def authenticated_from_configuration(cls, configuration):
