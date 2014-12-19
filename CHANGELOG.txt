@@ -3,6 +3,11 @@
 
 Main highlights:
 
+Bug fixes:
+
+  * Fix race condition when fetching indices (#449).
+  * Fix wrong IAuth definition (#446).
+
 Internals:
 
   * new internal tool enstaller.tools.unpack, used for some low-level build
