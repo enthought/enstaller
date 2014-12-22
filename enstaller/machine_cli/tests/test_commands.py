@@ -152,7 +152,7 @@ class TestInstall(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     @mock_brood_repository_indices(
-        {}, ["enthought/free", "enthought/commercial"],
+        {}, ["enthought/free", "enthought/commercial", "file://foo/bar"],
         store_url="https://acme.com"
     )
     @mock.patch("enstaller.machine_cli.commands.install_req")
@@ -165,7 +165,8 @@ class TestInstall(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "requirement": "numpy",
             "store_url": "https://acme.com",
         }
@@ -187,7 +188,10 @@ class TestRemove(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
-    @mock_brood_repository_indices({}, ["enthought/free", "enthought/commercial"], store_url="https://acme.com")
+    @mock_brood_repository_indices(
+        {}, ["enthought/free", "enthought/commercial", "file://foo/bar"],
+        store_url="https://acme.com"
+    )
     def test_simple(self, execute):
         # Given
         data = {
@@ -197,7 +201,8 @@ class TestRemove(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "requirement": "numpy",
             "store_url": "https://acme.com",
         }
@@ -217,7 +222,7 @@ class TestRemove(unittest.TestCase):
 
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
     @mock_brood_repository_indices(
-        {}, ["enthought/commercial", "enthought/free"],
+        {}, ["enthought/commercial", "enthought/free", "file://foo/bar"],
         store_url="https://acme.com"
     )
     def test_simple_non_installed(self, execute):
@@ -229,7 +234,8 @@ class TestRemove(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "requirement": "pandas",
             "store_url": "https://acme.com",
         }
@@ -261,7 +267,7 @@ class TestUpdateAll(unittest.TestCase):
     @mock.patch("enstaller.machine_cli.commands.Enpkg.execute")
     @mock_brood_repository_indices(
         {},
-        ["enthought/commercial", "enthought/free"],
+        ["enthought/commercial", "enthought/free", "file://foo/bar"],
         store_url="https://acme.com"
     )
     def test_simple(self, execute):
@@ -273,7 +279,8 @@ class TestUpdateAll(unittest.TestCase):
                 "password": "le petit robot",
             },
             "files_cache": self.prefix,
-            "repositories": ["enthought/free", "enthought/commercial"],
+            "repositories": ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"],
             "store_url": "https://acme.com",
         }
 
