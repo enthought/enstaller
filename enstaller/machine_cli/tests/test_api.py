@@ -4,6 +4,8 @@ import sys
 
 import mock
 
+from enstaller import Configuration
+
 from egginst.vendor.six import binary_type
 from egginst.vendor.six.moves import unittest
 from enstaller.auth import UserPasswordAuth
@@ -23,8 +25,10 @@ class TestAPI(unittest.TestCase):
         self.python_path = os.path.join("fubar", "bin", "python")
         self.store_url = "https://acme.com"
         self.simple_auth = UserPasswordAuth("nono@fake.domain", "yeye")
-        self.repositories = ["enthought/free", "enthought/commercial"]
-        self.repository_cache = os.path.join("unused", "directory")
+        self.repositories = ["enthought/free", "enthought/commercial",
+                             "file://foo/bar"]
+        self.repository_cache = os.path.abspath(os.path.join("unused",
+                                                             "directory"))
 
     @mock__run_command
     def test_install(self, run_command):
@@ -172,3 +176,35 @@ class TestAPI(unittest.TestCase):
 
             with self.assertRaises(ProcessCommunicationError):
                 executor.install("numpy")
+
+    @mock__run_command
+    def test_from_configuration(self, run_command):
+        # Given
+        r_json_data = {
+            "authentication": {
+                "kind": "simple",
+                "username": self.simple_auth.username,
+                "password": self.simple_auth.password,
+            },
+            'files_cache': self.repository_cache,
+            'repositories': self.repositories,
+            'requirement': 'numpy',
+            'store_url': self.store_url,
+            'verify_ssl': True,
+        }
+        config = Configuration(store_url=self.store_url,
+                               auth=self.simple_auth,
+                               repository_cache=self.repository_cache,
+                               use_webservice=False)
+        config.set_repositories_from_names(self.repositories)
+
+        # When
+        executor = SubprocessEnpkgExecutor.from_configuration(self.python_path,
+                                                              config)
+        executor.install("numpy")
+
+        # Then
+        self.assertEqual(run_command.called, 1)
+        args = run_command.call_args[0]
+        self.assertEqual(args[0], "install")
+        self.assertEqual(args[1], r_json_data)

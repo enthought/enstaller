@@ -2,10 +2,32 @@ import json
 import os.path
 import subprocess
 
-from enstaller.errors import ProcessCommunicationError
+from enstaller.errors import EnstallerException, ProcessCommunicationError
+from enstaller.repository_info import IBroodRepositoryInfo
 
 
 class SubprocessEnpkgExecutor(object):
+    @classmethod
+    def from_configuration(cls, python_path, configuration):
+        """ Create a new executor from a configuration.
+
+        Parameters
+        ----------
+        python_path : str
+            The absolute path to the python executable to use in subprocesses.
+        configuration : Configuration
+            The configuration to use.
+        """
+        for repository in configuration.repositories:
+            if not isinstance(repository, IBroodRepositoryInfo):
+                msg = ("repository {0!r} is a legacy repo, cannot be used in "
+                       "machine cli".format(repository))
+                raise EnstallerException(msg)
+        return cls(python_path, configuration.store_url, configuration.auth,
+                   [repo.name for repo in configuration.repositories],
+                   configuration.repository_cache, configuration.verify_ssl,
+                   configuration.proxy)
+
     def __init__(self, python_path, store_url, auth, repositories,
                  repository_cache, verify_ssl=True, proxy=None):
         """ This class allows manipulating runtimes' enpkg using subprocesses.

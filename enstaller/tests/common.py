@@ -318,7 +318,8 @@ def mock_index(index_data, store_url="https://api.enthought.com"):
     return decorator
 
 
-def mock_brood_repository_indices(index_data, names, store_url="https://api.enthought.com"):
+def mock_brood_repository_indices(index_data, names,
+                                  store_url="https://api.enthought.com"):
     """ Mock index for brood repositories."""
     def decorator(f):
         @responses.activate
@@ -326,10 +327,10 @@ def mock_brood_repository_indices(index_data, names, store_url="https://api.enth
             responses.add(responses.POST,
                           "{0}/api/v0/json/auth/tokens/auth".format(store_url),
                           body=json.dumps({"token": "dummy token"}))
-            url_template = "{0}/repo/{1}/{2}/index.json"
-            for name in names:
-                url = url_template.format(store_url, name, custom_plat)
-                responses.add(responses.GET, url,
+            config = Configuration(use_webservice=False, store_url=store_url)
+            config.set_repositories_from_names(names)
+            for repository_info in config.repositories:
+                responses.add(responses.GET, repository_info.index_url,
                               body=json.dumps(index_data))
             return f(*a, **kw)
         return wrapped
