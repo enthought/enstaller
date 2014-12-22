@@ -11,7 +11,7 @@ else:
 
 
 def _guess_plat():
-    sys_map = {'linux2': 'rh5', 'darwin': 'osx',
+    sys_map = {'linux3': 'rh5', 'linux2': 'rh5', 'darwin': 'osx',
                'sunos5': 'sol', 'win32': 'win', 'linux': 'rh5'}
     try:
         return '%s-%d' % (sys_map[sys.platform], bits)
