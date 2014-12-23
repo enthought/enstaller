@@ -15,6 +15,26 @@ from enstaller.utils import path_to_uri
 
 
 class TestLegacyRepositoryInfo(unittest.TestCase):
+    def test_eq_and_hashing(self):
+        # Given
+        store_url = "https://acme.com"
+
+        # When
+        info1 = OldstyleRepository(store_url)
+        info2 = OldstyleRepository(store_url)
+
+        # Then
+        self.assertEqual(info1, info2)
+        self.assertFalse(info1 != info2)
+        self.assertEqual(hash(info1), hash(info2))
+
+        # When
+        info3 = OldstyleRepository("https://bunny.com")
+
+        # Then
+        self.assertNotEqual(info1, info3)
+        self.assertTrue(info1 != info3)
+
     def test_simple(self):
         # Given
         store_url = "https://acme.com"
@@ -33,6 +53,26 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
 
 
 class TestCanopyRepositoryInfo(unittest.TestCase):
+    def test_eq_and_hashing(self):
+        # Given
+        store_url = "https://acme.com"
+
+        # When
+        info1 = CanopyRepositoryInfo(store_url, use_pypi=True)
+        info2 = CanopyRepositoryInfo(store_url, use_pypi=True)
+
+        # Then
+        self.assertEqual(info1, info2)
+        self.assertFalse(info1 != info2)
+        self.assertEqual(hash(info1), hash(info2))
+
+        # When
+        info3 = CanopyRepositoryInfo(store_url, use_pypi=False)
+
+        # Then
+        self.assertNotEqual(info1, info3)
+        self.assertTrue(info1 != info3)
+
     def test_pypi(self):
         # Given
         store_url = "https://acme.com"
@@ -64,6 +104,27 @@ class TestCanopyRepositoryInfo(unittest.TestCase):
 
 
 class TestBroodRepositoryInfo(unittest.TestCase):
+    def test_eq_and_hashing(self):
+        # Given
+        store_url = "https://acme.com"
+        name = "enthought/free"
+
+        # When
+        info1 = BroodRepositoryInfo(store_url, name)
+        info2 = BroodRepositoryInfo(store_url, name)
+
+        # Then
+        self.assertEqual(info1, info2)
+        self.assertFalse(info1 != info2)
+        self.assertEqual(hash(info1), hash(info2))
+
+        # When
+        info3 = BroodRepositoryInfo(store_url, "enthought/commercial")
+
+        # Then
+        self.assertNotEqual(info1, info3)
+        self.assertTrue(info1 != info3)
+
     def test_simple(self):
         # Given
         store_url = "https://acme.com"
@@ -87,6 +148,26 @@ class TestBroodRepositoryInfo(unittest.TestCase):
 
 
 class TestFSRepositoryInfo(unittest.TestCase):
+    def test_eq_and_hashing(self):
+        # Given
+        store_url = path_to_uri(os.path.dirname(DUMMY_EGG))
+
+        # When
+        info1 = FSRepositoryInfo(store_url)
+        info2 = FSRepositoryInfo(store_url)
+
+        # Then
+        self.assertEqual(info1, info2)
+        self.assertFalse(info1 != info2)
+        self.assertEqual(hash(info1), hash(info2))
+
+        # When
+        info3 = FSRepositoryInfo("file://fubar")
+
+        # Then
+        self.assertNotEqual(info1, info3)
+        self.assertTrue(info1 != info3)
+
     def test_simple(self):
         # Given
         path = DUMMY_EGG
