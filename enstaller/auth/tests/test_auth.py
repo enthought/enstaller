@@ -127,8 +127,8 @@ class TestOldReposAuthManager(AuthManagerBase):
     @responses.activate
     def test_from_configuration(self):
         # Given
-        responses.add(responses.HEAD, self.config.indices[0][0], status=200,
-                      body=json.dumps(R_JSON_AUTH_RESP))
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
+                      status=200, body=json.dumps(R_JSON_AUTH_RESP))
         authenticator = OldRepoAuthManager.from_configuration(self.config)
         session = Session(authenticator, self.prefix)
 
@@ -144,8 +144,8 @@ class TestOldReposAuthManager(AuthManagerBase):
     @responses.activate
     def test_simple(self):
         # Given
-        responses.add(responses.HEAD, self.config.indices[0][0], status=200,
-                      body=json.dumps(R_JSON_AUTH_RESP))
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
+                      status=200, body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
         # Then no exception
@@ -161,7 +161,7 @@ class TestOldReposAuthManager(AuthManagerBase):
     def test_auth_failure_404(self):
         # Given
         auth = ("nono", "le petit robot")
-        responses.add(responses.HEAD, self.config.indices[0][0],
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
                       body="", status=404,
                       content_type='application/json')
 
@@ -173,7 +173,7 @@ class TestOldReposAuthManager(AuthManagerBase):
     def test_auth_failure_50x(self):
         # Given
         auth = ("nono", "le petit robot")
-        responses.add(responses.HEAD, self.config.indices[0][0],
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
                       status=503, content_type='application/json')
 
         # When/Given
@@ -184,7 +184,7 @@ class TestOldReposAuthManager(AuthManagerBase):
     def test_auth_failure_401(self):
         # Given
         auth = ("nono", "le petit robot")
-        responses.add(responses.HEAD, self.config.indices[0][0],
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
                       body="", status=401,
                       content_type='application/json')
 

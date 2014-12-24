@@ -96,7 +96,7 @@ class TestMisc(unittest.TestCase):
         config = Configuration(store_url=store_url, use_webservice=False)
         config.set_repositories_from_names(["enthought/foo"])
 
-        responses.add(responses.GET, config.indices[0][0],
+        responses.add(responses.GET, config.repositories[0].index_url,
                       status=404)
 
         session = mocked_session_factory(self.tempdir)

@@ -413,6 +413,9 @@ class Configuration(object):
         configuration.
 
         Takes into account webservice/no webservice and pypi True/False
+
+        .. deprecated:: 4.9.0
+            Use the repositories property instead
         """
         return tuple((repository_info.index_url, repository_info._base_url)
                      for repository_info in self.repositories)
