@@ -16,6 +16,7 @@ from enstaller.fetch import _DownloadManager
 from enstaller.repository import (egg_name_to_name_version,
                                   PackageMetadata, Repository,
                                   RepositoryPackageMetadata)
+from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import PY_VER, path_to_uri
 from enstaller.vendor import responses
@@ -393,14 +394,14 @@ class TestFetchAction(unittest.TestCase):
                                content_type='application/octet-stream')
 
     def _retry_common_setup(self):
-        store_location = "http://acme.com/"
+        store_url = "http://acme.com"
+        repository_info = OldstyleRepositoryInfo(store_url)
         filename = "nose-1.3.0-1.egg"
 
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
         repository = Repository()
-        package = RepositoryPackageMetadata.from_egg(path,
-                                                     store_location=store_location)
+        package = RepositoryPackageMetadata.from_egg(path, repository_info)
         repository.add_package(package)
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
@@ -412,7 +413,7 @@ class TestFetchAction(unittest.TestCase):
         # Given
         path, downloader, repository = self._retry_common_setup()
 
-        url = "http://acme.com/{0}".format(os.path.basename(path))
+        url = list(repository.iter_packages())[0].source_url
         with open(path, "rb") as fp:
             payload = fp.read()
 

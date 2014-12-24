@@ -115,7 +115,7 @@ class TestMisc(unittest.TestCase):
         with mock_print() as m:
             with mock.patch("enstaller.cli.utils._display_store_name",
                             return_value="neko"):
-                repository = repository_factory(session, config.indices)
+                repository = repository_factory(session, config.repositories)
 
         # Then
         self.assertEqual(len(list(repository.iter_packages())), 0)
@@ -123,7 +123,8 @@ class TestMisc(unittest.TestCase):
 
         # When/Then
         with self.assertRaises(requests.exceptions.HTTPError):
-            repository_factory(session, config.indices, raise_on_error=True)
+            repository_factory(session, config.repositories,
+                               raise_on_error=True)
 
 
 class TestInfoStrings(unittest.TestCase):
@@ -406,7 +407,7 @@ class TestInstallReq(unittest.TestCase):
         config = Configuration()
         session = Session.from_configuration(config)
         session.authenticate(("nono", "le petit robot"))
-        repository = repository_factory(session, config.indices)
+        repository = repository_factory(session, config.repositories)
 
         enpkg = Enpkg(repository, session, [self.prefix])
         enpkg.execute = mock.Mock()
@@ -456,7 +457,7 @@ with pip as follows:
         config = Configuration()
         session = Session.from_configuration(config)
         session.authenticate(("nono", "le petit robot"))
-        repository = repository_factory(session, config.indices)
+        repository = repository_factory(session, config.repositories)
 
         enpkg = Enpkg(repository, session, [self.prefix])
         enpkg.execute = mock.Mock()
@@ -516,7 +517,7 @@ with pip as follows:
         session = Session.from_configuration(config)
         session.authenticate(config.auth)
 
-        repository = repository_factory(session, config.indices)
+        repository = repository_factory(session, config.repositories)
 
         enpkg = Enpkg(repository, session, [self.prefix])
         enpkg.execute = mock.Mock()
@@ -565,7 +566,7 @@ with pip as follows:
         session = Session.from_configuration(config)
         session.authenticate(config.auth)
 
-        repository = repository_factory(session, config.indices)
+        repository = repository_factory(session, config.repositories)
 
         enpkg = Enpkg(repository, session, [self.prefix])
         enpkg.execute = mock.Mock()

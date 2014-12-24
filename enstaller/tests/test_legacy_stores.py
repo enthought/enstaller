@@ -9,6 +9,7 @@ from egginst.vendor.six.moves import unittest
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
 from enstaller.legacy_stores import parse_index, repository_factory
+from enstaller.repository_info import OldstyleRepositoryInfo
 
 from enstaller.tests.common import (SIMPLE_INDEX,
                                     dummy_repository_package_factory,
@@ -16,12 +17,12 @@ from enstaller.tests.common import (SIMPLE_INDEX,
                                     mocked_session_factory)
 
 
-def _index_provider(store_location):
+def _index_provider(repository_info):
     entries = [
         dummy_repository_package_factory("numpy", "1.8.0", 1,
-                                         store_location=store_location),
+                                         repository_info=repository_info),
         dummy_repository_package_factory("scipy", "0.14.0", 1,
-                                         store_location=store_location)
+                                         repository_info=repository_info)
     ]
     return json.dumps(dict((entry.key, entry.s3index_data) for entry in entries))
 
@@ -35,11 +36,12 @@ class TestLegacyStores(unittest.TestCase):
 
     def test_simple_webservice(self):
         # Given
-        store_location = ""
-        body = _index_provider(store_location)
+        store_url = "https://acme.com"
+        repository_info = OldstyleRepositoryInfo(store_url)
+        body = _index_provider(repository_info)
 
         # When
-        packages = list(parse_index(json.loads(body), store_location))
+        packages = list(parse_index(json.loads(body), store_url))
 
         # Then
         self.assertTrue(len(packages) > 0)

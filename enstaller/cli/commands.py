@@ -45,7 +45,7 @@ def info_option(remote_repository, installed_repository, name):
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
         print(pad + 'Python version: %s' % metadata.python)
-        print(pad + 'Store location: %s' % metadata.store_location)
+        print(pad + 'Store location: %s' % metadata.source_url)
         last_mtime = datetime.datetime.fromtimestamp(metadata.mtime)
         print(pad + 'Last modified: %s' % last_mtime)
         print(pad + 'MD5: %s' % metadata.md5)

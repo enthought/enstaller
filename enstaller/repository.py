@@ -11,6 +11,7 @@ from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, NoSuchPackage
 from enstaller.eggcollect import info_from_metadir
+from enstaller.repository_info import FSRepositoryInfo
 from enstaller.utils import compute_md5, path_to_uri, PY_VER
 from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
 from enstaller.versions.enpkg import EnpkgVersion
@@ -106,41 +107,36 @@ class RepositoryPackageMetadata(PackageMetadata):
     repository they are coming from through the store_location attribute.
     """
     @classmethod
-    def from_egg(cls, path, store_location=""):
+    def from_egg(cls, path, repository_info=None):
         """
         Create an instance from an egg filename.
         """
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
 
-        if len(store_location) == 0:
-            store_location = path_to_uri(os.path.dirname(path)) + "/"
-
-        if not store_location.endswith("/"):
-            msg = "Invalid uri for store location: {0!r} (expected an uri " \
-                  "ending with '/')".format(store_location)
-            raise ValueError(msg)
+        repository_info = repository_info or \
+            FSRepositoryInfo(path_to_uri(os.path.dirname(path)))
 
         metadata["packages"] = metadata.get("packages", [])
         st = os.stat(path)
         metadata["size"] = st.st_size
         metadata["md5"] = compute_md5(path)
         metadata["mtime"] = st.st_mtime
-        metadata["store_location"] = store_location
-        return cls.from_json_dict(os.path.basename(path), metadata)
+        return cls.from_json_dict(os.path.basename(path), metadata,
+                                  repository_info)
 
     @classmethod
-    def from_json_dict(cls, key, json_dict):
+    def from_json_dict(cls, key, json_dict, repository_info):
         version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
                                                        json_dict["build"])
         return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
                    json_dict.get("available", True),
-                   json_dict["store_location"])
+                   repository_info)
 
     def __init__(self, key, name, version, packages, python, size, md5,
-                 mtime, product, available, store_location):
+                 mtime, product, available, repository_info):
         super(RepositoryPackageMetadata, self).__init__(key, name, version,
                                                         packages, python)
 
@@ -150,7 +146,7 @@ class RepositoryPackageMetadata(PackageMetadata):
         self.mtime = mtime
         self.product = product
         self.available = available
-        self.store_location = store_location
+        self.repository_info = repository_info
 
         self.type = "egg"
 
@@ -158,7 +154,7 @@ class RepositoryPackageMetadata(PackageMetadata):
     def _key(self):
         return (super(RepositoryPackageMetadata, self)._key +
                 (self.size, self.md5, self.mtime, self.product, self.available,
-                 self.store_location, self.type))
+                 self.repository_info, self.type))
 
     @property
     def s3index_data(self):
@@ -176,13 +172,13 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @property
     def source_url(self):
-        return urllib.parse.urljoin(self.store_location, self.key)
+        return self.repository_info._package_url(self)
 
     def __repr__(self):
         template = "RepositoryPackageMetadata(" \
             "'{self.name}-{self.version}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
-            "store_location={self.store_location!r})".format(self=self)
+            "repository_info='{self.repository_info!r}')".format(self=self)
         return template
 
 
@@ -504,3 +500,32 @@ class Repository(object):
             sorted_by_version = sorted(packages,
                                        key=operator.attrgetter("version"))
             yield sorted_by_version[-1]
+
+
+def parse_index(json_dict, repository_info, python_version=PY_VER):
+    """
+    Parse the given json index data and iterate package instance over its
+    content.
+
+    Parameters
+    ----------
+    json_dict: dict
+        Parsed legacy json index
+    repository_info: IRepositoryInfo
+        An object describing the remote repository to parse
+    python_version: str
+        The major.minor string describing the python version. This generator
+        will iterate over every package where the python attribute is `null` or
+        equal to this string. If python_version == "*", then every package is
+        iterated over.
+    """
+    for key, info in json_dict.items():
+        info.setdefault('type', 'egg')
+        info.setdefault('packages', [])
+        info.setdefault('python', python_version)
+        if python_version == "*":
+            yield RepositoryPackageMetadata.from_json_dict(key, info,
+                                                           repository_info)
+        elif info["python"] in (None, python_version):
+            yield RepositoryPackageMetadata.from_json_dict(key, info,
+                                                           repository_info)

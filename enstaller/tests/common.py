@@ -14,6 +14,7 @@ from enstaller.enpkg import Enpkg
 from enstaller.plat import custom_plat
 from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RepositoryPackageMetadata)
+from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
@@ -97,7 +98,7 @@ def dummy_installed_package_factory(name, version, build, key=None,
 
 
 def dummy_repository_package_factory(name, version, build, key=None,
-                                     py_ver=PY_VER, store_location="",
+                                     py_ver=PY_VER, repository_info=None,
                                      dependencies=None, mtime=0.0):
     dependencies = dependencies or []
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
@@ -105,10 +106,12 @@ def dummy_repository_package_factory(name, version, build, key=None,
     fake_md5 = FAKE_MD5
     fake_mtime = mtime
     version = EnpkgVersion.from_upstream_and_build(version, build)
+    repository_info = repository_info or \
+        CanopyRepositoryInfo("https://acme.com")
     return RepositoryPackageMetadata(key, name.lower(), version,
                                      dependencies, py_ver, fake_size,
                                      fake_md5, fake_mtime, "commercial",
-                                     True, store_location)
+                                     True, repository_info)
 
 
 def repository_factory(entries):

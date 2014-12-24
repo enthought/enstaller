@@ -99,7 +99,7 @@ def install():
     config, requirement = install_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
-    repository = repository_factory(session, config.indices)
+    repository = repository_factory(session, config.repositories)
 
     progress_bar_context = ProgressBarContext(console_progress_manager_factory,
                                               fetch=fetch_progress_factory)
@@ -124,7 +124,7 @@ def remove():
     config, requirement = install_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
-    repository = repository_factory(session, config.indices)
+    repository = repository_factory(session, config.repositories)
 
     progress_bar_context = ProgressBarContext(console_progress_manager_factory,
                                               fetch=fetch_progress_factory)
@@ -149,7 +149,7 @@ def update_all():
     config = update_all_parse_json_string(json_string)
 
     session = Session.authenticated_from_configuration(config)
-    repository = repository_factory(session, config.indices)
+    repository = repository_factory(session, config.repositories)
 
     progress_bar_context = ProgressBarContext(console_progress_manager_factory,
                                               fetch=fetch_progress_factory)

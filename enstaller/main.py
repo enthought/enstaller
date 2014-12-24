@@ -647,7 +647,8 @@ def main(argv=None):
         ensure_authenticated_config(config, config_filename, session,
                                     use_new_format=use_new_format)
 
-        repository = repository_factory(session, config.indices, args.quiet)
+        repository = repository_factory(session, config.repositories,
+                                        args.quiet)
         if args.quiet:
             progress_bar_context = None
         else:

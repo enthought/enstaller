@@ -30,6 +30,9 @@ class TestInfoStrings(unittest.TestCase):
         self.maxDiff = None
 
         # Given
+        entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
+                   dummy_repository_package_factory("enstaller", "4.6.3", 1)]
+
         mtime = 0.0
         r_output = textwrap.dedent("""\
         Package: enstaller
@@ -37,26 +40,25 @@ class TestInfoStrings(unittest.TestCase):
         Version: 4.6.2-1
             Product: commercial
             Available: True
-            Python version: {2}
-            Store location: {3}
-            Last modified: {4}
-            MD5: {0}
-            Size: {1}
+            Python version: {python_version}
+            Store location: {store_location_1}
+            Last modified: {last_modified}
+            MD5: {md5}
+            Size: {size}
             Requirements: None
         Version: 4.6.3-1
             Product: commercial
             Available: True
-            Python version: {2}
-            Store location: {3}
-            Last modified: {4}
-            MD5: {0}
-            Size: {1}
+            Python version: {python_version}
+            Store location: {store_location_2}
+            Last modified: {last_modified}
+            MD5: {md5}
+            Size: {size}
             Requirements: None
-        """.format(FAKE_MD5, FAKE_SIZE, PY_VER, "",
-                   datetime.datetime.fromtimestamp(mtime)))
-
-        entries = [dummy_repository_package_factory("enstaller", "4.6.2", 1),
-                   dummy_repository_package_factory("enstaller", "4.6.3", 1)]
+        """.format(md5=FAKE_MD5, size=FAKE_SIZE, python_version=PY_VER,
+                   store_location_1=entries[0].source_url,
+                   store_location_2=entries[1].source_url,
+                   last_modified=datetime.datetime.fromtimestamp(mtime)))
 
         remote_repository, installed_repository = \
             create_repositories(remote_entries=entries)

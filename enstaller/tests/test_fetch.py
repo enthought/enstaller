@@ -11,6 +11,7 @@ from enstaller.vendor import requests, responses
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch import _DownloadManager
 from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.utils import compute_md5
 
 from enstaller.tests.common import mocked_session_factory
@@ -137,15 +138,16 @@ class Test_DownloadManager(unittest.TestCase):
     def test_fetch_unauthorized(self):
         # Given
         filename = "nose-1.3.0-1.egg"
-        url = "http://api.enthought.com/eggs/yoyo/"
+        store_url = "http://api.enthought.com"
+        repository_info = CanopyRepositoryInfo(store_url)
 
         repository = Repository()
 
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
-        package = RepositoryPackageMetadata.from_egg(path, url)
+        package = RepositoryPackageMetadata.from_egg(path, repository_info)
         repository.add_package(package)
 
-        responses.add(responses.GET, url + filename,
+        responses.add(responses.GET, package.source_url,
                       body='{"error": "forbidden"}',
                       status=403)
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),

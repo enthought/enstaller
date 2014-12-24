@@ -79,7 +79,7 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
                                     self._path + "/" + package.key)
 
 
-class OldstyleRepository(ILegacyRepositoryInfo):
+class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
     def __init__(self, store_url):
         self._store_url = store_url
 

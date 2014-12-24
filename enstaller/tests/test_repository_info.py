@@ -9,7 +9,7 @@ from egginst.vendor.six.moves import unittest
 from enstaller.repository_info import (BroodRepositoryInfo,
                                        CanopyRepositoryInfo,
                                        FSRepositoryInfo,
-                                       OldstyleRepository)
+                                       OldstyleRepositoryInfo)
 from enstaller.repository import RepositoryPackageMetadata
 from enstaller.utils import path_to_uri
 
@@ -20,8 +20,8 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
         store_url = "https://acme.com"
 
         # When
-        info1 = OldstyleRepository(store_url)
-        info2 = OldstyleRepository(store_url)
+        info1 = OldstyleRepositoryInfo(store_url)
+        info2 = OldstyleRepositoryInfo(store_url)
 
         # Then
         self.assertEqual(info1, info2)
@@ -29,7 +29,7 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
         self.assertEqual(hash(info1), hash(info2))
 
         # When
-        info3 = OldstyleRepository("https://bunny.com")
+        info3 = OldstyleRepositoryInfo("https://bunny.com")
 
         # Then
         self.assertNotEqual(info1, info3)
@@ -44,7 +44,7 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
         r_package_url = "https://acme.com/{0}".format(os.path.basename(path))
 
         # When
-        info = OldstyleRepository(store_url)
+        info = OldstyleRepositoryInfo(store_url)
         package = RepositoryPackageMetadata.from_egg(path)
 
         # Then

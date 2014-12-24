@@ -12,8 +12,8 @@ from enstaller.solver import Requirement
 from enstaller.solver.resolve import Resolve
 
 
-def query_platform(session, indices, requirement, platform):
-    repository = repository_factory(session, indices)
+def query_platform(session, repository_infos, requirement, platform):
+    repository = repository_factory(session, repository_infos)
 
     requirement = Requirement(requirement)
     resolve = Resolve(repository)
@@ -68,10 +68,10 @@ def main(argv=None):
         if namespace.platform == "all":
             platforms = ["rh5-32", "rh5-64", "osx-32", "osx-64", "win-32", "win-64"]
             for platform in platforms:
-                query_platform(session, config.indices, namespace.requirement,
-                               platform)
+                query_platform(session, config.repositories,
+                               namespace.requirement, platform)
         else:
-            query_platform(session, config.indices, namespace.requirement,
+            query_platform(session, config.repositories, namespace.requirement,
                            namespace.platform)
 
 
