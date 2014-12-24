@@ -299,6 +299,26 @@ class Repository(object):
         repository._populate_from_prefixes(prefixes)
         return repository
 
+    @classmethod
+    def from_repository_info(cls, session, repository_info):
+        """ Create a repository from a remote index.
+
+        Parameters
+        ----------
+        session : Session
+            A session instance (must be authenticated)
+        repository_info : IRepositoryInfo
+            The metadata for the repository to fetch.
+        """
+        repository = cls()
+
+        resp = session.fetch(repository_info.index_url)
+        json_data = resp.json()
+
+        for package in parse_index(json_data, repository_info):
+            repository.add_package(package)
+        return repository
+
     def __init__(self, packages=None):
         self._name_to_packages = collections.defaultdict(list)
 

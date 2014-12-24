@@ -86,29 +86,26 @@ auth information is set up in the configuration, that's possible as follows::
 Creating remote repositories
 ============================
 
-To create repositories from our legacy index.json formats, one can use the
-repository_factory method from enstaller.legacy_stores::
+To create repositories from http indices::
 
-    from enstaller import Configuration, Session
-    from enstaller.legacy_stores import repository_factory
+    from enstaller import Configuration, Repository, Session
 
     config = Configuration._from_legacy_locations()
+    repository_info = config.repositories[0]
 
     session = Session.from_configuration(config)
     session.authenticate(config.auth)
 
-    remote_repository = repository_factory(session, config.indices)
+    remote_repository = Repository.from_repository_info(session,
+                                                        repository_info)
 
     # Same, with etag-based caching
     with session.etag():
-        remote_repository = repository_factory(session, config.indices)
+        remote_repository = Repository.from_repository_info(session,
+                                                            repository_info)
 
-.. note:: this works for both use_webservice enabled and disabled:
-
-        * when enabled, config.indices returns a one item-list of (index,
-          store) pair corresponding to the canopy-style index, whereas
-        * when disabled, config.indices returns a list of pairs (index, store),
-          one pair per entry in IndexedRepos.
+.. note:: this works for both use_webservice enabled and disabled, and for
+   brood repositories
 
 Solving dependencies
 ====================

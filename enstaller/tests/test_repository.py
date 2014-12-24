@@ -10,7 +10,9 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, m
 from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
+from enstaller.config import Configuration, STORE_KIND_BROOD
 from enstaller.errors import NoSuchPackage
+from enstaller.session import Session
 from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
@@ -18,7 +20,9 @@ from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   egg_name_to_name_version)
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
-from enstaller.tests.common import dummy_installed_package_factory
+from enstaller.tests.common import (SIMPLE_INDEX,
+                                    dummy_installed_package_factory,
+                                    mock_brood_repository_indices)
 from enstaller.utils import PY_VER
 
 
@@ -285,6 +289,41 @@ class TestRepository(unittest.TestCase):
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
             package = RepositoryPackageMetadata.from_egg(path)
             self.repository.add_package(package)
+
+    @mock_brood_repository_indices({}, ["enthought/free"])
+    def test_from_repository_info_empty(self):
+        # Given
+        repository_info = BroodRepositoryInfo("https://api.enthought.com",
+                                              "enthought/free")
+        config = Configuration(use_webservice=False,
+                               auth=("nono", "password"))
+        config._store_kind = STORE_KIND_BROOD
+
+        session = Session.authenticated_from_configuration(config)
+
+        # When
+        repository = Repository.from_repository_info(session, repository_info)
+
+        # Then
+        self.assertEqual(len(repository), 0)
+
+    @mock_brood_repository_indices(SIMPLE_INDEX, ["enthought/free"])
+    def test_from_repository_info_nonempty(self):
+        # Given
+        repository_info = BroodRepositoryInfo("https://api.enthought.com",
+                                              "enthought/free")
+        config = Configuration(use_webservice=False,
+                               auth=("nono", "password"))
+        config._store_kind = STORE_KIND_BROOD
+
+        session = Session.authenticated_from_configuration(config)
+
+        # When
+        repository = Repository.from_repository_info(session, repository_info)
+
+        # Then
+        self.assertEqual(len(repository), 1)
+        self.assertEqual(len(repository.find_packages("nose")), 1)
 
     def test_ctor(self):
         # When
