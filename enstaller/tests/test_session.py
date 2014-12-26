@@ -153,13 +153,15 @@ class TestSession(unittest.TestCase):
         # When/Then
         with Session.from_configuration(config) as session:
             for prefix in ("http://", "https://"):
-                self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+                max_retries = session._raw.adapters[prefix].max_retries
+                self.assertEqual(max_retries.total, 0)
 
         # When/Then
         config.update(max_retries=3)
         with Session.from_configuration(config) as session:
             for prefix in ("http://", "https://"):
-                self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
+                max_retries = session._raw.adapters[prefix].max_retries
+                self.assertEqual(max_retries.total, 3)
 
     def test_max_retries_with_etag(self):
         # Given
@@ -169,14 +171,16 @@ class TestSession(unittest.TestCase):
         with Session.from_configuration(config) as session:
             with session.etag():
                 for prefix in ("http://", "https://"):
-                    self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+                    max_retries = session._raw.adapters[prefix].max_retries
+                    self.assertEqual(max_retries.total, 0)
 
         # When/Then
         config.update(max_retries=3)
         with Session.from_configuration(config) as session:
             with session.etag():
                 for prefix in ("http://", "https://"):
-                    self.assertEqual(session._raw.adapters[prefix].max_retries, 3)
+                    max_retries = session._raw.adapters[prefix].max_retries
+                    self.assertEqual(max_retries.total, 3)
 
     def test_from_configuration(self):
         # Given
