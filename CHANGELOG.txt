@@ -12,6 +12,7 @@ Internals:
 
   * new internal tool enstaller.tools.unpack, used for some low-level build
     tasks at Enthought.
+  * update vendorized requests to 2.5.1.
 
 2014-12-09   4.8.0:
 -------------------
