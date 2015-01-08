@@ -62,7 +62,7 @@ class TestRequirement(unittest.TestCase):
         requirement_s = "numpy 1.8.1"
 
         # When
-        requirement = Requirement.from_legay_requirement_string(requirement_s)
+        requirement = Requirement.from_legacy_requirement_string(requirement_s)
 
         # Then
         self.assertEqual(requirement.name, "numpy")
@@ -73,7 +73,7 @@ class TestRequirement(unittest.TestCase):
         requirement_s = "numpy 1.8.1-2"
 
         # When
-        requirement = Requirement.from_legay_requirement_string(requirement_s)
+        requirement = Requirement.from_legacy_requirement_string(requirement_s)
 
         # Then
         self.assertEqual(requirement.name, "numpy")
@@ -84,7 +84,7 @@ class TestRequirement(unittest.TestCase):
         requirement_s = "numpy"
 
         # When
-        requirement = Requirement.from_legay_requirement_string(requirement_s)
+        requirement = Requirement.from_legacy_requirement_string(requirement_s)
 
         # Then
         self.assertEqual(requirement.name, "numpy")
@@ -96,7 +96,7 @@ class TestRequirement(unittest.TestCase):
 
         # When/Then
         with self.assertRaises(ValueError):
-            Requirement.from_legay_requirement_string(requirement_s)
+            Requirement.from_legacy_requirement_string(requirement_s)
 
     def test_from_package_string(self):
         # Given

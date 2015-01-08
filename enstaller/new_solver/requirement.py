@@ -65,8 +65,8 @@ class Requirement(object):
         return cls(name, named_constraints[name])
 
     @classmethod
-    def from_legay_requirement_string(cls, requirement_string,
-                                      version_factory=EnpkgVersion.from_string):
+    def from_legacy_requirement_string(cls, requirement_string,
+                                       version_factory=EnpkgVersion.from_string):
         """ Creates a requirement from a legacy requirement string (as
         found in our current egg metadata, format < 2).
 
