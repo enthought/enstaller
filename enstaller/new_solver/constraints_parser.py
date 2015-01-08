@@ -3,7 +3,7 @@ import re
 
 from enstaller.errors import SolverException
 
-from .constraint_types import (EnpkgUpstreamMatch, Equal, GEQ, GT,
+from .constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
                                LEQ, LT, Not)
 
 
@@ -206,6 +206,10 @@ class _RawRequirementParser(object):
                 name = distribution.value
                 constraints[name].add(_operator_factory(operator, version,
                                                         version_factory))
+            elif len(requirement_block) == 1:
+                name = requirement_block[0].value
+                # Force name to exist in constraints
+                constraints[name].add(Any())
             else:
                 msg = ("Invalid requirement block: {0!r}".
                        format(requirement_block))

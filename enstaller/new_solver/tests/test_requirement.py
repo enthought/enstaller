@@ -36,6 +36,19 @@ class TestRequirement(unittest.TestCase):
         self.assertEqual(requirement1, requirement2)
         self.assertEqual(hash(requirement1), hash(requirement2))
 
+    def test_any(self):
+        # Given
+        requirement_string = "numpy"
+
+        # When
+        requirement = Requirement._from_string(requirement_string)
+
+        # Then
+        self.assertTrue(requirement.matches(V("1.8.1-2")))
+        self.assertTrue(requirement.matches(V("1.8.1-3")))
+        self.assertTrue(requirement.matches(V("1.8.2-1")))
+        self.assertTrue(requirement.matches(V("1.9.0-1")))
+
     def test_simple(self):
         # Given
         requirement_string = "numpy >= 1.8.1-3, numpy < 1.9.0"
