@@ -4,7 +4,7 @@ from enstaller.errors import SolverException
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraints_parser import _RawConstraintsParser, _RawRequirementParser
-from ..constraint_types import EnpkgUpstreamMatch, Equal, GT, GEQ, LT, LEQ, Not
+from ..constraint_types import Any, EnpkgUpstreamMatch, Equal, GT, GEQ, LT, LEQ, Not
 
 
 V = EnpkgVersion.from_string
@@ -134,6 +134,17 @@ class Test_RawRequirementParser(unittest.TestCase):
         requirement_string = "numpy >= 1.8.1, scipy >= 0.14.0"
         r_constraints = {"numpy": set([GEQ(V("1.8.1-0"))]),
                          "scipy": set([GEQ(V("0.14.0"))])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+    def test_no_version(self):
+        # Given
+        requirement_string = "numpy"
+        r_constraints = {"numpy": set([Any()])}
 
         # When
         constraints = self._parse(requirement_string)
