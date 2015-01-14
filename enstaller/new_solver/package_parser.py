@@ -3,6 +3,7 @@ import re
 from enstaller.new_solver.constraint_types import (Any, EnpkgUpstreamMatch,
                                                    Equal)
 from enstaller.new_solver.constraints_parser import _RawRequirementParser
+from enstaller.new_solver.requirement import Requirement
 from enstaller.versions.enpkg import EnpkgVersion
 
 
@@ -90,6 +91,44 @@ class PrettyPackageStringParser(object):
             legacy_constraints.append(legacy_constraint)
 
         return name, version, legacy_constraints
+
+
+def constraints_to_pretty_string(constraints):
+    """ Given a set of constraints. return a pretty string."""
+    data = []
+
+    for name, constraints_set in constraints.items():
+        for constraint in constraints_set:
+            constraint_str = str(constraint)
+            if len(constraint_str) > 0:
+                data.append(name + " " + constraint_str)
+            else:
+                data.append(name)
+
+    return ", ".join(data)
+
+
+def legacy_dependencies_to_pretty_string(dependencies):
+    """ Convert a sequence of legacy dependency strings to a pretty constraint
+    string.
+
+    Parameters
+    ----------
+    dependencies : seq
+        Sequence of legacy dependency string (e.g. 'MKL 10.3')
+    """
+    constraints_mapping = {}
+
+    for dependency in dependencies:
+        req = Requirement.from_legacy_requirement_string(dependency)
+        constraints = req._constraints._constraints
+        assert len(constraints) == 1
+        constraint = next(iter(constraints))
+        assert isinstance(constraint,
+                          (EnpkgUpstreamMatch, Any, Equal))
+        constraints_mapping[req.name] = frozenset((constraint,))
+
+    return constraints_to_pretty_string(constraints_mapping)
 
 
 def _parse_preambule(preambule):

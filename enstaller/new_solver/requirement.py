@@ -80,12 +80,12 @@ class Requirement(object):
             name, version_string = parts
             version = version_factory(version_string)
             if version.build == 0:
-                return cls(name.lower(), [EnpkgUpstreamMatch(version)])
+                return cls(name, [EnpkgUpstreamMatch(version)])
             else:
-                return cls(name.lower(), [Equal(version)])
+                return cls(name, [Equal(version)])
         elif len(parts) == 1:
             name = parts[0]
-            return cls(name.lower(), [Any()])
+            return cls(name, [Any()])
         else:
             raise ValueError(parts)
 

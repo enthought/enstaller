@@ -4,7 +4,8 @@ from enstaller.errors import SolverException
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraint_types import Equal
-from ..package_parser import PrettyPackageStringParser
+from ..package_parser import (PrettyPackageStringParser,
+                              legacy_dependencies_to_pretty_string)
 
 
 V = EnpkgVersion.from_string
@@ -106,3 +107,16 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         self.assertEqual(name, "numpy")
         self.assertEqual(version, V("1.8.0-1"))
         self.assertEqual(constraints, ["nose"])
+
+
+class TestLegacyDependenciesToPrettyString(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        dependencies = ["MKL 10.3-1", "nose 1.3.4"]
+        r_pretty_string = "MKL == 10.3-1, nose ~= 1.3.4"
+
+        # When
+        pretty_string = legacy_dependencies_to_pretty_string(dependencies)
+
+        # Then
+        self.assertEqual(pretty_string, r_pretty_string)
