@@ -71,3 +71,38 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         self.assertEqual(name, "numpy")
         self.assertEqual(version, V("1.8.0-1"))
         self.assertItemsEqual(constraints, {})
+
+    def test_to_legacy_constraints(self):
+        # Given
+        parser = PrettyPackageStringParser(V)
+        package_string = "numpy 1.8.0-1; depends (nose == 1.3.4-1)"
+
+        # When
+        name, version, constraints = parser.parse_to_legacy_constraints(package_string)
+
+        # Then
+        self.assertEqual(name, "numpy")
+        self.assertEqual(version, V("1.8.0-1"))
+        self.assertEqual(constraints, ["nose 1.3.4-1"])
+
+        # Given
+        package_string = "numpy 1.8.0-1; depends (nose ~= 1.3.4)"
+
+        # When
+        name, version, constraints = parser.parse_to_legacy_constraints(package_string)
+
+        # Then
+        self.assertEqual(name, "numpy")
+        self.assertEqual(version, V("1.8.0-1"))
+        self.assertEqual(constraints, ["nose 1.3.4"])
+
+        # Given
+        package_string = "numpy 1.8.0-1; depends (nose)"
+
+        # When
+        name, version, constraints = parser.parse_to_legacy_constraints(package_string)
+
+        # Then
+        self.assertEqual(name, "numpy")
+        self.assertEqual(version, V("1.8.0-1"))
+        self.assertEqual(constraints, ["nose"])

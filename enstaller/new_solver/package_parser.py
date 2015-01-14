@@ -1,6 +1,9 @@
 import re
 
+from enstaller.new_solver.constraint_types import (Any, EnpkgUpstreamMatch,
+                                                   Equal)
 from enstaller.new_solver.constraints_parser import _RawRequirementParser
+from enstaller.versions.enpkg import EnpkgVersion
 
 
 DEPENDS_RE = re.compile("depends\s*\((.*)\)")
@@ -60,6 +63,33 @@ class PrettyPackageStringParser(object):
 
         return (name, version_factory(version_string),
                 constraints.get("dependencies", {}))
+
+    def parse_to_legacy_constraints(self, package_string):
+        """ Parse the given package string into a name, version and a set of
+        legacy requirement as used by our index format v1 (e.g. 'MKL 10.3-1'
+        for exact dependency to MKL 10.3-1).
+
+        """
+        name, version, dependencies = self.parse(package_string)
+
+        legacy_constraints = []
+        for dependency_name, constraints in dependencies.items():
+            assert len(constraints) == 1, constraints
+            constraint = next(iter(constraints))
+            assert isinstance(constraint,
+                              (EnpkgUpstreamMatch, Any, Equal))
+            if isinstance(constraint, Any):
+                legacy_constraint = dependency_name
+            elif isinstance(constraint, Equal):
+                legacy_constraint = (dependency_name + ' ' +
+                                     str(constraint.version))
+            else:  # EnpkgUpstreamMatch
+                assert isinstance(constraint.version, EnpkgVersion)
+                legacy_constraint = (dependency_name + ' ' +
+                                     str(constraint.version.upstream))
+            legacy_constraints.append(legacy_constraint)
+
+        return name, version, legacy_constraints
 
 
 def _parse_preambule(preambule):
