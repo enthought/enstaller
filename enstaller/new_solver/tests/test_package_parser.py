@@ -61,7 +61,7 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         self.assertEqual(name, "numpy")
         self.assertEqual(version, V("1.8.0-1"))
         self.assertTrue("nose" in constraints)
-        self.assertEqual(constraints["nose"], {Equal(V("1.3.4-1"))})
+        self.assertEqual(constraints["nose"], set((Equal(V("1.3.4-1")),)))
 
     def test_no_dependencies(self):
         # Given
@@ -74,7 +74,7 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         # Then
         self.assertEqual(name, "numpy")
         self.assertEqual(version, V("1.8.0-1"))
-        assertCountEqual(self, constraints, {})
+        assertCountEqual(self, constraints, set())
 
     def test_to_legacy_constraints(self):
         # Given
