@@ -119,7 +119,7 @@ def constraints_to_pretty_string(constraints):
     """ Given a set of constraints. return a pretty string."""
     data = []
 
-    for name, constraints_set in constraints.items():
+    for name, constraints_set in constraints:
         for constraint in constraints_set:
             constraint_str = str(constraint)
             if len(constraint_str) > 0:
@@ -139,7 +139,7 @@ def legacy_dependencies_to_pretty_string(dependencies):
     dependencies : seq
         Sequence of legacy dependency string (e.g. 'MKL 10.3')
     """
-    constraints_mapping = {}
+    constraints_mapping = []
 
     for dependency in dependencies:
         req = Requirement.from_legacy_requirement_string(dependency)
@@ -148,7 +148,7 @@ def legacy_dependencies_to_pretty_string(dependencies):
         constraint = next(iter(constraints))
         assert isinstance(constraint,
                           (EnpkgUpstreamMatch, Any, Equal))
-        constraints_mapping[req.name] = frozenset((constraint,))
+        constraints_mapping.append((req.name, frozenset((constraint,))))
 
     return constraints_to_pretty_string(constraints_mapping)
 

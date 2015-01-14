@@ -74,7 +74,7 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         # Then
         self.assertEqual(name, "numpy")
         self.assertEqual(version, V("1.8.0-1"))
-        self.assertItemsEqual(constraints, {})
+        assertCountEqual(self, constraints, {})
 
     def test_to_legacy_constraints(self):
         # Given
