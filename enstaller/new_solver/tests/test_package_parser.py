@@ -1,11 +1,14 @@
-import unittest
+from egginst._compat import assertCountEqual
+from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import SolverException
+from enstaller.repository import PackageMetadata
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraint_types import Equal
 from ..package_parser import (PrettyPackageStringParser,
-                              legacy_dependencies_to_pretty_string)
+                              legacy_dependencies_to_pretty_string,
+                              package_to_pretty_string)
 
 
 V = EnpkgVersion.from_string
@@ -117,6 +120,34 @@ class TestLegacyDependenciesToPrettyString(unittest.TestCase):
 
         # When
         pretty_string = legacy_dependencies_to_pretty_string(dependencies)
+
+        # Then
+        self.assertEqual(pretty_string, r_pretty_string)
+
+
+class TestPackagePrettyString(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        key = "numpy-1.8.1-1.egg"
+        package = PackageMetadata(key, "numpy", V("1.8.1-1"), ("MKL 10.3-1",),
+                                  "2.7")
+
+        r_pretty_string = "numpy 1.8.1-1; depends (MKL == 10.3-1)"
+
+        # When
+        pretty_string = package_to_pretty_string(package)
+
+        # Then
+        self.assertEqual(pretty_string, r_pretty_string)
+
+        # Given
+        key = "numpy-1.8.1-1.egg"
+        package = PackageMetadata(key, "numpy", V("1.8.1-1"), ("nose",), "2.7")
+
+        r_pretty_string = "numpy 1.8.1-1; depends (nose)"
+
+        # When
+        pretty_string = package_to_pretty_string(package)
 
         # Then
         self.assertEqual(pretty_string, r_pretty_string)

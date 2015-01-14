@@ -4,6 +4,7 @@ from enstaller.new_solver.constraint_types import (Any, EnpkgUpstreamMatch,
                                                    Equal)
 from enstaller.new_solver.constraints_parser import _RawRequirementParser
 from enstaller.new_solver.requirement import Requirement
+from enstaller.repository import PackageMetadata
 from enstaller.versions.enpkg import EnpkgVersion
 
 
@@ -64,6 +65,27 @@ class PrettyPackageStringParser(object):
 
         return (name, version_factory(version_string),
                 constraints.get("dependencies", {}))
+
+    def parse_to_package(self, package_string, python_version):
+        """ Parse the given pretty package string.
+
+        Parameters
+        ----------
+        package_string : str
+            The pretty package string, e.g.
+            "numpy 1.8.1-1; depends (MKL == 10.3, nose ~= 1.3.4)"
+        python_version : str
+            The python version string, e.g. "2.7".
+
+        Returns
+        -------
+        package : PackageMetadata
+        """
+        name, version, dependencies = \
+            self.parse_to_legacy_constraints(package_string)
+        key = "{0}-{1}.egg".format(name, version)
+        return PackageMetadata(key, name, version, dependencies,
+                               python_version)
 
     def parse_to_legacy_constraints(self, package_string):
         """ Parse the given package string into a name, version and a set of
@@ -129,6 +151,15 @@ def legacy_dependencies_to_pretty_string(dependencies):
         constraints_mapping[req.name] = frozenset((constraint,))
 
     return constraints_to_pretty_string(constraints_mapping)
+
+
+def package_to_pretty_string(package):
+    """ Given a PackageMetadata instance, returns a pretty string."""
+    template = "{0.name} {0.version}"
+    if len(package.dependencies) > 0:
+        string = legacy_dependencies_to_pretty_string(package.dependencies)
+        template += "; depends ({0})".format(string)
+    return template.format(package)
 
 
 def _parse_preambule(preambule):
