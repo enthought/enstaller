@@ -44,20 +44,18 @@ class PrettyPackageStringParser(object):
 
         parts = package_string.split(";")
 
-        name, version_string = _parse_preambule(parts[0])
+        name, version_string = _parse_preamble(parts[0])
 
         constraints = {}
 
         for part in parts[1:]:
             part = part.lstrip()
 
-            m = None
             for kind, r in (("dependencies", DEPENDS_RE),):
                 m = r.search(part)
-                if m:
-                    constraints[kind] = m.group(1)
-
-            if m is None:
+                if m is not None:
+                    break
+            else:
                 msg = "Invalid constraint block: '{0}'".format(part)
                 raise ValueError(msg)
 
@@ -116,7 +114,7 @@ class PrettyPackageStringParser(object):
 
 
 def constraints_to_pretty_string(constraints):
-    """ Given a set of constraints. return a pretty string."""
+    """ Given a set of constraints, returns a pretty string."""
     data = []
 
     for name, constraints_set in constraints:
@@ -162,9 +160,9 @@ def package_to_pretty_string(package):
     return template.format(package)
 
 
-def _parse_preambule(preambule):
-    parts = preambule.strip().split()
+def _parse_preamble(preamble):
+    parts = preamble.strip().split()
     if not len(parts) == 2:
-        raise ValueError("Invalid preambule: {0!r}".format(preambule))
+        raise ValueError("Invalid preamble: {0!r}".format(preamble))
     else:
         return parts[0], parts[1]

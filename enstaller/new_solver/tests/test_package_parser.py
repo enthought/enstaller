@@ -19,7 +19,7 @@ class TestPrettyPackageStringParser(unittest.TestCase):
         # Given
         parser = PrettyPackageStringParser(V)
         package_string = ""
-        r_message = "Invalid preambule: "
+        r_message = "Invalid preamble: "
 
         # When
         with self.assertRaisesRegexp(ValueError, r_message):
@@ -27,7 +27,7 @@ class TestPrettyPackageStringParser(unittest.TestCase):
 
         # Given
         package_string = "numpy"
-        r_message = "Invalid preambule: 'numpy'"
+        r_message = "Invalid preamble: 'numpy'"
 
         # When
         with self.assertRaisesRegexp(ValueError, r_message):
