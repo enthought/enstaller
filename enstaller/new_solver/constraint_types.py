@@ -6,6 +6,9 @@ class Any(_ConstraintType):
     def matches(self, candidate_version):
         return True
 
+    def __str__(self):
+        return ""
+
     def __eq__(self, other):
         return self.__class__ == other.__class__
 
@@ -41,42 +44,63 @@ class _VersionConstraint(_ConstraintType):
 
 
 class Equal(_VersionConstraint):
+    def __str__(self):
+        return "== " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return self.version == candidate_version
 
 
 class Not(_VersionConstraint):
+    def __str__(self):
+        return "!= " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return self.version != candidate_version
 
 
 class GEQ(_VersionConstraint):
+    def __str__(self):
+        return ">= " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version >= self.version
 
 
 class GT(_VersionConstraint):
+    def __str__(self):
+        return "> " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version > self.version
 
 
 class LEQ(_VersionConstraint):
+    def __str__(self):
+        return "<= " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version <= self.version
 
 
 class LT(_VersionConstraint):
+    def __str__(self):
+        return "< " + str(self.version)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version < self.version
 
 
 class EnpkgUpstreamMatch(_VersionConstraint):
+    def __str__(self):
+        return "~= " + str(self.version.upstream)
+
     def matches(self, candidate_version):
         self._ensure_can_compare(candidate_version)
         return candidate_version.upstream == self.version.upstream
