@@ -25,7 +25,7 @@ from enstaller.repository_info import (CanopyRepositoryInfo,
                                        BroodRepositoryInfo,
                                        FSRepositoryInfo,
                                        IBroodRepositoryInfo,
-                                       OldstyleRepository)
+                                       OldstyleRepositoryInfo)
 from enstaller.session import Session
 from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
@@ -996,8 +996,8 @@ class TestRepositoriesSetup(unittest.TestCase):
 
         # Then
         self.assertEqual(len(config.repositories), 2)
-        self.assertIsInstance(config.repositories[0], OldstyleRepository)
-        self.assertIsInstance(config.repositories[1], OldstyleRepository)
+        self.assertIsInstance(config.repositories[0], OldstyleRepositoryInfo)
+        self.assertIsInstance(config.repositories[1], OldstyleRepositoryInfo)
         self.assertEqual(r_indices,
                          tuple(repository.index_url for repository in
                                config.repositories))

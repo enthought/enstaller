@@ -13,8 +13,8 @@ from egginst.progress import (console_progress_manager_factory,
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
-from enstaller.legacy_stores import parse_index
-from enstaller.repository import Repository, egg_name_to_name_version
+from enstaller.repository import (Repository, egg_name_to_name_version,
+                                  parse_index)
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.solver import Request, Requirement
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
@@ -223,9 +223,9 @@ def _print_warning(msg, width=DEFAULT_TEXT_WIDTH):
     print(wrapper.fill(msg) + "\n")
 
 
-def _fetch_repository(session, url, store_location, raise_on_error):
+def _fetch_repository(session, repository_info, raise_on_error):
     with session.etag():
-        resp = session.get(url, stream=True)
+        resp = session.get(repository_info.index_url, stream=True)
         if resp.status_code != 200:
             if _should_raise(resp, raise_on_error):
                 resp.raise_for_status()
@@ -236,7 +236,7 @@ def _fetch_repository(session, url, store_location, raise_on_error):
             for chunk in _ResponseIterator(resp):
                 data.write(chunk)
             json_data = decode_json_from_buffer(data.getvalue())
-            return Repository(parse_index(json_data, store_location))
+            return Repository(parse_index(json_data, repository_info))
 
 
 def _print_unavailables_warning(unavailables):
@@ -268,23 +268,24 @@ def _write_and_flush(s, quiet):
         sys.stdout.flush()
 
 
-def repository_factory(session, indices, quiet=False, raise_on_error=False):
+def repository_factory(session, repository_infos, quiet=False,
+                       raise_on_error=False):
     unavailables = []
     full_repository = Repository()
 
     _write_and_flush("Fetching indices: ", quiet)
 
     with ThreadPoolExecutor(max_workers=4) as executor:
-        tasks = []
-        for url, store_location in indices:
-            task = executor.submit(_fetch_repository, session, url,
-                                   store_location, raise_on_error)
-            tasks.append(task)
+        tasks = {}
+        for repository_info in repository_infos:
+            task = executor.submit(_fetch_repository, session,
+                                   repository_info, raise_on_error)
+            tasks[task] = repository_info
 
         for task in as_completed(tasks):
             repository_or_none = task.result()
             if repository_or_none is None:
-                unavailables.append(store_location)
+                unavailables.append(tasks[task])
             else:
                 for package in repository_or_none.iter_packages():
                     full_repository.add_package(package)

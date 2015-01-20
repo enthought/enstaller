@@ -1,4 +1,6 @@
-from enstaller.repository import Repository, RepositoryPackageMetadata
+import enstaller.repository
+
+from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.utils import PY_VER
 
 
@@ -19,15 +21,10 @@ def parse_index(json_dict, store_location, python_version=PY_VER):
         equal to this string. If python_version == "*", then every package is
         iterated over.
     """
-    for key, info in json_dict.items():
-        info.setdefault('type', 'egg')
-        info.setdefault('packages', [])
-        info["store_location"] = store_location
-        info.setdefault('python', python_version)
-        if python_version == "*":
-            yield RepositoryPackageMetadata.from_json_dict(key, info)
-        elif info["python"] in (None, python_version):
-            yield RepositoryPackageMetadata.from_json_dict(key, info)
+    fake_repository_info = OldstyleRepositoryInfo(store_location)
+    return enstaller.repository.parse_index(json_dict,
+                                            fake_repository_info,
+                                            python_version)
 
 
 def repository_factory(session, indices):
@@ -51,7 +48,7 @@ def repository_factory(session, indices):
         with session.etag():
             repository = repository_factory(session, ...)
     """
-    repository = Repository()
+    repository = enstaller.repository.Repository()
     for url, store_location in indices:
         resp = session.fetch(url)
         json_data = resp.json()

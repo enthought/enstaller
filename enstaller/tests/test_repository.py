@@ -10,14 +10,19 @@ from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, m
 from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
+from enstaller.config import Configuration, STORE_KIND_BROOD
 from enstaller.errors import NoSuchPackage
+from enstaller.session import Session
 from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.repository import (InstalledPackageMetadata, PackageMetadata,
                                   Repository, RepositoryPackageMetadata,
                                   egg_name_to_name_version)
+from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
-from enstaller.tests.common import dummy_installed_package_factory
+from enstaller.tests.common import (SIMPLE_INDEX,
+                                    dummy_installed_package_factory,
+                                    mock_brood_repository_indices)
 from enstaller.utils import PY_VER
 
 
@@ -98,19 +103,26 @@ class TestPackage(unittest.TestCase):
 
 
 class TestRepositoryPackage(unittest.TestCase):
+    def setUp(self):
+        self.repository_info = BroodRepositoryInfo("https://acme.com",
+                                                   "enthought/free")
+
     def test_eq(self):
         # Given
         V = EnpkgVersion.from_string
         md5 = "a" * 32
         package1 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
                                              V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True, "")
+                                             md5, 0.0, "free", True,
+                                             self.repository_info)
         package2 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
                                              V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True, "")
+                                             md5, 0.0, "free", True,
+                                             self.repository_info)
         package3 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
                                              V("1.3.0-1"), [], "2.7", 1,
-                                             "b" * 32, 0.0, "free", True, "")
+                                             "b" * 32, 0.0, "free", True,
+                                             self.repository_info)
 
         # Then
         self.assertTrue(package1 == package2)
@@ -147,27 +159,26 @@ class TestRepositoryPackage(unittest.TestCase):
     def test_from_egg(self):
         # Given
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
+        repository_info = FSRepositoryInfo(path_to_uri(os.path.dirname(path)))
 
         # When
-        metadata = RepositoryPackageMetadata.from_egg(path)
+        metadata = RepositoryPackageMetadata.from_egg(path, repository_info)
 
         # Then
         self.assertEqual(metadata.name, "nose")
         self.assertEqual(metadata.version, EnpkgVersion.from_string("1.3.0-1"))
-        self.assertEqual(metadata.store_location,
-                         "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
         self.assertEqual(metadata.source_url, path_to_uri(path))
 
     def test_repr(self):
         # Given
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
-        store_location = path_to_uri(os.path.dirname(path)) + "/"
         r_repr = ("RepositoryPackageMetadata('nose-1.3.0-1', "
                   "key='nose-1.3.0-1.egg', available=True, product=None, "
-                  "store_location='{0}')".format(store_location))
+                  "repository_info='{0}')".format(self.repository_info))
 
         # When
-        metadata = RepositoryPackageMetadata.from_egg(path)
+        metadata = RepositoryPackageMetadata.from_egg(path,
+                                                      self.repository_info)
 
         # Then
         self.assertEqual(repr(metadata), r_repr)
@@ -279,6 +290,41 @@ class TestRepository(unittest.TestCase):
             package = RepositoryPackageMetadata.from_egg(path)
             self.repository.add_package(package)
 
+    @mock_brood_repository_indices({}, ["enthought/free"])
+    def test_from_repository_info_empty(self):
+        # Given
+        repository_info = BroodRepositoryInfo("https://api.enthought.com",
+                                              "enthought/free")
+        config = Configuration(use_webservice=False,
+                               auth=("nono", "password"))
+        config._store_kind = STORE_KIND_BROOD
+
+        session = Session.authenticated_from_configuration(config)
+
+        # When
+        repository = Repository.from_repository_info(session, repository_info)
+
+        # Then
+        self.assertEqual(len(repository), 0)
+
+    @mock_brood_repository_indices(SIMPLE_INDEX, ["enthought/free"])
+    def test_from_repository_info_nonempty(self):
+        # Given
+        repository_info = BroodRepositoryInfo("https://api.enthought.com",
+                                              "enthought/free")
+        config = Configuration(use_webservice=False,
+                               auth=("nono", "password"))
+        config._store_kind = STORE_KIND_BROOD
+
+        session = Session.authenticated_from_configuration(config)
+
+        # When
+        repository = Repository.from_repository_info(session, repository_info)
+
+        # Then
+        self.assertEqual(len(repository), 1)
+        self.assertEqual(len(repository.find_packages("nose")), 1)
+
     def test_ctor(self):
         # When
         repository = Repository()
@@ -324,8 +370,8 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata.python, "2.7")
 
         self.assertEqual(metadata.available, True)
-        self.assertEqual(metadata.store_location,
-                         "{0}/".format(path_to_uri(_EGGINST_COMMON_DATA)))
+        self.assertEqual(metadata.repository_info,
+                         FSRepositoryInfo(path_to_uri(_EGGINST_COMMON_DATA)))
 
         self.assertEqual(metadata.size, os.path.getsize(path))
         self.assertEqual(metadata.md5, compute_md5(path))

@@ -46,7 +46,7 @@ class TestListDependencies(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            query_platform(session, config.indices, "numpy", custom_plat)
+            query_platform(session, config.repositories, "numpy", custom_plat)
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)

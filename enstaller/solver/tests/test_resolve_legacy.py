@@ -9,6 +9,7 @@ from enstaller.utils import PY_VER
 from egginst.vendor.six.moves import unittest
 
 from enstaller.indexed_repo.metadata import parse_depend_index
+from enstaller.repository_info import FSRepositoryInfo
 
 from ..resolve import Resolve
 from ..requirement import Requirement
@@ -22,18 +23,17 @@ def _old_style_index_to_packages(index_path, python_version):
     with open(index_path) as fp:
         index_data = fp.read()
 
+    repository_info = FSRepositoryInfo(os.path.dirname(index_path))
+
     packages = []
     index = parse_depend_index(index_data)
     for key, spec in index.items():
         spec['name'] = spec['name'].lower()
         spec['type'] = 'egg'
-        spec['store_location'] = os.path.dirname(index_path)
 
-        if python_version == "*":
-            package = RepositoryPackageMetadata.from_json_dict(key, spec)
-            packages.append(package)
-        elif spec["python"] in (None, python_version):
-            package = RepositoryPackageMetadata.from_json_dict(key, spec)
+        if python_version == "*" or spec["python"] in (None, python_version):
+            package = RepositoryPackageMetadata.from_json_dict(key, spec,
+                                                               repository_info)
             packages.append(package)
 
     return packages

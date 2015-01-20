@@ -30,7 +30,7 @@ from enstaller.proxy_info import ProxyInfo
 from enstaller.repository_info import (BroodRepositoryInfo,
                                        CanopyRepositoryInfo,
                                        FSRepositoryInfo,
-                                       OldstyleRepository)
+                                       OldstyleRepositoryInfo)
 from enstaller.utils import real_prefix, under_venv
 from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
@@ -413,6 +413,9 @@ class Configuration(object):
         configuration.
 
         Takes into account webservice/no webservice and pypi True/False
+
+        .. deprecated:: 4.9.0
+            Use the repositories property instead
         """
         return tuple((repository_info.index_url, repository_info._base_url)
                      for repository_info in self.repositories)
@@ -654,7 +657,7 @@ class Configuration(object):
 
     def _set_indexed_repositories(self, urls):
         self._indexed_repositories = tuple(fill_url(url) for url in urls)
-        self._repositories = tuple(OldstyleRepository(url) for url in
+        self._repositories = tuple(OldstyleRepositoryInfo(url) for url in
                                    self._indexed_repositories)
 
     def _set_max_retries(self, raw_max_retries):

@@ -42,7 +42,8 @@ class TestUserInfo(unittest.TestCase):
         config.update(use_webservice=False, auth=FAKE_AUTH)
         config.update(indexed_repositories=[url])
 
-        responses.add(responses.HEAD, config.indices[0][0], status=200)
+        responses.add(responses.HEAD, config.repositories[0].index_url,
+                      status=200)
 
         session = Session.from_configuration(config)
         session.authenticate(config.auth)

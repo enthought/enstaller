@@ -29,15 +29,21 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
             the package metadata
         """
 
+    @abc.abstractproperty
+    def _key(self):
+        pass
+
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
         else:
-            return (self.index_url == other.index_url
-                    and self._base_url == other._base_url)
+            return self._key == other._key
 
     def __ne__(self, other):
         return not (self == other)
+
+    def __hash__(self):
+        return hash(self._key)
 
 
 class ILegacyRepositoryInfo(IRepositoryInfo):
@@ -50,6 +56,10 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
         self._store_url = store_url
         self._use_pypi = use_pypi
         self._path = "/eggs/{0._platform}".format(self)
+
+    @property
+    def _key(self):
+        return (self._platform, self._store_url, self._use_pypi)
 
     @property
     def index_url(self):
@@ -69,7 +79,7 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
                                     self._path + "/" + package.key)
 
 
-class OldstyleRepository(ILegacyRepositoryInfo):
+class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
     def __init__(self, store_url):
         self._store_url = store_url
 
@@ -81,6 +91,10 @@ class OldstyleRepository(ILegacyRepositoryInfo):
     def _base_url(self):
         return self._store_url
 
+    @property
+    def _key(self):
+        return (self._store_url, )
+
     def _package_url(self, package):
         return urllib.parse.urljoin(self._store_url, package.key)
 
@@ -89,16 +103,6 @@ class IBroodRepositoryInfo(IRepositoryInfo):
     @abc.abstractproperty
     def name(self):
         """ An arbitrary string identifying the repository."""
-
-    def __eq__(self, other):
-        if not isinstance(other, self.__class__):
-            return False
-        else:
-            return (super(IBroodRepositoryInfo, self).__eq__(other)
-                    and self.name == other.name)
-
-    def __ne__(self, other):
-        return not (self == other)
 
 
 class BroodRepositoryInfo(IBroodRepositoryInfo):
@@ -120,6 +124,10 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
     @property
     def _base_url(self):
         return urllib.parse.urljoin(self._store_url, self._path + "/")
+
+    @property
+    def _key(self):
+        return (self._name, self._platform, self._store_url)
 
     def _package_url(self, package):
         return urllib.parse.urljoin(self._store_url, self._path + "/" + package.key)
@@ -143,6 +151,10 @@ class FSRepositoryInfo(IBroodRepositoryInfo):
     @property
     def _base_url(self):
         return self._store_url
+
+    @property
+    def _key(self):
+        return (self._store_url,)
 
     def _package_url(self, package):
         return posixpath.join(self._store_url, package.key)

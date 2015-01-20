@@ -326,7 +326,7 @@ class TestMisc(unittest.TestCase):
 
         # When
         with Session(DummyAuthenticator(), self.tempdir) as session:
-            repository = repository_factory(session, config.indices)
+            repository = repository_factory(session, config.repositories)
 
         # Then
         repository.find_package("numpy", "1.8.0-1")
