@@ -152,6 +152,17 @@ class Test_RawRequirementParser(unittest.TestCase):
         # Then
         self.assertEqual(constraints, r_constraints)
 
+    def test_dotted_name(self):
+        # Given
+        requirement_string = "scikits.statsmodels"
+        r_constraints = {"scikits.statsmodels": set([Any()])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
     def test_invalid(self):
         # Given
         requirement_string = "numpy >= "
