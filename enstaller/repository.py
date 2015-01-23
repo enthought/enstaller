@@ -11,6 +11,7 @@ from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, NoSuchPackage
 from enstaller.eggcollect import info_from_metadir
+from enstaller.egg_meta import split_eggname
 from enstaller.repository_info import FSRepositoryInfo
 from enstaller.utils import compute_md5, path_to_uri, PY_VER
 from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
@@ -63,6 +64,10 @@ class PackageMetadata(object):
     def __repr__(self):
         return "PackageMetadata('{0}-{1}', key={2!r})".format(
             self.name, self.version, self.key)
+
+    @property
+    def _egg_name(self):
+        return split_eggname(self.key)[0]
 
     @property
     def _key(self):

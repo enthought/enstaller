@@ -101,6 +101,17 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.dependencies, frozenset())
         self.assertEqual(metadata.packages, [])
 
+    def test_casing(self):
+        # Given
+        version = EnpkgVersion.from_string("10.3-1")
+        metadata = PackageMetadata("MKL-10.3-1.egg", "mkl", version, [],
+                                   "2.7")
+
+        # When/Then
+        # Then
+        self.assertEqual(metadata.name, "mkl")
+        self.assertEqual(metadata._egg_name, "MKL")
+
 
 class TestRepositoryPackage(unittest.TestCase):
     def setUp(self):
