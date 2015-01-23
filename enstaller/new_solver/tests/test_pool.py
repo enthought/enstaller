@@ -29,6 +29,21 @@ class TestPool(unittest.TestCase):
         self.assertEqual(len(candidates), 1)
         self.assertEqual(candidates[0].full_version, "1.8.1-1")
 
+    def test_what_provides_casing(self):
+        # Given
+        index_path = os.path.join(DATA_DIR, "numpy_index.json")
+        repository = repository_from_index(index_path)
+        requirement = Requirement._from_string("MKL ~= 10.2")
+
+        # When
+        pool = Pool([repository])
+        candidates = pool.what_provides(requirement)
+        versions = [candidate.full_version for candidate in candidates]
+
+        # Then
+        assertCountEqual(self, versions,
+                         ["10.2-1", "10.2-2"])
+
     def test_what_provides_simple(self):
         # Given
         index_path = os.path.join(DATA_DIR, "numpy_index.json")
