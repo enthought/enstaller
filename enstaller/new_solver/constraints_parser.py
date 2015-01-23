@@ -15,7 +15,6 @@ _LEQ_R = r"<="
 _LT_R = r"<"
 _NOT_R = r"!="
 _ENPKG_UPSTREAM_MATCH_R = r"~="
-_COMMA_R = ","
 _ANY_R = r"\*"
 _WS_R = " +"
 
@@ -29,7 +28,6 @@ _CONSTRAINTS_SCANNER = re.Scanner([
     (_NOT_R, lambda scanner, token: NotToken(token)),
     (_ENPKG_UPSTREAM_MATCH_R,
         lambda scanner, token: EnpkgUpstreamMatchToken(token)),
-    (_COMMA_R, lambda scanner, token: CommaToken(token)),
     (_ANY_R, lambda scanner, token: AnyToken(token)),
     (_WS_R, lambda scanner, token: None),
 ])
@@ -47,7 +45,6 @@ _REQUIREMENTS_SCANNER = re.Scanner([
     (_NOT_R, lambda scanner, token: NotToken(token)),
     (_ENPKG_UPSTREAM_MATCH_R,
         lambda scanner, token: EnpkgUpstreamMatchToken(token)),
-    (_COMMA_R, lambda scanner, token: CommaToken(token)),
     (_ANY_R, lambda scanner, token: AnyToken(token)),
     (_WS_R, lambda scanner, token: None),
 ])
@@ -108,32 +105,6 @@ class NotToken(ComparisonToken):
     kind = "not"
 
 
-def iter_over_requirement(tokens):
-    """Yield a single requirement 'block' (i.e. a sequence of tokens between
-    comma).
-
-    Parameters
-    ----------
-    tokens: iterator
-        Iterator of tokens
-    """
-    while True:
-        block = []
-        try:
-            token = next(tokens)
-        except StopIteration:
-            return
-
-        try:
-            while not isinstance(token, CommaToken):
-                block.append(token)
-                token = next(tokens)
-            yield block
-        except StopIteration:
-            yield block
-            return
-
-
 _OPERATOR_TO_SPEC = {
     EnpkgUpstreamMatchToken: EnpkgUpstreamMatch,
     EqualToken: Equal,
@@ -155,12 +126,17 @@ def _spec_factory(comparison_token):
 
 
 def _tokenize(scanner, requirement_string):
-    scanned, remaining = scanner.scan(requirement_string)
-    if len(remaining) > 0:
-        msg = "Invalid requirement string: {0!r}".  format(requirement_string)
-        raise SolverException(msg)
-    else:
-        return iter(scanned)
+    tokens = []
+
+    parts = requirement_string.split(",")
+    for part in parts:
+        scanned, remaining = scanner.scan(part.strip())
+        if len(remaining) > 0:
+            msg = "Invalid requirement string: {0!r}".  format(requirement_string)
+            raise SolverException(msg)
+        elif len(scanned) > 0:
+            tokens.append(scanned)
+    return tokens
 
 
 def _operator_factory(operator, version, version_factory):
@@ -181,14 +157,14 @@ class _RawConstraintsParser(object):
                 constraints.add(_operator_factory(operator, version,
                                                   version_factory))
             else:
-                msg = ("Invalid requirement block: {0!r}".
-                       format(requirement_block))
+                msg = ("Invalid requirement string: {0!r}".
+                       format(requirement_string))
                 raise SolverException(msg)
 
         constraints = set()
-        tokens_stream = _tokenize(self._scanner, requirement_string)
+        tokens_blocks = _tokenize(self._scanner, requirement_string)
 
-        for requirement_block in iter_over_requirement(tokens_stream):
+        for requirement_block in tokens_blocks:
             add_constraint(constraints, requirement_block)
 
         return constraints
@@ -216,9 +192,9 @@ class _RawRequirementParser(object):
                 raise SolverException(msg)
 
         constraints = collections.defaultdict(set)
-        tokens_stream = _tokenize(self._scanner, requirement_string)
+        tokens_blocks = _tokenize(self._scanner, requirement_string)
 
-        for requirement_block in iter_over_requirement(tokens_stream):
+        for requirement_block in tokens_blocks:
             add_constraint(constraints, requirement_block)
 
         return constraints
