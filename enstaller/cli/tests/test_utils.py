@@ -1,5 +1,6 @@
 from __future__ import absolute_import
 
+import os
 import re
 import shutil
 import sys
@@ -28,9 +29,9 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
 from enstaller.vendor import requests, responses
 from enstaller.versions.enpkg import EnpkgVersion
 
-from ..utils import (disp_store_info, install_req, install_time_string,
-                     name_egg, print_installed, repository_factory,
-                     updates_check)
+from ..utils import (disp_store_info, exit_if_root_on_non_owned, install_req,
+                     install_time_string, name_egg, print_installed,
+                     repository_factory, updates_check)
 from ..utils import _fetch_json_with_progress, _print_warning
 
 
@@ -46,6 +47,29 @@ else:
 
 FAKE_AUTH = ("nono", "le gros robot")
 V = EnpkgVersion.from_string
+
+
+class TestExitIfRootOnNonOwned(unittest.TestCase):
+    @mock.patch("enstaller.cli.utils.sys.platform", "win32")
+    def test_windows(self):
+        exit_if_root_on_non_owned()
+
+    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
+    @mock.patch("enstaller.cli.utils.sys.platform", "linux")
+    @mock.patch("os.getuid", lambda: 0)
+    def test_sudo(self):
+        with mock.patch("enstaller.cli.utils.is_running_on_non_owned_python",
+                        return_value=False):
+            exit_if_root_on_non_owned()
+
+        with mock.patch("enstaller.cli.utils.is_running_on_non_owned_python",
+                        return_value=True):
+            with mock_raw_input(""):
+                with self.assertRaises(SystemExit):
+                    exit_if_root_on_non_owned()
+
+            with mock_raw_input("yes"):
+                exit_if_root_on_non_owned()
 
 
 class TestMisc(unittest.TestCase):

@@ -42,8 +42,7 @@ from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import Request, Requirement
-from enstaller.utils import (abs_expanduser, exit_if_sudo_on_venv,
-                             input_auth, prompt_yes_no)
+from enstaller.utils import abs_expanduser, input_auth, prompt_yes_no
 from enstaller.vendor import requests
 from enstaller.versions.enpkg import EnpkgVersion
 
@@ -51,7 +50,8 @@ from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
                                     list_option, print_history, revert, search,
                                     update_all, whats_new)
-from enstaller.cli.utils import (humanize_ssl_error_and_die, install_req,
+from enstaller.cli.utils import (exit_if_root_on_non_owned,
+                                 humanize_ssl_error_and_die, install_req,
                                  repository_factory)
 
 from enstaller._update_support import inplace_update
@@ -623,7 +623,7 @@ def main(argv=None):
                   "setup accordingly"
             warnings.warn(msg)
 
-    exit_if_sudo_on_venv(prefix)
+    exit_if_root_on_non_owned(args.yes)
 
     logger.info("prefixes")
     for prefix in prefixes:

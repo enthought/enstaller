@@ -13,7 +13,7 @@ from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
 from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import canonical, comparable_version, input_auth, \
-    path_to_uri, uri_to_path, info_file, cleanup_url, exit_if_sudo_on_venv, \
+    path_to_uri, uri_to_path, info_file, cleanup_url, \
     prompt_yes_no
 from .common import mock_input, mock_print, mock_raw_input
 
@@ -93,40 +93,6 @@ class TestUtils(unittest.TestCase):
         url, r_url = "file://foo/bar", "file://foo/bar/"
 
         self.assertEqual(cleanup_url(url), r_url)
-
-
-class TestExitIfSudoOnVenv(unittest.TestCase):
-    @mock.patch("enstaller.utils.sys.platform", "win32")
-    def test_windows(self):
-        exit_if_sudo_on_venv("some_prefix")
-
-    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
-    @mock.patch("enstaller.utils.sys.platform", "linux")
-    @mock.patch("os.getuid", lambda: 0)
-    def test_no_venv(self):
-        exit_if_sudo_on_venv("some_prefix")
-
-    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
-    @mock.patch("enstaller.utils.sys.platform", "linux")
-    @mock.patch("os.getuid", lambda: 0)
-    def test_venv_sudo(self):
-        d = tempfile.mkdtemp()
-        pyvenv = os.path.join(d, "pyvenv.cfg")
-        with open(pyvenv, "w") as fp:
-            fp.write("")
-
-        self.assertRaises(SystemExit, lambda: exit_if_sudo_on_venv(d))
-
-    @unittest.skipIf(sys.platform == "win32", "no getuid on windows")
-    @mock.patch("enstaller.utils.sys.platform", "linux")
-    @mock.patch("os.getuid", lambda: 1)
-    def test_venv_no_sudo(self):
-        d = tempfile.mkdtemp()
-        pyvenv = os.path.join(d, "pyvenv.cfg")
-        with open(pyvenv, "w") as fp:
-            fp.write("")
-
-        exit_if_sudo_on_venv(d)
 
 
 class TestUri(unittest.TestCase):
