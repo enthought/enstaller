@@ -152,9 +152,43 @@ class Test_RawRequirementParser(unittest.TestCase):
         # Then
         self.assertEqual(constraints, r_constraints)
 
+        # Given
+        requirement_string = "scikits.statsmodels"
+        r_constraints = {"scikits.statsmodels": set([Any()])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+        # Given
+        requirement_string = "special_package.123"
+        r_constraints = {"special_package.123": set([Any()])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
     def test_invalid(self):
         # Given
         requirement_string = "numpy >= "
+
+        # When/Then
+        with self.assertRaises(SolverException):
+            self._parse(requirement_string)
+
+        # Given
+        requirement_string = "numpy-no-mkl"
+
+        # When/Then
+        with self.assertRaises(SolverException):
+            self._parse(requirement_string)
+
+        # Given
+        requirement_string = "numpy mkl"
 
         # When/Then
         with self.assertRaises(SolverException):
