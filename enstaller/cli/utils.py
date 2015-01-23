@@ -346,7 +346,7 @@ def is_running_on_non_owned_python():
 def exit_if_root_on_non_owned(force_yes=False):
     if is_running_on_non_owned_python():
         msg = ("You are running enpkg in a python installation not "
-               "own by root, are you sure to continue ? (y/[n])")
+               "owned by root, are you sure to continue ? (y/[n])")
         if not prompt_yes_no(msg, force_yes=force_yes):
             sys.exit(-1)
 
