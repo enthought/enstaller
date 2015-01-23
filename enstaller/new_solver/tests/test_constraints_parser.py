@@ -186,3 +186,10 @@ class Test_RawRequirementParser(unittest.TestCase):
         # When/Then
         with self.assertRaises(SolverException):
             self._parse(requirement_string)
+
+        # Given
+        requirement_string = "numpy mkl"
+
+        # When/Then
+        with self.assertRaises(SolverException):
+            self._parse(requirement_string)
