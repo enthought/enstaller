@@ -10,7 +10,7 @@ import sys
 import textwrap
 import zlib
 
-from os.path import abspath, expanduser, getmtime, getsize, isfile, join
+from os.path import abspath, expanduser, getmtime, getsize
 
 from egginst.utils import compute_md5
 
@@ -86,33 +86,6 @@ def fill_url(url):
     url = url.replace('{SUBDIR}', plat.subdir)
     url = url.replace('{PLATFORM}', plat.custom_plat)
     return cleanup_url(url)
-
-
-def exit_if_sudo_on_venv(prefix):
-    """ Exits the running process with a message to run as non-sudo user.
-
-    All the following conditions should match:
-        - if the platform is non-windows
-        - if we are running inside a venv
-        - and the script is run as root/sudo
-
-    """
-
-    if sys.platform == 'win32':
-        return
-
-    if not isfile(join(prefix, 'pyvenv.cfg')):
-        return
-
-    import os
-
-    if os.getuid() != 0:
-        return
-
-    print('You are running enpkg as a root user inside a virtual environment. '
-          'Please run it as a normal user')
-
-    sys.exit(1)
 
 
 def path_to_uri(path):

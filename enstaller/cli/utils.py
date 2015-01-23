@@ -2,6 +2,8 @@ from __future__ import absolute_import, print_function
 
 import errno
 import io
+import os
+import os.path
 import sys
 import textwrap
 
@@ -327,6 +329,25 @@ def humanize_ssl_error_and_die(ssl_exception, store_url):
     print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
           "command".format(p.hostname))
     sys.exit(-1)
+
+
+def is_running_on_non_owned_python():
+    """Returns True if the running python process is owned by root
+    and sys.executable is owned by a different uid.
+    """
+    if sys.platform == 'win32':
+        return False
+    else:
+        return (os.getuid() == 0
+                and os.stat(sys.executable).st_uid != os.getuid())
+
+
+def exit_if_root_on_non_owned(force_yes=False):
+    if is_running_on_non_owned_python():
+        msg = ("You are running enpkg in a python installation not "
+               "owned by root, are you sure to continue ? (y/[n])")
+        if not prompt_yes_no(msg, force_yes=force_yes):
+            sys.exit(-1)
 
 
 # Private functions
