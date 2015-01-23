@@ -153,6 +153,17 @@ class Test_RawRequirementParser(unittest.TestCase):
         self.assertEqual(constraints, r_constraints)
 
         # Given
+        requirement_string = "MKL == 10.3-1, numpy"
+        r_constraints = {"numpy": set([Any()]),
+                         "MKL": set([Equal(V("10.3-1"))])}
+
+        # When
+        constraints = self._parse(requirement_string)
+
+        # Then
+        self.assertEqual(constraints, r_constraints)
+
+        # Given
         requirement_string = "scikits.statsmodels"
         r_constraints = {"scikits.statsmodels": set([Any()])}
 
