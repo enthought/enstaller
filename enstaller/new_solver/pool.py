@@ -32,7 +32,7 @@ class Pool(object):
 
             self._packages_by_id[package.id] = package
 
-            self._packages_by_name[package.name].append(package)
+            self._packages_by_name[package._egg_name].append(package)
 
     def what_provides(self, requirement):
         """ Computes the list of packages fulfilling the given
