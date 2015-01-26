@@ -6,7 +6,6 @@ import sys
 import time
 
 from egginst.eggmeta import info_from_z
-from egginst.vendor.six.moves import urllib
 from egginst._zipfile import ZipFile
 
 from enstaller.errors import EnstallerException, NoSuchPackage
