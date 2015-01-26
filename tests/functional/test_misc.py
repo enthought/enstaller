@@ -49,7 +49,8 @@ settings:
 You are logged in as 'dummy' (David Cournapeau).
 Subscription level: Canopy / EPD Basic or above
 """)
-        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix,
+        r_output = template.format(pyver=PY_VER,
+                                   sys_prefix=os.path.normpath(sys.prefix),
                                    version=__version__,
                                    platform=platform.platform(),
                                    arch=platform.architecture()[0],
@@ -193,7 +194,8 @@ settings:
 You are logged in as 'dummy' (David Cournapeau).
 Subscription level: Canopy / EPD Basic or above
 """)
-        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix,
+        r_output = template.format(pyver=PY_VER,
+                                   sys_prefix=os.path.normpath(sys.prefix),
                                    version=__version__,
                                    platform=platform.platform(),
                                    arch=platform.architecture()[0],

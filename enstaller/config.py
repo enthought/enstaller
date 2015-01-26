@@ -325,7 +325,7 @@ class Configuration(object):
         self._use_pypi = True
         self._use_webservice = True
 
-        self._prefix = sys.prefix
+        self._prefix = os.path.normpath(sys.prefix)
         self._indexed_repositories = []
         self._repositories = []
         self._store_url = "https://api.enthought.com"
