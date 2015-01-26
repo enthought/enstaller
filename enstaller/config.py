@@ -673,7 +673,7 @@ class Configuration(object):
             self._max_retries = max_retries
 
     def _set_prefix(self, prefix):
-        self._prefix = abs_expanduser(prefix)
+        self._prefix = os.path.normpath(abs_expanduser(prefix))
 
     def _set_proxy(self, proxy_string):
         self._proxy = ProxyInfo.from_string(proxy_string)
@@ -686,7 +686,8 @@ class Configuration(object):
         self._store_url = url
 
     def _set_repository_cache(self, value):
-        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
+        normalized = os.path.normpath(abs_expanduser(value))
+        self._repository_cache = _get_writable_local_dir(normalized)
 
     def _simple_attribute_set_factory(self, attribute_name):
         return lambda value: setattr(self, attribute_name, value)
