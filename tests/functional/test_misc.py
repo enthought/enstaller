@@ -1,7 +1,9 @@
 import json
 import os.path
 import platform
+import shutil
 import sys
+import tempfile
 import textwrap
 
 import mock
@@ -143,3 +145,67 @@ Subscription level: Canopy / EPD Basic or above
 
         # Then
         self.assertEqual(e.exception.code, 0)
+
+
+class TestPrefix(unittest.TestCase):
+    def setUp(self):
+        self.prefix = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.prefix)
+
+    @authenticated_config
+    @mock_index({
+        "fubar-1.0.0-1.egg": {
+            "available": True,
+            "build": 1,
+            "md5": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "mtime": 0.0,
+            "name": "fubar",
+            "packages": [],
+            "product": "nono",
+            "python": PY_VER,
+            "size": 0,
+            "type": "egg",
+            "version": "1.0.0"
+            }}, "https://api.enthought.com")
+    def test_simple(self):
+        self.maxDiff = None
+
+        # Given
+        responses.add(responses.GET,
+                      "https://api.enthought.com/accounts/user/info/",
+                      body=json.dumps(R_JSON_AUTH_RESP))
+
+        template = textwrap.dedent("""\
+Python version: {pyver}
+enstaller version: {version}
+sys.prefix: {sys_prefix}
+platform: {platform}
+architecture: {arch}
+use_webservice: True
+keyring backend: {keyring_backend}
+settings:
+    prefix = {prefix}
+    repository_cache = {repository_cache}
+    noapp = False
+    proxy = None
+You are logged in as 'dummy' (David Cournapeau).
+Subscription level: Canopy / EPD Basic or above
+""")
+        r_output = template.format(pyver=PY_VER, sys_prefix=sys.prefix,
+                                   version=__version__,
+                                   platform=platform.platform(),
+                                   arch=platform.architecture()[0],
+                                   keyring_backend=_keyring_backend_name(),
+                                   prefix=os.path.normpath(self.prefix),
+                                   repository_cache=os.path.join(self.prefix,
+                                                                 "LOCAL-REPO"))
+
+        # When
+        with self.assertRaises(SystemExit):
+            with mock_print() as m:
+                main_noexc(["--config", "--prefix={0}".format(self.prefix)])
+
+        # Then
+        self.assertEqual(m.value, r_output)

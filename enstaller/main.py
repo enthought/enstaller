@@ -614,6 +614,7 @@ def main(argv=None):
     setup_proxy_or_die(config, args.proxy)
 
     prefix, prefixes = _compute_prefixes(args, config)
+    config.update(prefix=prefix)
 
     if args.user:
         try:
