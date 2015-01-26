@@ -541,8 +541,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple(self):
@@ -580,8 +579,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -616,8 +614,7 @@ class TestConfigurationPrint(unittest.TestCase):
                       use_webservice=False)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 

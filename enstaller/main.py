@@ -272,7 +272,7 @@ def dispatch_commands_without_enpkg(args, config, config_filename, prefixes,
         return True
 
     if args.config:                               # --config
-        print_config(config, prefixes[0], session)
+        print_config(config, session)
         return True
 
     if args.add_url:                              # --add-url

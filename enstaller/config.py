@@ -703,7 +703,7 @@ def prepend_url(filename, url):
         fp.write(data)
 
 
-def print_config(config, prefix, session):
+def print_config(config, session):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
     print("sys.prefix:", sys.prefix)
@@ -714,7 +714,7 @@ def print_config(config, prefix, session):
         print("config file:", config.filename)
     print("keyring backend: %s" % (_keyring_backend_name(), ))
     print("settings:")
-    print("    prefix = %s" % os.path.normpath(prefix))
+    print("    prefix = %s" % config.prefix)
     print("    %s = %s" % ("repository_cache", config.repository_cache))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))
