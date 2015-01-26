@@ -566,19 +566,21 @@ def _ensure_config_or_die():
 
 
 def _compute_prefixes(args, config):
+    sys_prefix = os.path.normpath(sys.prefix)
+
     # make prefix
     if args.sys_prefix:
-        prefix = sys.prefix
+        prefix = sys_prefix
     elif args.prefix:
-        prefix = args.prefix
+        prefix = os.path.normpath(args.prefix)
     else:
         prefix = config.prefix
 
     # now make prefixes
-    if prefix == sys.prefix:
-        prefixes = [sys.prefix]
+    if prefix == sys_prefix:
+        prefixes = [sys_prefix]
     else:
-        prefixes = [prefix, sys.prefix]
+        prefixes = [prefix, sys_prefix]
 
     return prefix, prefixes
 

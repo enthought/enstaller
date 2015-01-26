@@ -73,12 +73,18 @@ Subscription level: Canopy / EPD Basic or above
 
     @authenticated_config
     def test_list_bare(self):
+        # Given
+        sys_prefix = os.path.normpath(sys.prefix)
+
+        # When
         with mock.patch("enstaller.cli.commands.print_installed"):
             with self.assertRaises(SystemExit) as e:
                 with mock_print() as m:
                     main_noexc(["--list"])
-            self.assertMultiLineEqual(m.value, "prefix: {0}\n\n".format(sys.prefix))
-            self.assertEqual(e.exception.code, 0)
+
+        # Then
+        self.assertEqual(e.exception.code, 0)
+        self.assertMultiLineEqual(m.value, "prefix: {0}\n\n".format(sys_prefix))
 
     @authenticated_config
     def test_log(self):
