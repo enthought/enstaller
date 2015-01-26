@@ -331,7 +331,7 @@ class Configuration(object):
         self._store_url = "https://api.enthought.com"
         self._store_kind = STORE_KIND_LEGACY
 
-        self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
+        self._repository_cache = None
 
         self._filename = None
         self._platform = plat.custom_plat
@@ -473,7 +473,10 @@ class Configuration(object):
         """
         Absolute path where eggs will be cached.
         """
-        return self._repository_cache
+        if self._repository_cache is None:
+            return join(self.prefix, "LOCAL-REPO")
+        else:
+            return self._repository_cache
 
     @property
     def store_kind(self):
