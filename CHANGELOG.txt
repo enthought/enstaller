@@ -7,6 +7,8 @@ Bug fixes:
 
   * Fix race condition when fetching indices (#449).
   * Fix wrong IAuth definition (#446).
+  * Fix running enpkg as root (#458)
+  * Fix enpkg --prefix handling (#473)
 
 Internals:
 
