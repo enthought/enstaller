@@ -326,7 +326,7 @@ class Configuration(object):
         self._store_url = "https://api.enthought.com"
         self._store_kind = STORE_KIND_LEGACY
 
-        self._repository_cache = join(sys.prefix, 'LOCAL-REPO')
+        self._repository_cache = None
 
         self._filename = None
         self._platform = plat.custom_plat
@@ -465,7 +465,10 @@ class Configuration(object):
         """
         Absolute path where eggs will be cached.
         """
-        return self._repository_cache
+        if self._repository_cache is None:
+            return join(self.prefix, "LOCAL-REPO")
+        else:
+            return self._repository_cache
 
     @property
     def store_kind(self):
@@ -660,7 +663,7 @@ class Configuration(object):
             self._max_retries = max_retries
 
     def _set_prefix(self, prefix):
-        self._prefix = abs_expanduser(prefix)
+        self._prefix = os.path.normpath(abs_expanduser(prefix))
 
     def _set_proxy(self, proxy_string):
         self._proxy = ProxyInfo.from_string(proxy_string)
@@ -673,7 +676,8 @@ class Configuration(object):
         self._store_url = url
 
     def _set_repository_cache(self, value):
-        self._repository_cache = _get_writable_local_dir(abs_expanduser(value))
+        normalized = os.path.normpath(abs_expanduser(value))
+        self._repository_cache = _get_writable_local_dir(normalized)
 
     def _simple_attribute_set_factory(self, attribute_name):
         return lambda value: setattr(self, attribute_name, value)
@@ -690,7 +694,7 @@ def prepend_url(filename, url):
         fp.write(data)
 
 
-def print_config(config, prefix, session):
+def print_config(config, session):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
     print("sys.prefix:", sys.prefix)
@@ -701,7 +705,7 @@ def print_config(config, prefix, session):
         print("config file:", config.filename)
     print("keyring backend: %s" % (_keyring_backend_name(), ))
     print("settings:")
-    print("    prefix = %s" % os.path.normpath(prefix))
+    print("    prefix = %s" % config.prefix)
     print("    %s = %s" % ("repository_cache", config.repository_cache))
     print("    %s = %r" % ("noapp", config.noapp))
     print("    %s = %r" % ("proxy", config.proxy))

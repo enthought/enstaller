@@ -536,8 +536,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple(self):
@@ -575,8 +574,7 @@ class TestConfigurationPrint(unittest.TestCase):
                                           repository_cache=repository_cache)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
     def test_simple_no_webservice(self):
@@ -611,8 +609,7 @@ class TestConfigurationPrint(unittest.TestCase):
                       use_webservice=False)
 
         with mock_print() as m:
-            print_config(config, config.prefix, Session(DummyAuthenticator(),
-                                                        self.prefix))
+            print_config(config, Session(DummyAuthenticator(), self.prefix))
             self.assertMultiLineEqual(m.value, r_output)
 
 
@@ -956,6 +953,33 @@ class TestConfiguration(unittest.TestCase):
         # Then
         self.assertEqual(config.max_retries, max_retries)
         self.assertEqual(config.store_url, store_url)
+
+    def test_repository_cache(self):
+        # Given no value supplied, default prefix
+
+        # When
+        config = Configuration()
+
+        # Then
+        self.assertEqual(config.repository_cache, os.path.join(sys.prefix, "LOCAL-REPO"))
+
+        # Given a prefix, but no value supplied
+        prefix = self.prefix
+
+        # When
+        config = Configuration(prefix=prefix)
+
+        # Then
+        self.assertEqual(config.repository_cache, os.path.join(prefix, "LOCAL-REPO"))
+
+        # Given a value
+        repository_cache = os.path.join(self.prefix, "mycache")
+
+        # When
+        config = Configuration(repository_cache=repository_cache)
+
+        # Then
+        self.assertEqual(config.repository_cache, repository_cache)
 
 
 class TestMisc(unittest.TestCase):
