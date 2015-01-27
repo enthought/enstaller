@@ -54,6 +54,8 @@ VERSION_TO_SHA256 = [
         "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c"),
     ("4.5.3-1",
         "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85"),
+    ("4.9.0.dev3250-1",
+        "d2f477fac8ca71c1711f9bb83da4f33e623c9699b07ace6609c3f808994cbc07"),
     ("4.9.0.dev3247-1",
         "12eb94623d8cda9654349c3a6abebc9406be9252d388eb18a96f4f96523c5a7b"),
     ("4.9.0.dev3173-1",
