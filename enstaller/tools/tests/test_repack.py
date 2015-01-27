@@ -17,7 +17,7 @@ from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import EnstallerException
-from enstaller.tools.repack import main, repack
+from enstaller.tools.repack import InvalidVersion, main, repack
 
 
 @contextlib.contextmanager
@@ -220,6 +220,32 @@ class TestRepack(unittest.TestCase):
         with chdir(self.prefix):
             with self.assertRaises(NotImplementedError):
                 repack(source, 2, "rh5-64")
+
+    def test_invalid_version(self):
+        # Given an invalid version with a suggestion
+        source = os.path.join(self.prefix, "nose-1.2.1dev-py2.7.egg")
+        shutil.copy(NOSE_1_2_1, source)
+
+        r_msg = ("The given version '1.2.1dev' does not follow PEP 386."
+                 " Please change the egg version to a valid format \(e.g."
+                 " '1.2.1.dev0'\).")
+
+        # When/Then
+        with chdir(self.prefix):
+            with self.assertRaisesRegexp(InvalidVersion, r_msg):
+                repack(source, 1, "rh5-64")
+
+        # Given a valid version w/o any suggestion
+        source = os.path.join(self.prefix, "nose-1.2.1ddv-py2.7.egg")
+        shutil.copy(NOSE_1_2_1, source)
+
+        r_msg = ("The given version '1.2.1ddv' does not follow PEP 386."
+                 " Please change the egg version to a valid format.")
+
+        # When/Then
+        with chdir(self.prefix):
+            with self.assertRaisesRegexp(InvalidVersion, r_msg):
+                repack(source, 1, "rh5-64")
 
 
 class TestRepackMain(unittest.TestCase):
