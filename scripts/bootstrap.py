@@ -54,6 +54,8 @@ VERSION_TO_SHA256 = [
         "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c"),
     ("4.5.3-1",
         "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85"),
+    ("4.9.0.dev3247-1",
+        "12eb94623d8cda9654349c3a6abebc9406be9252d388eb18a96f4f96523c5a7b"),
     ("4.9.0.dev3173-1",
         "70b1594288c0553e1e7d5c43e381389ef67717f817ef96e440403a5ea41ab467"),
     ("4.8.0b1-1",
@@ -69,7 +71,7 @@ VERSION_TO_SHA256_KEYS = [_[0] for _ in VERSION_TO_SHA256]
 
 
 DEFAULT_VERSION = VERSION_TO_SHA256[0][0]
-DEV_VERSION = "4.8.0b1-1"
+DEV_VERSION = "4.9.0.dev3247-1"
 
 
 ###################################
