@@ -73,7 +73,8 @@ class TestEnstallerMainActions(unittest.TestCase):
     def test_updated_enstaller(self, logger):
         with mock.patch("enstaller.main.install_req"):
             main([""])
-        logger.info.assert_called_with('prefix: %r', sys.prefix)
+        logger.info.assert_called_with('prefix: %r',
+                                       os.path.normpath(sys.prefix))
 
     @authenticated_config
     @raw_input_always_yes

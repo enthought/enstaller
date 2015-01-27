@@ -525,8 +525,9 @@ class TestConfigurationPrint(unittest.TestCase):
                 proxy = None
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
-        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0],
+        """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
+                    version=__version__, platform=platform.platform(),
+                    arch=platform.architecture()[0],
                     keyring_backend=_keyring_backend_name())
 
         config = Configuration()
@@ -556,8 +557,9 @@ class TestConfigurationPrint(unittest.TestCase):
                 proxy = None
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
-        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0],
+        """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
+                    version=__version__, platform=platform.platform(),
+                    arch=platform.architecture()[0],
                     keyring_backend=_keyring_backend_name())
 
         try:
@@ -595,11 +597,12 @@ class TestConfigurationPrint(unittest.TestCase):
                     'http://acme.com/'
             No valid auth information in configuration, cannot authenticate.
             You are not logged in.  To log in, type 'enpkg --userpass'.
-        """).format(pyver=PY_VER, sys_prefix=sys.prefix, version=__version__,
-                    platform=platform.platform(), arch=platform.architecture()[0],
+        """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
+                    version=__version__, platform=platform.platform(),
+                    arch=platform.architecture()[0],
                     keyring_backend=_keyring_backend_name())
 
-        prefix = sys.prefix
+        prefix = os.path.normpath(sys.prefix)
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
         r_output = output_template.format(prefix=os.path.normpath(prefix),
                                           repository_cache=repository_cache)
@@ -961,7 +964,9 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration()
 
         # Then
-        self.assertEqual(config.repository_cache, os.path.join(sys.prefix, "LOCAL-REPO"))
+        self.assertEqual(config.repository_cache,
+                         os.path.normpath(os.path.join(sys.prefix,
+                                                       "LOCAL-REPO")))
 
         # Given a prefix, but no value supplied
         prefix = self.prefix
@@ -1052,8 +1057,9 @@ class TestYamlConfiguration(unittest.TestCase):
         # Then
         self.assertFalse(config.use_webservice)
         self.assertFalse(config.indices, [])
-        self.assertEqual(config.repository_cache, os.path.join(sys.prefix,
-                                                               "LOCAL-REPO"))
+        self.assertEqual(config.repository_cache,
+                         os.path.normpath(os.path.join(sys.prefix,
+                                                       "LOCAL-REPO")))
         self.assertEqual(config.store_kind, "brood")
 
     def test_invalid_format(self):

@@ -790,7 +790,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # Then
-        m.assert_called_with([site.USER_BASE, sys.prefix])
+        m.assert_called_with([site.USER_BASE, os.path.normpath(sys.prefix)])
 
     @mock_index({})
     def test_user_invalid_config(self, install_req):
