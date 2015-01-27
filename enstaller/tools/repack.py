@@ -16,6 +16,9 @@ from egginst.eggmeta import SPEC_DEPEND_KEYS
 from egginst.utils import samefile
 from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException
+from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions.pep386 import suggest_normalized_version
+
 
 ENDIST_DAT = "endist.dat"
 # Whitelist of keys considered when exec`ing the endist.dat to update
@@ -30,6 +33,22 @@ UNSUPPORTED_ENDIST_KEYS = ("app_icon_file", "svn_rev", "svn_rev_init",
 
 _SETUPTOOLS_TYPE = "setuptools"
 _EGGINST_TYPE = "egginst"
+
+
+class InvalidVersion(EnstallerException):
+    def __init__(self, *args, **kw):
+        self.version, = args
+        super(InvalidVersion, self).__init__(*args, **kw)
+
+    def __str__(self):
+        suggested = suggest_normalized_version(self.version)
+        template = ("The given version '{0}' does not follow PEP 386. Please "
+                    "change the egg version to a valid format")
+        if suggested is not None:
+            template += " (e.g. '{0}').".format(suggested)
+        else:
+            template += "."
+        return template.format(self.version)
 
 
 def _looks_like_enthought_egg(path):
@@ -58,6 +77,13 @@ def _looks_like_setuptools_egg(path):
         return False
 
 
+def _ensure_valid_version(version, build_number):
+    full_version = EnpkgVersion.from_upstream_and_build(version,
+                                                        build_number)
+    if full_version.upstream.is_worked_around:
+        raise InvalidVersion(version)
+
+
 def _get_spec(source_egg_path, build_number, platform_string=None):
     if _looks_like_setuptools_egg(source_egg_path):
         filename = os.path.basename(source_egg_path)
@@ -72,6 +98,8 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     else:
         msg = "Unrecognized format: {0!r}".format(source_egg_path)
         raise EnstallerException(msg)
+
+    _ensure_valid_version(version, build_number)
 
     data = {"build": build_number, "packages": [], "name": name,
             "version": version}
