@@ -325,7 +325,7 @@ class Configuration(object):
         self._use_pypi = True
         self._use_webservice = True
 
-        self._prefix = sys.prefix
+        self._prefix = os.path.normpath(sys.prefix)
         self._indexed_repositories = []
         self._repositories = []
         self._store_url = "https://api.enthought.com"
@@ -707,7 +707,7 @@ def prepend_url(filename, url):
 def print_config(config, session):
     print("Python version:", PY_VER)
     print("enstaller version:", __version__)
-    print("sys.prefix:", sys.prefix)
+    print("sys.prefix:", os.path.normpath(sys.prefix))
     print("platform:", platform.platform())
     print("architecture:", platform.architecture()[0])
     print("use_webservice:", config.use_webservice)
