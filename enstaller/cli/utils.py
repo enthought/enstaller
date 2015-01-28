@@ -15,8 +15,8 @@ from egginst.progress import (console_progress_manager_factory,
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
-from enstaller.repository import (Repository, egg_name_to_name_version,
-                                  parse_index)
+from enstaller.package import egg_name_to_name_version
+from enstaller.repository import Repository, parse_index
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.solver import Request, Requirement
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no

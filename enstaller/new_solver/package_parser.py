@@ -4,7 +4,7 @@ from enstaller.new_solver.constraint_types import (Any, EnpkgUpstreamMatch,
                                                    Equal)
 from enstaller.new_solver.constraints_parser import _RawRequirementParser
 from enstaller.new_solver.requirement import Requirement
-from enstaller.repository import PackageMetadata
+from enstaller.package import PackageMetadata
 from enstaller.versions.enpkg import EnpkgVersion
 
 

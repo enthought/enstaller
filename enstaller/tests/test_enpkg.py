@@ -13,9 +13,8 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError, InvalidChecksum
 from enstaller.fetch import _DownloadManager
-from enstaller.repository import (egg_name_to_name_version,
-                                  PackageMetadata, Repository,
-                                  RepositoryPackageMetadata)
+from enstaller.package import PackageMetadata, egg_name_to_name_version
+from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import PY_VER, path_to_uri
