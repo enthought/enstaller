@@ -64,20 +64,20 @@ class PackageMetadata(object):
         return split_eggname(self.key)[0]
 
     @property
-    def _key(self):
+    def _comp_key(self):
         return (self.name, self.version, self._dependencies, self.python)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
             return False
         else:
-            return self._key == other._key
+            return self._comp_key == other._comp_key
 
     def __ne__(self, other):
         return not (self == other)
 
     def __hash__(self):
-        return hash(self._key)
+        return hash(self._comp_key)
 
     @property
     def dependencies(self):
@@ -150,8 +150,8 @@ class RepositoryPackageMetadata(PackageMetadata):
         self.type = "egg"
 
     @property
-    def _key(self):
-        return (super(RepositoryPackageMetadata, self)._key +
+    def _comp_key(self):
+        return (super(RepositoryPackageMetadata, self)._comp_key +
                 (self.size, self.md5, self.mtime, self.product, self.available,
                  self.repository_info, self.type))
 
@@ -227,8 +227,8 @@ class InstalledPackageMetadata(PackageMetadata):
         self.store_location = store_location
 
     @property
-    def _key(self):
-        return (super(InstalledPackageMetadata, self)._key +
+    def _comp_key(self):
+        return (super(InstalledPackageMetadata, self)._comp_key +
                 (self.ctime, self.store_location))
 
 
