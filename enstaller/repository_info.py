@@ -15,6 +15,10 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
         """ The exact url to fetch the index at."""
 
     @abc.abstractproperty
+    def name(self):
+        """ An arbitrary string identifying the repository."""
+
+    @abc.abstractproperty
     def _base_url(self):
         """ Kept for backward compatibility, to be removed once we can depend
         on brood."""
@@ -31,7 +35,7 @@ class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
 
     @abc.abstractproperty
     def _key(self):
-        pass
+        """ Tuple containing the data used for hashing the object."""
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -71,6 +75,11 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
         return url
 
     @property
+    def name(self):
+        parts = urllib.parse.urlsplit(self._store_url)
+        return urllib.parse.urlunsplit(("canopy+https", parts[1], "", "", ""))
+
+    @property
     def _base_url(self):
         return urllib.parse.urljoin(self._store_url, self._path + "/")
 
@@ -88,6 +97,11 @@ class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
         return urllib.parse.urljoin(self._store_url, _INDEX_NAME)
 
     @property
+    def name(self):
+        parts = urllib.parse.urlsplit(self._store_url)
+        return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
+
+    @property
     def _base_url(self):
         return self._store_url
 
@@ -100,9 +114,7 @@ class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
 
 
 class IBroodRepositoryInfo(IRepositoryInfo):
-    @abc.abstractproperty
-    def name(self):
-        """ An arbitrary string identifying the repository."""
+    pass
 
 
 class BroodRepositoryInfo(IBroodRepositoryInfo):

@@ -37,33 +37,51 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
 
     def test_simple(self):
         # Given
-        store_url = "https://acme.com"
+        store_url = "https://acme.com/foo/eggs/platform/"
         path = DUMMY_EGG
 
-        r_index_url = "https://acme.com/index.json"
-        r_package_url = "https://acme.com/{0}".format(os.path.basename(path))
+        r_index_url = "https://acme.com/foo/eggs/platform/index.json"
+        r_package_url = "https://acme.com/foo/eggs/platform/{0}".format(os.path.basename(path))
 
         # When
         info = OldstyleRepositoryInfo(store_url)
         package = RepositoryPackageMetadata.from_egg(path)
 
         # Then
+        self.assertEqual(info._base_url, store_url)
         self.assertEqual(info.index_url, r_index_url)
+        self.assertEqual(info.name, "/foo/eggs/platform/")
         self.assertEqual(info._package_url(package), r_package_url)
 
 
 class TestCanopyRepositoryInfo(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        platform = "haiku-x86"
+        store_url = "https://acme.com"
+        r_name = "canopy+https://acme.com"
+
+        # When
+        info = CanopyRepositoryInfo(store_url, use_pypi=True,
+                                    platform=platform)
+
+        # Then
+        self.assertEqual(info.name, r_name)
+        self.assertEqual(info._base_url, store_url + "/eggs/" + platform + "/")
+
     def test_eq_and_hashing(self):
         # Given
-        store_url = "https://acme.com"
+        store_url = "https://acme.com/eggs/platform"
 
         # When
         info1 = CanopyRepositoryInfo(store_url, use_pypi=True)
         info2 = CanopyRepositoryInfo(store_url, use_pypi=True)
+        info3 = OldstyleRepositoryInfo(store_url)
 
         # Then
         self.assertEqual(info1, info2)
         self.assertFalse(info1 != info2)
+        self.assertFalse(info1 == info3)
         self.assertEqual(hash(info1), hash(info2))
 
         # When
@@ -136,6 +154,8 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         r_package_url = ("https://acme.com/repo/{0}/{1}/{2}".
                          format(name, enstaller.plat.custom_plat,
                                 os.path.basename(path)))
+        r__base_url = ("https://acme.com/repo/{0}/{1}/"
+                       .format(name, enstaller.plat.custom_plat))
 
         # When
         info = BroodRepositoryInfo(store_url, name)
@@ -145,6 +165,7 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         self.assertEqual(info.index_url, r_index_url)
         self.assertEqual(info.name, name)
         self.assertEqual(info._package_url(package), r_package_url)
+        self.assertEqual(info._base_url, r__base_url)
 
 
 class TestFSRepositoryInfo(unittest.TestCase):
@@ -173,6 +194,7 @@ class TestFSRepositoryInfo(unittest.TestCase):
         path = DUMMY_EGG
         store_url = path_to_uri(os.path.dirname(path))
 
+        r__base_url = path_to_uri(os.path.dirname(path))
         r_index_url = posixpath.join(store_url, "index.json")
         r_package_url = path_to_uri(path)
 
@@ -183,4 +205,5 @@ class TestFSRepositoryInfo(unittest.TestCase):
         # Then
         self.assertEqual(info.index_url, r_index_url)
         self.assertEqual(info.name, store_url)
+        self.assertEqual(info._base_url, r__base_url)
         self.assertEqual(info._package_url(package), r_package_url)
