@@ -31,7 +31,7 @@ from enstaller.versions.enpkg import EnpkgVersion
 from ..utils import (disp_store_info, exit_if_root_on_non_owned, install_req,
                      install_time_string, name_egg, print_installed,
                      repository_factory, updates_check)
-from ..utils import _fetch_json_with_progress, _print_warning
+from ..utils import _print_warning
 
 
 if sys.version_info < (2, 7):
@@ -609,81 +609,3 @@ with pip as follows:
 
         # Then
         self._assert_ask_for_pypi(mocked_print)
-
-
-class TestFetchJsonWithProgress(unittest.TestCase):
-    def _gzip_compress(self, data):
-        compressor = zlib.compressobj(6, zlib.DEFLATED, 16 + zlib.MAX_WBITS)
-        body = compressor.compress(data)
-        body += compressor.flush()
-        return body
-
-    @responses.activate
-    def test_simple(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": "gzip"}
-            body = self._gzip_compress(b"{}")
-            return (200, headers, body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        data = _fetch_json_with_progress(resp, "acme.com", quiet=False)
-
-        # Then
-        self.assertEqual(data, {})
-
-    @responses.activate
-    def test_handle_stripped_header(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": ""}
-            body = self._gzip_compress(b"{}")
-            return (200, headers, body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        data = _fetch_json_with_progress(resp, "acme.com", quiet=False)
-
-        # Then
-        self.assertEqual(data, {})
-
-    @responses.activate
-    def test_handle_stripped_header_incomplete_data(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": ""}
-            incomplete_body = self._gzip_compress(b"{}")[:-1]
-            return (200, headers, incomplete_body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When/Then
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        with self.assertRaises(requests.exceptions.ContentDecodingError):
-            _fetch_json_with_progress(resp, "acme.com", quiet=False)

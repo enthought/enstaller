@@ -9,9 +9,6 @@ import textwrap
 
 from egginst.vendor.six.moves import urllib
 
-from egginst.progress import (console_progress_manager_factory,
-                              dummy_progress_bar_factory)
-
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
@@ -352,25 +349,6 @@ def exit_if_root_on_non_owned(force_yes=False):
 
 
 # Private functions
-def _fetch_json_with_progress(resp, store_location, quiet=False):
-    data = io.BytesIO()
-
-    length = int(resp.headers.get("content-length", 0))
-    display = _display_store_name(store_location)
-    if quiet:
-        progress = dummy_progress_bar_factory()
-    else:
-        progress = console_progress_manager_factory("Fetching index", display,
-                                                    size=length)
-    with progress:
-        for chunk in _ResponseIterator(resp):
-            data.write(chunk)
-            progress.update(len(chunk))
-
-    data = data.getvalue()
-    return decode_json_from_buffer(data)
-
-
 def _display_store_name(store_location):
     parts = urllib.parse.urlsplit(store_location)
     return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
