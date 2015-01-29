@@ -72,12 +72,6 @@ class TestExitIfRootOnNonOwned(unittest.TestCase):
 
 
 class TestMisc(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
     def test__print_warning(self):
         # Given
         message = "fail to crash"
@@ -110,8 +104,16 @@ class TestMisc(unittest.TestCase):
             name = "some/dir/fu_bar-1.0.0-1.egg"
             name_egg(name)
 
+
+class TestRepositoryFactory(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
     @responses.activate
-    def test_repository_factory(self):
+    def test_unavailable_repository(self):
         self.maxDiff = None
 
         # Given
@@ -126,7 +128,7 @@ class TestMisc(unittest.TestCase):
         r_warning = textwrap.dedent("""\
             Warning: Could not fetch the following indices:
 
-                     - 'neko'
+                     - 'enthought/foo'
 
                      Those repositories do not exist (or you do not have the rights to
                      access them). You should edit your configuration to remove those
@@ -136,9 +138,7 @@ class TestMisc(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock.patch("enstaller.cli.utils._display_store_name",
-                            return_value="neko"):
-                repository = repository_factory(session, config.repositories)
+            repository = repository_factory(session, config.repositories)
 
         # Then
         self.assertEqual(len(list(repository.iter_packages())), 0)

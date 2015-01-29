@@ -239,8 +239,7 @@ def _fetch_repository(session, repository_info, raise_on_error):
 
 
 def _print_unavailables_warning(unavailables):
-    store_names = [_display_store_name(store_location) for store_location in
-                   unavailables]
+    store_names = [repository_info.name for repository_info in unavailables]
     preambule = "Warning: "
     template = textwrap.dedent("""\
         {0}Could not fetch the following indices:
@@ -346,9 +345,3 @@ def exit_if_root_on_non_owned(force_yes=False):
                "owned by root, are you sure to continue ? (y/[n])")
         if not prompt_yes_no(msg, force_yes=force_yes):
             sys.exit(-1)
-
-
-# Private functions
-def _display_store_name(store_location):
-    parts = urllib.parse.urlsplit(store_location)
-    return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
