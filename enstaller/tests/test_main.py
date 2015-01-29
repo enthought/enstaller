@@ -467,8 +467,9 @@ class TestSearch(unittest.TestCase):
             Note: some of those packages are not available at your current
             subscription level ('Canopy / EPD Free').
             """.format(""))
-        another_entry = dummy_repository_package_factory("another_package", "2.0.0", 1)
-        another_entry.available = False
+        another_entry = dummy_repository_package_factory("another_package",
+                                                         "2.0.0", 1,
+                                                         available=False)
 
         entries = [dummy_repository_package_factory("dummy", "1.0.1", 1),
                    dummy_repository_package_factory("dummy", "0.9.8", 1),
@@ -528,8 +529,8 @@ class TestInstallRequirement(unittest.TestCase):
         self.maxDiff = None
 
         # Given
-        entry = dummy_repository_package_factory("nose", "1.3.0", 1)
-        entry.product = "pypi"
+        entry = dummy_repository_package_factory("nose", "1.3.0", 1,
+                                                 product="pypi")
         remote_entries = [entry]
         r_message = textwrap.dedent("""\
         The following packages/requirements are coming from the PyPi repo:

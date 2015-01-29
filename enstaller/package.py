@@ -47,13 +47,13 @@ class PackageMetadata(object):
                    json_dict["python"])
 
     def __init__(self, key, name, version, packages, python):
-        self.key = key
+        self._key = key
 
-        self.name = name
-        self.version = version
+        self._name = name
+        self._version = version
 
         self._dependencies = frozenset(packages)
-        self.python = python
+        self._python = python
 
     def __repr__(self):
         return "PackageMetadata('{0}-{1}', key={2!r})".format(
@@ -84,17 +84,33 @@ class PackageMetadata(object):
         return self._dependencies
 
     @property
+    def full_version(self):
+        """
+        The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
+        """
+        return str(self.version)
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def key(self):
+        return self._key
+
+    @property
     def packages(self):
         # FIXME: we keep packages for backward compatibility (called as is in
         # the index).
         return list(self._dependencies)
 
     @property
-    def full_version(self):
-        """
-        The full version as a string (e.g. '1.8.0-1' for the numpy-1.8.0-1.egg)
-        """
-        return str(self.version)
+    def python(self):
+        return self._python
+
+    @property
+    def version(self):
+        return self._version
 
 
 class RepositoryPackageMetadata(PackageMetadata):
@@ -106,7 +122,7 @@ class RepositoryPackageMetadata(PackageMetadata):
     repository they are coming from through the store_location attribute.
     """
     @classmethod
-    def from_egg(cls, path, repository_info=None):
+    def from_egg(cls, path, repository_info=None, python_version=PY_VER):
         """
         Create an instance from an egg filename.
         """
@@ -139,21 +155,43 @@ class RepositoryPackageMetadata(PackageMetadata):
         super(RepositoryPackageMetadata, self).__init__(key, name, version,
                                                         packages, python)
 
-        self.size = size
-        self.md5 = md5
+        self._size = size
+        self._md5 = md5
 
-        self.mtime = mtime
-        self.product = product
-        self.available = available
-        self.repository_info = repository_info
-
-        self.type = "egg"
+        self._mtime = mtime
+        self._product = product
+        self._available = available
+        self._repository_info = repository_info
 
     @property
     def _comp_key(self):
         return (super(RepositoryPackageMetadata, self)._comp_key +
                 (self.size, self.md5, self.mtime, self.product, self.available,
-                 self.repository_info, self.type))
+                 self.repository_info))
+
+    @property
+    def available(self):
+        return self._available
+
+    @property
+    def md5(self):
+        return self._md5
+
+    @property
+    def mtime(self):
+        return self._mtime
+
+    @property
+    def product(self):
+        return self._product
+
+    @property
+    def repository_info(self):
+        return self._repository_info
+
+    @property
+    def size(self):
+        return self._size
 
     @property
     def s3index_data(self):
@@ -162,11 +200,12 @@ class RepositoryPackageMetadata(PackageMetadata):
         index content
         """
         keys = ("available", "md5", "name", "product",
-                "python", "mtime", "size", "type")
+                "python", "mtime", "size")
         ret = dict((k, getattr(self, k)) for k in keys)
         ret["version"] = str(self.version.upstream)
         ret["build"] = self.version.build
         ret["packages"] = list(self.packages)
+        ret["type"] = "egg"
         return ret
 
     @property
@@ -223,8 +262,16 @@ class InstalledPackageMetadata(PackageMetadata):
         super(InstalledPackageMetadata, self).__init__(key, name, version,
                                                        packages, python)
 
-        self.ctime = ctime
-        self.store_location = store_location
+        self._ctime = ctime
+        self._store_location = store_location
+
+    @property
+    def ctime(self):
+        return self._ctime
+
+    @property
+    def store_location(self):
+        return self._store_location
 
     @property
     def _comp_key(self):

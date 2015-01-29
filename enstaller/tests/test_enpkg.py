@@ -17,7 +17,7 @@ from enstaller.package import PackageMetadata, egg_name_to_name_version
 from enstaller.repository import Repository, RepositoryPackageMetadata
 from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
-from enstaller.utils import PY_VER, path_to_uri
+from enstaller.utils import path_to_uri
 from enstaller.vendor import responses
 
 from .common import (dummy_repository_package_factory,
@@ -177,7 +177,6 @@ class TestEnpkgRevert(unittest.TestCase):
 
         repository = Repository()
         package = RepositoryPackageMetadata.from_egg(egg)
-        package.python = PY_VER
         repository.add_package(package)
 
         with open(egg, "rb") as fp:

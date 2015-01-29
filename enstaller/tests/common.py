@@ -99,7 +99,8 @@ def dummy_installed_package_factory(name, version, build, key=None,
 
 def dummy_repository_package_factory(name, version, build, key=None,
                                      py_ver=PY_VER, repository_info=None,
-                                     dependencies=None, mtime=0.0):
+                                     dependencies=None, mtime=0.0,
+                                     available=True, product="commercial"):
     dependencies = dependencies or []
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
     fake_size = FAKE_SIZE
@@ -110,8 +111,8 @@ def dummy_repository_package_factory(name, version, build, key=None,
         CanopyRepositoryInfo("https://acme.com")
     return RepositoryPackageMetadata(key, name.lower(), version,
                                      dependencies, py_ver, fake_size,
-                                     fake_md5, fake_mtime, "commercial",
-                                     True, repository_info)
+                                     fake_md5, fake_mtime, product,
+                                     available, repository_info)
 
 
 def repository_factory(entries):
@@ -298,7 +299,7 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
     enpkg = Enpkg(repository, mocked_session_factory(config.repository_cache),
                   prefixes=[prefix])
     for package in installed_entries:
-        package.store_location = prefix
+        package._store_location = prefix
         enpkg._top_installed_repository.add_package(package)
         enpkg._installed_repository.add_package(package)
     return enpkg
