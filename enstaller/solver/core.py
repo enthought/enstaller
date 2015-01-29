@@ -1,6 +1,6 @@
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
-from enstaller.repository import egg_name_to_name_version
+from enstaller.package import egg_name_to_name_version
 
 from .resolve import Resolve
 

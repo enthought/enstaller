@@ -2,7 +2,7 @@ import logging
 from collections import defaultdict
 
 from enstaller.errors import MissingDependency, NoPackageFound
-from enstaller.repository import egg_name_to_name_version
+from enstaller.package import egg_name_to_name_version
 
 from .requirement import Requirement
 

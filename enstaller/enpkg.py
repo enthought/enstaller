@@ -12,8 +12,8 @@ from egginst.progress import dummy_progress_bar_factory
 from enstaller.errors import EnpkgError, InvalidChecksum, NoSuchPackage
 from enstaller.eggcollect import meta_dir_from_prefix
 from enstaller.fetch import _DownloadManager
-from enstaller.repository import (InstalledPackageMetadata, Repository,
-                                  egg_name_to_name_version)
+from enstaller.package import egg_name_to_name_version
+from enstaller.repository import (InstalledPackageMetadata, Repository)
 
 from enstaller.history import History
 from enstaller.solver import Solver

@@ -2,7 +2,7 @@ from egginst._compat import assertCountEqual
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import SolverException
-from enstaller.repository import PackageMetadata
+from enstaller.package import PackageMetadata
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..constraint_types import Equal

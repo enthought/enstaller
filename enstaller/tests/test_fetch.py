@@ -55,7 +55,7 @@ class Test_DownloadManager(unittest.TestCase):
 
         repository = Repository()
         package = RepositoryPackageMetadata.from_egg(path)
-        package.md5 = "a" * 32
+        package._md5 = "a" * 32
         repository.add_package(package)
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),

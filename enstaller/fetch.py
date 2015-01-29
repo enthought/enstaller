@@ -5,7 +5,7 @@ from os.path import isfile, join
 from egginst.utils import compute_md5, makedirs
 
 from enstaller.fetch_utils import checked_content
-from enstaller.repository import egg_name_to_name_version
+from enstaller.package import egg_name_to_name_version
 
 
 logger = logging.getLogger(__name__)

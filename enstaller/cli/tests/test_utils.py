@@ -302,8 +302,8 @@ class TestInstallReq(unittest.TestCase):
         config = Configuration()
         config.update(auth=FAKE_AUTH)
 
-        nose = dummy_repository_package_factory("nose", "1.3.0", 1)
-        nose.available = False
+        nose = dummy_repository_package_factory("nose", "1.3.0", 1,
+                                                available=False)
         repository = Repository()
         repository.add_package(nose)
 
@@ -377,8 +377,8 @@ class TestInstallReq(unittest.TestCase):
         """)
 
         self.maxDiff = None
-        numpy = dummy_repository_package_factory("numpy", "1.7.1", 1)
-        numpy.available = False
+        numpy = dummy_repository_package_factory("numpy", "1.7.1", 1,
+                                                 available=False)
         scipy = dummy_repository_package_factory("scipy", "0.12.0", 1,
                                                  dependencies=["numpy 1.7.1"])
 

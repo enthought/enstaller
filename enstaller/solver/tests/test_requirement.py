@@ -1,6 +1,6 @@
 from egginst.vendor.six.moves import unittest
 
-from enstaller.repository import PackageVersionInfo
+from enstaller.package import PackageVersionInfo
 from enstaller.versions.enpkg import EnpkgVersion
 
 from ..requirement import Requirement
