@@ -28,7 +28,7 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
 from enstaller.vendor import requests, responses
 from enstaller.versions.enpkg import EnpkgVersion
 
-from ..utils import (disp_store_info, exit_if_root_on_non_owned, install_req,
+from ..utils import (exit_if_root_on_non_owned, install_req,
                      install_time_string, name_egg, print_installed,
                      repository_factory, updates_check)
 from ..utils import _print_warning
@@ -83,15 +83,6 @@ class TestMisc(unittest.TestCase):
 
         # Then
         self.assertMultiLineEqual(m.value, r_output)
-
-    def test_disp_store_info(self):
-        store_location = "https://api.enthought.com/eggs/osx-64/"
-        self.assertEqual(disp_store_info(store_location), "api osx-64")
-
-        store_location = "https://api.enthought.com/eggs/win-32/"
-        self.assertEqual(disp_store_info(store_location), "api win-32")
-
-        self.assertEqual(disp_store_info(""), "-")
 
     def test_name_egg(self):
         name = "foo-1.0.0-1.egg"

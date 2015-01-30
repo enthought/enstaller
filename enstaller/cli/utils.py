@@ -26,14 +26,6 @@ FMT4 = '%-20s %-20s %-20s %s'
 DEFAULT_TEXT_WIDTH = 79
 
 
-def disp_store_info(store_location):
-    if not store_location:
-        return '-'
-    for rm in 'http://', 'https://', 'www', '.enthought.com', '/repo/':
-        store_location = store_location.replace(rm, '')
-    return store_location.replace('/eggs/', ' ').strip('/')
-
-
 def _is_any_package_unavailable(remote_repository, actions):
     unavailables = []
     for opcode, egg in actions:
