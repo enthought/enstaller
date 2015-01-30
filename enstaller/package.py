@@ -1,4 +1,5 @@
 import os.path
+import sys
 import time
 
 from egginst.eggmeta import info_from_z
@@ -119,7 +120,7 @@ class RepositoryPackageMetadata(PackageMetadata):
     available from a repository.
 
     In particular, RepositoryPackageMetadata's instances know about which
-    repository they are coming from through the store_location attribute.
+    repository they are coming from through the repository_info attribute.
     """
     @classmethod
     def from_egg(cls, path, repository_info=None, python_version=PY_VER):
@@ -222,29 +223,33 @@ class RepositoryPackageMetadata(PackageMetadata):
 
 class InstalledPackageMetadata(PackageMetadata):
     @classmethod
-    def from_egg(cls, path, ctime, store_location):
+    def from_egg(cls, path, ctime, prefix=None):
         """
         Create an instance from an egg filename.
         """
+        prefix = prefix or sys.prefix
+
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
         metadata["packages"] = metadata.get("packages", [])
         metadata["ctime"] = ctime
-        metadata["store_location"] = store_location
         metadata["key"] = os.path.basename(path)
-        return cls.from_installed_meta_dict(metadata)
+        return cls.from_installed_meta_dict(metadata, prefix)
 
     @classmethod
-    def from_meta_dir(cls, meta_dir):
+    def from_meta_dir(cls, meta_dir, prefix=None):
         meta_dict = info_from_metadir(meta_dir)
         if meta_dict is None:
             message = "No installed metadata found in {0!r}".format(meta_dir)
             raise EnstallerException(message)
         else:
-            return cls.from_installed_meta_dict(meta_dict)
+            prefix = prefix or sys.prefix
+            return cls.from_installed_meta_dict(meta_dict, prefix)
 
     @classmethod
-    def from_installed_meta_dict(cls, json_dict):
+    def from_installed_meta_dict(cls, json_dict, prefix=None):
+        prefix = prefix or sys.prefix
+
         key = json_dict["key"]
         name = json_dict["name"]
         upstream_version = json_dict["version"]
@@ -253,30 +258,28 @@ class InstalledPackageMetadata(PackageMetadata):
         packages = json_dict.get("packages", [])
         python = json_dict.get("python", PY_VER)
         ctime = json_dict.get("ctime", time.ctime(0.0))
-        store_location = json_dict.get("store_location", "")
-        return cls(key, name, version, packages, python, ctime,
-                   store_location)
+        return cls(key, name, version, packages, python, ctime, prefix)
 
     def __init__(self, key, name, version, packages, python, ctime,
-                 store_location):
+                 prefix):
         super(InstalledPackageMetadata, self).__init__(key, name, version,
                                                        packages, python)
 
         self._ctime = ctime
-        self._store_location = store_location
+        self._prefix = prefix
 
     @property
     def ctime(self):
         return self._ctime
 
     @property
-    def store_location(self):
-        return self._store_location
+    def prefix(self):
+        return self._prefix
 
     @property
     def _comp_key(self):
         return (super(InstalledPackageMetadata, self)._comp_key +
-                (self.ctime, self.store_location))
+                (self.ctime, self._prefix))
 
 
 def egg_name_to_name_version(egg_name):

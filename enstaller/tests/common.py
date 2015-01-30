@@ -90,11 +90,12 @@ class DummyAuthenticator(object):
 
 
 def dummy_installed_package_factory(name, version, build, key=None,
-                                    py_ver=PY_VER, store_location=""):
+                                    py_ver=PY_VER, prefix=None):
+    prefix = prefix or sys.prefix
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
     version = EnpkgVersion.from_upstream_and_build(version, build)
     return InstalledPackageMetadata(key, name.lower(), version, [], py_ver,
-                                    "", store_location)
+                                    "", prefix)
 
 
 def dummy_repository_package_factory(name, version, build, key=None,
@@ -299,7 +300,6 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
     enpkg = Enpkg(repository, mocked_session_factory(config.repository_cache),
                   prefixes=[prefix])
     for package in installed_entries:
-        package._store_location = prefix
         enpkg._top_installed_repository.add_package(package)
         enpkg._installed_repository.add_package(package)
     return enpkg

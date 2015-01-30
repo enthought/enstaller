@@ -198,13 +198,12 @@ def install_time_string(installed_repository, name):
 
 
 def print_installed(repository, pat=None):
-    print(FMT % ('Name', 'Version', 'Store'))
+    print(FMT % ('Name', 'Version', 'Prefix'))
     print(60 * '=')
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
-        print(FMT % (package.name, package.full_version,
-                     disp_store_info(package.store_location)))
+        print(FMT % (package.name, package.full_version, package.prefix))
 
 
 def _should_raise(resp, raise_on_error):
@@ -229,7 +228,7 @@ def _fetch_repository(session, repository_info, raise_on_error):
             if _should_raise(resp, raise_on_error):
                 resp.raise_for_status()
             else:
-                return None  # failed.append(store_location)
+                return None
         else:
             data = io.BytesIO()
             for chunk in _ResponseIterator(resp):

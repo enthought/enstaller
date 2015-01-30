@@ -170,10 +170,10 @@ class TestInfoStrings(unittest.TestCase):
     def test_print_installed(self):
         with mkdtemp() as d:
             r_out = textwrap.dedent("""\
-                Name                 Version              Store
+                Name                 Version              Prefix
                 ============================================================
                 dummy                1.0.1-1              {0}
-                """.format(disp_store_info(d)))
+                """.format(d))
             ec = EggInst(DUMMY_EGG, d)
             ec.install()
 
@@ -183,7 +183,7 @@ class TestInfoStrings(unittest.TestCase):
             self.assertMultiLineEqual(m.value, r_out)
 
             r_out = textwrap.dedent("""\
-                Name                 Version              Store
+                Name                 Version              Prefix
                 ============================================================
                 """)
 

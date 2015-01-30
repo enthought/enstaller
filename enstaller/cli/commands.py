@@ -31,7 +31,7 @@ def imports_option(repository):
     names = set(package.name for package in repository.iter_packages())
     for name in sorted(names, key=lambda s: s.lower()):
         packages = repository.find_packages(name)
-        loc = 'sys' if packages[0].store_location == sys.prefix else 'user'
+        loc = 'sys' if packages[0].prefix == sys.prefix else 'user'
         print(FMT % (name, packages[0].full_version, loc))
 
 
