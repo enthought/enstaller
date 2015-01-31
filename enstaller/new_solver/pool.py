@@ -8,7 +8,8 @@ class Pool(object):
     given requirement.
     """
     def __init__(self, repositories=None):
-        self._packages_by_id = {}
+        self._package_to_id = {}
+        self._id_to_package = {}
         self._packages_by_name = collections.defaultdict(list)
         self._repositories = []
 
@@ -27,11 +28,11 @@ class Pool(object):
             The repository to add
         """
         for package in repository.iter_packages():
-            package.id = self._id
+            current_id = self._id
             self._id += 1
 
-            self._packages_by_id[package.id] = package
-
+            self._id_to_package[current_id] = package
+            self._package_to_id[package] = current_id
             self._packages_by_name[package._egg_name].append(package)
 
     def what_provides(self, requirement):
@@ -50,11 +51,19 @@ class Pool(object):
                     ret.append(package)
         return ret
 
+    def package_id(self, package):
+        """ Returns the 'package id' of the given package."""
+        try:
+            return self._package_to_id[package]
+        except KeyError:
+            msg = "Package {0!r} not found in the pool.".format(package)
+            raise ValueError(msg)
+
     def id_to_string(self, package_id):
         """
         Convert a package id to a nice string representation.
         """
-        package = self._packages_by_id[abs(package_id)]
+        package = self._id_to_package[abs(package_id)]
         package_string = package.name + "-" + package.full_version
         if package_id > 0:
             return "+" + package_string
