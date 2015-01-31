@@ -56,7 +56,7 @@ class Pool(object):
         try:
             return self._package_to_id[package]
         except KeyError:
-            msg = "Package {0!r} not found in the pool."
+            msg = "Package {0!r} not found in the pool.".format(package)
             raise ValueError(msg)
 
     def id_to_string(self, package_id):
