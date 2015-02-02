@@ -3,6 +3,7 @@ Useful code to compare solver behaviour with PHP's Composer. Obviously
 don't use this in enstaller itself.
 """
 import collections
+import json
 
 from enstaller.new_solver.constraint_types import (
     Any, EnpkgUpstreamMatch, Equal, GEQ, GT, LEQ, LT
@@ -66,6 +67,24 @@ def request_to_php_parts(request):
         )
         parts.append((job.kind, name, php_constraints))
     return parts
+
+
+def scenario_to_php_template_variables(scenario, remote_definition,
+                                       installed_definition):
+
+    remote_repository = scenario.remote_repositories[0]
+    with open(remote_definition, "wt") as fp:
+        entries_iterator = repository_to_composer_json_dict(remote_repository)
+        fp.write(json.dumps(list(entries_iterator), indent=4))
+
+    installed_repository = scenario.installed_repository
+    with open(installed_definition, "wt") as fp:
+        entries_iterator = repository_to_composer_json_dict(installed_repository)
+        fp.write(json.dumps(list(entries_iterator), indent=4))
+
+    return {"remote_definition": remote_definition,
+            "installed_definition": installed_definition,
+            "request_parts": request_to_php_parts(scenario.request)}
 
 
 def _fix_php_version(version):
