@@ -294,13 +294,26 @@ def parse_index(json_dict, repository_info, python_version=PY_VER):
         equal to this string. If python_version == "*", then every package is
         iterated over.
     """
+    # We cache versions as building instances of EnpkgVersion from a string is
+    # slow. For the PyPi repository, caching saves ~90 % of the calls, and
+    # speed up parse_index by ~300 ms on my machine.
+    cache = {}
+
+    def _version_factory(upstream, build):
+        if (upstream, build) in cache:
+            version = cache[(upstream, build)]
+        else:
+            version = EnpkgVersion.from_upstream_and_build(upstream, build)
+            cache[(upstream, build)] = version
+        return version
+
     for key, info in json_dict.items():
         info.setdefault('type', 'egg')
         info.setdefault('packages', [])
         info.setdefault('python', python_version)
-        if python_version == "*":
-            yield RemotePackageMetadata.from_json_dict(key, info,
-                                                           repository_info)
-        elif info["python"] in (None, python_version):
-            yield RemotePackageMetadata.from_json_dict(key, info,
-                                                           repository_info)
+
+        version = _version_factory(info["version"], info["build"])
+        if python_version == "*" or info["python"] in (None, python_version):
+            yield RemotePackageMetadata.from_json_dict_and_version(
+                key, info, version, repository_info
+            )

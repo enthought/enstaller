@@ -151,10 +151,10 @@ class RepositoryPackageMetadata(PackageMetadata):
 class RemotePackageMetadata(PackageMetadata):
     """
     RemotePackageMetadata encompasses the full set of package metadata
-    available from a repository.
+    available from a repository, including informations to fetch them remotely.
 
-    In particular, RemotePackageMetadata's instances know about which
-    repository they are coming from through the store_location attribute.
+    In particular, you can fetch a package from its RemotePackageMetadata's
+    instance through the source_url attribute.
     """
     @classmethod
     def from_egg(cls, path, repository_info=None, python_version=PY_VER):
@@ -177,8 +177,23 @@ class RemotePackageMetadata(PackageMetadata):
 
     @classmethod
     def from_json_dict(cls, key, json_dict, repository_info):
+        """ Create an instance from an legacy index entry."""
         version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
                                                        json_dict["build"])
+        return cls._from_json_dict_impl(key, json_dict, version,
+                                        repository_info)
+
+    @classmethod
+    def from_json_dict_and_version(cls, key, json_dict, version, repository_info):
+        """ Create an instance from an legacy index entry.
+
+        This takes an actual version object as an argument, and ignore the
+        version information in the json_dict."""
+        return cls._from_json_dict_impl(key, json_dict, version,
+                                        repository_info)
+
+    @classmethod
+    def _from_json_dict_impl(cls, key, json_dict, version, repository_info):
         return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
