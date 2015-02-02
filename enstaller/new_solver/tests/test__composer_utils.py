@@ -1,3 +1,4 @@
+from egginst._compat import assertCountEqual
 from egginst.vendor.six.moves import unittest
 
 from enstaller import Repository
@@ -163,7 +164,7 @@ class TestRepositoryToComposerJsonDict(unittest.TestCase):
         entries = list(repository_to_composer_json_dict(repository))
 
         # Then
-        self.assertEqual(entries, r_entries)
+        assertCountEqual(self, entries, r_entries)
 
 
 class TestRequestToPhpParts(unittest.TestCase):

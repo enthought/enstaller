@@ -1,10 +1,16 @@
+from egginst._compat import PY2
 from egginst.vendor import six
-from enstaller.vendor import yaml
+if PY2:
+    from enstaller.vendor import yaml
+else:
+    from enstaller.vendor import yaml_py3 as yaml
+
 
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo
 from enstaller.solver import Request
+from enstaller.utils import PY_VER
 from enstaller.versions.enpkg import EnpkgVersion
 
 from .package_parser import PrettyPackageStringParser
@@ -24,7 +30,7 @@ def parse_package_list(packages):
     parser = PrettyPackageStringParser(EnpkgVersion.from_string)
 
     for package_str in packages:
-        package = parser.parse_to_package(package_str, "2.7")
+        package = parser.parse_to_package(package_str, PY_VER)
         full_name = "{0} {1}".format(package.name, package.full_version)
         yield full_name, package
 

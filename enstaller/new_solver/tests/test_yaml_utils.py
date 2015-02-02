@@ -29,6 +29,7 @@ class TestRepositoryFactory(unittest.TestCase):
             "numpy 1.8.1-2",
         ]
         repository_info = BroodRepositoryInfo("https://acme.com", "acme/loony")
+        r_numpy = P("numpy 1.8.1-2; depends (MKL ~= 10.3)", repository_info)
 
         # When
         packages = dict(parse_package_list(package_strings))
@@ -40,8 +41,7 @@ class TestRepositoryFactory(unittest.TestCase):
         self.assertEqual(len(repository.find_packages("numpy")), 1)
 
         numpy = repository.find_packages("numpy")[0]
-        self.assertEqual(numpy, P("numpy 1.8.1-2; depends (MKL ~= 10.3)",
-                                  repository_info))
+        self.assertEqual(numpy, r_numpy)
 
 
 class TestScenario(unittest.TestCase):
