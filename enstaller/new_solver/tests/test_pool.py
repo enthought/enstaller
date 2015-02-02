@@ -68,7 +68,8 @@ class TestPool(unittest.TestCase):
         # When
         pool = Pool([repository])
         candidate = pool.what_provides(requirement)[0]
+        package_id = pool.package_id(candidate)
 
         # Then
-        self.assertEqual(pool.id_to_string(candidate.id), "+numpy-1.8.1-1")
-        self.assertEqual(pool.id_to_string(-candidate.id), "-numpy-1.8.1-1")
+        self.assertEqual(pool.id_to_string(package_id), "+numpy-1.8.1-1")
+        self.assertEqual(pool.id_to_string(-package_id), "-numpy-1.8.1-1")

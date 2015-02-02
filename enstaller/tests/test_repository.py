@@ -14,7 +14,7 @@ from enstaller.errors import NoSuchPackage
 from enstaller.session import Session
 from enstaller.versions.enpkg import EnpkgVersion
 
-from enstaller.package import PackageMetadata, RepositoryPackageMetadata
+from enstaller.package import PackageMetadata, RemotePackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
@@ -39,7 +39,7 @@ class TestRepository(unittest.TestCase):
         self.repository = Repository()
         for egg in eggs:
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             self.repository.add_package(package)
 
     @mock_brood_repository_indices({}, ["enthought/free"])
@@ -97,7 +97,7 @@ class TestRepository(unittest.TestCase):
             "nose-1.3.0-2.egg",
         ]
         paths = (os.path.join(_EGGINST_COMMON_DATA, egg) for egg in eggs)
-        packages = [RepositoryPackageMetadata.from_egg(path) for path in paths]
+        packages = [RemotePackageMetadata.from_egg(path) for path in paths]
 
         # When
         repository = Repository(packages)
@@ -188,7 +188,7 @@ class TestRepository(unittest.TestCase):
         repository = Repository()
         for egg in eggs:
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         # When
@@ -205,7 +205,7 @@ class TestRepository(unittest.TestCase):
         repository = Repository()
         for egg in eggs:
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         # When
@@ -260,7 +260,7 @@ class TestRepository(unittest.TestCase):
         repository = Repository()
         for egg in eggs:
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")

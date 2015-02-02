@@ -56,17 +56,12 @@ class PackageMetadata(object):
         self._dependencies = frozenset(packages)
         self._python = python
 
+    # ------------------------
+    # Protocols implementation
+    # ------------------------
     def __repr__(self):
         return "PackageMetadata('{0}-{1}', key={2!r})".format(
             self.name, self.version, self.key)
-
-    @property
-    def _egg_name(self):
-        return split_eggname(self.key)[0]
-
-    @property
-    def _comp_key(self):
-        return (self.name, self.version, self._dependencies, self.python)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -80,6 +75,9 @@ class PackageMetadata(object):
     def __hash__(self):
         return hash(self._comp_key)
 
+    # ----------
+    # Properties
+    # ----------
     @property
     def dependencies(self):
         return self._dependencies
@@ -92,12 +90,12 @@ class PackageMetadata(object):
         return str(self.version)
 
     @property
-    def name(self):
-        return self._name
-
-    @property
     def key(self):
         return self._key
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def packages(self):
@@ -113,14 +111,51 @@ class PackageMetadata(object):
     def version(self):
         return self._version
 
+    # ------------------
+    # Private properties
+    # ------------------
+    @property
+    def _egg_name(self):
+        return split_eggname(self.key)[0]
+
+    @property
+    def _comp_key(self):
+        return (self.name, self.version, self._dependencies, self.python)
+
 
 class RepositoryPackageMetadata(PackageMetadata):
-    """
-    RepositoryPackageMetadata encompasses the full set of package metadata
-    available from a repository.
+    """ Like PackageMetadata, but attached to a repository. """
+    @classmethod
+    def from_package(cls, package, repository_info):
+        return cls(package.key, package.name, package.version,
+                   package.packages, package.python, repository_info)
 
-    In particular, RepositoryPackageMetadata's instances know about which
-    repository they are coming from through the repository_info attribute.
+    def __init__(self, key, name, version, packages, python, repository_info):
+        super(RepositoryPackageMetadata, self).__init__(key, name,
+                                                        version, packages, python)
+        self._repository_info = repository_info
+
+    def __repr__(self):
+        return ("RepositoryPackageMetadata('{self.name}-{self.version}', "
+                "repo={self.repository_info!r}".format(self=self))
+
+    @property
+    def repository_info(self):
+        return self._repository_info
+
+    @property
+    def _comp_key(self):
+        return (super(RepositoryPackageMetadata, self)._comp_key +
+                (self._repository_info,))
+
+
+class RemotePackageMetadata(PackageMetadata):
+    """
+    RemotePackageMetadata encompasses the full set of package metadata
+    available from a repository, including informations to fetch them remotely.
+
+    In particular, you can fetch a package from its RemotePackageMetadata's
+    instance through the source_url attribute.
     """
     @classmethod
     def from_egg(cls, path, repository_info=None, python_version=PY_VER):
@@ -143,8 +178,23 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @classmethod
     def from_json_dict(cls, key, json_dict, repository_info):
+        """ Create an instance from an legacy index entry."""
         version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
                                                        json_dict["build"])
+        return cls._from_json_dict_impl(key, json_dict, version,
+                                        repository_info)
+
+    @classmethod
+    def from_json_dict_and_version(cls, key, json_dict, version, repository_info):
+        """ Create an instance from an legacy index entry.
+
+        This takes an actual version object as an argument, and ignore the
+        version information in the json_dict."""
+        return cls._from_json_dict_impl(key, json_dict, version,
+                                        repository_info)
+
+    @classmethod
+    def _from_json_dict_impl(cls, key, json_dict, version, repository_info):
         return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"], json_dict["size"], json_dict["md5"],
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
@@ -153,8 +203,8 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     def __init__(self, key, name, version, packages, python, size, md5,
                  mtime, product, available, repository_info):
-        super(RepositoryPackageMetadata, self).__init__(key, name, version,
-                                                        packages, python)
+        super(RemotePackageMetadata, self).__init__(key, name, version,
+                                                    packages, python)
 
         self._size = size
         self._md5 = md5
@@ -166,7 +216,7 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @property
     def _comp_key(self):
-        return (super(RepositoryPackageMetadata, self)._comp_key +
+        return (super(RemotePackageMetadata, self)._comp_key +
                 (self.size, self.md5, self.mtime, self.product, self.available,
                  self.repository_info))
 
@@ -214,7 +264,7 @@ class RepositoryPackageMetadata(PackageMetadata):
         return self.repository_info._package_url(self)
 
     def __repr__(self):
-        template = "RepositoryPackageMetadata(" \
+        template = "RemotePackageMetadata(" \
             "'{self.name}-{self.version}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
             "repository_info='{self.repository_info!r}')".format(self=self)
