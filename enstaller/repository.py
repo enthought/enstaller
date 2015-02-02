@@ -34,10 +34,9 @@ class Repository(object):
         for prefix, egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
             info = info_from_metadir(meta_dir)
             if info is not None:
-                info["store_location"] = prefix
-
-                package = \
-                    InstalledPackageMetadata.from_installed_meta_dict(info)
+                package = InstalledPackageMetadata.from_installed_meta_dict(
+                    info, prefix
+                )
                 self.add_package(package)
 
     @classmethod

@@ -9,9 +9,6 @@ import textwrap
 
 from egginst.vendor.six.moves import urllib
 
-from egginst.progress import (console_progress_manager_factory,
-                              dummy_progress_bar_factory)
-
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
@@ -27,14 +24,6 @@ FMT = '%-20s %-20s %s'
 FMT4 = '%-20s %-20s %-20s %s'
 
 DEFAULT_TEXT_WIDTH = 79
-
-
-def disp_store_info(store_location):
-    if not store_location:
-        return '-'
-    for rm in 'http://', 'https://', 'www', '.enthought.com', '/repo/':
-        store_location = store_location.replace(rm, '')
-    return store_location.replace('/eggs/', ' ').strip('/')
 
 
 def _is_any_package_unavailable(remote_repository, actions):
@@ -201,13 +190,12 @@ def install_time_string(installed_repository, name):
 
 
 def print_installed(repository, pat=None):
-    print(FMT % ('Name', 'Version', 'Store'))
+    print(FMT % ('Name', 'Version', 'Prefix'))
     print(60 * '=')
     for package in repository.iter_packages():
         if pat and not pat.search(package.name):
             continue
-        print(FMT % (package.name, package.full_version,
-                     disp_store_info(package.store_location)))
+        print(FMT % (package.name, package.full_version, package.prefix))
 
 
 def _should_raise(resp, raise_on_error):
@@ -232,7 +220,7 @@ def _fetch_repository(session, repository_info, raise_on_error):
             if _should_raise(resp, raise_on_error):
                 resp.raise_for_status()
             else:
-                return None  # failed.append(store_location)
+                return None
         else:
             data = io.BytesIO()
             for chunk in _ResponseIterator(resp):
@@ -242,8 +230,7 @@ def _fetch_repository(session, repository_info, raise_on_error):
 
 
 def _print_unavailables_warning(unavailables):
-    store_names = [_display_store_name(store_location) for store_location in
-                   unavailables]
+    store_names = [repository_info.name for repository_info in unavailables]
     preambule = "Warning: "
     template = textwrap.dedent("""\
         {0}Could not fetch the following indices:
@@ -349,28 +336,3 @@ def exit_if_root_on_non_owned(force_yes=False):
                "owned by root, are you sure to continue ? (y/[n])")
         if not prompt_yes_no(msg, force_yes=force_yes):
             sys.exit(-1)
-
-
-# Private functions
-def _fetch_json_with_progress(resp, store_location, quiet=False):
-    data = io.BytesIO()
-
-    length = int(resp.headers.get("content-length", 0))
-    display = _display_store_name(store_location)
-    if quiet:
-        progress = dummy_progress_bar_factory()
-    else:
-        progress = console_progress_manager_factory("Fetching index", display,
-                                                    size=length)
-    with progress:
-        for chunk in _ResponseIterator(resp):
-            data.write(chunk)
-            progress.update(len(chunk))
-
-    data = data.getvalue()
-    return decode_json_from_buffer(data)
-
-
-def _display_store_name(store_location):
-    parts = urllib.parse.urlsplit(store_location)
-    return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))

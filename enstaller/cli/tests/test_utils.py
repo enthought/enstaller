@@ -5,7 +5,6 @@ import shutil
 import sys
 import tempfile
 import textwrap
-import zlib
 
 import mock
 
@@ -28,10 +27,10 @@ from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
 from enstaller.vendor import requests, responses
 from enstaller.versions.enpkg import EnpkgVersion
 
-from ..utils import (disp_store_info, exit_if_root_on_non_owned, install_req,
+from ..utils import (exit_if_root_on_non_owned, install_req,
                      install_time_string, name_egg, print_installed,
                      repository_factory, updates_check)
-from ..utils import _fetch_json_with_progress, _print_warning
+from ..utils import _print_warning
 
 
 if sys.version_info < (2, 7):
@@ -72,12 +71,6 @@ class TestExitIfRootOnNonOwned(unittest.TestCase):
 
 
 class TestMisc(unittest.TestCase):
-    def setUp(self):
-        self.tempdir = tempfile.mkdtemp()
-
-    def tearDown(self):
-        shutil.rmtree(self.tempdir)
-
     def test__print_warning(self):
         # Given
         message = "fail to crash"
@@ -90,15 +83,6 @@ class TestMisc(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, r_output)
 
-    def test_disp_store_info(self):
-        store_location = "https://api.enthought.com/eggs/osx-64/"
-        self.assertEqual(disp_store_info(store_location), "api osx-64")
-
-        store_location = "https://api.enthought.com/eggs/win-32/"
-        self.assertEqual(disp_store_info(store_location), "api win-32")
-
-        self.assertEqual(disp_store_info(""), "-")
-
     def test_name_egg(self):
         name = "foo-1.0.0-1.egg"
         self.assertEqual(name_egg(name), "foo")
@@ -110,8 +94,16 @@ class TestMisc(unittest.TestCase):
             name = "some/dir/fu_bar-1.0.0-1.egg"
             name_egg(name)
 
+
+class TestRepositoryFactory(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
     @responses.activate
-    def test_repository_factory(self):
+    def test_unavailable_repository(self):
         self.maxDiff = None
 
         # Given
@@ -126,7 +118,7 @@ class TestMisc(unittest.TestCase):
         r_warning = textwrap.dedent("""\
             Warning: Could not fetch the following indices:
 
-                     - 'neko'
+                     - 'enthought/foo'
 
                      Those repositories do not exist (or you do not have the rights to
                      access them). You should edit your configuration to remove those
@@ -136,9 +128,7 @@ class TestMisc(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock.patch("enstaller.cli.utils._display_store_name",
-                            return_value="neko"):
-                repository = repository_factory(session, config.repositories)
+            repository = repository_factory(session, config.repositories)
 
         # Then
         self.assertEqual(len(list(repository.iter_packages())), 0)
@@ -170,10 +160,10 @@ class TestInfoStrings(unittest.TestCase):
     def test_print_installed(self):
         with mkdtemp() as d:
             r_out = textwrap.dedent("""\
-                Name                 Version              Store
+                Name                 Version              Prefix
                 ============================================================
                 dummy                1.0.1-1              {0}
-                """.format(disp_store_info(d)))
+                """.format(d))
             ec = EggInst(DUMMY_EGG, d)
             ec.install()
 
@@ -183,7 +173,7 @@ class TestInfoStrings(unittest.TestCase):
             self.assertMultiLineEqual(m.value, r_out)
 
             r_out = textwrap.dedent("""\
-                Name                 Version              Store
+                Name                 Version              Prefix
                 ============================================================
                 """)
 
@@ -609,81 +599,3 @@ with pip as follows:
 
         # Then
         self._assert_ask_for_pypi(mocked_print)
-
-
-class TestFetchJsonWithProgress(unittest.TestCase):
-    def _gzip_compress(self, data):
-        compressor = zlib.compressobj(6, zlib.DEFLATED, 16 + zlib.MAX_WBITS)
-        body = compressor.compress(data)
-        body += compressor.flush()
-        return body
-
-    @responses.activate
-    def test_simple(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": "gzip"}
-            body = self._gzip_compress(b"{}")
-            return (200, headers, body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        data = _fetch_json_with_progress(resp, "acme.com", quiet=False)
-
-        # Then
-        self.assertEqual(data, {})
-
-    @responses.activate
-    def test_handle_stripped_header(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": ""}
-            body = self._gzip_compress(b"{}")
-            return (200, headers, body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        data = _fetch_json_with_progress(resp, "acme.com", quiet=False)
-
-        # Then
-        self.assertEqual(data, {})
-
-    @responses.activate
-    def test_handle_stripped_header_incomplete_data(self):
-
-        # Given
-        def callback(request):
-            self.assertTrue("gzip" in
-                            request.headers.get("Accept-Encoding", ""))
-
-            headers = {"Content-Encoding": ""}
-            incomplete_body = self._gzip_compress(b"{}")[:-1]
-            return (200, headers, incomplete_body)
-
-        responses.add_callback(responses.GET, "https://acme.com/index.json", callback)
-
-        config = Configuration()
-
-        # When/Then
-        session = Session.from_configuration(config)
-        resp = session.fetch("https://acme.com/index.json")
-        with self.assertRaises(requests.exceptions.ContentDecodingError):
-            _fetch_json_with_progress(resp, "acme.com", quiet=False)
