@@ -55,17 +55,12 @@ class PackageMetadata(object):
         self._dependencies = frozenset(packages)
         self._python = python
 
+    # ------------------------
+    # Protocols implementation
+    # ------------------------
     def __repr__(self):
         return "PackageMetadata('{0}-{1}', key={2!r})".format(
             self.name, self.version, self.key)
-
-    @property
-    def _egg_name(self):
-        return split_eggname(self.key)[0]
-
-    @property
-    def _comp_key(self):
-        return (self.name, self.version, self._dependencies, self.python)
 
     def __eq__(self, other):
         if not isinstance(other, self.__class__):
@@ -79,6 +74,9 @@ class PackageMetadata(object):
     def __hash__(self):
         return hash(self._comp_key)
 
+    # ----------
+    # Properties
+    # ----------
     @property
     def dependencies(self):
         return self._dependencies
@@ -91,12 +89,12 @@ class PackageMetadata(object):
         return str(self.version)
 
     @property
-    def name(self):
-        return self._name
-
-    @property
     def key(self):
         return self._key
+
+    @property
+    def name(self):
+        return self._name
 
     @property
     def packages(self):
@@ -111,6 +109,17 @@ class PackageMetadata(object):
     @property
     def version(self):
         return self._version
+
+    # ------------------
+    # Private properties
+    # ------------------
+    @property
+    def _egg_name(self):
+        return split_eggname(self.key)[0]
+
+    @property
+    def _comp_key(self):
+        return (self.name, self.version, self._dependencies, self.python)
 
 
 class RepositoryPackageMetadata(PackageMetadata):
