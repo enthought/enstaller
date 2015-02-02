@@ -1,38 +1,26 @@
-from enstaller.package import PackageMetadata
+from egginst.vendor import six
+from enstaller.vendor import yaml
+
+from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository import Repository
+from enstaller.repository_info import BroodRepositoryInfo
+from enstaller.solver import Request
 from enstaller.versions.enpkg import EnpkgVersion
 
 from .package_parser import PrettyPackageStringParser
-
-
-class RepositoryPackage(PackageMetadata):
-    """ Like PackageMetadata, but attached to a repository. """
-    @classmethod
-    def from_package(cls, package, repository_info):
-        return RepositoryPackage(package.key, package.name,
-                                 package.version, package.packages,
-                                 package.python, repository_info)
-
-    def __init__(self, key, name, version, packages, python, repository_info):
-        super(RepositoryPackage, self).__init__(key, name, version,
-                                                packages, python)
-        self._repository_info = repository_info
-
-    def __repr__(self):
-        return "RepositoryPackage('{0}-{1}', repo={2!r})".format(
-            self.name, self.version, self.repository_info)
-
-    @property
-    def repository_info(self):
-        return self._repository_info
-
-    @property
-    def _comp_key(self):
-        return (super(RepositoryPackage, self)._comp_key +
-                (self._repository_info,))
+from .requirement import Requirement
 
 
 def parse_package_list(packages):
+    """ Yield PackageMetadata instances given an sequence  of pretty package
+    strings.
+
+    Parameters
+    ----------
+    packages : iterator
+        An iterator of package strings (e.g.
+        'numpy 1.8.1-1; depends (MKL ~= 10.3)').
+    """
     parser = PrettyPackageStringParser(EnpkgVersion.from_string)
 
     for package_str in packages:
@@ -45,7 +33,7 @@ def repository_factory(package_names, repository_info, reference_packages):
     repository = Repository()
     for package_name in package_names:
         package = reference_packages[package_name]
-        package = RepositoryPackage.from_package(package, repository_info)
+        package = RepositoryPackageMetadata.from_package(package, repository_info)
         repository.add_package(package)
     return repository
 
@@ -60,3 +48,33 @@ def installed_repository(yaml_data, packages):
     repository_info = BroodRepositoryInfo("http://acme.come", "installed")
     package_names = yaml_data.get("installed", [])
     return repository_factory(package_names, repository_info, packages)
+
+
+class Scenario(object):
+    @classmethod
+    def from_yaml(cls, file_or_filename):
+        if isinstance(file_or_filename, six.string_types):
+            with open(file_or_filename) as fp:
+                data = yaml.load(fp)
+        else:
+            data = yaml.load(file_or_filename)
+
+        packages = dict(parse_package_list(data.get("packages", [])))
+        operations = data.get("request", [])
+
+        request = Request()
+
+        for operation in operations:
+            kind = operation["operation"]
+            requirement = Requirement._from_string(operation["requirement"])
+            getattr(request, kind)(requirement)
+
+        return cls(packages, [remote_repository(data, packages)],
+                   installed_repository(data, packages), request)
+
+    def __init__(self, packages, remote_repositories, installed_repository,
+                 request):
+        self.packages = packages
+        self.remote_repositories = remote_repositories
+        self.installed_repository = installed_repository
+        self.request = request
