@@ -122,12 +122,12 @@ class PackageMetadata(object):
         return (self.name, self.version, self._dependencies, self.python)
 
 
-class RepositoryPackageMetadata(PackageMetadata):
+class RemotePackageMetadata(PackageMetadata):
     """
-    RepositoryPackageMetadata encompasses the full set of package metadata
+    RemotePackageMetadata encompasses the full set of package metadata
     available from a repository.
 
-    In particular, RepositoryPackageMetadata's instances know about which
+    In particular, RemotePackageMetadata's instances know about which
     repository they are coming from through the store_location attribute.
     """
     @classmethod
@@ -161,8 +161,8 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     def __init__(self, key, name, version, packages, python, size, md5,
                  mtime, product, available, repository_info):
-        super(RepositoryPackageMetadata, self).__init__(key, name, version,
-                                                        packages, python)
+        super(RemotePackageMetadata, self).__init__(key, name, version,
+                                                    packages, python)
 
         self._size = size
         self._md5 = md5
@@ -174,7 +174,7 @@ class RepositoryPackageMetadata(PackageMetadata):
 
     @property
     def _comp_key(self):
-        return (super(RepositoryPackageMetadata, self)._comp_key +
+        return (super(RemotePackageMetadata, self)._comp_key +
                 (self.size, self.md5, self.mtime, self.product, self.available,
                  self.repository_info))
 
@@ -222,7 +222,7 @@ class RepositoryPackageMetadata(PackageMetadata):
         return self.repository_info._package_url(self)
 
     def __repr__(self):
-        template = "RepositoryPackageMetadata(" \
+        template = "RemotePackageMetadata(" \
             "'{self.name}-{self.version}', key={self.key!r}, " \
             "available={self.available!r}, product={self.product!r}, " \
             "repository_info='{self.repository_info!r}')".format(self=self)

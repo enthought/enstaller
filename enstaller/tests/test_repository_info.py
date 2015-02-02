@@ -10,7 +10,7 @@ from enstaller.repository_info import (BroodRepositoryInfo,
                                        CanopyRepositoryInfo,
                                        FSRepositoryInfo,
                                        OldstyleRepositoryInfo)
-from enstaller.repository import RepositoryPackageMetadata
+from enstaller.repository import RemotePackageMetadata
 from enstaller.utils import path_to_uri
 
 
@@ -45,7 +45,7 @@ class TestLegacyRepositoryInfo(unittest.TestCase):
 
         # When
         info = OldstyleRepositoryInfo(store_url)
-        package = RepositoryPackageMetadata.from_egg(path)
+        package = RemotePackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
@@ -86,7 +86,7 @@ class TestCanopyRepositoryInfo(unittest.TestCase):
 
         # When
         info = CanopyRepositoryInfo(store_url, use_pypi=True)
-        package = RepositoryPackageMetadata.from_egg(path)
+        package = RemotePackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
@@ -139,7 +139,7 @@ class TestBroodRepositoryInfo(unittest.TestCase):
 
         # When
         info = BroodRepositoryInfo(store_url, name)
-        package = RepositoryPackageMetadata.from_egg(path)
+        package = RemotePackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
@@ -178,7 +178,7 @@ class TestFSRepositoryInfo(unittest.TestCase):
 
         # When
         info = FSRepositoryInfo(store_url)
-        package = RepositoryPackageMetadata.from_egg(path)
+        package = RemotePackageMetadata.from_egg(path)
 
         # Then
         self.assertEqual(info.index_url, r_index_url)
