@@ -122,6 +122,32 @@ class PackageMetadata(object):
         return (self.name, self.version, self._dependencies, self.python)
 
 
+class RepositoryPackageMetadata(PackageMetadata):
+    """ Like PackageMetadata, but attached to a repository. """
+    @classmethod
+    def from_package(cls, package, repository_info):
+        return cls(package.key, package.name, package.version,
+                   package.packages, package.python, repository_info)
+
+    def __init__(self, key, name, version, packages, python, repository_info):
+        super(RepositoryPackageMetadata, self).__init__(key, name,
+                                                        version, packages, python)
+        self._repository_info = repository_info
+
+    def __repr__(self):
+        return ("RepositoryPackageMetadata('{self.name}-{self.version}', "
+                "repo={self.repository_info!r}".format(self=self))
+
+    @property
+    def repository_info(self):
+        return self._repository_info
+
+    @property
+    def _comp_key(self):
+        return (super(RepositoryPackageMetadata, self)._comp_key +
+                (self._repository_info,))
+
+
 class RemotePackageMetadata(PackageMetadata):
     """
     RemotePackageMetadata encompasses the full set of package metadata
