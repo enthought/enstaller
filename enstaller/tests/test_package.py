@@ -6,6 +6,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
 from enstaller.package import (InstalledPackageMetadata, PackageMetadata,
+                               RemotePackageMetadata,
                                RepositoryPackageMetadata,
                                egg_name_to_name_version)
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
@@ -101,6 +102,56 @@ class TestPackage(unittest.TestCase):
 
 
 class TestRepositoryPackage(unittest.TestCase):
+    def test_eq(self):
+        # Given
+        V = EnpkgVersion.from_string
+        repository_info1 = BroodRepositoryInfo("http://acme.com", "remote")
+        repository_info2 = BroodRepositoryInfo("http://acme.com", "local")
+
+        package1 = RepositoryPackageMetadata.from_package(
+            PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
+                            "2.7"),
+            repository_info1
+        )
+
+        package2 = RepositoryPackageMetadata.from_package(
+            PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
+                            "2.7"),
+            repository_info1
+        )
+
+        package3 = RepositoryPackageMetadata.from_package(
+            PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
+                            "2.7"),
+            repository_info2
+        )
+
+        # Then
+        self.assertTrue(package1 == package2)
+        self.assertTrue(hash(package1) == hash(package2))
+        self.assertFalse(package1 != package2)
+        self.assertTrue(package1 != package3)
+        self.assertFalse(package1 == package3)
+
+    def test_repr(self):
+        # Given
+        version = EnpkgVersion.from_string("1.3.0-1")
+        repository_info = BroodRepositoryInfo("http://acme.com", "remote")
+        package = RepositoryPackageMetadata.from_package(
+            PackageMetadata("nose-1.3.0-1.egg", "nose", version, [], "2.7"),
+            repository_info,
+        )
+        r_repr = ("RepositoryPackageMetadata('nose-1.3.0-1', "
+                  "repo=BroodRepository(<http://acme.com>, <remote>)")
+
+        # When
+        r = repr(package)
+
+        # Then
+        self.assertEqual(r, r_repr)
+
+
+class TestRemotePackageMetadata(unittest.TestCase):
     def setUp(self):
         self.repository_info = BroodRepositoryInfo("https://acme.com",
                                                    "enthought/free")
@@ -109,18 +160,18 @@ class TestRepositoryPackage(unittest.TestCase):
         # Given
         V = EnpkgVersion.from_string
         md5 = "a" * 32
-        package1 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True,
-                                             self.repository_info)
-        package2 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True,
-                                             self.repository_info)
-        package3 = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             "b" * 32, 0.0, "free", True,
-                                             self.repository_info)
+        package1 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         md5, 0.0, "free", True,
+                                         self.repository_info)
+        package2 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         md5, 0.0, "free", True,
+                                         self.repository_info)
+        package3 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         "b" * 32, 0.0, "free", True,
+                                         self.repository_info)
 
         # Then
         self.assertTrue(package1 == package2)
@@ -147,9 +198,9 @@ class TestRepositoryPackage(unittest.TestCase):
 
         }
         version = EnpkgVersion.from_string("1.3.0-1")
-        metadata = RepositoryPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             version, [], "2.7", 1, md5,
-                                             0.0, "free", True, "")
+        metadata = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
+                                         version, [], "2.7", 1, md5,
+                                         0.0, "free", True, "")
 
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
@@ -160,7 +211,7 @@ class TestRepositoryPackage(unittest.TestCase):
         repository_info = FSRepositoryInfo(path_to_uri(os.path.dirname(path)))
 
         # When
-        metadata = RepositoryPackageMetadata.from_egg(path, repository_info)
+        metadata = RemotePackageMetadata.from_egg(path, repository_info)
 
         # Then
         self.assertEqual(metadata.name, "nose")
@@ -170,13 +221,12 @@ class TestRepositoryPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         path = os.path.join(_EGGINST_COMMON_DATA, "nose-1.3.0-1.egg")
-        r_repr = ("RepositoryPackageMetadata('nose-1.3.0-1', "
+        r_repr = ("RemotePackageMetadata('nose-1.3.0-1', "
                   "key='nose-1.3.0-1.egg', available=True, product=None, "
                   "repository_info='{0}')".format(self.repository_info))
 
         # When
-        metadata = RepositoryPackageMetadata.from_egg(path,
-                                                      self.repository_info)
+        metadata = RemotePackageMetadata.from_egg(path, self.repository_info)
 
         # Then
         self.assertEqual(repr(metadata), r_repr)

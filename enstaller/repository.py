@@ -7,7 +7,7 @@ import sys
 from enstaller.eggcollect import info_from_metadir
 from enstaller.errors import NoSuchPackage
 from enstaller.package import (InstalledPackageMetadata,
-                               RepositoryPackageMetadata)
+                               RemotePackageMetadata)
 from enstaller.utils import PY_VER
 from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
 from enstaller.versions.enpkg import EnpkgVersion
@@ -142,7 +142,7 @@ class Repository(object):
 
         Returns
         -------
-        package : RepositoryPackageMetadata
+        package : RemotePackageMetadata
             The corresponding metadata.
         """
         version = EnpkgVersion.from_string(version)
@@ -163,7 +163,7 @@ class Repository(object):
 
         Returns
         -------
-        package : RepositoryPackageMetadata
+        package : RemotePackageMetadata
             The corresponding metadata.
         """
         name = requirement.name
@@ -217,7 +217,7 @@ class Repository(object):
         Returns
         -------
         packages : iterable
-            Iterable of RepositoryPackageMetadata.
+            Iterable of RemotePackageMetadata.
         """
         packages = self.find_packages(name)
         try:
@@ -241,7 +241,7 @@ class Repository(object):
         Returns
         -------
         packages : iterable
-            Iterable of RepositoryPackageMetadata-like (order is unspecified)
+            Iterable of RemotePackageMetadata-like (order is unspecified)
         """
         candidates = self._name_to_packages.get(name, [])
         if version is None:
@@ -255,7 +255,7 @@ class Repository(object):
         Returns
         -------
         packages : iterable
-            Iterable of RepositoryPackageMetadata-like.
+            Iterable of RemotePackageMetadata-like.
         """
         for packages_set in self._name_to_packages.values():
             for package in packages_set:
@@ -268,7 +268,7 @@ class Repository(object):
         Returns
         -------
         packages : iterable
-            Iterable of the corresponding RepositoryPackageMetadata-like
+            Iterable of the corresponding RemotePackageMetadata-like
             instances.
         """
         for name, packages in self._name_to_packages.items():
@@ -294,13 +294,26 @@ def parse_index(json_dict, repository_info, python_version=PY_VER):
         equal to this string. If python_version == "*", then every package is
         iterated over.
     """
+    # We cache versions as building instances of EnpkgVersion from a string is
+    # slow. For the PyPi repository, caching saves ~90 % of the calls, and
+    # speed up parse_index by ~300 ms on my machine.
+    cache = {}
+
+    def _version_factory(upstream, build):
+        if (upstream, build) in cache:
+            version = cache[(upstream, build)]
+        else:
+            version = EnpkgVersion.from_upstream_and_build(upstream, build)
+            cache[(upstream, build)] = version
+        return version
+
     for key, info in json_dict.items():
         info.setdefault('type', 'egg')
         info.setdefault('packages', [])
         info.setdefault('python', python_version)
-        if python_version == "*":
-            yield RepositoryPackageMetadata.from_json_dict(key, info,
-                                                           repository_info)
-        elif info["python"] in (None, python_version):
-            yield RepositoryPackageMetadata.from_json_dict(key, info,
-                                                           repository_info)
+
+        version = _version_factory(info["version"], info["build"])
+        if python_version == "*" or info["python"] in (None, python_version):
+            yield RemotePackageMetadata.from_json_dict_and_version(
+                key, info, version, repository_info
+            )

@@ -14,7 +14,7 @@ from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError, InvalidChecksum
 from enstaller.fetch import _DownloadManager
 from enstaller.package import PackageMetadata, egg_name_to_name_version
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import path_to_uri
@@ -176,7 +176,7 @@ class TestEnpkgRevert(unittest.TestCase):
         config = Configuration()
 
         repository = Repository()
-        package = RepositoryPackageMetadata.from_egg(egg)
+        package = RemotePackageMetadata.from_egg(egg)
         repository.add_package(package)
 
         with open(egg, "rb") as fp:
@@ -253,7 +253,7 @@ class TestFetchAction(unittest.TestCase):
     def _downloader_factory(self, paths):
         repository = Repository()
         for path in paths:
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         return (_DownloadManager(Session(DummyAuthenticator(), self.tempdir), repository),
@@ -399,7 +399,7 @@ class TestFetchAction(unittest.TestCase):
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
         repository = Repository()
-        package = RepositoryPackageMetadata.from_egg(path, repository_info)
+        package = RemotePackageMetadata.from_egg(path, repository_info)
         repository.add_package(package)
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
@@ -455,7 +455,7 @@ class TestRemoveAction(unittest.TestCase):
     def _install_eggs(self, paths):
         repository = Repository()
         for path in paths:
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         for path in paths:

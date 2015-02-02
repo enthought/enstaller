@@ -17,8 +17,8 @@ except ImportError as e:  # pragma: no cover
     __is_released__ = False
 
 from enstaller.config import Configuration
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.session import Session
 
-__all__ = ["Configuration", "Repository", "RepositoryPackageMetadata",
+__all__ = ["Configuration", "Repository", "RemotePackageMetadata",
            "Session"]

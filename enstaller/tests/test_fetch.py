@@ -10,7 +10,7 @@ from enstaller.vendor import requests, responses
 
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch import _DownloadManager
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.utils import compute_md5
 
@@ -28,7 +28,7 @@ class Test_DownloadManager(unittest.TestCase):
         repository = Repository()
         for egg in eggs:
             path = os.path.join(_EGGINST_COMMON_DATA, egg)
-            package = RepositoryPackageMetadata.from_egg(path)
+            package = RemotePackageMetadata.from_egg(path)
             repository.add_package(package)
 
         return repository
@@ -54,7 +54,7 @@ class Test_DownloadManager(unittest.TestCase):
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
 
         repository = Repository()
-        package = RepositoryPackageMetadata.from_egg(path)
+        package = RemotePackageMetadata.from_egg(path)
         package._md5 = "a" * 32
         repository.add_package(package)
 
@@ -144,7 +144,7 @@ class Test_DownloadManager(unittest.TestCase):
         repository = Repository()
 
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
-        package = RepositoryPackageMetadata.from_egg(path, repository_info)
+        package = RemotePackageMetadata.from_egg(path, repository_info)
         repository.add_package(package)
 
         responses.add(responses.GET, package.source_url,

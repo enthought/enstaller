@@ -13,7 +13,7 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.plat import custom_plat
 from enstaller.repository import (InstalledPackageMetadata, Repository,
-                                  RepositoryPackageMetadata)
+                                  RemotePackageMetadata)
 from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import PY_VER
@@ -109,10 +109,9 @@ def dummy_repository_package_factory(name, version, build, key=None,
     version = EnpkgVersion.from_upstream_and_build(version, build)
     repository_info = repository_info or \
         CanopyRepositoryInfo("https://acme.com")
-    return RepositoryPackageMetadata(key, name.lower(), version,
-                                     dependencies, py_ver, fake_size,
-                                     fake_md5, fake_mtime, product,
-                                     available, repository_info)
+    return RemotePackageMetadata(key, name.lower(), version, dependencies,
+                                 py_ver, fake_size, fake_md5, fake_mtime,
+                                 product, available, repository_info)
 
 
 def repository_factory(entries):

@@ -4,7 +4,7 @@ import os
 
 from os.path import abspath, dirname, join
 
-from enstaller.repository import Repository, RepositoryPackageMetadata
+from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.utils import PY_VER
 from egginst.vendor.six.moves import unittest
 
@@ -32,8 +32,8 @@ def _old_style_index_to_packages(index_path, python_version):
         spec['type'] = 'egg'
 
         if python_version == "*" or spec["python"] in (None, python_version):
-            package = RepositoryPackageMetadata.from_json_dict(key, spec,
-                                                               repository_info)
+            package = RemotePackageMetadata.from_json_dict(key, spec,
+                                                           repository_info)
             packages.append(package)
 
     return packages
