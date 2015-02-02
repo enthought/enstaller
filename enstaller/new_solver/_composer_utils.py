@@ -3,32 +3,79 @@ Useful code to compare solver behaviour with PHP's Composer. Obviously
 don't use this in enstaller itself.
 """
 import collections
-import json
 
-from enstaller.repository_info import BroodRepositoryInfo
-
-from enstaller.new_solver.constraint_types import Any, EnpkgUpstreamMatch, Equal
+from enstaller.new_solver.constraint_types import (
+    Any, EnpkgUpstreamMatch, Equal, GEQ, GT, LEQ, LT
+)
 from enstaller.new_solver.requirement import Requirement
-from enstaller.new_solver.yaml_utils import repository_factory
 
 
-def fix_php_version(version):
+# We ignore alpha/rc/etc... as composer does not allow to combine those with
+# patch versions, which we use to emulate build numbers.
+_TO_NORMALIZE = {
+    "1.0a3": "1.0.0",
+    "2011n": "2011.14.0.0",
+    "0.14.1rc1": "0.14.1.0",
+}
+
+
+def repository_to_composer_json_dict(repository):
+    """ Generator of composer-compatible dict representation of an enstaller
+    Repository's entries.
+
+    Assuming the string returned by this function is written into the file
+    'repository.json' file, you can load it as follows w/ Composer::
+
+        $json_string = file_get_contents("remote.json");
+        $packages = JsonFile::parseJson($json_string);
+
+        $repository = new ArrayRepository();
+        $loader = new ArrayLoader();
+
+        foreach ($packages as $packageData) {
+            $package = $loader->load($packageData):
+            $repository.addPackage($package);
+        }
+
+    Parameters
+    ----------
+    repository : Repository
+        The repository to convert
+    """
+    for package in repository.iter_packages():
+        version_normalized = _normalize_php_version(package.version)
+        requires = [Requirement.from_legacy_requirement_string(p) for
+                    p in package.dependencies]
+        yield {
+            "name": package.name,
+            "version": _fix_php_version(package.version),
+            "version_normalized": version_normalized,
+            "require": _requirements_to_php_dict(requires),
+        }
+
+
+def request_to_php_parts(request):
+    parts = []
+    for job in request.jobs:
+        name, constraints = _requirement_to_php_constraints(
+            job.requirement
+        )
+        php_constraints = tuple(
+            'VersionConstraint("{0}", "{1}")'.format(kind, version)
+            for kind, version in constraints
+        )
+        parts.append((job.kind, name, php_constraints))
+    return parts
+
+
+def _fix_php_version(version):
     """ 'Normalize' an EnpkgVersion to a valid composer version
     string.
     """
-    upstream = str(version.upstream)
-    while upstream.count(".") < 2:
-        upstream += ".0"
-    return upstream
+    return str(version)
 
 
-_TO_NORMALIZE = {
-    "1.0a3": "1.0.0.0-alpha3",
-    "2011n": "2011.0.0.0",
-    "0.14.1rc1": "0.14.1.0-RC1",
-}
-
-def normalized_php_version(version):
+def _normalize_php_version(version):
     """ 'Normalize' an EnpkgVersion to a valid normalized composer version
     string.
     """
@@ -36,63 +83,73 @@ def normalized_php_version(version):
     upstream = _TO_NORMALIZE.get(upstream, upstream)
     while upstream.count(".") < 3:
         upstream += ".0"
-    return upstream
+    return "{0}-patch{1}".format(upstream, version.build)
 
 
-def requirement_to_php_string(requirement):
+def _normalize_php_version_constraint(version):
+    """ 'Normalize' an EnpkgVersion to a valid normalized composer version
+    string when used in constraints.
+    """
+    upstream = str(version.upstream)
+    upstream = _TO_NORMALIZE.get(upstream, upstream)
+    while upstream.count(".") < 3:
+        upstream += ".0"
+
+    if version.build == 0:
+        return upstream
+    else:
+        return "{0}-patch{1}".format(upstream, version.build)
+
+
+def _requirement_to_php_constraints(requirement):
+    constraint_to_string = {
+        GEQ: ">=",
+        GT: ">",
+        LEQ: "<=",
+        LT: "<",
+    }
+    constraint_types = tuple(constraint_to_string.keys())
+    parts = []
+    for constraint in requirement._constraints._constraints:
+        if isinstance(constraint, constraint_types):
+            constraint_string = constraint_to_string[constraint.__class__]
+            version = _normalize_php_version_constraint(constraint.version)
+            parts.append((constraint_string, version))
+        elif not isinstance(constraint, Any):
+            raise ValueError("Unsupported constraint: %s" % constraint)
+
+    return requirement.name, parts
+
+
+def _requirement_to_php_string(requirement):
     """ Convert an enstaller requirement into a composer constraint string.
     """
     parts = []
     for constraint in requirement._constraints._constraints:
         if isinstance(constraint, EnpkgUpstreamMatch):
-            normalized = normalized_php_version(constraint.version)
+            normalized = _normalize_php_version_constraint(constraint.version)
             parts.append("~{0}".format(normalized))
         elif isinstance(constraint, Any):
             parts.append("*")
         elif isinstance(constraint, Equal):
-            normalized = normalized_php_version(constraint.version)
+            normalized = _normalize_php_version_constraint(constraint.version)
             parts.append("{0}".format(normalized))
         else:
-            print(type(constraint))
             raise NotImplementedError(constraint)
     return ", ".join(parts)
 
 
-def requirements_to_php_dict(requirements):
+def _requirements_to_php_dict(requirements):
     """ Convert a list of requirements into a mapping
     name -> composer_requirement_string
+
+    Parameters
+    ----------
+    requirements : seq
+        Iterable of Requirement instances.
     """
     php_dict = collections.defaultdict(list)
     for requirement in requirements:
-        php_dict[requirement.name].append(requirement_to_php_string(requirement))
+        php_dict[requirement.name].append(_requirement_to_php_string(requirement))
 
     return dict((k, ", ".join(v)) for k, v in php_dict.items())
-
-
-def repository_to_composer_json(repository):
-    res = []
-    for package in repository.iter_packages():
-        version_normalized = normalized_php_version(package.version)
-        requires = [Requirement.from_legacy_requirement_string(p) for
-                    p in package.dependencies]
-        res.append({
-            "name": package.name,
-            "version": fix_php_version(package.version),
-            "version_normalized": version_normalized,
-            "require": requirements_to_php_dict(requires),
-        })
-    return json.dumps(res, indent=4)
-
-
-def write_composer_repository(data, attribute_name, packages):
-    repository_info = BroodRepositoryInfo("http://acme.come", attribute_name)
-    if attribute_name == "remote":
-        remote_packages = data.get(attribute_name, packages.keys())
-    else:
-        remote_packages = data.get(attribute_name, [])
-    repository = repository_factory(remote_packages, repository_info, packages)
-
-    filename = "{}.json".format(attribute_name)
-
-    with open(filename, "wt") as fp:
-        fp.write(repository_to_composer_json(repository))
