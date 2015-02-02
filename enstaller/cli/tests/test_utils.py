@@ -5,7 +5,6 @@ import shutil
 import sys
 import tempfile
 import textwrap
-import zlib
 
 import mock
 
