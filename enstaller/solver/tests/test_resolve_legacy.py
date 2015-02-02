@@ -33,7 +33,7 @@ def _old_style_index_to_packages(index_path, python_version):
 
         if python_version == "*" or spec["python"] in (None, python_version):
             package = RemotePackageMetadata.from_json_dict(key, spec,
-                                                               repository_info)
+                                                           repository_info)
             packages.append(package)
 
     return packages

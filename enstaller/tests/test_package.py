@@ -161,17 +161,17 @@ class TestRemotePackageMetadata(unittest.TestCase):
         V = EnpkgVersion.from_string
         md5 = "a" * 32
         package1 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True,
-                                             self.repository_info)
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         md5, 0.0, "free", True,
+                                         self.repository_info)
         package2 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             md5, 0.0, "free", True,
-                                             self.repository_info)
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         md5, 0.0, "free", True,
+                                         self.repository_info)
         package3 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             V("1.3.0-1"), [], "2.7", 1,
-                                             "b" * 32, 0.0, "free", True,
-                                             self.repository_info)
+                                         V("1.3.0-1"), [], "2.7", 1,
+                                         "b" * 32, 0.0, "free", True,
+                                         self.repository_info)
 
         # Then
         self.assertTrue(package1 == package2)
@@ -199,8 +199,8 @@ class TestRemotePackageMetadata(unittest.TestCase):
         }
         version = EnpkgVersion.from_string("1.3.0-1")
         metadata = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                             version, [], "2.7", 1, md5,
-                                             0.0, "free", True, "")
+                                         version, [], "2.7", 1, md5,
+                                         0.0, "free", True, "")
 
         # When/Then
         self.assertEqual(metadata.s3index_data, r_s3index_data)
@@ -226,8 +226,7 @@ class TestRemotePackageMetadata(unittest.TestCase):
                   "repository_info='{0}')".format(self.repository_info))
 
         # When
-        metadata = RemotePackageMetadata.from_egg(path,
-                                                      self.repository_info)
+        metadata = RemotePackageMetadata.from_egg(path, self.repository_info)
 
         # Then
         self.assertEqual(repr(metadata), r_repr)
