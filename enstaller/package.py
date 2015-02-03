@@ -47,6 +47,24 @@ class PackageMetadata(object):
         return cls(key, json_dict["name"], version, json_dict["packages"],
                    json_dict["python"])
 
+    @classmethod
+    def _from_pretty_string(cls, s, python_version=PY_VER):
+        """ Create an instance from a pretty string.
+
+        A pretty string looks as follows::
+
+            'numpy 1.8.1-1; depends (MKL ~= 10.3)'
+
+        Note
+        ----
+        Don't use this in production code, only meant to be used for testing.
+        """
+        # FIXME: local import to workaround circular imports
+        from enstaller.new_solver.package_parser import \
+            PrettyPackageStringParser
+        parser = PrettyPackageStringParser(EnpkgVersion.from_string)
+        return parser.parse_to_package(s, python_version)
+
     def __init__(self, key, name, version, packages, python):
         self._key = key
 
@@ -129,6 +147,21 @@ class RepositoryPackageMetadata(PackageMetadata):
     def from_package(cls, package, repository_info):
         return cls(package.key, package.name, package.version,
                    package.packages, package.python, repository_info)
+
+    @classmethod
+    def _from_pretty_string(cls, s, repository_info, python_version=PY_VER):
+        """ Create an instance from a pretty string.
+
+        A pretty string looks as follows::
+
+            'numpy 1.8.1-1; depends (MKL ~= 10.3)'
+
+        Note
+        ----
+        Don't use this in production code, only meant to be used for testing.
+        """
+        package = PackageMetadata._from_pretty_string(s, python_version)
+        return cls.from_package(package, repository_info)
 
     def __init__(self, key, name, version, packages, python, repository_info):
         super(RepositoryPackageMetadata, self).__init__(key, name,

@@ -89,6 +89,18 @@ class TestPackage(unittest.TestCase):
         self.assertEqual(metadata.dependencies, frozenset())
         self.assertEqual(metadata.packages, [])
 
+    def test_from_pretty_string(self):
+        # Given
+        pretty_string = "numpy 1.8.1-1; depends (MKL ~= 10.3)"
+
+        # When
+        metadata = PackageMetadata._from_pretty_string(pretty_string)
+
+        # Then
+        self.assertEqual(metadata.name, "numpy")
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.8.1-1"))
+        self.assertEqual(metadata.dependencies, frozenset(("MKL 10.3",)))
+
     def test_casing(self):
         # Given
         version = EnpkgVersion.from_string("10.3-1")
@@ -149,6 +161,22 @@ class TestRepositoryPackage(unittest.TestCase):
 
         # Then
         self.assertEqual(r, r_repr)
+
+    def test_from_pretty_string(self):
+        # Given
+        pretty_string = "numpy 1.8.1-1; depends (MKL ~= 10.3)"
+        repository_info = BroodRepositoryInfo("https://acme.com", "acme/looney")
+
+        # When
+        metadata = RepositoryPackageMetadata._from_pretty_string(
+            pretty_string, repository_info
+        )
+
+        # Then
+        self.assertEqual(metadata.name, "numpy")
+        self.assertEqual(metadata.version, EnpkgVersion.from_string("1.8.1-1"))
+        self.assertEqual(metadata.repository_info, repository_info)
+        self.assertEqual(metadata.dependencies, frozenset(("MKL 10.3",)))
 
 
 class TestRemotePackageMetadata(unittest.TestCase):
