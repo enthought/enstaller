@@ -40,6 +40,8 @@ VERSION_RE = re.compile(r'''
 # OrderedDict to stay compatible with 2.6)
 # We put dev versions at the end.
 VERSION_TO_SHA256 = [
+    ("4.8.2-1",
+        "21425a87b08fd166fa05e28cbd9f2c537e002df3e75c262fc68300f91b18df58"),
     ("4.8.1-1",
         "328faaf29e17cd23ffc496d35cc35234e8636faa08ebba31a8aa3cb6647ec2cc"),
     ("4.8.0-1",
