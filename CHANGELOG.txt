@@ -6,6 +6,7 @@ Bug fixes:
   * Reject invalid version in repack (#444)
   * Fix handling of the --prefix option and prefix setting in .enstaller4rc (#473)
   * Fix running enpkg as root (#458)
+  * Fix enpkg --config-path to expand ~ (#487)
 
 2014-12-18   4.8.1:
 -------------------

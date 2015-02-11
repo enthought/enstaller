@@ -596,7 +596,7 @@ def main(argv=None):
         pat = re.compile(args.cnames[0], re.I)
 
     if args.config_path:
-        config_filename = args.config_path
+        config_filename = os.path.expanduser(args.config_path)
         try:
             config = Configuration.from_yaml_filename(config_filename)
         except IOError:
