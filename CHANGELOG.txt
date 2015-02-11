@@ -9,6 +9,7 @@ Bug fixes:
   * Fix wrong IAuth definition (#446).
   * Fix running enpkg as root (#458)
   * Fix enpkg --prefix handling (#473)
+  * Fix enpkg --config-path to expand ~ (#487)
 
 Internals:
 
