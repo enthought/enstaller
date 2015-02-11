@@ -729,6 +729,25 @@ class TestMainYamlConfig(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     @mock_index({})
+    def test_home_expand(self, install_req):
+        # Given
+        path = "~/config.yaml"
+        args = ["--config-path=~/config.yaml", "foo"]
+
+        r_path = os.path.expanduser(path)
+
+        # When
+        with mock.patch("enstaller.main.Configuration.from_yaml_filename",
+                        return_value=Configuration()) \
+                as mocked_factory:
+            with self.assertRaises(SystemExit) as exc:
+                main(args)
+            self.assertEqual(exception_code(exc), -1)
+
+        # Then
+        mocked_factory.assert_called_with(r_path)
+
+    @mock_index({})
     def test_non_existing_config_path(self, install_req):
         # Given
         args = ["--config-path=config.yaml", "foo"]
