@@ -10,6 +10,7 @@ Bug fixes:
   * Fix running enpkg as root (#458)
   * Fix enpkg --prefix handling (#473)
   * Fix enpkg --config-path to expand ~ (#487)
+  * Fix virtualenv detection to work w/ venv (3.3+)
 
 Internals:
 
