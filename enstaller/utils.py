@@ -120,7 +120,7 @@ def under_venv():
     # Python3 and canopy have base_prefix which is different from prefix
     # under a venv environment
     return (hasattr(sys, "real_prefix") or
-            getattr(sys, "base_prefix", None) != sys.prefix)
+            getattr(sys, "base_prefix", sys.prefix) != sys.prefix)
 
 
 def real_prefix():
