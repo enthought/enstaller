@@ -117,12 +117,18 @@ def uri_to_path(uri):
 
 
 def under_venv():
-    return hasattr(sys, "real_prefix")
+    # Python3 and canopy have base_prefix which is different from prefix
+    # under a venv environment
+    return (hasattr(sys, "real_prefix") or
+            getattr(sys, "base_prefix", None) != sys.prefix)
 
 
 def real_prefix():
     if under_venv():
-        return sys.real_prefix
+        if hasattr(sys, "real_prefix"):
+            return sys.real_prefix
+        else:
+            return sys.base_prefix
     else:
         return sys.prefix
 
