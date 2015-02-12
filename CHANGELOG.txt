@@ -3,6 +3,8 @@
 
 Bug fixes:
 
+  * Fix virtualenv detection to work w/ venv (3.3+ and our backport)
+
 2015-02-11   4.8.2:
 -------------------
 
