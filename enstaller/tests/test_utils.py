@@ -13,7 +13,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import canonical, comparable_version, input_auth, \
     path_to_uri, uri_to_path, info_file, cleanup_url, \
-    prompt_yes_no
+    prompt_yes_no, under_venv, real_prefix
 from .common import mock_input, mock_print, mock_raw_input
 
 
@@ -128,6 +128,51 @@ class TestUri(unittest.TestCase):
 
         path = uri_to_path(uri)
         self.assertEqual(r_path, path)
+
+    def test_under_venv(self):
+        no_attr = object()
+        orig_prefix = sys.prefix
+        orig_real_prefix = getattr(sys, "real_prefix", no_attr)
+        orig_base_prefix = getattr(sys, "base_prefix", no_attr)
+
+        def set_prefixes(prefix, real_prefix, base_prefix):
+            sys.prefix = prefix
+
+            if real_prefix is not no_attr:
+                sys.real_prefix = real_prefix
+            elif hasattr(sys, "real_prefix"):
+                delattr(sys, "real_prefix")
+
+            if base_prefix is not no_attr:
+                sys.base_prefix = base_prefix
+            elif hasattr(sys, "base_prefix"):
+                delattr(sys, "base_prefix")
+
+        self.addCleanup(set_prefixes,
+                        orig_prefix, orig_real_prefix, orig_base_prefix)
+
+        prefix = sys.prefix
+        venv_prefix = os.path.join(prefix, 'venv')
+
+        # Check normal python real prefix
+        set_prefixes(prefix, no_attr, no_attr)
+        self.assertFalse(under_venv())
+        self.assertEqual(real_prefix(), prefix)
+
+        # Check virtualenv
+        set_prefixes(venv_prefix, prefix, no_attr)
+        self.assertTrue(under_venv())
+        self.assertEqual(real_prefix(), prefix)
+
+        # Check venv
+        set_prefixes(venv_prefix, no_attr, prefix)
+        self.assertTrue(under_venv())
+        self.assertEqual(real_prefix(), prefix)
+
+        # Check canopy base python
+        set_prefixes(prefix, no_attr, prefix)
+        self.assertFalse(under_venv())
+        self.assertEqual(real_prefix(), prefix)
 
 
 class TestPromptYesNo(unittest.TestCase):
