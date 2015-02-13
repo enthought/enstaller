@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import contextlib
 import os.path
 import random
 import sys
@@ -13,7 +14,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import canonical, comparable_version, input_auth, \
     path_to_uri, uri_to_path, info_file, cleanup_url, \
-    prompt_yes_no
+    prompt_yes_no, under_venv, real_prefix
 from .common import mock_input, mock_print, mock_raw_input
 
 
@@ -128,6 +129,62 @@ class TestUri(unittest.TestCase):
 
         path = uri_to_path(uri)
         self.assertEqual(r_path, path)
+
+    @contextlib.contextmanager
+    def _patch_prefix(self, attr_name, prefix_value):
+        # attr_name can be None to remove all venv prefixes
+        prefix_names = ("real_prefix", "base_prefix")
+        orig_attrs = {}
+        for prefix_name in prefix_names:
+            if hasattr(sys, prefix_name):
+                orig_attrs[prefix_name] = getattr(sys, prefix_name)
+                delattr(sys, prefix_name)
+
+        try:
+            if attr_name is not None:
+                with mock._patch_object(sys, attr_name, prefix_value,
+                                        create=True):
+                    yield
+            else:
+                yield
+        finally:
+            for prefix_name, prefix_value in orig_attrs.items():
+                setattr(sys, prefix_name, prefix_value)
+
+    def _mock_under_non_venv(self):
+        return self._patch_prefix(None, None)
+
+    def _mock_under_venv(self):
+        return self._patch_prefix("base_prefix",
+                                  os.path.join(sys.prefix, 'venv'))
+
+    def _mock_under_virtualenv(self):
+        return self._patch_prefix("real_prefix",
+                                  os.path.join(sys.prefix, 'venv'))
+
+    def _mock_under_base_venv(self):
+        return self._patch_prefix("base_prefix", sys.prefix)
+
+    def _mock_under_virtualenv_under_base_venv(self):
+        with self._patch_prefix("base_prefix", sys.prefix):
+            return self._mock_under_virtualenv()
+
+    def test_under_venv(self):
+        def _check(mock_method, is_under_venv, prefix_name):
+            with mock_method():
+                self.assertEqual(under_venv(), is_under_venv)
+                self.assertEqual(real_prefix(), getattr(sys, prefix_name))
+
+        _check(self._mock_under_non_venv, False, "prefix")
+
+        _check(self._mock_under_venv, True, "base_prefix")
+
+        _check(self._mock_under_virtualenv, True, "real_prefix")
+
+        _check(self._mock_under_base_venv, False, "prefix")
+
+        _check(self._mock_under_virtualenv_under_base_venv,
+               True, "real_prefix")
 
 
 class TestPromptYesNo(unittest.TestCase):
