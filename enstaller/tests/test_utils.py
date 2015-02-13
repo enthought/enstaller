@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import contextlib
 import os.path
 import random
 import sys
@@ -129,50 +130,61 @@ class TestUri(unittest.TestCase):
         path = uri_to_path(uri)
         self.assertEqual(r_path, path)
 
+    @contextlib.contextmanager
+    def _patch_prefix(self, attr_name, prefix_value):
+        # attr_name can be None to remove all venv prefixes
+        prefix_names = ("real_prefix", "base_prefix")
+        orig_attrs = {}
+        for prefix_name in prefix_names:
+            if hasattr(sys, prefix_name):
+                orig_attrs[prefix_name] = getattr(sys, prefix_name)
+                delattr(sys, prefix_name)
+
+        try:
+            if attr_name is not None:
+                with mock._patch_object(sys, attr_name, prefix_value,
+                                        create=True):
+                    yield
+            else:
+                yield
+        finally:
+            for prefix_name, prefix_value in orig_attrs.items():
+                setattr(sys, prefix_name, prefix_value)
+
+    def _mock_under_non_venv(self):
+        return self._patch_prefix(None, None)
+
+    def _mock_under_venv(self):
+        return self._patch_prefix("base_prefix",
+                                  os.path.join(sys.prefix, 'venv'))
+
+    def _mock_under_virtualenv(self):
+        return self._patch_prefix("real_prefix",
+                                  os.path.join(sys.prefix, 'venv'))
+
+    def _mock_under_base_venv(self):
+        return self._patch_prefix("base_prefix", sys.prefix)
+
+    def _mock_under_virtualenv_under_base_venv(self):
+        with self._patch_prefix("base_prefix", sys.prefix):
+            return self._mock_under_virtualenv()
+
     def test_under_venv(self):
-        no_attr = object()
-        orig_prefix = sys.prefix
-        orig_real_prefix = getattr(sys, "real_prefix", no_attr)
-        orig_base_prefix = getattr(sys, "base_prefix", no_attr)
+        def _check(mock_method, is_under_venv, prefix_name):
+            with mock_method():
+                self.assertEqual(under_venv(), is_under_venv)
+                self.assertEqual(real_prefix(), getattr(sys, prefix_name))
 
-        def set_prefixes(prefix, real_prefix, base_prefix):
-            sys.prefix = prefix
+        _check(self._mock_under_non_venv, False, "prefix")
 
-            if real_prefix is not no_attr:
-                sys.real_prefix = real_prefix
-            elif hasattr(sys, "real_prefix"):
-                delattr(sys, "real_prefix")
+        _check(self._mock_under_venv, True, "base_prefix")
 
-            if base_prefix is not no_attr:
-                sys.base_prefix = base_prefix
-            elif hasattr(sys, "base_prefix"):
-                delattr(sys, "base_prefix")
+        _check(self._mock_under_virtualenv, True, "real_prefix")
 
-        self.addCleanup(set_prefixes,
-                        orig_prefix, orig_real_prefix, orig_base_prefix)
+        _check(self._mock_under_base_venv, False, "prefix")
 
-        prefix = sys.prefix
-        venv_prefix = os.path.join(prefix, 'venv')
-
-        # Check normal python real prefix
-        set_prefixes(prefix, no_attr, no_attr)
-        self.assertFalse(under_venv())
-        self.assertEqual(real_prefix(), prefix)
-
-        # Check virtualenv
-        set_prefixes(venv_prefix, prefix, no_attr)
-        self.assertTrue(under_venv())
-        self.assertEqual(real_prefix(), prefix)
-
-        # Check venv
-        set_prefixes(venv_prefix, no_attr, prefix)
-        self.assertTrue(under_venv())
-        self.assertEqual(real_prefix(), prefix)
-
-        # Check canopy base python
-        set_prefixes(prefix, no_attr, prefix)
-        self.assertFalse(under_venv())
-        self.assertEqual(real_prefix(), prefix)
+        _check(self._mock_under_virtualenv_under_base_venv,
+               True, "real_prefix")
 
 
 class TestPromptYesNo(unittest.TestCase):
