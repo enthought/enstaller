@@ -153,7 +153,12 @@ class DBCache(BaseCache):
             return None
         else:
             if encoded_value is not None:
-                return self._decode_value(encoded_value)
+                try:
+                    return self._decode_value(encoded_value)
+                except UnicodeDecodeError as e:
+                    msg = "Could not fetch data from cache: (pickle decoding error)"
+                    logger.warn(msg)
+                    return None
             else:
                 return None
 
