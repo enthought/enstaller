@@ -8,7 +8,7 @@ import sqlite3
 
 from io import FileIO
 
-from egginst.vendor.six.moves import cPickle, urllib
+from egginst.vendor.six.moves import urllib
 from egginst._compat import buffer
 
 from enstaller.utils import uri_to_path
@@ -139,11 +139,11 @@ class DBCache(BaseCache):
         return base64.b64encode(key.encode("utf8")).decode("utf8")
 
     def _encode_value(self, value):
-        data = cPickle.dumps(value, protocol=cPickle.HIGHEST_PROTOCOL)
+        data = base64.b64encode(value)
         return buffer(data)
 
     def _decode_value(self, encoded_value):
-        return cPickle.loads(bytes(encoded_value))
+        return base64.b64decode(bytes(encoded_value))
 
     def get(self, key):
         try:
@@ -156,7 +156,7 @@ class DBCache(BaseCache):
                 try:
                     return self._decode_value(encoded_value)
                 except UnicodeDecodeError as e:
-                    msg = "Could not fetch data from cache: (pickle decoding error)"
+                    msg = "Could not fetch data from cache: (decoding error)"
                     logger.warn(msg)
                     return None
             else:
