@@ -1,4 +1,5 @@
 import os.path
+import json
 import sqlite3
 import tempfile
 
@@ -125,7 +126,7 @@ class TestDBCache(unittest.TestCase):
         # Given
         uri = os.path.join(self.prefix, "foo.db")
         cache = DBCache(uri)
-        r_value = {"bar": "fubar"}
+        r_value = json.dumps({"bar": "fubar"})
 
         # When
         cache.set("foo", r_value)
@@ -153,7 +154,7 @@ class TestDBCache(unittest.TestCase):
         os.chmod(uri, 0o500)
 
         cache = DBCache(uri)
-        r_value = {"bar": "fubar"}
+        r_value = json.dumps({"bar": "fubar"})
 
         # When
         cache.set("foo", r_value)
