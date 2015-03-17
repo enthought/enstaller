@@ -4,7 +4,7 @@ import sqlite3
 import tempfile
 
 from egginst.utils import rm_rf
-from egginst.vendor.six.moves import unittest
+from egginst.vendor.six.moves import cPickle, unittest
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
@@ -126,7 +126,31 @@ class TestDBCache(unittest.TestCase):
         # Given
         uri = os.path.join(self.prefix, "foo.db")
         cache = DBCache(uri)
-        r_value = json.dumps({"bar": "fubar"})
+        r_value = json.dumps({"bar": "fubar"}).encode("utf8")
+
+        # When
+        cache.set("foo", r_value)
+        value = cache.get("foo")
+
+        # Then
+        self.assertEqual(value, r_value)
+
+        # When
+        cache.delete("foo")
+        value = cache.get("foo")
+
+        # Then
+        self.assertIsNone(value)
+
+        # When/Then
+        # Ensure we don't raise an exception when deleting twice
+        cache.delete("foo")
+
+    def test_simple_pickle(self):
+        # Given
+        uri = os.path.join(self.prefix, "foo.db")
+        cache = DBCache(uri)
+        r_value = cPickle.dumps({"bar": "fubar"}, cPickle.HIGHEST_PROTOCOL)
 
         # When
         cache.set("foo", r_value)
@@ -154,7 +178,7 @@ class TestDBCache(unittest.TestCase):
         os.chmod(uri, 0o500)
 
         cache = DBCache(uri)
-        r_value = json.dumps({"bar": "fubar"})
+        r_value = json.dumps({"bar": "fubar"}).encode("utf8")
 
         # When
         cache.set("foo", r_value)
@@ -179,7 +203,7 @@ CREATE TABLE queue
         cache = DBCache(uri)
 
         # When
-        cache.set("foo", "bar")
+        cache.set("foo", b"bar")
         value = cache.get("foo")
 
         # Then

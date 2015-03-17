@@ -139,11 +139,11 @@ class DBCache(BaseCache):
         return base64.b64encode(key.encode("utf8")).decode("utf8")
 
     def _encode_value(self, value):
-        data = base64.b64encode(value.encode("utf8"))
+        data = base64.b64encode(value)
         return buffer(data)
 
     def _decode_value(self, encoded_value):
-        return base64.b64decode(bytes(encoded_value)).decode("utf8")
+        return base64.b64decode(bytes(encoded_value))
 
     def get(self, key):
         try:
