@@ -103,6 +103,9 @@ class _ResponseIterator(object):
 
 
 class _NullCache(object):
+    def close(self):
+        pass
+
     def get(self, key):
         return None
 

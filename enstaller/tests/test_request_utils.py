@@ -8,6 +8,7 @@ from egginst.vendor.six.moves import cPickle, unittest
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
+from enstaller.requests_utils import _NullCache
 from enstaller.utils import compute_md5
 from enstaller.vendor import requests
 
@@ -121,6 +122,25 @@ class TestDBCache(unittest.TestCase):
 
     def tearDown(self):
         rm_rf(self.prefix)
+
+    def test_cant_write_db(self):
+        # Given
+        uri = os.path.join(self.prefix, "foo.db")
+        with open(uri, "wb") as fp:
+            fp.write(b"")
+        os.chmod(uri, 0o000)
+
+        cache = DBCache(uri)
+
+        # When/Then
+        # Ensure we don't get an error when using the null cache
+        try:
+            cache.get("foo")
+        finally:
+            cache.close()
+
+        # Then
+        self.assertIsInstance(cache._cache, _NullCache)
 
     def test_simple(self):
         # Given
