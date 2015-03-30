@@ -11,7 +11,7 @@ Bug fixes:
   * Fix enpkg --prefix handling (#473)
   * Fix enpkg --config-path to expand ~ (#487)
   * Fix virtualenv detection to work w/ venv (3.3+)
-  * Fix etag handling when using both python 2 and 3 (#497)
+  * Fix etag handling when using both python 2 and 3 (#497, #500)
 
 Internals:
 
