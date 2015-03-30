@@ -4,10 +4,11 @@ import sqlite3
 import tempfile
 
 from egginst.utils import rm_rf
-from egginst.vendor.six.moves import unittest
+from egginst.vendor.six.moves import cPickle, unittest
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
+from enstaller.requests_utils import _NullCache
 from enstaller.utils import compute_md5
 from enstaller.vendor import requests
 
@@ -122,11 +123,54 @@ class TestDBCache(unittest.TestCase):
     def tearDown(self):
         rm_rf(self.prefix)
 
+    def test_cant_write_db(self):
+        # Given
+        uri = os.path.join(self.prefix, "foo.db")
+        with open(uri, "wb") as fp:
+            fp.write(b"")
+        os.chmod(uri, 0o000)
+
+        cache = DBCache(uri)
+
+        # When/Then
+        # Ensure we don't get an error when using the null cache
+        try:
+            cache.get("foo")
+        finally:
+            cache.close()
+
+        # Then
+        self.assertIsInstance(cache._cache, _NullCache)
+
     def test_simple(self):
         # Given
         uri = os.path.join(self.prefix, "foo.db")
         cache = DBCache(uri)
-        r_value = json.dumps({"bar": "fubar"})
+        r_value = json.dumps({"bar": "fubar"}).encode("utf8")
+
+        # When
+        cache.set("foo", r_value)
+        value = cache.get("foo")
+
+        # Then
+        self.assertEqual(value, r_value)
+
+        # When
+        cache.delete("foo")
+        value = cache.get("foo")
+
+        # Then
+        self.assertIsNone(value)
+
+        # When/Then
+        # Ensure we don't raise an exception when deleting twice
+        cache.delete("foo")
+
+    def test_simple_pickle(self):
+        # Given
+        uri = os.path.join(self.prefix, "foo.db")
+        cache = DBCache(uri)
+        r_value = cPickle.dumps({"bar": "fubar"}, cPickle.HIGHEST_PROTOCOL)
 
         # When
         cache.set("foo", r_value)
@@ -154,7 +198,7 @@ class TestDBCache(unittest.TestCase):
         os.chmod(uri, 0o500)
 
         cache = DBCache(uri)
-        r_value = json.dumps({"bar": "fubar"})
+        r_value = json.dumps({"bar": "fubar"}).encode("utf8")
 
         # When
         cache.set("foo", r_value)
@@ -179,7 +223,7 @@ CREATE TABLE queue
         cache = DBCache(uri)
 
         # When
-        cache.set("foo", "bar")
+        cache.set("foo", b"bar")
         value = cache.get("foo")
 
         # Then
