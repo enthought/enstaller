@@ -20,13 +20,12 @@ class MD5File(object):
         self._h = hashlib.md5()
         self._aborted = False
 
+    def hexdigest(self):
+        return self._h.hexdigest()
+
     @property
     def is_aborted(self):
         return self._aborted
-
-    @property
-    def checksum(self):
-        return self._h.hexdigest()
 
     def abort(self):
         self._aborted = True
@@ -81,6 +80,6 @@ def checked_content(filename, expected_md5):
             target.abort()
             return
         else:
-            if expected_md5 != checked_target.checksum:
-                raise InvalidChecksum(filename, expected_md5,
-                                      checked_target.checksum)
+            actual_md5 = checked_target.hexdigest()
+            if expected_md5 != actual_md5:
+                raise InvalidChecksum(filename, expected_md5, actual_md5)
