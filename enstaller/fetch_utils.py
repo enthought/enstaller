@@ -47,11 +47,6 @@ class Checksummer(object):
         self._h.update(data)
 
 
-class MD5File(Checksummer):
-    def __init__(self, fp):
-        super(MD5File, self).__init__(fp, hashlib.md5())
-
-
 @contextlib.contextmanager
 def checked_content(filename, expected_checksum, checksum_kind='md5'):
     """

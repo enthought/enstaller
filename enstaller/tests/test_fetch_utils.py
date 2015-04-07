@@ -6,7 +6,7 @@ import tempfile
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import InvalidChecksum
-from enstaller.fetch_utils import (MD5File, checked_content)
+from enstaller.fetch_utils import Checksummer, checked_content
 from enstaller.utils import compute_md5
 
 
@@ -29,7 +29,7 @@ class TestMD5File(unittest.TestCase):
         # When
         target = os.path.join(self.tempdir, "target.data")
         with open(target, "wb") as _fp:
-            fp = MD5File(_fp)
+            fp = Checksummer(_fp, hashlib.md5())
             fp.write(b"data")
 
         # Then
