@@ -2,9 +2,8 @@ import logging
 
 from os.path import isfile, join
 
-from egginst.utils import compute_md5, makedirs
+from egginst.utils import checked_content, compute_md5, makedirs
 
-from enstaller.fetch_utils import checked_content
 from enstaller.package import egg_name_to_name_version
 
 
