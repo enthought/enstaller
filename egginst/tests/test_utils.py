@@ -1,3 +1,4 @@
+import hashlib
 import os.path
 import shutil
 import sys
@@ -5,11 +6,12 @@ import tempfile
 import textwrap
 
 from egginst.tests.common import create_venv, mkdtemp
-from egginst.utils import (atomic_file, get_executable, parse_assignments,
+from egginst.utils import (Checksummer, atomic_file, checked_content,
+                           compute_md5, get_executable, parse_assignments,
                            samefile)
 from egginst.vendor.six import StringIO
 from egginst.vendor.six.moves import unittest
-from enstaller.errors import InvalidFormat
+from enstaller.errors import InvalidChecksum, InvalidFormat
 
 
 class TestParseAssignments(unittest.TestCase):
@@ -176,3 +178,83 @@ class TestGetExecutable(unittest.TestCase):
 
         # Then
         self.assertEqual(executable, r_executable)
+
+
+class TestMD5File(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _write_content(self, filename, data):
+        with open(filename, "wb") as fp:
+            fp.write(data)
+
+    def test_simple(self):
+        # Given
+        source = os.path.join(self.tempdir, "source.data")
+        self._write_content(source, b"data")
+
+        # When
+        target = os.path.join(self.tempdir, "target.data")
+        with open(target, "wb") as _fp:
+            fp = Checksummer(_fp, hashlib.md5())
+            fp.write(b"data")
+
+        # Then
+        self.assertEqual(fp.hexdigest(), compute_md5(target))
+        self.assertEqual(compute_md5(target), compute_md5(source))
+
+
+class TestCheckedContent(unittest.TestCase):
+    def setUp(self):
+        self.tempdir = tempfile.mkdtemp()
+
+    def tearDown(self):
+        shutil.rmtree(self.tempdir)
+
+    def _write_content(self, filename, data):
+        with open(filename, "wb") as fp:
+            fp.write(data)
+
+    def test_simple_md5(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum) as fp:
+            fp.write(data)
+
+    def test_simple_sha256(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.sha256(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum, 'sha256') as fp:
+            fp.write(data)
+
+    def test_invalid_checksum(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with self.assertRaises(InvalidChecksum):
+            with checked_content(path, checksum) as fp:
+                fp.write(b"")
+
+    def test_abort(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.md5(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum) as fp:
+            fp.abort()
