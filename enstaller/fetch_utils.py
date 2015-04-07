@@ -2,22 +2,31 @@ import hashlib
 import contextlib
 
 from egginst.utils import atomic_file
-from enstaller.errors import InvalidChecksum
+from enstaller.errors import EnstallerException, InvalidChecksum
 
 
-class MD5File(object):
-    def __init__(self, fp):
+_CHECKSUM_KIND_TO_HASHER = {
+    'md5': hashlib.md5,
+    'sha256': hashlib.sha256,
+}
+
+
+class Checksummer(object):
+    def __init__(self, fp, hasher=None):
         """
-        A simple file object wrapper that computes a md5 checksum only when data
+        A simple file object wrapper that computes a checksum only when data
         are being written
 
         Parameters
         ----------
         fp: file object-like
             The file object to wrap.
+        hasher: object
+            One of the hashlib object (e.g. hashlib.md5(), hashlib.sha256(),
+            etc...)
         """
         self._fp = fp
-        self._h = hashlib.md5()
+        self._h = hasher or hashlib.md5()
         self._aborted = False
 
     def hexdigest(self):
@@ -38,8 +47,13 @@ class MD5File(object):
         self._h.update(data)
 
 
+class MD5File(Checksummer):
+    def __init__(self, fp):
+        super(MD5File, self).__init__(fp, hashlib.md5())
+
+
 @contextlib.contextmanager
-def checked_content(filename, expected_md5):
+def checked_content(filename, expected_checksum, checksum_kind='md5'):
     """
     A simple context manager ensure data written to filename match the given
     md5.
@@ -53,8 +67,8 @@ def checked_content(filename, expected_md5):
 
     Returns
     -------
-    fp : MD5File
-        A file-like MD5File instance.
+    fp : Checksummer
+        A file-like instance.
 
     Example
     -------
@@ -72,14 +86,20 @@ def checked_content(filename, expected_md5):
             fp.abort = True
             # no checksum is getting validated
     """
+    hasher = _CHECKSUM_KIND_TO_HASHER.get(checksum_kind)
+    if hasher is None:
+        msg = "Invalid checksum kind: {0!r}"
+        raise EnstallerException(msg.format(checksum_kind))
+
     with atomic_file(filename) as target:
-        checked_target = MD5File(target)
+        checked_target = Checksummer(target, hasher())
         yield checked_target
 
         if checked_target.is_aborted:
             target.abort()
             return
         else:
-            actual_md5 = checked_target.hexdigest()
-            if expected_md5 != actual_md5:
-                raise InvalidChecksum(filename, expected_md5, actual_md5)
+            actual_checksum = checked_target.hexdigest()
+            if expected_checksum != actual_checksum:
+                raise InvalidChecksum(filename, expected_checksum,
+                                      actual_checksum)

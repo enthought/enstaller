@@ -48,7 +48,7 @@ class TestCheckedContent(unittest.TestCase):
         with open(filename, "wb") as fp:
             fp.write(data)
 
-    def test_simple(self):
+    def test_simple_md5(self):
         # Given
         data = b"data"
         checksum = hashlib.md5(data).hexdigest()
@@ -56,6 +56,16 @@ class TestCheckedContent(unittest.TestCase):
 
         # When/Then
         with checked_content(path, checksum) as fp:
+            fp.write(data)
+
+    def test_simple_sha256(self):
+        # Given
+        data = b"data"
+        checksum = hashlib.sha256(data).hexdigest()
+        path = os.path.join(self.tempdir, "foo.data")
+
+        # When/Then
+        with checked_content(path, checksum, 'sha256') as fp:
             fp.write(data)
 
     def test_invalid_checksum(self):
