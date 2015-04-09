@@ -39,9 +39,7 @@ class PEP386WorkaroundVersion(object):
     @classmethod
     def from_string(cls, s):
         try:
-            normalized = normalize_version_string(s)
-            version = NormalizedVersion(normalized,
-                                        error_on_huge_major_num=False)
+            version = NormalizedVersion(s, error_on_huge_major_num=False)
             parts = version.parts
             return cls(parts)
         except IrrationalVersionError:
