@@ -168,6 +168,7 @@ packages = [
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',
+    'enstaller.compat',
     'enstaller.indexed_repo',
     'enstaller.solver',
     'enstaller.tools',

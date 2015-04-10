@@ -1,9 +1,12 @@
-import collections
+from __future__ import absolute_import
+
 import operator
 import os
 import os.path
 import sys
+import warnings
 
+from enstaller.collections import DefaultOrderedDict
 from enstaller.eggcollect import info_from_metadir
 from enstaller.errors import NoSuchPackage
 from enstaller.package import (InstalledPackageMetadata,
@@ -74,7 +77,7 @@ class Repository(object):
         return repository
 
     def __init__(self, packages=None):
-        self._name_to_packages = collections.defaultdict(list)
+        self._name_to_packages = DefaultOrderedDict(list)
 
         self._store_info = ""
 
@@ -88,6 +91,11 @@ class Repository(object):
 
     def add_package(self, package_metadata):
         self._name_to_packages[package_metadata.name].append(package_metadata)
+        # Fixme: this should not be that costly as long as we don't have
+        # many versions for a given package.
+        self._name_to_packages[package_metadata.name].sort(
+            key=operator.attrgetter("version")
+        )
 
     def delete_package(self, package_metadata):
         """ Remove the given package.
@@ -122,7 +130,7 @@ class Repository(object):
         ret : bool
             True if the package is in the repository, false otherwise.
         """
-        candidates = self._name_to_packages.get(package_metadata.name, [])
+        candidates = self._name_to_packages[package_metadata.name]
         for candidate in candidates:
             if candidate.full_version == package_metadata.full_version:
                 return True
@@ -145,7 +153,7 @@ class Repository(object):
             The corresponding metadata.
         """
         version = EnpkgVersion.from_string(version)
-        candidates = self._name_to_packages.get(name, [])
+        candidates = self._name_to_packages[name]
         for candidate in candidates:
             if candidate.version == version:
                 return candidate
@@ -198,37 +206,40 @@ class Repository(object):
         -------
         package : PackageMetadata
         """
-        packages = self.find_sorted_packages(name)
+        packages = self.find_packages(name)
         if len(packages) < 1:
             raise NoSuchPackage("No package with name {0!r}".format(name))
         else:
             return packages[-1]
 
     def find_sorted_packages(self, name):
-        """Returns a list of package metadata with the given name and version,
-        sorted from lowest to highest version (when possible).
+        """ Returns a list of package metadata with the given name and version,
+        sorted from lowest to highest version.
 
         Parameters
         ----------
         name : str
             The package's name
+        version : str or None
+            If not None, the version to look for
 
         Returns
         -------
         packages : iterable
-            Iterable of RemotePackageMetadata.
+            Iterable of RemotePackageMetadata-like (order is unspecified)
+
+        .. deprecated:: 4.9
+           Use :method:`find_packages`.
         """
-        packages = self.find_packages(name)
-        try:
-            return sorted(packages,
-                          key=operator.attrgetter("version"))
-        except TypeError:
-            # FIXME: allowing uncomparable versions should be disallowed at
-            # some point
-            return packages
+        msg = ("find_sorted_packages is deprecated: find_packages is "
+               "now guaranteed to return the list of packages sorted by "
+               "version.")
+        warnings.warn(msg, DeprecationWarning)
+        return self.find_packages(name)
 
     def find_packages(self, name, version=None):
-        """ Returns a list of package metadata with the given name and version
+        """ Returns a list of package metadata with the given name and version,
+        sorted from lowest to highest version.
 
         Parameters
         ----------
@@ -271,9 +282,7 @@ class Repository(object):
             instances.
         """
         for name, packages in self._name_to_packages.items():
-            sorted_by_version = sorted(packages,
-                                       key=operator.attrgetter("version"))
-            yield sorted_by_version[-1]
+            yield packages[-1]
 
 
 def parse_index(json_dict, repository_info, python_version=PY_VER):

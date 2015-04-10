@@ -5,7 +5,7 @@ if PY2:
 else:
     from enstaller.vendor import yaml_py3 as yaml
 
-
+from enstaller.compat import OrderedDict
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo
@@ -65,7 +65,9 @@ class Scenario(object):
         else:
             data = yaml.load(file_or_filename)
 
-        packages = dict(parse_package_list(data.get("packages", [])))
+        packages = OrderedDict(
+            parse_package_list(data.get("packages", []))
+        )
         operations = data.get("request", [])
 
         request = Request()
@@ -75,12 +77,22 @@ class Scenario(object):
             requirement = Requirement._from_string(operation["requirement"])
             getattr(request, kind)(requirement)
 
+        decisions = data.get("solution", {})
         return cls(packages, [remote_repository(data, packages)],
-                   installed_repository(data, packages), request)
+                   installed_repository(data, packages), request,
+                   decisions)
 
     def __init__(self, packages, remote_repositories, installed_repository,
-                 request):
+                 request, decisions):
         self.packages = packages
         self.remote_repositories = remote_repositories
         self.installed_repository = installed_repository
         self.request = request
+        self.decisions = decisions
+
+    def print_solution(self, positive_decisions):
+        pool = Pool(self.remote_repositories)
+        for package_id in sorted(positive_decisions):
+            package = pool._id_to_package[package_id]
+            print("{}: {} {}".format(package_id, package.name,
+                                     package.full_version))
