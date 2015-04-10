@@ -331,6 +331,22 @@ class TestRepository(unittest.TestCase):
         # Then
         self.assertEqual(package.full_version, "1.2.1-1")
 
+    def test_sorted_insertion(self):
+        # Given
+        eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
+        repository = Repository()
+
+        # When
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RemotePackageMetadata.from_egg(path)
+            repository.add_package(package)
+
+        # Then
+        self.assertEqual([m.version
+                          for m in repository._name_to_packages["nose"]],
+                         [EnpkgVersion.from_string("1.2.1-1"),
+                          EnpkgVersion.from_string("1.3.0-1")])
 
 # Unittest that used to belong to Enpkg
 class TestRepositoryMisc(unittest.TestCase):
