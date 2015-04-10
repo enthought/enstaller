@@ -4,6 +4,7 @@ import operator
 import os
 import os.path
 import sys
+import warnings
 
 from enstaller.collections import DefaultOrderedDict
 from enstaller.eggcollect import info_from_metadir
@@ -205,30 +206,40 @@ class Repository(object):
         -------
         package : PackageMetadata
         """
-        packages = self.find_sorted_packages(name)
+        packages = self.find_packages(name)
         if len(packages) < 1:
             raise NoSuchPackage("No package with name {0!r}".format(name))
         else:
             return packages[-1]
 
     def find_sorted_packages(self, name):
-        """Returns a list of package metadata with the given name and version,
-        sorted from lowest to highest version (when possible).
+        """ Returns a list of package metadata with the given name and version,
+        sorted from lowest to highest version.
 
         Parameters
         ----------
         name : str
             The package's name
+        version : str or None
+            If not None, the version to look for
 
         Returns
         -------
         packages : iterable
-            Iterable of RemotePackageMetadata.
+            Iterable of RemotePackageMetadata-like (order is unspecified)
+
+        .. deprecated:: 4.9
+           Use :method:`find_packages`.
         """
+        msg = ("find_sorted_packages is deprecated: find_packages is "
+               "now guaranteed to return the list of packages sorted by "
+               "version.")
+        warnings.warn(msg, DeprecationWarning)
         return self.find_packages(name)
 
     def find_packages(self, name, version=None):
-        """ Returns a list of package metadata with the given name and version
+        """ Returns a list of package metadata with the given name and version,
+        sorted from lowest to highest version.
 
         Parameters
         ----------
