@@ -42,6 +42,7 @@ class TestDefaultOrderedDict(unittest.TestCase):
 
         # Then
         self.assertEqual(unpickled_data, data)
+        self.assertIsInstance(unpickled_data, (DefaultOrderedDict,))
 
     def test_copy(self):
         # Given
@@ -53,6 +54,7 @@ class TestDefaultOrderedDict(unittest.TestCase):
 
         # Then
         self.assertEqual(data, data_copy)
+        self.assertIsInstance(data_copy, DefaultOrderedDict)
 
         # When
         # Check we don't do deep copy
@@ -64,6 +66,7 @@ class TestDefaultOrderedDict(unittest.TestCase):
         # When
         data.pop(1)
         self.assertEqual(data_copy[1], [1, 2])
+        self.assertIsInstance(data_copy, (DefaultOrderedDict,))
 
     def test_deepcopy(self):
         # Given
@@ -75,6 +78,7 @@ class TestDefaultOrderedDict(unittest.TestCase):
 
         # Then
         self.assertEqual(data, data_copy)
+        self.assertIsInstance(data_copy, (DefaultOrderedDict,))
 
         # When
         data[1].append(2)
