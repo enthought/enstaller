@@ -23,10 +23,10 @@ class TestDefaultOrderedDict(unittest.TestCase):
         self.assertEqual(data[1], [1])
         self.assertEqual(data[2], [])
         if sys.version_info[0] == 2:
-            r_repr = ("OrderedDefaultDict(<type 'list'>, "
+            r_repr = ("DefaultOrderedDict(<type 'list'>, "
                       "DefaultOrderedDict([(1, [1]), (0, [0]), (2, [])]))")
         else:
-            r_repr = ("OrderedDefaultDict(<class 'list'>, "
+            r_repr = ("DefaultOrderedDict(<class 'list'>, "
                       "DefaultOrderedDict([(1, [1]), (0, [0]), (2, [])]))")
         self.assertEqual(repr(data), r_repr)
 
