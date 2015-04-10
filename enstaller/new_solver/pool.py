@@ -1,4 +1,6 @@
-import collections
+from __future__ import absolute_import
+
+from enstaller.collections import DefaultOrderedDict
 
 
 class Pool(object):
@@ -10,7 +12,7 @@ class Pool(object):
     def __init__(self, repositories=None):
         self._package_to_id = {}
         self._id_to_package = {}
-        self._packages_by_name = collections.defaultdict(list)
+        self._packages_by_name = DefaultOrderedDict(list)
         self._repositories = []
 
         self._id = 1
