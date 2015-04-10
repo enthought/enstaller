@@ -2,7 +2,9 @@ from __future__ import absolute_import
 
 import copy
 
-from collections import OrderedDict, Callable
+from collections import Callable
+
+from enstaller.compat import OrderedDict
 
 
 class DefaultOrderedDict(OrderedDict):
@@ -32,7 +34,7 @@ class DefaultOrderedDict(OrderedDict):
 
     def __deepcopy__(self, memo):
         return type(self)(self.default_factory,
-                          copy.deepcopy(self.items()))
+                          (copy.deepcopy(item) for item in self.items()))
 
     def __repr__(self):
         return 'OrderedDefaultDict(%s, %s)' % (self.default_factory,

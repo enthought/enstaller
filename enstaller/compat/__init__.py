@@ -1,3 +1,5 @@
+from __future__ import absolute_import
+
 from egginst.vendor.six.moves import urllib
 
 
@@ -12,3 +14,9 @@ def close_file_or_response(fp):
 def path_to_uri(path):
     """Convert the given path to a file:// uri."""
     return urllib.parse.urljoin("file:", urllib.request.pathname2url(path))
+
+
+try:
+    from collections import OrderedDict
+except ImportError:
+    from .ordered_dict import OrderedDict

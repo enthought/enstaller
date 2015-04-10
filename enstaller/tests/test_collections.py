@@ -1,6 +1,7 @@
 from __future__ import absolute_import
 
 import copy
+import sys
 import unittest
 
 from egginst.vendor.six.moves import cPickle
@@ -21,8 +22,12 @@ class TestDefaultOrderedDict(unittest.TestCase):
         self.assertEqual(data[0], [0])
         self.assertEqual(data[1], [1])
         self.assertEqual(data[2], [])
-        r_repr = ("OrderedDefaultDict(<type 'list'>, "
-                  "DefaultOrderedDict([(1, [1]), (0, [0]), (2, [])]))")
+        if sys.version_info[0] == 2:
+            r_repr = ("OrderedDefaultDict(<type 'list'>, "
+                      "DefaultOrderedDict([(1, [1]), (0, [0]), (2, [])]))")
+        else:
+            r_repr = ("OrderedDefaultDict(<class 'list'>, "
+                      "DefaultOrderedDict([(1, [1]), (0, [0]), (2, [])]))")
         self.assertEqual(repr(data), r_repr)
 
     def test_pickling(self):

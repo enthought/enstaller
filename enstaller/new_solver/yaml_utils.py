@@ -1,5 +1,3 @@
-import collections
-
 from egginst._compat import PY2
 from egginst.vendor import six
 if PY2:
@@ -7,7 +5,7 @@ if PY2:
 else:
     from enstaller.vendor import yaml_py3 as yaml
 
-
+from enstaller.compat import OrderedDict
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo
@@ -67,7 +65,7 @@ class Scenario(object):
         else:
             data = yaml.load(file_or_filename)
 
-        packages = collections.OrderedDict(
+        packages = OrderedDict(
             parse_package_list(data.get("packages", []))
         )
         operations = data.get("request", [])
