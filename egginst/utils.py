@@ -365,6 +365,9 @@ class Checksummer(object):
     def hexdigest(self):
         return self._h.hexdigest()
 
+    def digest(self):
+        return self._h.digest()
+
     @property
     def is_aborted(self):
         return self._aborted
