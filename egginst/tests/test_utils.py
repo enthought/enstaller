@@ -205,6 +205,7 @@ class TestMD5File(unittest.TestCase):
         # Then
         self.assertEqual(fp.hexdigest(), compute_md5(target))
         self.assertEqual(compute_md5(target), compute_md5(source))
+        self.assertEqual(fp.digest(), hashlib.md5(b"data").digest())
 
 
 class TestCheckedContent(unittest.TestCase):
