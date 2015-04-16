@@ -199,6 +199,24 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(metadata[0].version,
                          EnpkgVersion.from_string("1.3.0-1"))
 
+    def test_iter_protocol(self):
+        # Given
+        eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
+        repository = Repository()
+        for egg in eggs:
+            path = os.path.join(_EGGINST_COMMON_DATA, egg)
+            package = RemotePackageMetadata.from_egg(path)
+            repository.add_package(package)
+
+        # When
+        metadata = list(iter(repository))
+
+        # Then
+        self.assertEqual(len(metadata), 2)
+        self.assertEqual(set(m.version for m in metadata),
+                         set([EnpkgVersion.from_string("1.2.1-1"),
+                              EnpkgVersion.from_string("1.3.0-1")]))
+
     def test_iter_packages(self):
         # Given
         eggs = ["nose-1.3.0-1.egg", "nose-1.2.1-1.egg"]
