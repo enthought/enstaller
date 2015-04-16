@@ -2,8 +2,6 @@ from __future__ import absolute_import
 
 import copy
 
-from collections import Callable
-
 from enstaller.compat import OrderedDict
 
 
