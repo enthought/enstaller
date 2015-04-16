@@ -348,7 +348,7 @@ class TestRepository(unittest.TestCase):
                          [EnpkgVersion.from_string("1.2.1-1"),
                           EnpkgVersion.from_string("1.3.0-1")])
 
-# Unittest that used to belong to Enpkg
+
 class TestRepositoryMisc(unittest.TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
