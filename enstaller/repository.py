@@ -89,6 +89,9 @@ class Repository(object):
         return sum(len(self._name_to_packages[p])
                    for p in self._name_to_packages)
 
+    def __iter__(self):
+        return self.iter_packages()
+
     def add_package(self, package_metadata):
         self._name_to_packages[package_metadata.name].append(package_metadata)
         # Fixme: this should not be that costly as long as we don't have
