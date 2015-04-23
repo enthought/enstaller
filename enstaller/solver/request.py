@@ -1,10 +1,19 @@
-class _Job(object):
-    def __init__(self, requirement, job_type):
-        self.requirement = requirement
+from enstaller.vendor.enum import Enum
 
-        if job_type not in ["install", "remove", "update", "upgrade"]:
-            raise ValueError("invalid job type {0}".format(job_type))
-        self.kind = job_type
+
+class JobType(Enum):
+    install = 1
+    remove = 2
+    update = 3
+
+
+class _Job(object):
+    def __init__(self, requirement, kind):
+        self.requirement = requirement
+        try:
+            self.kind = JobType(kind)
+        except ValueError:
+            raise ValueError("Invalid job type: {0!r}".format(kind))
 
     def __eq__(self, other):
         if other is None:
@@ -22,7 +31,7 @@ class Request(object):
         self.jobs.append(_Job(requirement, job_type))
 
     def install(self, requirement):
-        self._add_job(requirement, "install")
+        self._add_job(requirement, JobType.install)
 
     def remove(self, requirement):
-        self._add_job(requirement, "remove")
+        self._add_job(requirement, JobType.remove)

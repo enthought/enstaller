@@ -15,7 +15,7 @@ from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
 from enstaller.package import egg_name_to_name_version
 from enstaller.repository import Repository, parse_index
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.solver import Request, Requirement
+from enstaller.solver import JobType, Request, Requirement
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
 from enstaller.vendor.futures import ThreadPoolExecutor, as_completed
 
@@ -53,7 +53,7 @@ def _notify_unavailable_package(config, requirement, session):
 def _requirement_from_pypi(request, repository):
     are_pypi = []
     for job in request.jobs:
-        if job.kind in ("install", "update", "upgrade"):
+        if job.kind in (JobType.install, JobType.update):
             try:
                 candidate = \
                     repository.find_package_from_requirement(job.requirement)

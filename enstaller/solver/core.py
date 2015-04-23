@@ -2,6 +2,7 @@ from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
 from enstaller.package import egg_name_to_name_version
 
+from .request import JobType
 from .resolve import Resolve
 
 
@@ -19,9 +20,9 @@ class Solver(object):
         operations = []
 
         for job in request.jobs:
-            if job.kind == "install":
+            if job.kind == JobType.install:
                 operations.extend(self._install(job.requirement))
-            elif job.kind == "remove":
+            elif job.kind == JobType.remove:
                 operations.extend(("remove", p) for p in
                                   self._remove(job.requirement))
             else:
