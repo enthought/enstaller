@@ -7,6 +7,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository_info import BroodRepositoryInfo
+from enstaller.solver import JobType
 from enstaller.solver.request import _Job
 
 from ..requirement import Requirement
@@ -61,7 +62,7 @@ class TestScenario(unittest.TestCase):
             - operation: install
               requirement: numpy
         """))
-        r_jobs = [_Job(Requirement._from_string("numpy"), "install")]
+        r_jobs = [_Job(Requirement._from_string("numpy"), JobType.install)]
 
         # When
         scenario = Scenario.from_yaml(yaml)
@@ -92,7 +93,7 @@ class TestScenario(unittest.TestCase):
             - operation: install
               requirement: numpy
         """)
-        r_jobs = [_Job(Requirement._from_string("numpy"), "install")]
+        r_jobs = [_Job(Requirement._from_string("numpy"), JobType.install)]
 
         # When
         with mkdtemp() as d:
