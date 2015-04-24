@@ -1,10 +1,10 @@
-2015-XX-XX   4.8.3:
+2015-04-24   4.8.3:
 -------------------
 
 Bug fixes:
 
   * Fix virtualenv detection to work w/ venv (3.3+ and our backport)
-  * Fix etag handling when running both python 2 and 3 (#497, #500)
+  * Fix etag cache handling when running both python 2 and 3 (#497, #500)
 
 2015-02-11   4.8.2:
 -------------------
