@@ -162,6 +162,10 @@ class DBCache(BaseCache):
                     msg = "Could not fetch data from cache: (decoding error)"
                     logger.warn(msg)
                     return None
+                except Exception as e:
+                    msg = "Could not fetch data from cache: {0!r}".format(e)
+                    logger.warn(msg)
+                    return None
             else:
                 return None
 
