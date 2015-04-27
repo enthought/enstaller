@@ -3,6 +3,8 @@ import json
 import sqlite3
 import tempfile
 
+import mock
+
 from egginst.utils import rm_rf
 from egginst.vendor.six.moves import cPickle, unittest
 
@@ -231,3 +233,22 @@ CREATE TABLE queue
 
         # When/Then
         cache.delete("foo")
+
+    def test_invalid_data(self):
+        # Given
+        uri = os.path.join(self.prefix, "foo.db")
+        with open(uri, "wb") as fp:
+            fp.write(b"")
+
+        cache = DBCache(uri)
+        r_value = "bar"
+
+        # When
+        cache.set("foo", r_value)
+
+        with mock.patch("enstaller.requests_utils.base64.b64decode",
+                        side_effect=TypeError):
+            value = cache.get("foo")
+
+        # Then
+        self.assertIsNone(value)
