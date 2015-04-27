@@ -1,5 +1,9 @@
-2015-XX-XX   4.8.4:
+2015-04-27   4.8.4:
 -------------------
+
+Bug fixes:
+
+  * Ignore caching errors when getting values from it (#521)
 
 2015-04-24   4.8.3:
 -------------------
@@ -8,7 +12,6 @@ Bug fixes:
 
   * Fix virtualenv detection to work w/ venv (3.3+ and our backport)
   * Fix etag cache handling when running both python 2 and 3 (#497, #500)
-  * Ignore caching errors when getting values from it (#521)
 
 2015-02-11   4.8.2:
 -------------------
