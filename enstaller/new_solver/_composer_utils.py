@@ -9,6 +9,7 @@ from enstaller.new_solver.constraint_types import (
     Any, EnpkgUpstreamMatch, Equal, GEQ, GT, LEQ, LT
 )
 from enstaller.new_solver.requirement import Requirement
+from enstaller.solver import JobType
 
 
 # We ignore alpha/rc/etc... as composer does not allow to combine those with
@@ -17,6 +18,12 @@ _TO_NORMALIZE = {
     "1.0a3": "1.0.0",
     "2011n": "2011.14.0.0",
     "0.14.1rc1": "0.14.1.0",
+}
+
+
+JOB_KIND_TO_PHP_METHOD = {
+    JobType.install: "install",
+    JobType.remove: "remove",
 }
 
 
@@ -65,7 +72,7 @@ def request_to_php_parts(request):
             'VersionConstraint("{0}", "{1}")'.format(kind, version)
             for kind, version in constraints
         )
-        parts.append((job.kind, name, php_constraints))
+        parts.append((JOB_KIND_TO_PHP_METHOD[job.kind], name, php_constraints))
     return parts
 
 
