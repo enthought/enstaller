@@ -241,7 +241,7 @@ CREATE TABLE queue
             fp.write(b"")
 
         cache = DBCache(uri)
-        r_value = "bar"
+        r_value = b"bar"
 
         # When
         cache.set("foo", r_value)
