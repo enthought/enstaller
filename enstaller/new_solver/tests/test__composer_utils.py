@@ -6,7 +6,7 @@ from enstaller import Repository
 from enstaller.new_solver import Requirement
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository_info import BroodRepositoryInfo
-from enstaller.solver import JobType, Request
+from enstaller.solver import Request
 from enstaller.versions.enpkg import EnpkgVersion
 
 from .._composer_utils import (
@@ -173,7 +173,7 @@ class TestRequestToPhpParts(unittest.TestCase):
         request = Request()
         request.install(Requirement._from_string("numpy"))
         r_php_parts = [
-            (JobType.install, 'numpy', tuple()),
+            ('install', 'numpy', tuple()),
         ]
 
         # When
@@ -187,7 +187,7 @@ class TestRequestToPhpParts(unittest.TestCase):
         request = Request()
         request.install(Requirement._from_string("numpy < 1.8"))
         r_php_parts = [
-            (JobType.install, 'numpy', ('VersionConstraint("<", "1.8.0.0")',)),
+            ('install', 'numpy', ('VersionConstraint("<", "1.8.0.0")',)),
         ]
 
         # When

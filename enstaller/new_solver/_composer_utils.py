@@ -21,6 +21,12 @@ _TO_NORMALIZE = {
 }
 
 
+JOB_KIND_TO_PHP_METHOD = {
+    JobType.install: "install",
+    JobType.remove: "remove",
+}
+
+
 def repository_to_composer_json_dict(repository):
     """ Generator of composer-compatible dict representation of an enstaller
     Repository's entries.
@@ -55,11 +61,6 @@ def repository_to_composer_json_dict(repository):
             "require": _requirements_to_php_dict(requires),
         }
 
-
-JOB_KIND_TO_PHP_METHOD = {
-    JobType.install: "install",
-    JobType.remove: "remove",
-}
 
 def request_to_php_parts(request):
     parts = []
