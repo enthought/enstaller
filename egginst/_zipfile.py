@@ -90,6 +90,11 @@ class ZipFile(zipfile.ZipFile):
         if is_zipinfo_symlink(member):
             return self._extract_symlink(member, targetpath, pwd)
         else:
+            # Check if we are replacing a symlink with a file
+            # and if so, remove the link first
+            if os.path.islink(targetpath):
+                os.unlink(targetpath)
+
             source = self.open(member, pwd=pwd)
             try:
                 with open(targetpath, "wb") as target:
