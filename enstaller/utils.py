@@ -133,7 +133,7 @@ def real_prefix():
         return sys.prefix
 
 
-def prompt_yes_no(message, force_yes=False):
+def prompt_yes_no(message, force_yes=False, default=None):
     """
     Prompt for a yes/no answer for the given message. Returns True if the
     answer is yes.
@@ -152,7 +152,14 @@ def prompt_yes_no(message, force_yes=False):
         return True
     else:
         yn = input(message)
-        return yn.lower() in set(['y', 'yes'])
+        if len(yn) == 0:
+            if default is None:
+                # No default and no answer, repeat the prompt
+                return prompt_yes_no(message, force_yes, default)
+            else:
+                return default
+        else:
+            return yn.lower() in set(['y', 'yes'])
 
 
 def _bytes_to_hex(bdata):
