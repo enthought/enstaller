@@ -121,7 +121,7 @@ def install_req(enpkg, config, req, opts):
         print(msg)
 
         msg = "Are you sure that you wish to proceed?  (y/[n])"
-        if not prompt_yes_no(msg, opts.yes):
+        if not prompt_yes_no(msg, opts.yes, default=False):
             sys.exit(0)
 
     def _ask_pypi_confirmation_from_actions(actions):
@@ -334,5 +334,5 @@ def exit_if_root_on_non_owned(force_yes=False):
     if is_running_on_non_owned_python():
         msg = ("You are running enpkg in a python installation not "
                "owned by root, are you sure to continue ? (y/[n])")
-        if not prompt_yes_no(msg, force_yes=force_yes):
+        if not prompt_yes_no(msg, force_yes=force_yes, default=False):
             sys.exit(-1)

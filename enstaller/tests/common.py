@@ -77,6 +77,12 @@ else:
         return ctx.exception.code
 
 
+if PY2:
+    INPUT_IMPORT_STRING = "__builtin__.raw_input"
+else:
+    INPUT_IMPORT_STRING = "builtins.input"
+
+
 class DummyAuthenticator(object):
     def __init__(self, user_info=None):
         self._auth = None
@@ -151,12 +157,8 @@ def mock_input(input_string):
     def f(ignored):
         return input_string
 
-    if PY2:
-        with mock.patch("__builtin__.raw_input", f):
-            yield f
-    else:
-        with mock.patch("builtins.input", f):
-            yield f
+    with mock.patch(INPUT_IMPORT_STRING, f):
+        yield f
 
 
 # Decorators to force a certain configuration

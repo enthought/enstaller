@@ -15,7 +15,7 @@ from egginst.vendor.six.moves import unittest
 from enstaller.utils import canonical, comparable_version, input_auth, \
     path_to_uri, uri_to_path, info_file, cleanup_url, \
     prompt_yes_no, under_venv, real_prefix
-from .common import mock_input, mock_print, mock_raw_input
+from .common import INPUT_IMPORT_STRING, mock_input, mock_print, mock_raw_input
 
 
 class TestUtils(unittest.TestCase):
@@ -227,6 +227,38 @@ class TestPromptYesNo(unittest.TestCase):
         self.assertEqual(m.value.rstrip(), message)
         self.assertTrue(res)
         mocked_input.assert_called()
+
+    def test_defaults(self):
+        # Given
+        message = "Do you want to do it ? [Y/n]"
+
+        # When
+        with mock_print() as m:
+            with mock_raw_input(""):
+                res = prompt_yes_no(message, default=True)
+
+        # Then
+        self.assertEqual(m.value.rstrip(), message)
+        self.assertTrue(res)
+
+        # When
+        with mock_print() as m:
+            with mock_raw_input(""):
+                res = prompt_yes_no(message, default=False)
+
+        # Then
+        self.assertEqual(m.value.rstrip(), message)
+        self.assertFalse(res)
+
+        # When
+        with mock_print() as m:
+            with mock.patch(INPUT_IMPORT_STRING, side_effect=["", "yes"]) \
+                    as mocked_input:
+                res = prompt_yes_no(message, default=None)
+
+        # Then
+        self.assertEqual(mocked_input.call_count, 2)
+        self.assertTrue(res)
 
 
 FAKE_USER = "john.doe"

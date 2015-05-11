@@ -70,7 +70,7 @@ def epd_install_confirm(force_yes=False):
             enpkg --update-all""")
     print(msg)
     return prompt_yes_no("Are you sure that you wish to proceed? (y/[n]) ",
-                         force_yes)
+                         force_yes, default=False)
 
 
 def _get_enstaller_comparable_version(prefix, package_name):
@@ -117,7 +117,7 @@ def update_enstaller(session, repository, opts):
     else:
         if latest.version > current_comparable_version:
             if prompt_yes_no("Enstaller is out of date.  Update? ([y]/n) ",
-                             opts.yes):
+                             opts.yes, default=True):
                 inplace_update(session, repository, latest)
                 updated = True
 
@@ -367,7 +367,8 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
 
     if args.remove_enstaller:
         print(REMOVE_ENSTALLER_WARNING)
-        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes):
+        if prompt_yes_no("Really remove enstaller? (y/[n]) ", args.yes,
+                         default=False):
             args.remove = True
             reqs = [Requirement('enstaller')]
 
