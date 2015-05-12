@@ -13,6 +13,7 @@ Bug fixes:
   * Fix virtualenv detection to work w/ venv (3.3+)
   * Fix etag handling when using both python 2 and 3 (#497, #500)
   * Ignore caching errors when getting values from it (#521)
+  * Fix handling of default when prompting for user input (#526)
 
 Internals:
 
