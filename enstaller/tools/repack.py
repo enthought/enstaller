@@ -4,6 +4,8 @@ import os.path
 import re
 import shutil
 import sys
+import tempfile
+import zipfile
 
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats.egg import (_SPEC_DEPEND_LOCATION,
@@ -13,8 +15,8 @@ from okonomiyaki.file_formats.setuptools_egg import parse_filename
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
 from egginst.eggmeta import SPEC_DEPEND_KEYS
+from egginst.vendor.zipfile2 import ZipFile
 from egginst.utils import samefile
-from egginst._zipfile import ZipFile
 from enstaller.errors import EnstallerException
 from enstaller.versions.enpkg import EnpkgVersion
 from enstaller.versions.pep386 import suggest_normalized_version
@@ -184,15 +186,27 @@ def repack(source_egg_path, build_number=1, platform_string=None):
     # XXX: implement endist.dat/app handling
 
     print(20 * '-' + '\n' + legacy_spec.to_string() + 20 * '-')
-    shutil.copy2(source_egg_path, target_egg_path)
 
-    with ZipFile(target_egg_path, "a") as target:
-        target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
+    with ZipFile(source_egg_path) as source:
+        with ZipFile(target_egg_path, "w", zipfile.ZIP_DEFLATED) as target:
+            target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
 
-        if os.path.exists(ENDIST_DAT):
-            data = _parse_endist_for_egg_content(ENDIST_DAT)
-            for entry in data.get("add_files", []):
-                _add_files(target, entry[0], entry[1], entry[2])
+            if os.path.exists(ENDIST_DAT):
+                data = _parse_endist_for_egg_content(ENDIST_DAT)
+                for entry in data.get("add_files", []):
+                    _add_files(target, entry[0], entry[1], entry[2])
+
+        tempdir = tempfile.mkdtemp()
+        try:
+            with ZipFile(target_egg_path, "a", zipfile.ZIP_DEFLATED) as target:
+                files_to_skip = set(target.namelist())
+
+                for f in source.namelist():
+                    if f not in files_to_skip:
+                        source_path = source.extract(f, tempdir)
+                        target.write(source_path, f)
+        finally:
+            shutil.rmtree(tempdir)
 
 
 def main(argv=None):

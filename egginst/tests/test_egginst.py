@@ -16,8 +16,9 @@ from egginst.main import (
     EggInst, get_installed, is_in_legacy_egg_info, main,
     should_copy_in_egg_info)
 from egginst.testing_utils import assert_same_fs
-from egginst.utils import makedirs, zip_write_symlink
-from egginst._zipfile import ZipFile
+from egginst.utils import makedirs
+
+from egginst.vendor.zipfile2 import ZipFile
 
 from egginst import eggmeta
 
@@ -30,9 +31,22 @@ from .common import (DUMMY_EGG, DUMMY_EGG_WITH_APPINST,
 
 
 def _create_egg_with_symlink(filename, name):
-    with ZipFile(filename, "w") as fp:
-        fp.writestr("EGG-INFO/usr/include/foo.h", "/* header */")
-        zip_write_symlink(fp, "EGG-INFO/usr/HEADERS", "include")
+    prefix = tempfile.mkdtemp()
+    try:
+        real_file = os.path.join(prefix, "EGG-INFO", "usr", "include", "foo.h")
+        symlink = os.path.join(prefix, "EGG-INFO", "usr", "HEADERS")
+
+        os.makedirs(os.path.dirname(real_file))
+        with open(real_file, "wb") as fp:
+            fp.write(b"/* header */")
+
+        os.symlink("include", symlink)
+
+        with ZipFile(filename, "w") as fp:
+            fp.write(real_file, os.path.relpath(real_file, prefix))
+            fp.write(symlink, os.path.relpath(symlink, prefix))
+    finally:
+        shutil.rmtree(prefix)
 
 
 def _create_dummy_enstaller_egg(prefix):

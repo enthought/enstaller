@@ -2,7 +2,7 @@ import unittest
 
 from egginst.eggmeta import info_from_z, parse_rawspec
 from egginst.vendor.six import BytesIO
-from egginst._zipfile import ZipFile
+from egginst.vendor.zipfile2 import ZipFile
 
 NUMPY_1_4_0_WIN32 = """\
 metadata_version = '1.1'
