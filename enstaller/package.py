@@ -3,7 +3,7 @@ import sys
 import time
 
 from egginst.eggmeta import info_from_z
-from egginst._zipfile import ZipFile
+from egginst.vendor.zipfile2 import ZipFile
 
 from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import info_from_metadir

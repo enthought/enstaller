@@ -17,8 +17,6 @@ from os.path import basename, isdir, isfile, islink, join
 from egginst.errors import EnstallerException, InvalidChecksum, InvalidFormat
 from egginst.vendor.six import PY2, string_types
 
-from ._zipfile import ZIP_SOFTLINK_ATTRIBUTE_MAGIC
-
 on_win = bool(sys.platform == 'win32')
 
 if on_win:
@@ -130,24 +128,6 @@ def ensure_dir(path):
 def is_zipinfo_dir(zip_info):
     """Returns True if the given zip_info refers to a directory."""
     return stat.S_ISDIR(zip_info.external_attr >> 16)
-
-
-def zip_write_symlink(fp, link_name, source):
-    """Add to the zipfile the given link_name as a softlink to source
-
-    Parameters
-    ----------
-    fp: file object
-        ZipFile instance
-    link_name: str
-        Path of the symlink
-    source: str
-        Path the symlink points to (the output of os.readlink)
-    """
-    zip_info = zipfile.ZipInfo(link_name)
-    zip_info.create_system = 3
-    zip_info.external_attr = ZIP_SOFTLINK_ATTRIBUTE_MAGIC
-    fp.writestr(zip_info, source)
 
 
 def zip_has_arcname(zp, arcname):

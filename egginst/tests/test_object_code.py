@@ -13,7 +13,7 @@ from machotools import rewriter_factory
 from egginst.main import EggInst
 from egginst.object_code import (_compute_targets, _find_lib, _fix_object_code,
                                  get_object_type)
-from egginst import _zipfile
+from egginst.vendor.zipfile2 import ZipFile
 
 from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
                      LEGACY_PLACEHOLD_FILE_RPATH, NOLEGACY_RPATH_FILE,
@@ -105,7 +105,7 @@ class TestObjectCode(unittest.TestCase):
             return _compute_targets(egg_inst.iter_targets(), egg_inst.prefix)
 
         # Given
-        with _zipfile.ZipFile(DUMMY_EGG_WITH_INST_TARGETS) as zp:
+        with ZipFile(DUMMY_EGG_WITH_INST_TARGETS) as zp:
             egg_inst = EggInst(DUMMY_EGG_WITH_INST_TARGETS, self.prefix)
             egg_inst.install()
 

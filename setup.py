@@ -165,6 +165,7 @@ packages = [
     'egginst',
     'egginst.console',
     'egginst.vendor',
+    'egginst.vendor.zipfile2',
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',

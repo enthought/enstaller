@@ -10,11 +10,11 @@ from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.platforms.legacy import LegacyEPDPlatform
 
 from egginst._compat import assertCountEqual
-from egginst._zipfile import ZipFile
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
                                   STANDARD_EGG_WITH_EXT, NOSE_1_2_1)
 from egginst.vendor.six.moves import unittest
+from egginst.vendor.zipfile2 import ZipFile
 
 from enstaller.errors import EnstallerException
 from enstaller.tools.repack import InvalidVersion, main, repack

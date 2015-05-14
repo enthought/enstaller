@@ -10,7 +10,7 @@ import posixpath
 import sys
 
 from egginst.main import EGG_INFO
-from egginst._zipfile import ZipFile
+from egginst.vendor.zipfile2 import ZipFile
 
 
 def extract_egg(path, to):

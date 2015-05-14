@@ -7,9 +7,9 @@ import time
 
 from os.path import join
 
-from egginst._zipfile import ZipFile
 from egginst.utils import parse_assignments
 from egginst.vendor.six.moves import StringIO
+from egginst.vendor.zipfile2 import ZipFile
 
 
 # Path relative to EGG-INFO in egg, or $RPPT/EGG-INFO/$package_name when
