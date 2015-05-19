@@ -1,3 +1,10 @@
+XXXX-XX-XX   4.8.5:
+-------------------
+
+Improvements:
+
+  * add --no-autoupdate to disable auto update from the CLI (#528)
+
 2015-04-27   4.8.4:
 -------------------
 
