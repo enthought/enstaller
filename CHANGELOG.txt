@@ -3,6 +3,10 @@
 
 Main highlights:
 
+Improvements:
+
+  * add --no-autoupdate to disable auto update from the CLI (#528)
+
 Bug fixes:
 
   * Fix race condition when fetching indices (#449).
