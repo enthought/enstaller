@@ -913,3 +913,44 @@ class TestMain(unittest.TestCase):
 
         m.assert_called()
         self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
+
+    @authenticated_config
+    @mock_index({})
+    def test_no_autoupdate(self, install_req):
+        # Given
+        args = ["foo"]
+
+        # When
+        with mock.patch("enstaller.main.update_enstaller") as m:
+            main(args)
+
+        # Then
+        self.assertTrue(m.called)
+
+        # Given
+        args = ["--no-autoupdate", "foo"]
+
+        # When
+        with mock.patch("enstaller.main.update_enstaller") as m:
+            main(args)
+
+        # Then
+        self.assertFalse(m.called)
+
+        # Given
+        args = ["foo"]
+
+        config = Configuration()
+        config.update(autoupdate=False, auth=("dummy", "dummy"))
+
+        mock_config = mock.Mock()
+        mock_config.return_value = config
+        mock_config.from_file.return_value = config
+
+        # When
+        with mock.patch("enstaller.main.Configuration", mock_config):
+            with mock.patch("enstaller.main.update_enstaller") as m:
+                main(args)
+
+        # Then
+        self.assertFalse(m.called)
