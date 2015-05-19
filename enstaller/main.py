@@ -303,7 +303,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
         return
 
     # Try to auto-update enstaller
-    if config.autoupdate:
+    if config.autoupdate and not args.no_autoupdate:
         if update_enstaller(session, enpkg._remote_repository, args):
             print("Enstaller has been updated.\n"
                   "Please re-run your previous command.")
@@ -478,6 +478,8 @@ def _create_parser():
                    help="display available updates for installed packages")
     p.add_argument("-y", "--yes", action="store_true",
                    help="Assume 'yes' to all queries and do not prompt.")
+    p.add_argument("--no-autoupdate", action="store_true",
+                   help="Do not attempt to autoupdate")
 
     return p
 
