@@ -5,14 +5,15 @@ import re
 import shutil
 import sys
 import tempfile
-import zipfile
 
 from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.file_formats.egg import (_SPEC_DEPEND_LOCATION,
-                                          LegacySpecDepend, is_egg_name_valid,
-                                          split_egg_name)
-from okonomiyaki.file_formats.setuptools_egg import parse_filename
-from okonomiyaki.platforms.legacy import LegacyEPDPlatform
+from okonomiyaki.file_formats import (
+    Dependencies, EggBuilder, EggMetadata, PackageInfo, is_egg_name_valid,
+)
+from okonomiyaki.file_formats.setuptools_egg import (
+    SetuptoolsEggMetadata, parse_filename
+)
+from okonomiyaki.platforms import EPDPlatform
 
 from egginst.eggmeta import SPEC_DEPEND_KEYS
 from egginst.vendor.zipfile2 import ZipFile
@@ -61,7 +62,7 @@ def _looks_like_enthought_egg(path):
     if is_egg_name_valid(filename):
         with ZipFile(path) as zp:
             try:
-                zp.getinfo(_SPEC_DEPEND_LOCATION)
+                zp.getinfo("EGG-INFO/spec/depend")
                 return True
             except KeyError:
                 pass
@@ -79,29 +80,22 @@ def _looks_like_setuptools_egg(path):
         return False
 
 
-def _ensure_valid_version(version, build_number):
-    full_version = EnpkgVersion.from_upstream_and_build(version,
-                                                        build_number)
-    if full_version.upstream.is_worked_around:
-        raise InvalidVersion(version)
-
-
-def _get_spec(source_egg_path, build_number, platform_string=None):
+def _get_spec_data(source_egg_path, build_number, platform_string=None):
     if _looks_like_setuptools_egg(source_egg_path):
-        filename = os.path.basename(source_egg_path)
-        name, version, pyver, platform = parse_filename(filename)
-        if platform is not None and platform_string is None:
+        metadata = SetuptoolsEggMetadata.from_egg(source_egg_path)
+        if metadata.platform_tag is not None and platform_string is None:
             msg = "Platform-specific egg detected (platform tag is " \
                   "{0!r}), you *must* specify the platform."
-            raise EnstallerException(msg.format(platform))
+            raise EnstallerException(msg.format(metadata.platform_tag))
+        name = metadata.name
+        version = str(metadata.version)
     elif _looks_like_enthought_egg(source_egg_path):
-        name, version, _ = split_egg_name(os.path.basename(source_egg_path))
-        pyver = None
+        metadata = EggMetadata.from_egg(source_egg_path)
+        name = metadata.name
+        version = metadata.upstream_version
     else:
         msg = "Unrecognized format: {0!r}".format(source_egg_path)
         raise EnstallerException(msg)
-
-    _ensure_valid_version(version, build_number)
 
     data = {"build": build_number, "packages": [], "name": name,
             "version": version}
@@ -109,19 +103,35 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     if os.path.exists(ENDIST_DAT):
         data.update(_parse_endist_for_spec_depend(ENDIST_DAT))
 
+    return data, metadata
+
+
+def _get_spec(source_egg_path, build_number, platform_string=None):
+    data, metadata = _get_spec_data(source_egg_path, build_number,
+                                    platform_string)
+
     if platform_string is None:
         try:
-            epd_platform = LegacyEPDPlatform.from_running_system()
+            epd_platform = EPDPlatform.from_running_system()
         except OkonomiyakiError as e:
             msg = "Could not guess platform from system (original " \
                   "error was {0!r}). " \
                   "You may have to specify the platform explicitly."
             raise EnstallerException(msg.format(e))
     else:
-        epd_platform = \
-            LegacyEPDPlatform.from_epd_platform_string(platform_string)
+        epd_platform = EPDPlatform.from_epd_string(platform_string)
 
-    return LegacySpecDepend.from_data(data, epd_platform.short, pyver)
+    raw_name = data["name"]
+    version = EnpkgVersion.from_upstream_and_build(data["version"],
+                                                   data["build"])
+    if version.upstream.is_worked_around:
+        raise InvalidVersion(str(version.upstream))
+
+    dependencies = Dependencies(runtime=data["packages"])
+    pkg_info = PackageInfo.from_egg(source_egg_path)
+    return EggMetadata(raw_name, version, epd_platform, metadata.python_tag,
+                       metadata.abi_tag, dependencies, pkg_info,
+                       metadata.summary)
 
 
 def _parse_endist_for_egg_content(path):
@@ -155,6 +165,8 @@ def _add_files(z, dir_path, regex_string, archive_dir):
     print("rx: {0!r}".format(regex_string))
     print("archive_dir: {0!r}".format(archive_dir))
 
+    arcnames = set()
+
     for filename in os.listdir(dir_path):
         path = os.path.join(dir_path, filename)
         if not (r.match(filename) and os.path.isfile(path)):
@@ -167,16 +179,19 @@ def _add_files(z, dir_path, regex_string, archive_dir):
             msg = "Soft link support not yet implemented\n"
             raise NotImplementedError(msg)
         elif os.path.isfile(path):
-            z.write(path, arcname)
+            z.add_file_as(path, arcname)
+            arcnames.add(arcname)
         else:
             raise EnstallerException("Neiher link nor file:" % path)
 
+    return arcnames
+
 
 def repack(source_egg_path, build_number=1, platform_string=None):
-    legacy_spec = _get_spec(source_egg_path, build_number, platform_string)
+    metadata = _get_spec(source_egg_path, build_number, platform_string)
 
     parent_dir = os.path.dirname(os.path.abspath(source_egg_path))
-    target_egg_path = os.path.join(parent_dir, legacy_spec.egg_name)
+    target_egg_path = os.path.join(parent_dir, metadata.egg_name)
 
     if os.path.exists(target_egg_path) and \
             samefile(source_egg_path, target_egg_path):
@@ -185,26 +200,22 @@ def repack(source_egg_path, build_number=1, platform_string=None):
         raise EnstallerException(msg.format(source_egg_path))
     # XXX: implement endist.dat/app handling
 
-    print(20 * '-' + '\n' + legacy_spec.to_string() + 20 * '-')
+    print(20 * '-' + '\n' + metadata.spec_depend_string + 20 * '-')
 
     with ZipFile(source_egg_path) as source:
-        with ZipFile(target_egg_path, "w", zipfile.ZIP_DEFLATED) as target:
-            target.writestr(_SPEC_DEPEND_LOCATION, legacy_spec.to_string())
-
-            if os.path.exists(ENDIST_DAT):
-                data = _parse_endist_for_egg_content(ENDIST_DAT)
-                for entry in data.get("add_files", []):
-                    _add_files(target, entry[0], entry[1], entry[2])
-
         tempdir = tempfile.mkdtemp()
         try:
-            with ZipFile(target_egg_path, "a", zipfile.ZIP_DEFLATED) as target:
-                files_to_skip = set(target.namelist())
+            with EggBuilder(metadata, cwd=parent_dir) as target:
+                if os.path.exists(ENDIST_DAT):
+                    data = _parse_endist_for_egg_content(ENDIST_DAT)
+                    for entry in data.get("add_files", []):
+                        _add_files(target, entry[0], entry[1], entry[2])
+                files_to_skip = set(target._fp.namelist())
 
                 for f in source.namelist():
                     if f not in files_to_skip:
                         source_path = source.extract(f, tempdir)
-                        target.write(source_path, f)
+                        target.add_file_as(source_path, f)
         finally:
             shutil.rmtree(tempdir)
 

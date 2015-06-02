@@ -7,7 +7,7 @@ import textwrap
 import mock
 
 from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.platforms.legacy import LegacyEPDPlatform
+from okonomiyaki.platforms import EPDPlatform
 
 from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
@@ -43,8 +43,7 @@ class TestRepack(unittest.TestCase):
         target = os.path.join(self.prefix, "nose-1.2.1-1.egg")
 
         # When/Then
-        mocked = "enstaller.tools.repack.LegacyEPDPlatform." \
-                 "from_running_system"
+        mocked = "enstaller.tools.repack.EPDPlatform.from_running_system"
         with mock.patch(mocked, side_effect=OkonomiyakiError()):
             with self.assertRaises(EnstallerException):
                 repack(source, 1)
@@ -60,9 +59,8 @@ class TestRepack(unittest.TestCase):
         target = os.path.join(self.prefix, "nose-1.2.1-1.egg")
 
         # When
-        mocked = "enstaller.tools.repack.LegacyEPDPlatform." \
-                 "from_running_system"
-        platform = LegacyEPDPlatform.from_epd_platform_string("rh5-32")
+        mocked = "enstaller.tools.repack.EPDPlatform.from_running_system"
+        platform = EPDPlatform.from_epd_string("rh5-32")
         with mock.patch(mocked, return_value=platform):
             repack(source, 1)
 
@@ -114,7 +112,7 @@ class TestRepack(unittest.TestCase):
     def test_setuptools_egg_with_ext_without_platform(self):
         # Given
         r_msg = "Platform-specific egg detected (platform tag is " \
-                "'linux-x86_64'), you *must* specify the platform."
+                "'linux_x86_64'), you *must* specify the platform."
         source = os.path.join(self.prefix, os.path.basename(STANDARD_EGG_WITH_EXT))
         shutil.copy(STANDARD_EGG_WITH_EXT, source)
 
