@@ -7,12 +7,14 @@ import textwrap
 import mock
 
 from okonomiyaki.errors import OkonomiyakiError
+from okonomiyaki.file_formats import EggMetadata
 from okonomiyaki.platforms import EPDPlatform
 
 from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
-                                  STANDARD_EGG_WITH_EXT, NOSE_1_2_1)
+                                  STANDARD_EGG_WITH_EXT, NOSE_1_2_1,
+                                  VTK_EGG_DEFERRED_SOFTLINK)
 from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
 
@@ -149,6 +151,22 @@ class TestRepack(unittest.TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
+
+    def test_enthought_name_upper_case(self):
+        # Given
+        source = os.path.join(self.prefix,
+                              os.path.basename(VTK_EGG_DEFERRED_SOFTLINK))
+        shutil.copy(VTK_EGG_DEFERRED_SOFTLINK, source)
+
+        target = os.path.join(self.prefix, "VTK-5.10.1-11.egg")
+
+        # When
+        repack(source, 11, "rh5-64")
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.egg_basename, "VTK")
 
     def test_endist_metadata_simple(self):
         # Given

@@ -8,7 +8,8 @@ import tempfile
 
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats import (
-    Dependencies, EggBuilder, EggMetadata, PackageInfo, is_egg_name_valid,
+    Dependencies, EggBuilder, EggMetadata, PackageInfo, Requirement,
+    is_egg_name_valid,
 )
 from okonomiyaki.file_formats.setuptools_egg import (
     SetuptoolsEggMetadata, parse_filename
@@ -87,17 +88,19 @@ def _get_spec_data(source_egg_path, build_number, platform_string=None):
             msg = "Platform-specific egg detected (platform tag is " \
                   "{0!r}), you *must* specify the platform."
             raise EnstallerException(msg.format(metadata.platform_tag))
-        name = metadata.name
+        egg_basename = metadata.name
         version = str(metadata.version)
     elif _looks_like_enthought_egg(source_egg_path):
         metadata = EggMetadata.from_egg(source_egg_path)
-        name = metadata.name
+        # The name as used in spec/depend and endist.dat is the so-called
+        # egg basename (i.e. not normalied to lower case)
+        egg_basename = metadata.egg_basename
         version = metadata.upstream_version
     else:
         msg = "Unrecognized format: {0!r}".format(source_egg_path)
         raise EnstallerException(msg)
 
-    data = {"build": build_number, "packages": [], "name": name,
+    data = {"build": build_number, "packages": [], "name": egg_basename,
             "version": version}
 
     if os.path.exists(ENDIST_DAT):
@@ -127,7 +130,10 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     if version.upstream.is_worked_around:
         raise InvalidVersion(str(version.upstream))
 
-    dependencies = Dependencies(runtime=data["packages"])
+    requirements = tuple(
+        Requirement.from_spec_string(s) for s in data["packages"]
+    )
+    dependencies = Dependencies(runtime=requirements)
     pkg_info = PackageInfo.from_egg(source_egg_path)
     return EggMetadata(raw_name, version, epd_platform, metadata.python_tag,
                        metadata.abi_tag, dependencies, pkg_info,
