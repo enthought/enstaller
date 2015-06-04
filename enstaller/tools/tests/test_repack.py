@@ -12,9 +12,10 @@ from okonomiyaki.platforms import EPDPlatform
 
 from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
-from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
-                                  STANDARD_EGG_WITH_EXT, NOSE_1_2_1,
-                                  VTK_EGG_DEFERRED_SOFTLINK)
+from egginst.tests.common import (
+    DUMMY_EGG, STANDARD_EGG, LEGACY_EGG_INFO_EGG, STANDARD_EGG_WITH_EXT,
+    NOSE_1_2_1, VTK_EGG_DEFERRED_SOFTLINK
+)
 from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
 
@@ -151,6 +152,23 @@ class TestRepack(unittest.TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
+
+    def test_dependencies(self):
+        # Given
+        egg = LEGACY_EGG_INFO_EGG
+        source = os.path.join(self.prefix, os.path.basename(egg))
+        shutil.copy(egg, source)
+        r_runtime_dependencies = EggMetadata.from_egg(egg).runtime_dependencies
+
+        target = os.path.join(self.prefix, egg)
+
+        # When
+        repack(source, 11, "rh5-64")
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.runtime_dependencies, r_runtime_dependencies)
 
     def test_enthought_name_upper_case(self):
         # Given

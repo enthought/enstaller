@@ -90,23 +90,29 @@ def _get_spec_data(source_egg_path, build_number, platform_string=None):
             raise EnstallerException(msg.format(metadata.platform_tag))
         egg_basename = metadata.name
         version = str(metadata.version)
+        dependencies = []
     elif _looks_like_enthought_egg(source_egg_path):
         metadata = EggMetadata.from_egg(source_egg_path)
         # The name as used in spec/depend and endist.dat is the so-called
         # egg basename (i.e. not normalied to lower case)
         egg_basename = metadata.egg_basename
         version = metadata.upstream_version
+        dependencies = metadata.runtime_dependencies
     else:
         msg = "Unrecognized format: {0!r}".format(source_egg_path)
         raise EnstallerException(msg)
 
-    data = {"build": build_number, "packages": [], "name": egg_basename,
-            "version": version}
+    data = {"build": build_number, "packages": dependencies,
+            "name": egg_basename, "version": version}
 
     if os.path.exists(ENDIST_DAT):
         data.update(_parse_endist_for_spec_depend(ENDIST_DAT))
 
     return data, metadata
+
+
+def _raw_packages_to_requirements(packages):
+    return tuple(Requirement.from_spec_string(s) for s in packages)
 
 
 def _get_spec(source_egg_path, build_number, platform_string=None):
@@ -130,10 +136,7 @@ def _get_spec(source_egg_path, build_number, platform_string=None):
     if version.upstream.is_worked_around:
         raise InvalidVersion(str(version.upstream))
 
-    requirements = tuple(
-        Requirement.from_spec_string(s) for s in data["packages"]
-    )
-    dependencies = Dependencies(runtime=requirements)
+    dependencies = Dependencies(runtime=data["packages"])
     pkg_info = PackageInfo.from_egg(source_egg_path)
     return EggMetadata(raw_name, version, epd_platform, metadata.python_tag,
                        metadata.abi_tag, dependencies, pkg_info,
@@ -147,6 +150,7 @@ def _parse_endist_for_egg_content(path):
 
 def _parse_endist_for_spec_depend(path):
     data = _parse_endist(path)
+    data["packages"] = _raw_packages_to_requirements(data.get("packages", []))
     return dict((k, data[k]) for k in data if k in ACCEPTED_ENDIST_SPEC_KEYS)
 
 
