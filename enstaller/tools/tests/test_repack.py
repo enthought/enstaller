@@ -7,12 +7,15 @@ import textwrap
 import mock
 
 from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.platforms.legacy import LegacyEPDPlatform
+from okonomiyaki.file_formats import EggMetadata
+from okonomiyaki.platforms import EPDPlatform
 
 from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
-from egginst.tests.common import (DUMMY_EGG, STANDARD_EGG,
-                                  STANDARD_EGG_WITH_EXT, NOSE_1_2_1)
+from egginst.tests.common import (
+    DUMMY_EGG, STANDARD_EGG, LEGACY_EGG_INFO_EGG, STANDARD_EGG_WITH_EXT,
+    NOSE_1_2_1, MKL_10_3,
+)
 from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
 
@@ -43,8 +46,7 @@ class TestRepack(unittest.TestCase):
         target = os.path.join(self.prefix, "nose-1.2.1-1.egg")
 
         # When/Then
-        mocked = "enstaller.tools.repack.LegacyEPDPlatform." \
-                 "from_running_system"
+        mocked = "enstaller.tools.repack.EPDPlatform.from_running_system"
         with mock.patch(mocked, side_effect=OkonomiyakiError()):
             with self.assertRaises(EnstallerException):
                 repack(source, 1)
@@ -60,9 +62,8 @@ class TestRepack(unittest.TestCase):
         target = os.path.join(self.prefix, "nose-1.2.1-1.egg")
 
         # When
-        mocked = "enstaller.tools.repack.LegacyEPDPlatform." \
-                 "from_running_system"
-        platform = LegacyEPDPlatform.from_epd_platform_string("rh5-32")
+        mocked = "enstaller.tools.repack.EPDPlatform.from_running_system"
+        platform = EPDPlatform.from_epd_string("rh5-32")
         with mock.patch(mocked, return_value=platform):
             repack(source, 1)
 
@@ -114,7 +115,7 @@ class TestRepack(unittest.TestCase):
     def test_setuptools_egg_with_ext_without_platform(self):
         # Given
         r_msg = "Platform-specific egg detected (platform tag is " \
-                "'linux-x86_64'), you *must* specify the platform."
+                "'linux_x86_64'), you *must* specify the platform."
         source = os.path.join(self.prefix, os.path.basename(STANDARD_EGG_WITH_EXT))
         shutil.copy(STANDARD_EGG_WITH_EXT, source)
 
@@ -151,6 +152,39 @@ class TestRepack(unittest.TestCase):
 
         # Then
         self.assertTrue(os.path.exists(target))
+
+    def test_dependencies(self):
+        # Given
+        egg = LEGACY_EGG_INFO_EGG
+        source = os.path.join(self.prefix, os.path.basename(egg))
+        shutil.copy(egg, source)
+        r_runtime_dependencies = EggMetadata.from_egg(egg).runtime_dependencies
+
+        target = os.path.join(self.prefix, egg)
+
+        # When
+        repack(source, 11, "rh5-64")
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.runtime_dependencies, r_runtime_dependencies)
+
+    def test_enthought_name_upper_case(self):
+        # Given
+        source = os.path.join(self.prefix,
+                              os.path.basename(MKL_10_3))
+        shutil.copy(MKL_10_3, source)
+
+        target = os.path.join(self.prefix, "MKL-10.3-11.egg")
+
+        # When
+        repack(source, 11, "rh5-64")
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.egg_basename, "MKL")
 
     def test_endist_metadata_simple(self):
         # Given

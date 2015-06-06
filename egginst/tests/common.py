@@ -49,6 +49,8 @@ DUMMY_EGG_MD5 = "1ec1f69526c55db7420b0d480c9b955e"
 NOSE_1_2_1 = os.path.join(os.path.dirname(__file__), "data", "nose-1.2.1-1.egg")
 NOSE_1_3_0 = os.path.join(os.path.dirname(__file__), "data", "nose-1.3.0-1.egg")
 
+MKL_10_3 = os.path.join(os.path.dirname(__file__), "data", "MKL-10.3-1.egg")
+
 STANDARD_EGG = os.path.join(_EGGINST_COMMON_DATA, "Jinja2-2.6-py2.7.egg")
 STANDARD_EGG_METADATA_FILES = (
     "dependency_links.txt", "entry_points.txt", "not-zip-safe", "PKG-INFO",
