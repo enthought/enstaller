@@ -14,7 +14,7 @@ from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import (
     DUMMY_EGG, STANDARD_EGG, LEGACY_EGG_INFO_EGG, STANDARD_EGG_WITH_EXT,
-    NOSE_1_2_1, VTK_EGG_DEFERRED_SOFTLINK
+    NOSE_1_2_1, MKL_10_3,
 )
 from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
@@ -173,10 +173,10 @@ class TestRepack(unittest.TestCase):
     def test_enthought_name_upper_case(self):
         # Given
         source = os.path.join(self.prefix,
-                              os.path.basename(VTK_EGG_DEFERRED_SOFTLINK))
-        shutil.copy(VTK_EGG_DEFERRED_SOFTLINK, source)
+                              os.path.basename(MKL_10_3))
+        shutil.copy(MKL_10_3, source)
 
-        target = os.path.join(self.prefix, "VTK-5.10.1-11.egg")
+        target = os.path.join(self.prefix, "MKL-10.3-11.egg")
 
         # When
         repack(source, 11, "rh5-64")
@@ -184,7 +184,7 @@ class TestRepack(unittest.TestCase):
         # Then
         self.assertTrue(os.path.exists(target))
         metadata = EggMetadata.from_egg(target)
-        self.assertEqual(metadata.egg_basename, "VTK")
+        self.assertEqual(metadata.egg_basename, "MKL")
 
     def test_endist_metadata_simple(self):
         # Given
