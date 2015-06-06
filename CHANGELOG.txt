@@ -21,6 +21,7 @@ Internals:
     tasks at Enthought.
   * update vendorized requests to 2.5.1.
   * use vendorized zipfile2 library for zipfile handling.
+  * update to okonomiyaki 0.7.0.
 
 2014-12-09   4.8.0:
 -------------------
