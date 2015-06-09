@@ -417,6 +417,9 @@ class Configuration(object):
         .. deprecated:: 4.9.0
             Use the repositories property instead
         """
+        msg = ("the indices property is deprecated: use the repositories "
+               "property instead")
+        warnings.warn(msg, DeprecationWarning)
         return tuple((repository_info.index_url, repository_info._base_url)
                      for repository_info in self.repositories)
 

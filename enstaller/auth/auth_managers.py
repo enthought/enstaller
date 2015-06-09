@@ -69,14 +69,18 @@ class OldRepoAuthManager(object):
         """ Create a OldRepoAuthManager instance from an enstaller config
         object.
         """
-        return cls(configuration.indices)
+        index_urls = tuple(
+            repository_info.index_url
+            for repository_info in configuration.repositories
+        )
+        return cls(index_urls)
 
     def __init__(self, index_urls):
         self.index_urls = index_urls
         self._auth = None
 
     def authenticate(self, session, auth):
-        for index_url, _ in self.index_urls:
+        for index_url in self.index_urls:
             parse = urllib.parse.urlparse(index_url)
             if parse.scheme in ("http", "https"):
                 try:
