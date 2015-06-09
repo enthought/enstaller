@@ -4,6 +4,7 @@ import collections
 import contextlib
 import json
 import sys
+import warnings
 
 import mock
 
@@ -356,3 +357,25 @@ def authenticated_config(f):
         "enstaller.main.ensure_authenticated_config",
         mock.Mock())
     return mock_authenticated_config(wrapper(f))
+
+
+class WarningTestMixin(object):
+    """ A test which checks if the specified warning was raised.
+    """
+    @contextlib.contextmanager
+    def assertWarns(self, expected_warning):
+        with warnings.catch_warnings(record=True) as warning_list:
+            warnings.simplefilter('always')
+
+            yield
+
+            has_raised_expected_warning = any(
+                item.category == expected_warning for item in warning_list
+            )
+
+            if not has_raised_expected_warning:
+                try:
+                    exc_name = expected_warning.__name__
+                except AttributeError:
+                    exc_name = str(expected_warning)
+                raise self.failureException("{0} not raised".format(exc_name))
