@@ -1,5 +1,0 @@
--r dev_requirements.txt
-pypiwin32; sys_platform == 'win32'
-fabric
-pathlib
-requests
