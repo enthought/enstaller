@@ -295,7 +295,7 @@ def updates_check(remote_repository, installed_repository):
     updates = []
     EPD_update = []
     for package in installed_repository.iter_packages():
-        av_metadatas = remote_repository.find_sorted_packages(package.name)
+        av_metadatas = remote_repository.find_packages(package.name)
         if len(av_metadatas) == 0:
             continue
         av_metadata = av_metadatas[-1]

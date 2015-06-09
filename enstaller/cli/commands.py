@@ -40,7 +40,7 @@ def info_option(remote_repository, installed_repository, name):
     print('Package:', name)
     print(install_time_string(installed_repository, name))
     pad = 4*' '
-    for metadata in remote_repository.find_sorted_packages(name):
+    for metadata in remote_repository.find_packages(name):
         print('Version: ' + metadata.full_version)
         print(pad + 'Product: %s' % metadata.product)
         print(pad + 'Available: %s' % metadata.available)
@@ -112,7 +112,7 @@ def search(remote_repository, installed_repository, config, session, pat=None):
             continue
         disp_name = names[name]
         installed_version = installed.get(name)
-        for metadata in remote_repository.find_sorted_packages(name):
+        for metadata in remote_repository.find_packages(name):
             version = metadata.full_version
             disp_ver = (('* ' if installed_version == version else '  ') +
                         version)
