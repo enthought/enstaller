@@ -18,7 +18,7 @@ from enstaller.package import PackageMetadata, RemotePackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
-from enstaller.tests.common import (SIMPLE_INDEX,
+from enstaller.tests.common import (SIMPLE_INDEX, WarningTestMixin,
                                     dummy_installed_package_factory,
                                     mock_brood_repository_indices)
 
@@ -367,7 +367,7 @@ class TestRepository(unittest.TestCase):
                           EnpkgVersion.from_string("1.3.0-1")])
 
 
-class TestRepositoryMisc(unittest.TestCase):
+class TestRepositoryMisc(WarningTestMixin, unittest.TestCase):
     def test_find_packages_invalid_versions(self):
         # Given
         entries = [
@@ -385,7 +385,7 @@ class TestRepositoryMisc(unittest.TestCase):
         self.assertEqual(len(packages), 2)
         assertCountEqual(self, packages, entries)
 
-    def test_sorted_packages_valid(self):
+    def test_find_packages_sorting(self):
         # Given
         entries = [
             dummy_installed_package_factory("numpy", "1.6.1", 1),
@@ -396,14 +396,21 @@ class TestRepositoryMisc(unittest.TestCase):
         for entry in entries:
             repository.add_package(entry)
 
+        r_versions = [
+            EnpkgVersion.from_string(v)
+            for v in ("1.6.1-1", "1.7.1-1", "1.8.0-2")
+        ]
+
         # When
-        packages = repository.find_sorted_packages("numpy")
+        packages = repository.find_packages("numpy")
 
         # Then
         self.assertEqual(len(packages), 3)
-        self.assertEqual([p.version for p in packages],
-                         [EnpkgVersion.from_string(v)
-                          for v in ("1.6.1-1", "1.7.1-1", "1.8.0-2")])
+        self.assertEqual([p.version for p in packages], r_versions)
+
+        with self.assertWarns(DeprecationWarning):
+            deprecated_packages = repository.find_sorted_packages("numpy")
+        self.assertEqual([p.version for p in deprecated_packages], r_versions)
 
     def test_sorted_packages_invalid(self):
         # Given
@@ -416,10 +423,14 @@ class TestRepositoryMisc(unittest.TestCase):
             repository.add_package(entry)
 
         # When
-        packages = repository.find_sorted_packages("numpy")
+        packages = repository.find_packages("numpy")
 
         # Then
         self.assertEqual(len(packages), 2)
         assertCountEqual(self, [p.version for p in packages],
                          [EnpkgVersion.from_string(v)
                           for v in ("1.6.1-1", "1.8k-2")])
+
+        with self.assertWarns(DeprecationWarning):
+            deprecated_packages = repository.find_sorted_packages("numpy")
+        self.assertEqual(deprecated_packages, packages)

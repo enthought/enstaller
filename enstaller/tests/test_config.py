@@ -31,9 +31,11 @@ from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
 
-from .common import (make_keyring_available_context, make_keyring_unavailable,
-                     mock_print, fake_keyring_context,
-                     fake_keyring, DummyAuthenticator)
+from .common import (
+    WarningTestMixin, make_keyring_available_context,
+    make_keyring_unavailable, mock_print, fake_keyring_context,
+    fake_keyring, DummyAuthenticator
+)
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
@@ -41,7 +43,7 @@ FAKE_AUTH = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)
 FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
 
 
-class TestWriteConfig(unittest.TestCase):
+class TestWriteConfig(WarningTestMixin, unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
         self.f = os.path.join(self.d, ".enstaller4rc")
@@ -825,7 +827,8 @@ class TestConfiguration(unittest.TestCase):
         config = Configuration()
 
         # When/Then
-        self.assertEqual(config.indices, r_indices)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(config.indices, r_indices)
 
     def test_indices_property_platform(self):
         # Given
@@ -841,7 +844,8 @@ class TestConfiguration(unittest.TestCase):
         config._platform = platform
 
         # Then
-        self.assertEqual(config.indices, r_indices)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(config.indices, r_indices)
 
         # Given
         platform = "osx-32"
@@ -856,7 +860,8 @@ class TestConfiguration(unittest.TestCase):
         config._platform = "osx-32"
 
         # Then
-        self.assertEqual(config.indices, r_indices)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(config.indices, r_indices)
 
     def test_indices_property_no_pypi(self):
         # Given
@@ -869,7 +874,8 @@ class TestConfiguration(unittest.TestCase):
         config.update(use_pypi=False)
 
         # When/Then
-        self.assertEqual(config.indices, r_indices)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(config.indices, r_indices)
 
     def test_indices_property_no_webservice(self):
         # Given
@@ -882,7 +888,8 @@ class TestConfiguration(unittest.TestCase):
                       indexed_repositories=["https://acme.com/{PLATFORM}/"])
 
         # When/Then
-        self.assertEqual(config.indices, r_indices)
+        with self.assertWarns(DeprecationWarning):
+            self.assertEqual(config.indices, r_indices)
 
     def test_from_file_complete_combination1(self):
         # Given
@@ -1132,7 +1139,7 @@ class TestYamlConfiguration(unittest.TestCase):
 
         # Then
         self.assertFalse(config.use_webservice)
-        self.assertFalse(config.indices, [])
+        self.assertFalse(config.repositories, [])
         self.assertEqual(config.repository_cache,
                          os.path.normpath(os.path.join(sys.prefix,
                                                        "LOCAL-REPO")))
@@ -1157,12 +1164,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = tuple((
-            ('https://api.enthought.com/repo/enthought/free/{0}/index.json'.format(platform),
-             'https://api.enthought.com/repo/enthought/free/{0}/'.format(platform)),
-            ('https://api.enthought.com/repo/enthought/commercial/{0}/index.json'.format(platform),
-             'https://api.enthought.com/repo/enthought/commercial/{0}/'.format(platform))
-        ))
+        r_indices = (
+            ('https://api.enthought.com/repo/enthought/free/{0}/index.json'
+             .format(platform)),
+            ('https://api.enthought.com/repo/enthought/commercial/{0}/'
+             'index.json'.format(platform)),
+        )
 
         with mkdtemp() as prefix:
             path = os.path.join(prefix, "enstaller.yaml")
@@ -1175,7 +1182,11 @@ class TestYamlConfiguration(unittest.TestCase):
             # Then
             self.assertFalse(config.use_webservice)
             self.assertEqual(config.store_url, "https://api.enthought.com")
-            self.assertEqual(config.indices, r_indices)
+            self.assertEqual(
+                tuple(repository_info.index_url
+                      for repository_info in config.repositories),
+                r_indices
+            )
 
     def test_simple(self):
         # Given
@@ -1187,12 +1198,12 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
-        r_indices = tuple((
-            ('http://acme.com/repo/enthought/free/{0}/index.json'.format(platform),
-             'http://acme.com/repo/enthought/free/{0}/'.format(platform)),
-            ('http://acme.com/repo/enthought/commercial/{0}/index.json'.format(platform),
-             'http://acme.com/repo/enthought/commercial/{0}/'.format(platform))
-        ))
+        r_indices = (
+            ('http://acme.com/repo/enthought/free/{0}/index.json'
+             .format(platform)),
+            ('http://acme.com/repo/enthought/commercial/{0}/index.json'
+             .format(platform)),
+        )
 
         # When
         config = Configuration.from_yaml_filename(StringIO(yaml_string))
@@ -1200,7 +1211,11 @@ class TestYamlConfiguration(unittest.TestCase):
         # Then
         self.assertFalse(config.use_webservice)
         self.assertEqual(config.store_url, "http://acme.com")
-        self.assertEqual(config.indices, r_indices)
+        self.assertEqual(
+            tuple(repository_info.index_url
+                  for repository_info in config.repositories),
+            r_indices
+        )
         self.assertEqual(config.max_retries, 0)
         self.assertTrue(config.verify_ssl)
 
