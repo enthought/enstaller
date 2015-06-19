@@ -232,3 +232,11 @@ class TestAPITokenAuth(unittest.TestCase):
 
         # Then
         self.assertEqual(auth.cant_login_message, r_message)
+
+    def test_to_config_dict(self):
+        # When
+        auth = APITokenAuth("bad robot")
+
+        # Then
+        self.assertEqual(auth.to_config_dict(),
+                         {"kind": "token", "api_token": "bad robot"})
