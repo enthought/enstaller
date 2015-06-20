@@ -193,7 +193,7 @@ class APITokenAuth(IAuth):
             fp.write(data)
 
     def to_config_dict(self):
-        return {"kind": "token", "api_token": self.api_token}
+        return {"kind": "token", "api_token": self._api_token}
 
     @property
     def cant_login_message(self):
