@@ -16,7 +16,7 @@ from enstaller.package import egg_name_to_name_version
 from enstaller.repository import (InstalledPackageMetadata, Repository)
 
 from enstaller.history import History
-from enstaller.solver import Solver, SolverMode
+from enstaller.solver import ForceMode, Solver, SolverMode
 
 
 _DEFAULT_MAX_RETRIES = 2
@@ -322,11 +322,10 @@ class Enpkg(object):
         self._force = force
         self.max_retries = max_retries
 
-    def _solver_factory(self, mode=SolverMode.RECUR, force=False,
-                        forceall=False):
+    def _solver_factory(self, mode=SolverMode.RECUR, force=ForceMode.NONE):
         solver = Solver(self._remote_repository,
                         self._top_installed_repository,
-                        mode, force, forceall)
+                        mode, force)
         return solver
 
     def execute_context(self, actions):

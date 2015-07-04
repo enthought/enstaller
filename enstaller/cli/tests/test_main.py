@@ -13,8 +13,8 @@ from egginst.tests.common import mkdtemp
 from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
+from enstaller.solver import ForceMode, SolverMode
 from enstaller.tests.common import (FAKE_MD5, FAKE_SIZE, PY_VER,
-                                    FakeOptions,
                                     create_prefix_with_eggs,
                                     create_repositories,
                                     dummy_installed_package_factory,
@@ -164,7 +164,7 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = create_prefix_with_eggs(config, d,
                                             installed_entries, remote_entries)
             with mock_print() as m:
-                update_all(enpkg, config, FakeOptions())
+                update_all(enpkg, config)
                 self.assertMultiLineEqual(m.value, r_output)
 
     def test_update_all_no_epd_updates(self):
@@ -191,7 +191,7 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.cli.commands.install_req") as mocked_install_req:
                 with mock_print() as m:
-                    update_all(enpkg, config, FakeOptions())
+                    update_all(enpkg, config)
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
 
@@ -220,7 +220,7 @@ class TestUpdatesCheck(unittest.TestCase):
             enpkg = create_prefix_with_eggs(config, d, installed_entries, remote_entries)
             with mock.patch("enstaller.cli.commands.install_req") as mocked_install_req:
                 with mock_print() as m:
-                    update_all(enpkg, config, FakeOptions())
+                    update_all(enpkg, config)
                     self.assertMultiLineEqual(m.value, r_output)
                     mocked_install_req.assert_called()
 
@@ -247,14 +247,14 @@ class TestInstallFromRequirements(unittest.TestCase):
 
         config = Configuration()
         enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
-        args = FakeOptions()
-        args.requirements = requirements_file
 
         # When
         with mock.patch("enstaller.cli.commands.install_req") as mocked_install_req:
-            install_from_requirements(enpkg, config, args)
+            install_from_requirements(enpkg, config, requirements_file)
 
         # Then
         mocked_install_req.assert_has_calls(
-            [mock.call(enpkg, config, "numpy 1.8.0-1", args),
-             mock.call(enpkg, config, "nose 1.2.1-1", args)])
+            [mock.call(enpkg, config, "numpy 1.8.0-1", SolverMode.ROOT,
+                       ForceMode.NONE, False),
+             mock.call(enpkg, config, "nose 1.2.1-1", SolverMode.ROOT,
+                       ForceMode.NONE, False)])

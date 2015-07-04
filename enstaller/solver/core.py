@@ -1,20 +1,26 @@
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
 from enstaller.package import egg_name_to_name_version
+from enstaller.vendor.enum import Enum
 
 from .request import JobType
 from .resolve import SolverMode, Resolve
 
 
+class ForceMode(Enum):
+    NONE = 0
+    MAIN_ONLY = 1
+    ALL = 2
+
+
 class Solver(object):
     def __init__(self, remote_repository, top_installed_repository,
-                 mode=SolverMode.RECUR, force=False, forceall=False):
+                 mode=SolverMode.RECUR, force=ForceMode.NONE):
         self._remote_repository = remote_repository
         self._top_installed_repository = top_installed_repository
 
         self.mode = mode
         self.force = force
-        self.forceall = forceall
 
     def resolve(self, request):
         operations = []
@@ -33,8 +39,7 @@ class Solver(object):
     def _install(self, requirement):
         eggs = Resolve(self._remote_repository).install_sequence(requirement,
                                                                  self.mode)
-        return self._install_actions(eggs, self.mode, self.force,
-                                     self.forceall)
+        return self._install_actions(eggs, self.mode, self.force)
 
     def _remove(self, requirement):
         if requirement.version and requirement.build:
@@ -48,13 +53,12 @@ class Solver(object):
             raise EnpkgError("package %s not installed" % (requirement, ))
         return [packages[0].key]
 
-    def _install_actions(self, eggs, mode, force, forceall):
-        if not self.forceall:
+    def _install_actions(self, eggs, mode, force):
+        if force == ForceMode.NONE:
             # remove already installed eggs from egg list
-            if self.force:
-                eggs = self._filter_installed_eggs(eggs[:-1]) + [eggs[-1]]
-            else:
-                eggs = self._filter_installed_eggs(eggs)
+            eggs = self._filter_installed_eggs(eggs)
+        elif force == ForceMode.MAIN_ONLY:
+            eggs = self._filter_installed_eggs(eggs[:-1]) + [eggs[-1]]
 
         # remove packages with the same name (from first egg collection
         # only, in reverse install order)

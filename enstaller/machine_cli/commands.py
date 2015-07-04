@@ -21,10 +21,6 @@ _AUTHENTICATION = "authentication"
 _AUTHENTICATION_KIND = "kind"
 
 
-class _FakeOpts(object):
-    pass
-
-
 def fetch_progress_factory(*a, **kw):
     return console_progress_manager_factory(*a, show_speed=True, **kw)
 
@@ -105,13 +101,7 @@ def install():
                                               fetch=fetch_progress_factory)
     enpkg = Enpkg(repository, session, [sys.prefix], progress_bar_context, False)
 
-    opts = _FakeOpts()
-    opts.yes = False
-    opts.force = False
-    opts.forceall = False
-    opts.no_deps = False
-
-    install_req(enpkg, config, requirement, opts)
+    install_req(enpkg, config, requirement)
 
 
 def remove():
@@ -155,10 +145,4 @@ def update_all():
                                               fetch=fetch_progress_factory)
     enpkg = Enpkg(repository, session, [sys.prefix], progress_bar_context, False)
 
-    opts = _FakeOpts()
-    opts.yes = False
-    opts.force = False
-    opts.forceall = False
-    opts.no_deps = False
-
-    enstaller.cli.commands.update_all(enpkg, config, opts)
+    enstaller.cli.commands.update_all(enpkg, config)

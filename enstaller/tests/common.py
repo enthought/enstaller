@@ -282,14 +282,6 @@ def create_repositories(remote_entries=None, installed_entries=None):
     return remote_repository, installed_repository
 
 
-class FakeOptions(object):
-    def __init__(self):
-        self.force = False
-        self.forceall = False
-        self.no_deps = False
-        self.yes = False
-
-
 def create_prefix_with_eggs(config, prefix, installed_entries=None,
                             remote_entries=None):
     if remote_entries is None:

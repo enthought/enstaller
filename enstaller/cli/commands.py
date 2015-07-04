@@ -8,6 +8,7 @@ from enstaller.auth import UserInfo
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
+from enstaller.solver import ForceMode, SolverMode
 
 from .utils import (FMT, FMT4, install_req, install_time_string,
                     name_egg, print_installed, updates_check)
@@ -54,14 +55,17 @@ def info_option(remote_repository, installed_repository, name):
         print(pad + "Requirements: %s" % (', '.join(sorted(reqs)) or None))
 
 
-def install_from_requirements(enpkg, config, args):
+def install_from_requirements(enpkg, config, requirements_file,
+                              force_mode=ForceMode.NONE, always_yes=False):
     """
     Install a set of requirements specified in the requirements file.
     """
-    with open(args.requirements, "r") as fp:
+    with open(requirements_file, "r") as fp:
         for req in fp:
-            args.no_deps = True
-            install_req(enpkg, config, req.rstrip(), args)
+            install_req(
+                enpkg, config, req.rstrip(), SolverMode.ROOT, force_mode,
+                always_yes
+            )
 
 
 def list_option(prefixes, pat=None):
@@ -132,7 +136,8 @@ def search(remote_repository, installed_repository, config, session, pat=None):
         print(msg)
 
 
-def update_all(enpkg, config, args):
+def update_all(enpkg, config, solver_mode=SolverMode.RECUR,
+               force_mode=ForceMode.NONE, always_yes=False):
     updates, EPD_update = updates_check(enpkg._remote_repository,
                                         enpkg._installed_repository)
     if not (updates or EPD_update):
@@ -153,7 +158,8 @@ def update_all(enpkg, config, args):
                              update['current'].full_version,
                              update['update'].full_version))
             for update in updates:
-                install_req(enpkg, config, update['current'].name, args)
+                install_req(enpkg, config, update['current'].name, solver_mode,
+                            force_mode, always_yes)
 
 
 def whats_new(remote_repository, installed_repository):

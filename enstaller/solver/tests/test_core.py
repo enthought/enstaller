@@ -14,7 +14,7 @@ from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, MissingDependency, NoPackageFound
 from enstaller.repository import Repository
 
-from ..core import Solver
+from ..core import ForceMode, Solver
 from ..request import Request
 from ..requirement import Requirement
 
@@ -251,7 +251,9 @@ class TestSolverDependencies(unittest.TestCase):
         self.assertListEqual(actions, [])
 
         # When
-        solver = Solver(repository, installed_repository, force=True)
+        solver = Solver(
+            repository, installed_repository, force=ForceMode.MAIN_ONLY
+        )
         actions = solver.resolve(request)
 
         # Then
@@ -260,8 +262,7 @@ class TestSolverDependencies(unittest.TestCase):
                               ("install", "numpy-1.8.0-2.egg")])
 
         # When
-        solver = Solver(repository, installed_repository, force=True,
-                        forceall=True)
+        solver = Solver(repository, installed_repository, force=ForceMode.ALL)
         actions = solver.resolve(request)
 
         # Then
