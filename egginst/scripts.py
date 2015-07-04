@@ -3,18 +3,19 @@ from __future__ import print_function
 import logging
 import os
 import sys
+import textwrap
 import re
 from os.path import abspath, basename, join, isdir, isfile, islink
 
 from egginst.exe_data import cli, gui
-from egginst.utils import on_win, rm_rf
+from egginst.utils import makedirs, on_win, rm_rf
 
 hashbang_pat = re.compile(r'#!.+$', re.M)
-executable = sys.executable
 logger = logging.getLogger(__name__)
 
 
-def get_executable(pythonw=False, with_quotes=False):
+def get_executable(executable=sys.executable, pythonw=False,
+                   with_quotes=False):
     res = executable
     if on_win:
         # sys.executable may actually be pythonw.exe in order to avoid
@@ -26,7 +27,7 @@ def get_executable(pythonw=False, with_quotes=False):
     return res
 
 
-def write_exe(dst, script_type='console_scripts'):
+def write_exe(dst, kind="console_script"):
     """
     This function is only used on Windows.   It either writes cli.exe or
     gui.exe to the destination specified, depending on script_type.
@@ -40,12 +41,13 @@ def write_exe(dst, script_type='console_scripts'):
         fo.write('%s = %r\n' % (name, data))
     fo.close()
     """
-    if script_type == 'console_scripts':
-        data = cli
-    elif script_type == 'gui_scripts':
+    if kind == "gui_script":
         data = gui
+    elif kind == "console_script":
+        data = cli
     else:
-        raise Exception("Did not except script_type=%r" % script_type)
+        msg = "Did not expect entry point kind {0!r}".format(kind)
+        raise Exception(msg)
 
     rm_rf(dst)
     try:
@@ -58,7 +60,7 @@ def write_exe(dst, script_type='console_scripts'):
     os.chmod(dst, 0o755)
 
 
-def create_proxy(src, bin_dir):
+def create_proxy(src, bin_dir, executable=sys.executable):
     """
     create a proxy of src in bin_dir (Windows only)
     """
@@ -86,14 +88,13 @@ import subprocess
 src = %(src)r
 
 sys.exit(subprocess.call([src] + sys.argv[1:]))
-''' % dict(python=get_executable(), src=src))
+''' % dict(python=get_executable(executable), src=src))
     return dst, dst_script
 
 
-def create_proxies(egg):
+def create_proxies(egg, pythonexe=sys.executable):
     # This function is called on Windows only
-    if not isdir(egg.bin_dir):
-        os.makedirs(egg.bin_dir)
+    makedirs(egg.bin_dir)
 
     for line in egg.iter_files_to_install():
         arcname, action = line.split()
@@ -106,7 +107,7 @@ def create_proxies(egg):
             else:
                 src = abspath(join(egg.prefix, arcname))
             logger.info("     src: %r", src)
-            egg.files.extend(create_proxy(src, egg.bin_dir))
+            egg.files.extend(create_proxy(src, egg.bin_dir, pythonexe))
         else:
             data = egg.z.read(arcname)
             dst = abspath(join(egg.prefix, action, basename(arcname)))
@@ -117,56 +118,115 @@ def create_proxies(egg):
             egg.files.append(dst)
 
 
-def write_script(path, entry_pt, egg_name):
+def write_script(path, entry_point, template, pythonexe):
     """
     Write an entry point script to path.
     """
     logger.info('Creating script: %s', path)
 
-    assert entry_pt.count(':') == 1
-    module, func = entry_pt.strip().split(':')
-
     rm_rf(path)
-    with open(path, 'w') as fo:
-        fo.write('''\
-#!%(python)s
-# This script was created by egginst when installing:
-#
-#   %(egg_name)s
-#
-if __name__ == '__main__':
-    import sys
-    from %(module)s import %(func)s
 
-    sys.exit(%(func)s())
-''' % dict(python=get_executable(pythonw=path.endswith('.pyw'),
-                                 with_quotes=on_win),
-           egg_name=egg_name, module=module, func=func))
+    with open(path, 'w') as fo:
+        data = template.format(
+            python=get_executable(
+                pythonexe, pythonw=path.endswith('.pyw'),
+                with_quotes=on_win
+            ),
+           module=entry_point.module, func=entry_point.function
+        )
+        fo.write(data)
+
     os.chmod(path, 0o755)
 
 
-def create(egg, conf):
-    if not isdir(egg.bin_dir):
-        os.makedirs(egg.bin_dir)
+class _EntryPoint(object):
+    @classmethod
+    def from_string(cls, name, s):
+        parts = s.split(":")
+        if len(parts) != 2:
+            raise ValueError("Invalid entry point string: {0!r}".format(s))
+        else:
+            return cls(name, parts[0], parts[1])
+
+    def __init__(self, name, module, function):
+        self.name = name
+        self.module = module
+        self.function = function
+
+
+class ConsoleScript(_EntryPoint):
+    kind = "console_script"
+
+class GUIScript(_EntryPoint):
+    kind = "gui_script"
+
+
+_DEFAULT_TEMPLATE = """\
+#!{python}
+#
+if __name__ == '__main__':
+    import sys
+    from {module} import {func}
+
+    sys.exit({func}())
+"""
+
+
+def create_entry_point(entry_point, bindir, template=None,
+                       pythonexe=sys.executable):
+    template = template or DEFAULT_TEMPLATE
+
+    created_files = []
+
+    fname = entry_point.name
+
+    if on_win:
+        exe_path = join(bindir, '%s.exe' % entry_point.name)
+        write_exe(exe_path, entry_point.kind)
+        fname += '-script.py'
+        if isinstance(entry_point, GUIScript):
+            fname += 'w'
+        created_files.append(exe_path)
+
+    path = join(bindir, fname)
+    write_script(path, entry_point, template, pythonexe)
+
+    created_files.append(path)
+
+    return created_files
+
+
+def create_entry_points(egg, conf, pythonexe=sys.executable):
+    template = textwrap.dedent("""\
+    #!{python}
+    # This script was created by egginst when installing:
+    #
+    #   %(egg_name)s
+    #
+    if __name__ == '__main__':
+        import sys
+        from {module} import {func}
+
+        sys.exit({func}())
+    """ % {"egg_name": egg.fn})
+
+    makedirs(egg.bin_dir)
 
     for script_type in ['gui_scripts', 'console_scripts']:
         if script_type not in conf.sections():
             continue
-        for name, entry_pt in conf.items(script_type):
-            fname = name
-            if on_win:
-                exe_path = join(egg.bin_dir, '%s.exe' % name)
-                write_exe(exe_path, script_type)
-                egg.files.append(exe_path)
-                fname += '-script.py'
-                if script_type == 'gui_scripts':
-                    fname += 'w'
-            path = join(egg.bin_dir, fname)
-            write_script(path, entry_pt, egg.fn)
-            egg.files.append(path)
+        for name, value in conf.items(script_type):
+            if script_type == "gui_scripts":
+                entry_point = GUIScript.from_string(name, value)
+            elif script_type == "console_scripts":
+                entry_point = ConsoleScript.from_string(name, value)
+            created_files = create_entry_point(
+                entry_point, egg.bin_dir, template, pythonexe
+            )
+            egg.files.extend(created_files)
 
 
-def fix_script(path):
+def fix_script(path, pythonexe=sys.executable):
     """
     Fixes a single located at path.
     """
@@ -190,7 +250,7 @@ def fix_script(path):
     if not (m and 'python' in m.group().lower()):
         return
 
-    python = get_executable(with_quotes=on_win)
+    python = get_executable(pythonexe, with_quotes=on_win)
     new_data = hashbang_pat.sub('#!' + python.replace('\\', '\\\\'),
                                 data, count=1)
     if new_data == data:

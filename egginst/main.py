@@ -297,9 +297,6 @@ class EggInst(object):
 
         self.bin_dir = join(self.prefix, bin_dir_name)
 
-        if self.prefix != abspath(sys.prefix):
-            scripts.executable = get_executable(self.prefix)
-
         self.site_packages = join(self.prefix, rel_site_packages)
         self.pyloc = self.site_packages
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
@@ -400,7 +397,7 @@ class EggInst(object):
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
             logger.debug('creating scripts')
-            scripts.create(self, conf)
+            scripts.create_entry_points(self, conf, get_executable(self.prefix))
 
     def _rel_prefix(self, path):
         return abspath(path).replace(self.prefix, '.').replace('\\', '/')
