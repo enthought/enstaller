@@ -8,7 +8,7 @@ from egginst import exe_data
 
 from egginst.main import EggInst
 from egginst.scripts import (
-    create_entry_points, create_proxies, fix_script, get_executable
+    create_entry_points, create_proxies, fix_script, _get_executable
 )
 from egginst.utils import compute_md5
 from egginst.vendor.six import PY2, StringIO
@@ -25,20 +25,20 @@ DUMMY_EGG_WITH_PROXY_SCRIPTS = os.path.join(os.path.dirname(__file__), "data", "
 
 class TestScripts(unittest.TestCase):
     def test_get_executable(self):
-        executable = get_executable()
+        executable = _get_executable()
         self.assertEqual(executable, sys.executable)
 
-        executable = get_executable(with_quotes=True)
+        executable = _get_executable(with_quotes=True)
         self.assertEqual(executable, "\"{0}\"".format(sys.executable))
 
         with mock.patch("egginst.scripts.on_win", "win32"):
-            executable = get_executable("python.exe")
+            executable = _get_executable("python.exe")
             self.assertEqual(executable, "python.exe")
 
-            executable = get_executable("pythonw.exe")
+            executable = _get_executable("pythonw.exe")
             self.assertEqual(executable, "python.exe")
 
-            executable = get_executable("pythonw.exe", pythonw=True)
+            executable = _get_executable("pythonw.exe", pythonw=True)
             self.assertEqual(executable, "pythonw.exe")
 
 
