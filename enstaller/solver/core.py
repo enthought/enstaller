@@ -3,12 +3,12 @@ from enstaller.errors import EnpkgError
 from enstaller.package import egg_name_to_name_version
 
 from .request import JobType
-from .resolve import Resolve
+from .resolve import SolverMode, Resolve
 
 
 class Solver(object):
     def __init__(self, remote_repository, top_installed_repository,
-                 mode='recur', force=False, forceall=False):
+                 mode=SolverMode.RECUR, force=False, forceall=False):
         self._remote_repository = remote_repository
         self._top_installed_repository = top_installed_repository
 

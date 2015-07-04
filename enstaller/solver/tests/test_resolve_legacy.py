@@ -11,7 +11,7 @@ from egginst.vendor.six.moves import unittest
 from enstaller.indexed_repo.metadata import parse_depend_index
 from enstaller.repository_info import FSRepositoryInfo
 
-from ..resolve import Resolve
+from ..resolve import Resolve, SolverMode
 from ..requirement import Requirement
 
 
@@ -124,11 +124,11 @@ class TestChain1(unittest.TestCase):
     def test_root(self):
         resolve = self._resolve_factory("2.7")
         self.assertEqual(resolve.install_sequence(Requirement('numpy 1.5.1'),
-                                                  mode='root'),
+                                                  mode=SolverMode.ROOT),
                          ['numpy-1.5.1-2.egg'])
 
         self.assertEqual(resolve.install_sequence(Requirement('numpy 1.5.1-1'),
-                                                  mode='root'),
+                                                  mode=SolverMode.ROOT),
                          ['numpy-1.5.1-1.egg'])
 
     def test_order1(self):
@@ -153,17 +153,17 @@ class TestChain2(unittest.TestCase):
 
     def test_flat_recur1(self):
         resolve = self._resolve_factory("2.7")
-        d1 = resolve.install_sequence(Requirement('openepd'), mode='flat')
-        d2 = resolve.install_sequence(Requirement('openepd'), mode='recur')
+        d1 = resolve.install_sequence(Requirement('openepd'), mode=SolverMode.FLAT)
+        d2 = resolve.install_sequence(Requirement('openepd'), mode=SolverMode.RECUR)
         self.assertEqual(d1, d2)
-        d3 = resolve.install_sequence(Requirement('foo'), mode='recur')
+        d3 = resolve.install_sequence(Requirement('foo'), mode=SolverMode.RECUR)
         self.assertEqual(d2[:-1], d3[:-1])
 
     def test_flat_recur2(self):
         resolve = self._resolve_factory("2.7")
         for rs in 'epd 7.0', 'epd 7.0-1', 'epd 7.0-2':
-            d1 = resolve.install_sequence(Requirement(rs), mode='flat')
-            d2 = resolve.install_sequence(Requirement(rs), mode='recur')
+            d1 = resolve.install_sequence(Requirement(rs), mode=SolverMode.FLAT)
+            d2 = resolve.install_sequence(Requirement(rs), mode=SolverMode.RECUR)
             self.assertEqual(d1, d2)
 
     def test_multiple_reqs(self):
