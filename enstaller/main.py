@@ -28,7 +28,7 @@ from egginst.vendor.six.moves import http_client
 import enstaller
 
 from enstaller.auth import UserPasswordAuth
-from enstaller.errors import (EnpkgError, EnstallerException,
+from enstaller.errors import (EnstallerException,
                               InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
@@ -41,14 +41,15 @@ from enstaller.session import Session
 from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
-from enstaller.solver import ForceMode, Request, Requirement, SolverMode
+from enstaller.solver import ForceMode, Requirement, SolverMode
 from enstaller.utils import abs_expanduser, input_auth, prompt_yes_no
 from enstaller.vendor import requests
 from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
-                                    list_option, print_history, revert, search,
+                                    list_option, print_history,
+                                    remove_requirement, revert, search,
                                     update_all, whats_new)
 from enstaller.cli.utils import (exit_if_root_on_non_owned,
                                  humanize_ssl_error_and_die, install_req,
@@ -393,13 +394,7 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
 
     if args.remove:
         for req in reqs:
-            solver = enpkg._solver_factory()
-            try:
-                request = Request()
-                request.remove(req)
-                enpkg.execute(solver.resolve(request))
-            except EnpkgError as e:
-                print(str(e))
+            remove_requirement(enpkg, req)
     else:
         for req in reqs:
             install_req(enpkg, config, req, mode, force, args.yes)

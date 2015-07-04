@@ -5,10 +5,11 @@ import sys
 import textwrap
 
 from enstaller.auth import UserInfo
+from enstaller.errors import EnpkgError
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
-from enstaller.solver import ForceMode, SolverMode
+from enstaller.solver import ForceMode, Request, SolverMode
 
 from .utils import (FMT, FMT4, install_req, install_time_string,
                     name_egg, print_installed, updates_check)
@@ -80,6 +81,16 @@ def print_history(prefix):
     h = History(prefix)
     h.update()
     h.print_log()
+
+
+def remove_requirement(enpkg, requirement):
+    solver = enpkg._solver_factory()
+    try:
+        request = Request()
+        request.remove(requirement)
+        enpkg.execute(solver.resolve(request))
+    except EnpkgError as e:
+        print(str(e))
 
 
 def revert(enpkg, revert_arg):
