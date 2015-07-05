@@ -83,11 +83,19 @@ def _looks_like_setuptools_egg(path):
 
 def _get_spec_data(source_egg_path, build_number, platform_string=None):
     if _looks_like_setuptools_egg(source_egg_path):
-        metadata = SetuptoolsEggMetadata.from_egg(source_egg_path)
-        if metadata.platform_tag is not None and platform_string is None:
-            msg = "Platform-specific egg detected (platform tag is " \
-                  "{0!r}), you *must* specify the platform."
-            raise EnstallerException(msg.format(metadata.platform_tag))
+        parsed_platform_string = parse_filename(source_egg_path)[3]
+        if parsed_platform_string is not None and platform_string is None:
+            msg = ("Platform-specific egg detected (platform string is "
+                   "{0!r}), you *must* specify the platform.")
+            raise EnstallerException(msg.format(parsed_platform_string))
+
+        if platform_string is not None:
+            platform = EPDPlatform.from_epd_string(platform_string)
+        else:
+            platform = None
+        metadata = SetuptoolsEggMetadata.from_egg(
+            source_egg_path, platform=platform
+        )
         egg_basename = metadata.name
         version = str(metadata.version)
         dependencies = []
