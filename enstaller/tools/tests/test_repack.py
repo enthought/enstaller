@@ -114,8 +114,8 @@ class TestRepack(unittest.TestCase):
 
     def test_setuptools_egg_with_ext_without_platform(self):
         # Given
-        r_msg = "Platform-specific egg detected (platform tag is " \
-                "'linux_x86_64'), you *must* specify the platform."
+        r_msg = "Platform-specific egg detected (platform string is " \
+                "'linux-x86_64'), you *must* specify the platform."
         source = os.path.join(self.prefix, os.path.basename(STANDARD_EGG_WITH_EXT))
         shutil.copy(STANDARD_EGG_WITH_EXT, source)
 
