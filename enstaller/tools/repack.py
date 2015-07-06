@@ -12,7 +12,7 @@ from okonomiyaki.file_formats import (
     is_egg_name_valid,
 )
 from okonomiyaki.file_formats.setuptools_egg import (
-    SetuptoolsEggMetadata, parse_filename
+    _UNSPECIFIED, SetuptoolsEggMetadata, parse_filename
 )
 from okonomiyaki.platforms import EPDPlatform
 
@@ -81,7 +81,8 @@ def _looks_like_setuptools_egg(path):
         return False
 
 
-def _get_spec_data(source_egg_path, build_number, platform_string=None):
+def _get_spec_data(source_egg_path, build_number, platform_string=None,
+                   python=_UNSPECIFIED, abi_tag=_UNSPECIFIED):
     if _looks_like_setuptools_egg(source_egg_path):
         parsed_platform_string = parse_filename(source_egg_path)[3]
         if parsed_platform_string is not None and platform_string is None:
@@ -94,7 +95,7 @@ def _get_spec_data(source_egg_path, build_number, platform_string=None):
         else:
             platform = None
         metadata = SetuptoolsEggMetadata.from_egg(
-            source_egg_path, platform=platform
+            source_egg_path, platform, python, abi_tag
         )
         egg_basename = metadata.name
         version = str(metadata.version)
@@ -123,9 +124,10 @@ def _raw_packages_to_requirements(packages):
     return tuple(Requirement.from_spec_string(s) for s in packages)
 
 
-def _get_spec(source_egg_path, build_number, platform_string=None):
+def _get_spec(source_egg_path, build_number, platform_string=None,
+              python=_UNSPECIFIED, abi_tag=_UNSPECIFIED):
     data, metadata = _get_spec_data(source_egg_path, build_number,
-                                    platform_string)
+                                    platform_string, python, abi_tag)
 
     if platform_string is None:
         try:
@@ -205,8 +207,11 @@ def _add_files(z, dir_path, regex_string, archive_dir):
     return arcnames
 
 
-def repack(source_egg_path, build_number=1, platform_string=None):
-    metadata = _get_spec(source_egg_path, build_number, platform_string)
+def repack(source_egg_path, build_number=1, platform_string=None,
+           python=_UNSPECIFIED, abi_tag=_UNSPECIFIED):
+    metadata = _get_spec(
+        source_egg_path, build_number, platform_string, python, abi_tag
+    )
 
     parent_dir = os.path.dirname(os.path.abspath(source_egg_path))
     target_egg_path = os.path.join(parent_dir, metadata.egg_name)
@@ -249,9 +254,13 @@ def main(argv=None):
     p.add_argument("-a", dest="platform_string",
                    help="Legacy epd platform string (e.g. 'rh5-32'). "
                         "Will be guessed if not specified.")
+    p.add_argument("--abi", dest="abi_tag",
+                   help="PEP425 abi tag. Will be guessed if not specified."
+                        "Note: the tag format will not be validated.")
     ns = p.parse_args(argv)
 
-    repack(ns.egg, ns.build_number, ns.platform_string)
+    abi_tag = ns.abi_tag or _UNSPECIFIED
+    repack(ns.egg, ns.build_number, ns.platform_string, abi_tag=abi_tag)
 
 
 if __name__ == "__main__":  # pragma: no cover
