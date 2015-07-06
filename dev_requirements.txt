@@ -3,7 +3,7 @@ coverage
 flake8
 machotools>=0.0.2
 mock
-https://github.com/enthought/okonomiyaki/archive/v0.9.0b1.tar.gz
+okonomiyaki>=0.9.0
 haas
 six
 testfixtures
