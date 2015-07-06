@@ -11,10 +11,10 @@ import okonomiyaki
 try:
     version_info = okonomiyaki.__version_info__
 except AttributeError:
-    raise ValueError("You need okonomiyaki >= 0.9.0 to use repack.")
+    raise RuntimeError("You need okonomiyaki >= 0.9.0 to use repack.")
 else:
     if version_info < (0, 9):
-        raise ValueError("You need okonomiyaki >= 0.9.0 to use repack.")
+        raise RuntimeError("You need okonomiyaki >= 0.9.0 to use repack.")
 
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats import (
