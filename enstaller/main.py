@@ -28,7 +28,7 @@ from egginst.vendor.six.moves import http_client
 import enstaller
 
 from enstaller.auth import UserPasswordAuth
-from enstaller.errors import (EnpkgError, EnstallerException,
+from enstaller.errors import (EnstallerException,
                               InvalidPythonPathConfiguration,
                               InvalidConfiguration,
                               EXIT_ABORTED)
@@ -41,14 +41,15 @@ from enstaller.session import Session
 from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
-from enstaller.solver import Request, Requirement
+from enstaller.solver import ForceMode, Requirement, SolverMode
 from enstaller.utils import abs_expanduser, input_auth, prompt_yes_no
 from enstaller.vendor import requests
 from enstaller.versions.enpkg import EnpkgVersion
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,
-                                    list_option, print_history, revert, search,
+                                    list_option, print_history,
+                                    remove_requirement, revert, search,
                                     update_all, whats_new)
 from enstaller.cli.utils import (exit_if_root_on_non_owned,
                                  humanize_ssl_error_and_die, install_req,
@@ -325,12 +326,23 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
         whats_new(enpkg._remote_repository, enpkg._installed_repository)
         return
 
+    if args.force:
+        if args.forceall:
+            force = ForceMode.ALL
+        else:
+            force = ForceMode.MAIN
+    else:
+        force = ForceMode.NONE
+
+    mode = SolverMode.ROOT if args.no_deps else SolverMode.RECUR
+
     if args.update_all:                           # --update-all
-        update_all(enpkg, config, args)
+        update_all(enpkg, config, mode, force, args.yes)
         return
 
     if args.requirements:
-        install_from_requirements(enpkg, config, args)
+        install_from_requirements(enpkg, config, args.requirements, force,
+                                  args.yes)
         return
 
     if len(args.cnames) == 0 and not args.remove_enstaller:
@@ -382,16 +394,10 @@ def dispatch_commands_with_enpkg(args, enpkg, config, prefix, session, parser,
 
     if args.remove:
         for req in reqs:
-            solver = enpkg._solver_factory()
-            try:
-                request = Request()
-                request.remove(req)
-                enpkg.execute(solver.resolve(request))
-            except EnpkgError as e:
-                print(str(e))
+            remove_requirement(enpkg, req)
     else:
         for req in reqs:
-            install_req(enpkg, config, req, args)
+            install_req(enpkg, config, req, mode, force, args.yes)
 
 
 def _user_base():

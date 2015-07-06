@@ -15,7 +15,9 @@ from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
 from enstaller.package import egg_name_to_name_version
 from enstaller.repository import Repository, parse_index
 from enstaller.requests_utils import _ResponseIterator
-from enstaller.solver import JobType, Request, Requirement
+from enstaller.solver import (
+    ForceMode, JobType, Request, Requirement, SolverMode
+)
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
 from enstaller.vendor.futures import ThreadPoolExecutor, as_completed
 
@@ -80,7 +82,8 @@ with pip as follows:
 """
 
 
-def install_req(enpkg, config, req, opts):
+def install_req(enpkg, config, req, solver_mode=SolverMode.RECUR,
+                force_mode=ForceMode.NONE, always_yes=False):
     """
     Try to execute the install actions.
     """
@@ -121,7 +124,7 @@ def install_req(enpkg, config, req, opts):
         print(msg)
 
         msg = "Are you sure that you wish to proceed?  (y/[n])"
-        if not prompt_yes_no(msg, opts.yes, default=False):
+        if not prompt_yes_no(msg, always_yes, default=False):
             sys.exit(0)
 
     def _ask_pypi_confirmation_from_actions(actions):
@@ -133,9 +136,8 @@ def install_req(enpkg, config, req, opts):
             _ask_pypi_confirmation(package_list_string)
 
     try:
-        mode = 'root' if opts.no_deps else 'recur'
         pypi_asked = False
-        solver = enpkg._solver_factory(mode, opts.force, opts.forceall)
+        solver = enpkg._solver_factory(solver_mode, force_mode)
 
         pypi_requirements = _requirement_from_pypi(request,
                                                    enpkg._remote_repository)

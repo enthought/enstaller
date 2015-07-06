@@ -44,7 +44,7 @@ from .common import (authenticated_config, create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, exception_code,
                      mock_print, mock_index, mock_raw_input, fake_keyring,
-                     mocked_session_factory, FakeOptions,
+                     mocked_session_factory,
                      R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
 
@@ -507,7 +507,7 @@ class TestInstallRequirement(unittest.TestCase):
             m.side_effect = error
             enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(SystemExit):
-                install_req(enpkg, config, "nose", FakeOptions())
+                install_req(enpkg, config, "nose")
 
     @mock.patch("sys.platform", "linux2")
     def test_os_error(self):
@@ -523,7 +523,7 @@ class TestInstallRequirement(unittest.TestCase):
             m.side_effect = error
             enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with self.assertRaises(OSError):
-                install_req(enpkg, config, "nose", FakeOptions())
+                install_req(enpkg, config, "nose")
 
     def test_simple_install_pypi(self):
         self.maxDiff = None
@@ -556,7 +556,7 @@ class TestInstallRequirement(unittest.TestCase):
                     enpkg = create_prefix_with_eggs(Configuration(),
                                                     self.prefix, [],
                                                     remote_entries)
-                    install_req(enpkg, Configuration(), "nose", FakeOptions())
+                    install_req(enpkg, Configuration(), "nose")
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
