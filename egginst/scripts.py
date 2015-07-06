@@ -16,6 +16,20 @@ logger = logging.getLogger(__name__)
 
 def create_entry_point(entry_point, bindir, template=None,
                        pythonexe=sys.executable):
+    """ Writes the various files needed for the given entry point.
+
+    Parameters
+    ----------
+    entry_point: _EntryPoint
+        Entry point metadata
+    bindir: str
+        The install prefix where to install the entry point file(s)
+    template: str
+        A template for the python entry point script. May be useful if you need
+        to tweak the entry point.
+    pythonexe: str
+        The python executable to use in the entry point.
+    """
     template = template or _DEFAULT_TEMPLATE
 
     created_files = []
@@ -39,6 +53,8 @@ def create_entry_point(entry_point, bindir, template=None,
 
 
 def create_entry_points(egg, conf, pythonexe=sys.executable):
+    """ Create the entry points from the given Configuration instance.
+    """
     template = textwrap.dedent("""\
     #!{python}
     # This script was created by egginst when installing:
@@ -69,6 +85,11 @@ def create_entry_points(egg, conf, pythonexe=sys.executable):
 
 
 def create_proxies(egg, pythonexe=sys.executable):
+    """ Create so-called 'proxy' files on windows.
+
+    Proxies are essentially entry points, which redirect to actual executables
+    in locations not in %PATH%.
+    """
     # This function is called on Windows only
     makedirs(egg.bin_dir)
 
@@ -96,7 +117,7 @@ def create_proxies(egg, pythonexe=sys.executable):
 
 def fix_script(path, pythonexe=sys.executable):
     """
-    Fixes a single located at path.
+    Fixes the shebang (or equivalent) of the given script.
     """
     if islink(path) or not isfile(path):
         return
