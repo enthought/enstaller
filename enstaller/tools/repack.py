@@ -6,6 +6,16 @@ import shutil
 import sys
 import tempfile
 
+import okonomiyaki
+
+try:
+    version_info = okonomiyaki.__version_info__
+except AttributeError:
+    raise RuntimeError("You need okonomiyaki >= 0.9.0 to use repack.")
+else:
+    if version_info < (0, 9):
+        raise RuntimeError("You need okonomiyaki >= 0.9.0 to use repack.")
+
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats import (
     Dependencies, EggBuilder, EggMetadata, PackageInfo, Requirement,

@@ -3,7 +3,7 @@
 
 Improvements:
 
-  * update repack to work with okonomiyaki >= 0.9.0
+  * update to okonomiyaki 0.9.0, and check the version at runtime.
 
 2015-06-08   4.8.5:
 -------------------
