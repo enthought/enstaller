@@ -26,6 +26,8 @@ Internals:
   * update vendorized requests to 2.7.0.
   * use vendorized zipfile2 library for zipfile handling.
   * update to okonomiyaki 0.7.0.
+  * commands implementations are now decoupled from argparse namespace, for
+    easier reuse.
 
 2014-12-09   4.8.0:
 -------------------
