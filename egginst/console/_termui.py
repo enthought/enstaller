@@ -63,3 +63,5 @@ def get_terminal_size():
             return get_terminal_size()
         else:
             return _posix_get_terminal_size()
+
+    return columns, lines
