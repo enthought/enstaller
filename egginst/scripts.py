@@ -5,7 +5,7 @@ import os
 import sys
 import textwrap
 import re
-from os.path import abspath, basename, join, isdir, isfile, islink
+from os.path import abspath, basename, join, isfile, islink
 
 from egginst.exe_data import cli, gui
 from egginst.utils import makedirs, on_win, rm_rf
@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 def create_entry_point(entry_point, bindir, template=None,
                        pythonexe=sys.executable):
-    template = template or DEFAULT_TEMPLATE
+    template = template or _DEFAULT_TEMPLATE
 
     created_files = []
 
@@ -138,7 +138,7 @@ def fix_scripts(egg):
 
 
 def _get_executable(executable=sys.executable, pythonw=False,
-                   with_quotes=False):
+                    with_quotes=False):
     res = executable
     if on_win:
         # sys.executable may actually be pythonw.exe in order to avoid
@@ -229,7 +229,7 @@ def _write_script(path, entry_point, template, pythonexe):
                 pythonexe, pythonw=path.endswith('.pyw'),
                 with_quotes=on_win
             ),
-           module=entry_point.module, func=entry_point.function
+            module=entry_point.module, func=entry_point.function
         )
         fo.write(data)
 
@@ -257,6 +257,7 @@ class _EntryPoint(object):
 
 class ConsoleScript(_EntryPoint):
     kind = "console_script"
+
 
 class GUIScript(_EntryPoint):
     kind = "gui_script"

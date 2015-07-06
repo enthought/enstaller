@@ -4,7 +4,7 @@ import os.path
 import egginst._compat
 
 from egginst.main import EggInst, get_installed, name_version_fn  # noqa
-from egginst.scripts import create_entry_point
+from egginst.scripts import create_entry_point  # noqa
 
 logging.getLogger("egginst").addHandler(egginst._compat.NullHandler())
 

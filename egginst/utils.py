@@ -10,7 +10,6 @@ import os
 import shutil
 import stat
 import tempfile
-import zipfile
 
 from os.path import basename, isdir, isfile, islink, join
 
