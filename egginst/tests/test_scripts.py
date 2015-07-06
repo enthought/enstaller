@@ -88,9 +88,9 @@ if __name__ == '__main__':
     )
 """
         if sys.platform == "win32":
-            executable = '"' + sys.executable + '"'
+            quoted_executable = '"' + sys.executable + '"'
         else:
-            executable = sys.executable
+            quoted_executable = sys.executable
         r_egginst_script = """\
 #!{executable}
 # EASY-INSTALL-ENTRY-SCRIPT: 'enstaller==4.6.3.dev1','console_scripts','enpkg'
@@ -102,14 +102,14 @@ if __name__ == '__main__':
     sys.exit(
         load_entry_point('enstaller==4.6.3.dev1', 'console_scripts', 'enpkg')()
     )
-""".format(executable=executable)
+""".format(executable=quoted_executable)
 
         with mkdtemp() as d:
             path = os.path.join(d, "script")
             with open(path, "wt") as fp:
                 fp.write(setuptools_script)
 
-            fix_script(path, executable)
+            fix_script(path, sys.executable)
 
             with open(path, "rt") as fp:
                 self.assertMultiLineEqual(fp.read(), r_egginst_script)
