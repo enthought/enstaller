@@ -16,12 +16,20 @@ from .utils import (FMT, FMT4, install_req, install_time_string,
 
 
 def env_option(prefixes):
+    """ List the given prefixes. """
     print("Prefixes:")
     for p in prefixes:
         print('    %s%s' % (p, ['', ' (sys)'][p == sys.prefix]))
 
 
 def freeze(prefixes):
+    """ Output a list of requirements corresponding to the installed packages.
+
+    Parameters
+    ----------
+    prefixes: seq
+        List of prefixes to consider.
+    """
     for package in get_freeze_list(prefixes):
         print(package)
 
@@ -38,6 +46,17 @@ def imports_option(repository):
 
 
 def info_option(remote_repository, installed_repository, name):
+    """ Print details about a package.
+
+    Parameters
+    ----------
+    remote_repository: Repository
+        The remote repository
+    installed_repository: Repository
+        The installed repository
+    name: str
+        Name of the package to query.
+    """
     name = name.lower()
     print('Package:', name)
     print(install_time_string(installed_repository, name))
@@ -70,6 +89,7 @@ def install_from_requirements(enpkg, config, requirements_file,
 
 
 def list_option(prefixes, pat=None):
+    """ List the installed packages in the given prefixes. """
     for prefix in reversed(prefixes):
         print("prefix:", prefix)
         repository = Repository._from_prefixes([prefix])
@@ -84,6 +104,15 @@ def print_history(prefix):
 
 
 def remove_requirement(enpkg, requirement):
+    """ Remove the given requirement.
+
+    Parameters
+    ----------
+    enpkg: Enpkg
+        The Enpkg instance to use to execute the remove steps
+    requirement: Requirement
+        The requirement to remove.
+    """
     solver = enpkg._solver_factory()
     try:
         request = Request()
@@ -149,6 +178,7 @@ def search(remote_repository, installed_repository, config, session, pat=None):
 
 def update_all(enpkg, config, solver_mode=SolverMode.RECUR,
                force_mode=ForceMode.NONE, always_yes=False):
+    """ Update each package to the latest version. """
     updates, EPD_update = updates_check(enpkg._remote_repository,
                                         enpkg._installed_repository)
     if not (updates or EPD_update):
@@ -174,6 +204,7 @@ def update_all(enpkg, config, solver_mode=SolverMode.RECUR,
 
 
 def whats_new(remote_repository, installed_repository):
+    """ For each installed package, print newest version if available."""
     updates, EPD_update = updates_check(remote_repository,
                                         installed_repository)
     if not (updates or EPD_update):
