@@ -3,10 +3,17 @@ from collections import defaultdict
 
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.package import egg_name_to_name_version
+from enstaller.vendor import enum
 
 from .requirement import Requirement
 
 logger = logging.getLogger(__name__)
+
+
+class SolverMode(enum.Enum):
+    ROOT = 0
+    FLAT = 1
+    RECUR = 2
 
 
 class Resolve(object):
@@ -173,29 +180,31 @@ class Resolve(object):
 
         return self._determine_install_order(eggs)
 
-    def install_sequence(self, req, mode='recur'):
+    def install_sequence(self, req, mode=SolverMode.RECUR):
         """
         Return the list of eggs which need to be installed (and None if
         the requirement can not be resolved).
         The returned list is given in dependency order.
         The 'mode' may be:
 
-        'root':  only the egg for the requirement itself is
-                 contained in the result (but not any dependencies)
+        'SolverMode.ROOT':  only the egg for the requirement itself is
+                            contained in the result (but not any
+                            dependencies)
 
-        'flat':  dependencies are handled only one level deep
+        'SolverMode.FLAT':  dependencies are handled only one level deep
 
-        'recur': dependencies are handled recursively (default)
+        'SolverMode.RECUR': dependencies are handled recursively (default)
         """
         logger.info("Determining install sequence for %r", req)
         root = self._latest_egg(req)
         if root is None:
             msg = "No egg found for requirement {0!r}.".format(str(req))
             raise NoPackageFound(msg, req)
-        if mode == 'root':
+        if mode == SolverMode.ROOT:
             return [root]
-        if mode == 'flat':
+        elif mode == SolverMode.FLAT:
             return self._sequence_flat(root)
-        if mode == 'recur':
+        elif mode == SolverMode.RECUR:
             return self._sequence_recur(root)
-        raise Exception('did not expect: mode = %r' % mode)
+        else:
+            raise Exception('did not expect: mode = %r' % mode)

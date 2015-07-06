@@ -17,7 +17,7 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
 from enstaller.repository import Repository
 from enstaller.session import Session
-from enstaller.tests.common import (DummyAuthenticator, FakeOptions,
+from enstaller.tests.common import (DummyAuthenticator,
                                     create_prefix_with_eggs,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
@@ -306,7 +306,7 @@ class TestInstallReq(unittest.TestCase):
         with mock.patch("enstaller.config.subscription_message") as \
                 subscription_message:
             with self.assertRaises(SystemExit) as e:
-                install_req(enpkg, config, "nose", FakeOptions())
+                install_req(enpkg, config, "nose")
             subscription_message.assert_called()
             self.assertEqual(e.exception.code, 1)
 
@@ -318,7 +318,7 @@ class TestInstallReq(unittest.TestCase):
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = create_prefix_with_eggs(Configuration(), self.prefix, [],
                                             remote_entries)
-            install_req(enpkg, Configuration(), "nose", FakeOptions())
+            install_req(enpkg, Configuration(), "nose")
             m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
                                   ('install', 'nose-1.3.0-1.egg')])
 
@@ -331,8 +331,7 @@ class TestInstallReq(unittest.TestCase):
             enpkg = create_prefix_with_eggs(config, self.prefix, [])
             with mock_print() as mocked_print:
                 with self.assertRaises(SystemExit) as e:
-                    install_req(enpkg, config, non_existing_requirement,
-                                FakeOptions())
+                    install_req(enpkg, config, non_existing_requirement)
                 self.assertEqual(exception_code(e), 1)
                 self.assertEqual(mocked_print.value, r_error_string)
             mocked_execute.assert_not_called()
@@ -349,7 +348,7 @@ class TestInstallReq(unittest.TestCase):
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = create_prefix_with_eggs(config, self.prefix,
                                             installed_entries, remote_entries)
-            install_req(enpkg, config, "nose", FakeOptions())
+            install_req(enpkg, config, "nose")
             m.assert_called_with([])
 
     def test_recursive_install_unavailable_dependency(self):
@@ -378,7 +377,7 @@ class TestInstallReq(unittest.TestCase):
             enpkg = create_prefix_with_eggs(config, self.prefix, [], remote_entries)
             with mock_print() as m:
                 with self.assertRaises(SystemExit):
-                    install_req(enpkg, config, "scipy", FakeOptions())
+                    install_req(enpkg, config, "scipy")
                 self.assertMultiLineEqual(m.value, r_output)
 
     @mock_index({
@@ -428,7 +427,7 @@ class TestInstallReq(unittest.TestCase):
         # When
         with mock_print() as mocked_print:
             with mock_raw_input("yes"):
-                install_req(enpkg, config, "rednose", FakeOptions())
+                install_req(enpkg, config, "rednose")
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
@@ -479,7 +478,7 @@ with pip as follows:
         with self.assertRaises(SystemExit):
             with mock_print() as mocked_print:
                 with mock_raw_input("yes"):
-                    install_req(enpkg, config, "rednose", FakeOptions())
+                    install_req(enpkg, config, "rednose")
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
@@ -538,7 +537,7 @@ with pip as follows:
         # When
         with mock_print() as mocked_print:
             with mock_raw_input("yes"):
-                install_req(enpkg, config, "swig", FakeOptions())
+                install_req(enpkg, config, "swig")
 
         # Then
         self._assert_dont_ask_for_pypi(mocked_print)
@@ -587,7 +586,7 @@ with pip as follows:
         # When
         with mock_print() as mocked_print:
             with mock_raw_input("yes"):
-                install_req(enpkg, config, "swig 2.0.2", FakeOptions())
+                install_req(enpkg, config, "swig 2.0.2")
 
         # Then
         self._assert_ask_for_pypi(mocked_print)
@@ -595,7 +594,7 @@ with pip as follows:
         # When
         with mock_print() as mocked_print:
             with mock_raw_input("yes"):
-                install_req(enpkg, config, "swig 2.0.2-1", FakeOptions())
+                install_req(enpkg, config, "swig 2.0.2-1")
 
         # Then
         self._assert_ask_for_pypi(mocked_print)

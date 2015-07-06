@@ -1,5 +1,8 @@
 from .request import JobType, Request
 from .requirement import Requirement
-from .core import Solver
+from .resolve import SolverMode
+from .core import ForceMode, Solver
 
-__all__ = ["JobType", "Request", "Requirement", "Solver"]
+__all__ = [
+    "ForceMode", "JobType", "Request", "Requirement", "Solver", "SolverMode"
+]
