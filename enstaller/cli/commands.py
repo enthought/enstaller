@@ -178,7 +178,19 @@ def search(remote_repository, installed_repository, config, session, pat=None):
 
 def update_all(enpkg, config, solver_mode=SolverMode.RECUR,
                force_mode=ForceMode.NONE, always_yes=False):
-    """ Update each package to the latest version. """
+    """ Update each package to the latest version.
+
+    Parameters
+    ----------
+    enpkg: Enpkg
+        The enpkg instance to use for executing commands
+    config: Configuration
+        The configuration instance.
+    solver_mode: SolverMode
+        Dependency resolution mode.
+    always_yes: bool
+        If true, assumes yes to any prompt.
+    """
     updates, EPD_update = updates_check(enpkg._remote_repository,
                                         enpkg._installed_repository)
     if not (updates or EPD_update):
