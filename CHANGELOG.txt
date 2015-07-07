@@ -1,5 +1,10 @@
-2015-06-08   4.8.6:
+2015-07-07   4.8.6:
 -------------------
+
+Bug fixes:
+
+  * fix terminal width handling when LINES/COLUMNS are specified in the process
+    environment (#547).
 
 Improvements:
 
