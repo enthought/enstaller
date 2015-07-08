@@ -21,6 +21,7 @@ from enstaller.config import (prepend_url, print_config,
                               _keyring_backend_name, write_default_config)
 from enstaller.config import (KEYRING_SERVICE_NAME,
                               Configuration, add_url)
+from enstaller.pep425 import PythonImplementation
 from enstaller.repository_info import (CanopyRepositoryInfo,
                                        BroodRepositoryInfo,
                                        FSRepositoryInfo,
@@ -1047,11 +1048,13 @@ class TestRepositoriesSetup(unittest.TestCase):
             'enthought/free',
             'file:///foo/bar',
         ]
+        python_tag = PythonImplementation.from_running_python().pep425_tag
+
         r_indices = (
-            "{0}/repo/enthought/commercial/{1}/index.json".format(store_url,
-                                                                  custom_plat),
-            "{0}/repo/enthought/free/{1}/index.json".format(store_url,
-                                                            custom_plat),
+            ("{0}/api/v0/json/indices/enthought/commercial/{1}/{2}/eggs".
+             format(store_url, custom_plat, python_tag)),
+            ("{0}/api/v0/json/indices/enthought/free/{1}/{2}/eggs".
+             format(store_url, custom_plat, python_tag)),
             "file:///foo/bar/index.json",
         )
 
@@ -1164,11 +1167,13 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
+        python_tag = PythonImplementation.from_running_python().pep425_tag
+
         r_indices = (
-            ('https://api.enthought.com/repo/enthought/free/{0}/index.json'
-             .format(platform)),
-            ('https://api.enthought.com/repo/enthought/commercial/{0}/'
-             'index.json'.format(platform)),
+            ('https://api.enthought.com/api/v0/json/indices/enthought/free/{0}/{1}/eggs'
+             .format(platform, python_tag)),
+            ('https://api.enthought.com/api/v0/json/indices/enthought/commercial/{0}/{1}/eggs'
+             .format(platform, python_tag)),
         )
 
         with mkdtemp() as prefix:
@@ -1198,11 +1203,13 @@ class TestYamlConfiguration(unittest.TestCase):
               - enthought/commercial
         """)
         platform = custom_plat
+        python_tag = PythonImplementation.from_running_python().pep425_tag
+
         r_indices = (
-            ('http://acme.com/repo/enthought/free/{0}/index.json'
-             .format(platform)),
-            ('http://acme.com/repo/enthought/commercial/{0}/index.json'
-             .format(platform)),
+            ('http://acme.com/api/v0/json/indices/enthought/free/{0}/{1}/eggs'
+             .format(platform, python_tag)),
+            ('http://acme.com/api/v0/json/indices/enthought/commercial/{0}/{1}/eggs'
+             .format(platform, python_tag)),
         )
 
         # When
