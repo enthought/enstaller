@@ -6,6 +6,8 @@ import enstaller.plat
 from egginst.tests.common import DUMMY_EGG
 from egginst.vendor.six.moves import unittest
 
+from enstaller.egg_meta import split_eggname
+from enstaller.pep425 import PythonImplementation
 from enstaller.repository_info import (BroodRepositoryInfo,
                                        CanopyRepositoryInfo,
                                        FSRepositoryInfo,
@@ -148,14 +150,15 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         store_url = "https://acme.com"
         name = "enthought/free"
         path = DUMMY_EGG
+        eggname, version, build = split_eggname(os.path.basename(path))
+        full_version = "{0}-{1}".format(version, build)
+        python_tag = PythonImplementation.from_running_python()
 
-        r_index_url = ("https://acme.com/repo/{0}/{1}/index.json"
-                       .format(name, enstaller.plat.custom_plat))
-        r_package_url = ("https://acme.com/repo/{0}/{1}/{2}".
-                         format(name, enstaller.plat.custom_plat,
-                                os.path.basename(path)))
-        r__base_url = ("https://acme.com/repo/{0}/{1}/"
-                       .format(name, enstaller.plat.custom_plat))
+        r_index_url = ("https://acme.com/api/v0/json/indices/{0}/{1}/{2}/eggs"
+                       .format(name, enstaller.plat.custom_plat, python_tag))
+        r_package_url = ("https://acme.com/api/v0/json/data/{0}/{1}/{2}/eggs"
+                         "/{3}/{4}".format(name, enstaller.plat.custom_plat,
+                                           python_tag, eggname, full_version))
 
         # When
         info = BroodRepositoryInfo(store_url, name)
@@ -165,7 +168,6 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         self.assertEqual(info.index_url, r_index_url)
         self.assertEqual(info.name, name)
         self.assertEqual(info._package_url(package), r_package_url)
-        self.assertEqual(info._base_url, r__base_url)
 
 
 class TestFSRepositoryInfo(unittest.TestCase):

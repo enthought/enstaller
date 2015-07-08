@@ -7,6 +7,7 @@ from egginst._compat import with_metaclass
 from egginst.vendor.six.moves import urllib
 
 from enstaller.auth import _INDEX_NAME
+from enstaller.pep425 import PythonImplementation
 
 
 class IRepositoryInfo(with_metaclass(abc.ABCMeta)):
@@ -118,16 +119,21 @@ class IBroodRepositoryInfo(IRepositoryInfo):
 
 
 class BroodRepositoryInfo(IBroodRepositoryInfo):
-    def __init__(self, store_url, name, platform=None):
+    def __init__(self, store_url, name, platform=None, python_tag=None):
         self._platform = platform or enstaller.plat.custom_plat
+        self._python_tag = (
+            python_tag or
+            PythonImplementation.from_running_python().pep425_tag
+        )
         self._name = name
         self._store_url = store_url
 
-        self._path = "/repo/{0._name}/{0._platform}".format(self)
+        self._path = ("/api/v0/json/indices/{0._name}/{0._platform}/"
+                      "{0._python_tag}/eggs".format(self))
 
     @property
     def index_url(self):
-        return urllib.parse.urljoin(self._store_url, self._path + "/" + _INDEX_NAME)
+        return urllib.parse.urljoin(self._store_url, self._path)
 
     @property
     def name(self):
@@ -135,14 +141,16 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
 
     @property
     def _base_url(self):
-        return urllib.parse.urljoin(self._store_url, self._path + "/")
+        raise NotImplementedError()
 
     @property
     def _key(self):
         return (self._name, self._platform, self._store_url)
 
     def _package_url(self, package):
-        return urllib.parse.urljoin(self._store_url, self._path + "/" + package.key)
+        path = ("/api/v0/json/data/{0._name}/{0._platform}/{0._python_tag}"
+                "/eggs/{1.name}/{1.version}".format(self, package))
+        return urllib.parse.urljoin(self._store_url, path)
 
     def __repr__(self):
         return "BroodRepository(<{0._store_url}>, <{0.name}>)".format(self)
