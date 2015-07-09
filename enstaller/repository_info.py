@@ -148,8 +148,16 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
         return (self._name, self._platform, self._store_url)
 
     def _package_url(self, package):
-        path = ("/api/v0/json/data/{0._name}/{0._platform}/{0._python_tag}"
-                "/eggs/{1.name}/{1.version}".format(self, package))
+        # FIXME: as soon as we can rely solely on brood, use `python_tag`
+        # attribute from each package instead of this hack (#552)
+        if package.python is None:
+            python_tag = 'none'
+        else:
+            parts = package.python.split(".")
+            assert len(parts) == 2
+            python_tag = "cp" + parts[0] + parts[1]
+        path = ("/api/v0/json/data/{0._name}/{0._platform}/{1}"
+                "/eggs/{2.name}/{2.version}".format(self, python_tag, package))
         return urllib.parse.urljoin(self._store_url, path)
 
     def __repr__(self):

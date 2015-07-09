@@ -3,7 +3,7 @@ import posixpath
 
 import enstaller.plat
 
-from egginst.tests.common import DUMMY_EGG
+from egginst.tests.common import DUMMY_EGG, MKL_10_3
 from egginst.vendor.six.moves import unittest
 
 from enstaller.egg_meta import split_eggname
@@ -145,20 +145,45 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         self.assertNotEqual(info1, info3)
         self.assertTrue(info1 != info3)
 
-    def test_simple(self):
+    def test_simple_python_package(self):
         # Given
         store_url = "https://acme.com"
         name = "enthought/free"
         path = DUMMY_EGG
         eggname, version, build = split_eggname(os.path.basename(path))
         full_version = "{0}-{1}".format(version, build)
-        python_tag = PythonImplementation.from_running_python()
+        python_tag = PythonImplementation.from_string("cp27").pep425_tag
 
         r_index_url = ("https://acme.com/api/v0/json/indices/{0}/{1}/{2}/eggs"
                        .format(name, enstaller.plat.custom_plat, python_tag))
         r_package_url = ("https://acme.com/api/v0/json/data/{0}/{1}/{2}/eggs"
                          "/{3}/{4}".format(name, enstaller.plat.custom_plat,
                                            python_tag, eggname, full_version))
+
+        # When
+        info = BroodRepositoryInfo(store_url, name, python_tag=python_tag)
+        package = RemotePackageMetadata.from_egg(path)
+
+        # Then
+        self.assertEqual(info.index_url, r_index_url)
+        self.assertEqual(info.name, name)
+        self.assertEqual(info._package_url(package), r_package_url)
+
+    def test_simple_clib_package(self):
+        # Given
+        store_url = "https://acme.com"
+        name = "enthought/free"
+        path = MKL_10_3
+
+        full_version = "10.3-1"
+        name = "mkl"
+        python_tag = PythonImplementation.from_running_python()
+
+        r_index_url = ("https://acme.com/api/v0/json/indices/{0}/{1}/{2}/eggs"
+                       .format(name, enstaller.plat.custom_plat, python_tag))
+        r_package_url = ("https://acme.com/api/v0/json/data/{0}/{1}/{2}/eggs"
+                         "/{3}/{4}".format(name, enstaller.plat.custom_plat,
+                                           'none', name, full_version))
 
         # When
         info = BroodRepositoryInfo(store_url, name)
