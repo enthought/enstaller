@@ -19,10 +19,10 @@ from egginst import eggmeta
 
 from .common import (DUMMY_EGG, DUMMY_EGG_WITH_APPINST,
                      DUMMY_EGG_WITH_ENTRY_POINTS, DUMMY_EGG_METADATA_FILES,
-                     LEGACY_EGG_INFO_EGG, LEGACY_EGG_INFO_EGG_METADATA_FILES,
-                     NOSE_1_3_0, PYTHON_VERSION, STANDARD_EGG,
-                     STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK,
-                     VTK_EGG_DEFERRED_SOFTLINK, mkdtemp)
+                     DUMMY_EGG_WITH_POST_INSTALL, LEGACY_EGG_INFO_EGG,
+                     LEGACY_EGG_INFO_EGG_METADATA_FILES, NOSE_1_3_0,
+                     PYTHON_VERSION, STANDARD_EGG, STANDARD_EGG_METADATA_FILES,
+                     SUPPORT_SYMLINK, VTK_EGG_DEFERRED_SOFTLINK, create_venv, mkdtemp)
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -118,6 +118,21 @@ class TestEggInst(unittest.TestCase):
 
         # Then
         self.assertFalse(m.called)
+
+    def test_post_install_script(self):
+        # Given
+        create_venv(self.prefix)
+
+        egg_filename = DUMMY_EGG_WITH_POST_INSTALL
+        # This file is expected to be created by the egg's post install script
+        r_touch = os.path.join(self.prefix, "touch.txt")
+
+        # When
+        installer = EggInst(egg_filename, prefix=self.prefix)
+        installer.install()
+
+        # Then
+        self.assertTrue(os.path.exists(r_touch))
 
 
 class TestEggInstMain(unittest.TestCase):
