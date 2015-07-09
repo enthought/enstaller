@@ -463,7 +463,9 @@ class TestRemoveAction(unittest.TestCase):
                                    self.top_installed_repository,
                                    self.installed_repository,
                                    os.path.dirname(path))
-            action.execute()
+            with mock.patch(
+                    "egginst.main.get_executable", return_value=self.top_prefix):
+                action.execute()
 
     def test_simple(self):
         # Given

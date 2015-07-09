@@ -4,6 +4,8 @@ import os.path
 import shutil
 import tempfile
 
+import mock
+
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
@@ -148,10 +150,13 @@ class TestSolverNoDependencies(unittest.TestCase):
         makedirs(l0)
         makedirs(l1)
 
-        # Install latest version in l0
-        EggInst(l0_egg, l0).install()
-        # Install older version in l1
-        EggInst(l1_egg, l1).install()
+        with mock.patch("egginst.main.get_executable", return_value=l0):
+            # Install latest version in l0
+            EggInst(l0_egg, l0).install()
+
+        with mock.patch("egginst.main.get_executable", return_value=l1):
+            # Install older version in l1
+            EggInst(l1_egg, l1).install()
 
         repository = repository_factory(entries)
         installed_repository = Repository._from_prefixes([l1])

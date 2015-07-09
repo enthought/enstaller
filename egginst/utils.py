@@ -98,7 +98,7 @@ def get_executable(prefix):
                 else:
                     return executable
 
-    return sys.executable
+    raise EnstallerException("Could not find python executable")
 
 
 def human_bytes(n):
