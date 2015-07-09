@@ -4,11 +4,6 @@ import shutil
 import sys
 import tempfile
 
-if sys.version_info < (2, 7):
-    import unittest2 as unittest
-else:
-    import unittest
-
 import mock
 import testfixtures
 
@@ -28,6 +23,11 @@ from .common import (DUMMY_EGG, DUMMY_EGG_WITH_APPINST,
                      NOSE_1_3_0, PYTHON_VERSION, STANDARD_EGG,
                      STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK,
                      VTK_EGG_DEFERRED_SOFTLINK, mkdtemp)
+
+if sys.version_info < (2, 7):
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 def _create_egg_with_symlink(filename, name):
