@@ -164,12 +164,16 @@ class TestSameFile(unittest.TestCase):
 class TestGetExecutable(unittest.TestCase):
     def test_simple(self):
         # Given
+        base = "python"
+        if sys.version_info[0] == 3:
+            base += "3"
+
         with mkdtemp() as prefix:
             if sys.platform == "win32":
                 # python.exe is in scripts because we use virtualenv
-                r_executable = os.path.join(prefix, "Scripts", "python.exe")
+                r_executable = os.path.join(prefix, "Scripts", base + ".exe")
             else:
-                r_executable = os.path.join(prefix, "bin", "python")
+                r_executable = os.path.join(prefix, "bin", base)
 
             create_venv(prefix)
 
