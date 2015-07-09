@@ -9,6 +9,7 @@ import sys
 import os
 import shutil
 import stat
+import subprocess
 import tempfile
 
 from os.path import basename, isdir, isfile, islink, join
@@ -76,23 +77,28 @@ def rm_rf(path):
 
 def get_executable(prefix):
     if on_win:
-        paths = [prefix, join(prefix, bin_dir_name)]
-        for path in paths:
-            executable = join(path, 'python.exe')
-            if isfile(executable):
-                return executable
+        prefixes = [prefix, join(prefix, bin_dir_name)]
+        for prefix in prefixes:
+            executables = (join(prefix, 'python3.exe'), join(prefix, 'python.exe'))
+            for executable in executables:
+                if isfile(executable):
+                    return executable
     else:
-        path = join(prefix, bin_dir_name, 'python')
-        if isfile(path):
-            from subprocess import Popen, PIPE
-            cmd = [path, '-c', 'import sys;print(sys.executable)']
-            p = Popen(cmd, stdout=PIPE)
-            executable = p.communicate()[0].strip()
-            if not PY2:
-                return executable.decode()
-            else:
-                return executable
-    return sys.executable
+        executables = (
+            join(prefix, bin_dir_name, 'python3'),
+            join(prefix, bin_dir_name, 'python')
+        )
+        for executable in executables:
+            if isfile(executable):
+                cmd = [executable, '-c', 'import sys;print(sys.executable)']
+                p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+                executable = p.communicate()[0].strip()
+                if not PY2:
+                    return executable.decode()
+                else:
+                    return executable
+
+    raise EnstallerException("Could not find python executable")
 
 
 def human_bytes(n):

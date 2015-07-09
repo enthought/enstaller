@@ -186,7 +186,7 @@ def _run_script(meta_dir, fn, prefix):
     path = join(meta_dir, fn)
     if not isfile(path):
         return
-    subprocess.call([scripts.executable, '-E', path, '--prefix', prefix],
+    subprocess.call([get_executable(prefix), '-E', path, '--prefix', prefix],
                     cwd=dirname(path))
 
 
