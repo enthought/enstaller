@@ -1,4 +1,4 @@
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from .constraints_parser import _RawConstraintsParser
 

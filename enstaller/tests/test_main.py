@@ -37,7 +37,7 @@ from enstaller.session import Session
 from enstaller.solver import Requirement
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 import enstaller.tests.common
 from .common import (authenticated_config, create_prefix_with_eggs,

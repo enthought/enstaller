@@ -1,8 +1,7 @@
 import posixpath
 import re
-import zipfile2
 
-import six
+from egginst.vendor import six, zipfile2
 
 from ..bundled.traitlets import (
     HasTraits, Enum, Instance, List, Long, Unicode

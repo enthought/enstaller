@@ -7,7 +7,7 @@ from enstaller.new_solver import Requirement
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository_info import BroodRepositoryInfo
 from enstaller.solver import Request
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from .._composer_utils import (
     _fix_php_version, _normalize_php_version, _requirement_to_php_string,

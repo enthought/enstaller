@@ -6,16 +6,15 @@ import textwrap
 
 import mock
 
-from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.file_formats import EggMetadata
-from okonomiyaki.platforms import EPDPlatform
-
 from egginst._compat import assertCountEqual
 from egginst.eggmeta import info_from_z
 from egginst.tests.common import (
     DUMMY_EGG, STANDARD_EGG, LEGACY_EGG_INFO_EGG, STANDARD_EGG_WITH_EXT,
     NOSE_1_2_1, MKL_10_3,
 )
+from egginst.vendor.okonomiyaki.errors import OkonomiyakiError
+from egginst.vendor.okonomiyaki.file_formats import EggMetadata
+from egginst.vendor.okonomiyaki.platforms import EPDPlatform
 from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
 

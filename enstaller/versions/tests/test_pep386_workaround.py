@@ -1,6 +1,6 @@
 from egginst.vendor.six.moves import unittest
 
-from ..pep386_workaround import PEP386WorkaroundVersion
+from .. import PEP386WorkaroundVersion
 
 
 class TestPEP386Workaround(unittest.TestCase):

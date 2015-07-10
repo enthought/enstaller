@@ -19,7 +19,7 @@ from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import PY_VER
 from enstaller.vendor import responses
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 
 FAKE_MD5 = "a" * 32

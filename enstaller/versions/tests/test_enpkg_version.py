@@ -1,7 +1,6 @@
 from egginst.vendor.six.moves import unittest
 
-from ..enpkg import EnpkgVersion
-from ..pep386_workaround import PEP386WorkaroundVersion
+from .. import EnpkgVersion, PEP386WorkaroundVersion
 
 
 class TestEnpkgVersionParsing(unittest.TestCase):

@@ -11,7 +11,7 @@ from enstaller.package import (InstalledPackageMetadata, PackageMetadata,
                                egg_name_to_name_version)
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.utils import PY_VER
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 
 class TestEggNameToNameVersion(unittest.TestCase):

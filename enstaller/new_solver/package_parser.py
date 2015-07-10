@@ -5,7 +5,7 @@ from enstaller.new_solver.constraint_types import (Any, EnpkgUpstreamMatch,
 from enstaller.new_solver.constraints_parser import _RawRequirementParser
 from enstaller.new_solver.requirement import Requirement
 from enstaller.package import PackageMetadata
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 
 DEPENDS_RE = re.compile("depends\s*\((.*)\)")

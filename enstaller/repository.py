@@ -12,8 +12,7 @@ from enstaller.errors import NoSuchPackage
 from enstaller.package import (InstalledPackageMetadata,
                                RemotePackageMetadata)
 from enstaller.utils import PY_VER
-from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import (EnpkgVersion, PEP386WorkaroundVersion)
 
 
 def _valid_meta_dir_iterator(prefixes):

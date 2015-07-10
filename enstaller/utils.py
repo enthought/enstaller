@@ -16,7 +16,7 @@ from egginst.utils import compute_md5
 
 from enstaller.errors import InvalidFormat
 from enstaller.vendor import requests
-from enstaller.versions.pep386_workaround import PEP386WorkaroundVersion
+from enstaller.versions import PEP386WorkaroundVersion
 from enstaller import plat
 
 
