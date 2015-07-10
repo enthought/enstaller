@@ -6,7 +6,7 @@ import sys
 
 from os.path import isfile, join
 
-from egginst.main import EggInst
+from egginst.main import EggInst, _default_runtime_info
 from egginst.progress import dummy_progress_bar_factory
 
 from enstaller.errors import EnpkgError, InvalidChecksum, NoSuchPackage
@@ -107,15 +107,15 @@ class FetchAction(_BaseAction):
 
 
 class InstallAction(_BaseAction):
-    def __init__(self, egg, top_prefix, remote_repository,
+    def __init__(self, egg, runtime_info, remote_repository,
                  top_installed_repository, installed_repository,
                  cache_directory,
                  progress_bar_factory=dummy_progress_bar_factory):
         super(InstallAction, self).__init__()
 
+        self._runtime_info = runtime_info
         self._egg = egg
         self._egg_path = os.path.join(cache_directory, self._egg)
-        self._top_prefix = top_prefix
         self._remote_repository = remote_repository
         self._top_installed_repository = top_installed_repository
         self._installed_repository = installed_repository
@@ -134,7 +134,7 @@ class InstallAction(_BaseAction):
     def iter_execute(self):
         extra_info = self._extract_extra_info()
 
-        installer = EggInst(self._egg_path, prefix=self._top_prefix)
+        installer = EggInst(self._egg_path, runtime_info=self._runtime_info)
 
         self._progress = self._progress_factory(installer.fn,
                                                 installer.installed_size)
@@ -151,7 +151,7 @@ class InstallAction(_BaseAction):
 
     def _post_install(self):
         name, _ = egg_name_to_name_version(self._egg_path)
-        meta_dir = meta_dir_from_prefix(self._top_prefix, name)
+        meta_dir = meta_dir_from_prefix(self._runtime_info.prefix, name)
         package = InstalledPackageMetadata.from_meta_dir(meta_dir)
 
         self._top_installed_repository.add_package(package)
@@ -159,12 +159,12 @@ class InstallAction(_BaseAction):
 
 
 class RemoveAction(_BaseAction):
-    def __init__(self, egg, top_prefix, top_installed_repository,
+    def __init__(self, egg, runtime_info, top_installed_repository,
                  installed_repository,
                  progress_bar_factory=dummy_progress_bar_factory):
         super(RemoveAction, self).__init__()
         self._egg = egg
-        self._top_prefix = top_prefix
+        self._runtime_info = runtime_info
 
         self._top_installed_repository = top_installed_repository
         self._installed_repository = installed_repository
@@ -176,7 +176,7 @@ class RemoveAction(_BaseAction):
         self._progress.update(step)
 
     def iter_execute(self):
-        installer = EggInst(self._egg, self._top_prefix, False)
+        installer = EggInst(self._egg, runtime_info=self._runtime_info)
         remover = installer._egginst_remover
         if not remover.is_installed:
             logger.error("Error: can't find meta data for: %r", remover.cname)
@@ -257,14 +257,14 @@ class _ExecuteContext(object):
                                self._pbar_context.fetch_progress,
                                self._max_retries)
         elif opcode.startswith("install"):
-            return InstallAction(egg, self._enpkg.top_prefix,
+            return InstallAction(egg, self._enpkg._runtime_info,
                                  self._enpkg._remote_repository,
                                  self._enpkg._top_installed_repository,
                                  self._enpkg._installed_repository,
                                  self._enpkg._downloader.cache_directory,
                                  self._pbar_context.install_progress)
         elif opcode.startswith("remove"):
-            return RemoveAction(egg, self._enpkg.top_prefix,
+            return RemoveAction(egg, self._enpkg._runtime_info,
                                 self._enpkg._top_installed_repository,
                                 self._enpkg._installed_repository,
                                 self._pbar_context.remove_progress)
@@ -303,9 +303,14 @@ class Enpkg(object):
     """
     def __init__(self, remote_repository, session,
                  prefixes=[sys.prefix], progress_context=None,
-                 force=False, max_retries=_DEFAULT_MAX_RETRIES):
+                 force=False, max_retries=_DEFAULT_MAX_RETRIES,
+                 runtime_info=None):
         self.prefixes = prefixes
         self.top_prefix = prefixes[0]
+
+        self._runtime_info = (
+            runtime_info or _default_runtime_info(self.top_prefix)
+        )
 
         self._remote_repository = remote_repository
 

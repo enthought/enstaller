@@ -4,6 +4,7 @@ import tempfile
 
 import mock
 
+from egginst.main import _default_runtime_info
 from egginst.progress import console_progress_manager_factory, ProgressBar
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
@@ -449,6 +450,8 @@ class TestRemoveAction(unittest.TestCase):
         self.top_installed_repository = Repository()
         self.installed_repository = Repository()
 
+        self.runtime_info = _default_runtime_info(self.top_prefix)
+
     def tearDown(self):
         shutil.rmtree(self.top_prefix)
 
@@ -459,7 +462,7 @@ class TestRemoveAction(unittest.TestCase):
             repository.add_package(package)
 
         for path in paths:
-            action = InstallAction(path, self.top_prefix, repository,
+            action = InstallAction(path, self.runtime_info, repository,
                                    self.top_installed_repository,
                                    self.installed_repository,
                                    os.path.dirname(path))
@@ -475,7 +478,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.top_prefix,
+        action = RemoveAction(path, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         action.execute()
@@ -497,7 +500,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.top_prefix,
+        action = RemoveAction(path, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         for step in action:
@@ -520,7 +523,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.top_prefix,
+        action = RemoveAction(path, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         for step in action:
