@@ -615,11 +615,11 @@ def print_installed(prefix=sys.prefix):
         print(fmt % name_version_fn(fn))
 
 
-def install_egg_cli(path, prefix, noapp=False, extra_info=None):
+def install_egg_cli(path, runtime_info, noapp=False, extra_info=None):
     """
     Simple wrapper to install an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, noapp)
+    installer = EggInst(path, noapp=noapp, runtime_info=runtime_info)
 
     progress = console_progress_manager_factory("installing egg", installer.fn,
                                                 size=installer.installed_size)
@@ -628,11 +628,11 @@ def install_egg_cli(path, prefix, noapp=False, extra_info=None):
             progress.update(currently_extracted_size)
 
 
-def remove_egg_cli(path, prefix, noapp=False):
+def remove_egg_cli(path, runtime_info, noapp=False):
     """
     Simple wrapper to remove an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, noapp=noapp)
+    installer = EggInst(path, noapp=noapp, runtime_info=runtime_info)
     remover = installer._egginst_remover
     if not remover.is_installed:
         logger.error("Error: can't find meta data for: %r", remover.cname)
@@ -703,11 +703,13 @@ def main(argv=None):
     else:
         logging.basicConfig(level=logging.WARN, format="%(message)s")
 
+    runtime_info = _default_runtime_info(prefix)
+
     for path in ns.requirements:
         if ns.remove:
-            remove_egg_cli(path, prefix, ns.noapp)
+            remove_egg_cli(path, runtime_info, ns.noapp)
         else:
-            install_egg_cli(path, prefix, ns.noapp)
+            install_egg_cli(path, runtime_info, ns.noapp)
 
 
 if __name__ == '__main__':  # pragma: no cover
