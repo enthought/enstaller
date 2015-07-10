@@ -1,6 +1,6 @@
 from egginst.vendor.six.moves import unittest
 
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from ..constraint import are_compatible, MultiConstraints
 from ..constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,

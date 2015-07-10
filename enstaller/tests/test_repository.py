@@ -12,7 +12,7 @@ from enstaller.compat import path_to_uri
 from enstaller.config import Configuration, STORE_KIND_BROOD
 from enstaller.errors import NoSuchPackage
 from enstaller.session import Session
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from enstaller.package import PackageMetadata, RemotePackageMetadata
 from enstaller.repository import Repository

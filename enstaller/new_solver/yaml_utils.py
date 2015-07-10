@@ -11,7 +11,7 @@ from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo
 from enstaller.solver import Request
 from enstaller.utils import PY_VER
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from .package_parser import PrettyPackageStringParser
 from .requirement import Requirement

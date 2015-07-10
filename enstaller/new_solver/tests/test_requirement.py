@@ -1,7 +1,7 @@
 from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import EnstallerException, SolverException
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from ..constraint import MultiConstraints
 from ..constraint_types import Any, EnpkgUpstreamMatch, Equal

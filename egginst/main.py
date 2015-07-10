@@ -285,9 +285,7 @@ class _EggInstRemove(object):
 
 
 class EggInst(object):
-
-    def __init__(self, path, prefix=sys.prefix, hook=False, pkgs_dir=None,
-                 noapp=False):
+    def __init__(self, path, prefix=sys.prefix, noapp=False):
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
@@ -603,7 +601,7 @@ def install_egg_cli(path, prefix, noapp=False, extra_info=None):
     """
     Simple wrapper to install an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, False, None, noapp)
+    installer = EggInst(path, prefix, noapp)
 
     progress = console_progress_manager_factory("installing egg", installer.fn,
                                                 size=installer.installed_size)
@@ -616,7 +614,7 @@ def remove_egg_cli(path, prefix, noapp=False):
     """
     Simple wrapper to remove an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, False, None, noapp=noapp)
+    installer = EggInst(path, prefix, noapp=noapp)
     remover = installer._egginst_remover
     if not remover.is_installed:
         logger.error("Error: can't find meta data for: %r", remover.cname)

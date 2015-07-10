@@ -3,7 +3,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import SolverException
 from enstaller.package import PackageMetadata
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from ..constraint_types import Equal
 from ..package_parser import (PrettyPackageStringParser,

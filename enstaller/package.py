@@ -10,7 +10,7 @@ from enstaller.eggcollect import info_from_metadir
 from enstaller.errors import EnstallerException
 from enstaller.repository_info import FSRepositoryInfo
 from enstaller.utils import compute_md5, path_to_uri, PY_VER
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 
 class PackageVersionInfo(object):

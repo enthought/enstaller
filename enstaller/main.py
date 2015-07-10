@@ -44,7 +44,7 @@ from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import ForceMode, Requirement, SolverMode
 from enstaller.utils import abs_expanduser, input_auth, prompt_yes_no
 from enstaller.vendor import requests
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,
                                     info_option, install_from_requirements,

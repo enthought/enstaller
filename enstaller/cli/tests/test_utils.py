@@ -25,7 +25,7 @@ from enstaller.tests.common import (DummyAuthenticator,
                                     mock_index, mock_print, mock_raw_input,
                                     PY_VER)
 from enstaller.vendor import requests, responses
-from enstaller.versions.enpkg import EnpkgVersion
+from enstaller.versions import EnpkgVersion
 
 from ..utils import (exit_if_root_on_non_owned, install_req,
                      install_time_string, name_egg, print_installed,
