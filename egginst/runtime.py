@@ -27,6 +27,16 @@ def _compute_site_packages(prefix, platform, major_minor):
 class RuntimeInfo(object):
     @classmethod
     def from_prefix_and_platform(cls, prefix, platform, version_info):
+        """ Use this to compute runtime info for an arbitrary platform.
+
+        Calling this with an incompatible platform (e.g. windows on linux) is
+        undefined.
+
+        Parameters
+        ----------
+        platform: Platform
+            An okonomiyaki Platform class (the vendorized one).
+        """
         if platform.os == WINDOWS:
             bindir = prefix
             scriptsdir = ntpath.join(prefix, "Scripts")
@@ -54,6 +64,16 @@ class RuntimeInfo(object):
 
     @classmethod
     def from_running_python(cls, platform=None):
+        """ Use this to compute runtime info from the running python.
+
+        Calling this with an incompatible platform (e.g. windows on linux) is
+        undefined.
+
+        Parameters
+        ----------
+        platform: Platform
+            An okonomiyaki Platform class (the vendorized one).
+        """
         prefix = sys.exec_prefix
 
         platform = platform or Platform.from_running_python()
