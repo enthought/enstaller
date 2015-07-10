@@ -168,6 +168,7 @@ packages = [
     'egginst.vendor.zipfile2',
     'egginst.vendor.okonomiyaki',
     'egginst.vendor.okonomiyaki.bundled',
+    'egginst.vendor.okonomiyaki.bundled.traitlets',
     'egginst.vendor.okonomiyaki.file_formats',
     'egginst.vendor.okonomiyaki.platforms',
     'egginst.vendor.okonomiyaki.repositories',

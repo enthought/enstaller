@@ -7,10 +7,12 @@ import mock
 from egginst import exe_data
 
 from egginst.main import EggInst
+from egginst.runtime import RuntimeInfo
 from egginst.scripts import (
     create_entry_points, create_proxies, fix_script, _get_executable
 )
 from egginst.utils import compute_md5
+from egginst.vendor.okonomiyaki.platforms import EPDPlatform
 from egginst.vendor.six import PY2, StringIO
 from egginst.vendor.six.moves import configparser
 from egginst.vendor.zipfile2 import ZipFile
@@ -151,9 +153,9 @@ dummy-gui = dummy:main_gui
             create_entry_points(egginst, config)
 
             if sys.platform == "win32":
-                entry_point = os.path.join(egginst.bin_dir, "dummy-script.py")
+                entry_point = os.path.join(egginst.scriptsdir, "dummy-script.py")
             else:
-                entry_point = os.path.join(egginst.bin_dir, "dummy")
+                entry_point = os.path.join(egginst.scriptsdir, "dummy")
             self.assertTrue(os.path.exists(entry_point))
 
             with open(entry_point, "rt") as fp:
@@ -161,7 +163,6 @@ dummy-gui = dummy:main_gui
                 self.assertMultiLineEqual(cli_entry_point, r_cli_entry_point)
 
     @mock.patch("egginst.scripts.on_win", True)
-    @mock.patch("egginst.main.bin_dir_name", "Scripts")
     def test_simple_windows(self):
         python_executable = "C:\\Python27\\python.exe"
         pythonw_executable = "C:\\Python27\\pythonw.exe"
@@ -207,11 +208,11 @@ dummy-gui = dummy:main_gui
             egginst = EggInst("dummy.egg", d)
             create_entry_points(egginst, config, python_executable)
 
-            cli_entry_point_path = os.path.join(egginst.bin_dir, "dummy-script.py")
-            gui_entry_point_path = os.path.join(egginst.bin_dir, "dummy-gui-script.pyw")
+            cli_entry_point_path = os.path.join(egginst.scriptsdir, "dummy-script.py")
+            gui_entry_point_path = os.path.join(egginst.scriptsdir, "dummy-gui-script.pyw")
             entry_points = [
-                os.path.join(egginst.bin_dir, "dummy.exe"),
-                os.path.join(egginst.bin_dir, "dummy-gui.exe"),
+                os.path.join(egginst.scriptsdir, "dummy.exe"),
+                os.path.join(egginst.scriptsdir, "dummy-gui.exe"),
                 cli_entry_point_path, gui_entry_point_path,
             ]
             for entry_point in entry_points:
@@ -225,15 +226,25 @@ dummy-gui = dummy:main_gui
                 gui_entry_point = fp.read()
                 self.assertMultiLineEqual(gui_entry_point, r_gui_entry_point)
 
-            self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy.exe")),
+            self.assertEqual(compute_md5(os.path.join(egginst.scriptsdir, "dummy.exe")),
                              hashlib.md5(exe_data.cli).hexdigest())
-            self.assertEqual(compute_md5(os.path.join(egginst.bin_dir, "dummy-gui.exe")),
+            self.assertEqual(compute_md5(os.path.join(egginst.scriptsdir, "dummy-gui.exe")),
                              hashlib.md5(exe_data.gui).hexdigest())
 
 
 class TestProxy(unittest.TestCase):
+    def _runtime_info_factory(self, prefix):
+        platform = EPDPlatform.from_epd_string("win-32").platform
+        runtime_info = RuntimeInfo.from_prefix_and_platform(
+            prefix, platform, sys.version_info
+        )
+        # Hack so that scriptsdir is a valid UNIX path (instead of
+        # '/some/prefix\Scripts')
+        runtime_info.scriptsdir = os.path.join(prefix, "Scripts")
+
+        return runtime_info
+
     @mock.patch("sys.platform", "win32")
-    @mock.patch("egginst.main.bin_dir_name", "Scripts")
     @mock.patch("egginst.utils.on_win", True)
     def test_proxy(self):
         """
@@ -262,7 +273,9 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
             r_python_proxy_data = r_python_proxy_data_template % \
                 {'executable': pythonexe, 'src': proxy_path}
 
-            egginst = EggInst(DUMMY_EGG_WITH_PROXY, prefix)
+            runtime_info = self._runtime_info_factory(prefix)
+            egginst = EggInst(DUMMY_EGG_WITH_PROXY, runtime_info=runtime_info)
+
             with ZipFile(egginst.path) as zp:
                 egginst.z = zp
                 egginst.arcnames = zp.namelist()
@@ -283,7 +296,6 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                                               r_python_proxy_data)
 
     @mock.patch("sys.platform", "win32")
-    @mock.patch("egginst.main.bin_dir_name", "Scripts")
     @mock.patch("egginst.utils.on_win", True)
     def test_proxy_directory(self):
         """
@@ -291,7 +303,11 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
         """
         with mkdtemp() as prefix:
             with mock.patch("sys.executable", os.path.join(prefix, "python.exe")):
-                egginst = EggInst(DUMMY_EGG_WITH_PROXY_SCRIPTS, prefix)
+                runtime_info = self._runtime_info_factory(prefix)
+
+                egginst = EggInst(
+                    DUMMY_EGG_WITH_PROXY_SCRIPTS, runtime_info=runtime_info
+                )
                 with ZipFile(egginst.path) as zp:
                     egginst.z = zp
                     egginst.arcnames = zp.namelist()

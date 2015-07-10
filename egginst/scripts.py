@@ -68,7 +68,7 @@ def create_entry_points(egg, conf, pythonexe=sys.executable):
         sys.exit({func}())
     """ % {"egg_name": egg.fn})
 
-    makedirs(egg.bin_dir)
+    makedirs(egg.scriptsdir)
 
     for script_type in ['gui_scripts', 'console_scripts']:
         if script_type not in conf.sections():
@@ -79,7 +79,7 @@ def create_entry_points(egg, conf, pythonexe=sys.executable):
             elif script_type == "console_scripts":
                 entry_point = ConsoleScript.from_string(name, value)
             created_files = create_entry_point(
-                entry_point, egg.bin_dir, template, pythonexe
+                entry_point, egg.scriptsdir, template, pythonexe
             )
             egg.files.extend(created_files)
 
@@ -91,7 +91,7 @@ def create_proxies(egg, pythonexe=sys.executable):
     in locations not in %PATH%.
     """
     # This function is called on Windows only
-    makedirs(egg.bin_dir)
+    makedirs(egg.scriptsdir)
 
     for line in egg.iter_files_to_install():
         arcname, action = line.split()
@@ -104,7 +104,7 @@ def create_proxies(egg, pythonexe=sys.executable):
             else:
                 src = abspath(join(egg.prefix, arcname))
             logger.info("     src: %r", src)
-            egg.files.extend(_create_proxy(src, egg.bin_dir, pythonexe))
+            egg.files.extend(_create_proxy(src, egg.scriptsdir, pythonexe))
         else:
             data = egg.z.read(arcname)
             dst = abspath(join(egg.prefix, action, basename(arcname)))
@@ -154,7 +154,7 @@ def fix_script(path, pythonexe=sys.executable):
 
 def fix_scripts(egg):
     for path in egg.files:
-        if path.startswith(egg.bin_dir):
+        if path.startswith(egg.scriptsdir):
             fix_script(path)
 
 
