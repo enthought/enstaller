@@ -145,6 +145,34 @@ class TestBroodRepositoryInfo(unittest.TestCase):
         self.assertNotEqual(info1, info3)
         self.assertTrue(info1 != info3)
 
+    def test_update(self):
+        # Given
+        store_url = "https://acme.com"
+        name = "enthought/free"
+        python_tag = PythonImplementation.from_string("cp27").pep425_tag
+
+        r_index_url = ("https://acme.com/api/v0/json/indices/{0}/{1}/{2}/eggs"
+                       .format(name, enstaller.plat.custom_plat, python_tag))
+
+        # When
+        info = BroodRepositoryInfo(store_url, name, python_tag=python_tag)
+
+        # Then
+        self.assertEqual(info.index_url, r_index_url)
+        self.assertEqual(info.name, name)
+
+        # Given
+        python_tag = "cp34"
+        r_index_url = ("https://acme.com/api/v0/json/indices/{0}/{1}/{2}/eggs"
+                       .format(name, enstaller.plat.custom_plat, python_tag))
+
+        # When
+        info = info.update(python_tag=python_tag)
+
+        # Then
+        self.assertEqual(info.index_url, r_index_url)
+        self.assertEqual(info.name, name)
+
     def test_simple_python_package(self):
         # Given
         store_url = "https://acme.com"
