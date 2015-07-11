@@ -2,6 +2,7 @@ import os.path
 import time
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
+from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
@@ -50,12 +51,14 @@ class TestPackage(unittest.TestCase):
     def test_eq(self):
         # Given
         V = EnpkgVersion.from_string
+        python26 = PythonImplementation("cpython", 2, 6)
+        python27 = PythonImplementation("cpython", 2, 7)
         package1 = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                   V("1.3.0-1"), [], "2.7")
+                                   V("1.3.0-1"), [], python27)
         package2 = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                   V("1.3.0-1"), [], "2.7")
+                                   V("1.3.0-1"), [], python27)
         package3 = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                   V("1.3.0-1"), [], "2.8")
+                                   V("1.3.0-1"), [], python26)
 
         # Then
         self.assertTrue(package1 == package2)
@@ -67,8 +70,9 @@ class TestPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         version = EnpkgVersion.from_string("1.3.0-1")
+        python = PythonImplementation("cpython", 2, 7)
         metadata = PackageMetadata("nose-1.3.0-1.egg", "nose", version, [],
-                                   "2.7")
+                                   python)
 
         # When
         r = repr(metadata)
@@ -104,10 +108,11 @@ class TestPackage(unittest.TestCase):
     def test_casing(self):
         # Given
         version = EnpkgVersion.from_string("10.3-1")
+        python = PythonImplementation.from_string("cp27")
 
         # When
         metadata = PackageMetadata("MKL-10.3-1.egg", "mkl", version, [],
-                                   "2.7")
+                                   python)
         # Then
         self.assertEqual(metadata.name, "mkl")
         self.assertEqual(metadata._egg_name, "MKL")
@@ -117,24 +122,25 @@ class TestRepositoryPackage(unittest.TestCase):
     def test_eq(self):
         # Given
         V = EnpkgVersion.from_string
+        python = PythonImplementation("cpython", 2, 7)
         repository_info1 = BroodRepositoryInfo("http://acme.com", "remote")
         repository_info2 = BroodRepositoryInfo("http://acme.com", "local")
 
         package1 = RepositoryPackageMetadata.from_package(
             PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
-                            "2.7"),
+                            python),
             repository_info1
         )
 
         package2 = RepositoryPackageMetadata.from_package(
             PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
-                            "2.7"),
+                            python),
             repository_info1
         )
 
         package3 = RepositoryPackageMetadata.from_package(
             PackageMetadata("nose-1.3.0-1.egg", "nose", V("1.3.0-1"), [],
-                            "2.7"),
+                            python),
             repository_info2
         )
 
@@ -148,9 +154,10 @@ class TestRepositoryPackage(unittest.TestCase):
     def test_repr(self):
         # Given
         version = EnpkgVersion.from_string("1.3.0-1")
+        python = PythonImplementation("cpython", 2, 7)
         repository_info = BroodRepositoryInfo("http://acme.com", "remote")
         package = RepositoryPackageMetadata.from_package(
-            PackageMetadata("nose-1.3.0-1.egg", "nose", version, [], "2.7"),
+            PackageMetadata("nose-1.3.0-1.egg", "nose", version, [], python),
             repository_info,
         )
         r_repr = ("RepositoryPackageMetadata('nose-1.3.0-1', "
@@ -188,16 +195,17 @@ class TestRemotePackageMetadata(unittest.TestCase):
         # Given
         V = EnpkgVersion.from_string
         md5 = "a" * 32
+        python = PythonImplementation("cpython", 2, 7)
         package1 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                         V("1.3.0-1"), [], "2.7", 1,
+                                         V("1.3.0-1"), [], python, 1,
                                          md5, 0.0, "free", True,
                                          self.repository_info)
         package2 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                         V("1.3.0-1"), [], "2.7", 1,
+                                         V("1.3.0-1"), [], python, 1,
                                          md5, 0.0, "free", True,
                                          self.repository_info)
         package3 = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                         V("1.3.0-1"), [], "2.7", 1,
+                                         V("1.3.0-1"), [], python, 1,
                                          "b" * 32, 0.0, "free", True,
                                          self.repository_info)
 
@@ -211,6 +219,7 @@ class TestRemotePackageMetadata(unittest.TestCase):
     def test_s3index_data(self):
         # Given
         md5 = "c68bb183ae1ab47b6d67ca584957c83c"
+        python = PythonImplementation("cpython", 2, 7)
         r_s3index_data = {
             "available": True,
             "build": 1,
@@ -227,7 +236,7 @@ class TestRemotePackageMetadata(unittest.TestCase):
         }
         version = EnpkgVersion.from_string("1.3.0-1")
         metadata = RemotePackageMetadata("nose-1.3.0-1.egg", "nose",
-                                         version, [], "2.7", 1, md5,
+                                         version, [], python, 1, md5,
                                          0.0, "free", True, "")
 
         # When/Then
@@ -264,14 +273,15 @@ class TestInstalledPackage(unittest.TestCase):
     def test_eq(self):
         # Given
         V = EnpkgVersion.from_string
+        python = PythonImplementation.from_string("cp27")
         package1 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            V("1.3.0-1"), [], "2.7",
+                                            V("1.3.0-1"), [], python,
                                             0.0, "loc1")
         package2 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            V("1.3.0-1"), [], "2.7",
+                                            V("1.3.0-1"), [], python,
                                             0.0, "loc1")
         package3 = InstalledPackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            V("1.3.0-1"), [], "2.7",
+                                            V("1.3.0-1"), [], python,
                                             0.0, "loc2")
 
         # Then

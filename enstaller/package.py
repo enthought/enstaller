@@ -3,13 +3,16 @@ import sys
 import time
 
 from egginst.eggmeta import info_from_z
+from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 from egginst.vendor.zipfile2 import ZipFile
 
 from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import info_from_metadir
 from enstaller.errors import EnstallerException
 from enstaller.repository_info import FSRepositoryInfo
-from enstaller.utils import compute_md5, path_to_uri, PY_VER
+from enstaller.utils import (
+    RUNNING_PYTHON, compute_md5, path_to_uri, python_string_to_major_minor
+)
 from enstaller.versions import EnpkgVersion
 
 
@@ -34,6 +37,7 @@ class PackageMetadata(object):
         with ZipFile(path) as zp:
             metadata = info_from_z(zp)
         metadata["packages"] = metadata.get("packages", [])
+        metadata = _set_default_python_tag(metadata)
         return cls.from_json_dict(os.path.basename(path), metadata)
 
     @classmethod
@@ -44,11 +48,15 @@ class PackageMetadata(object):
         """
         version = EnpkgVersion.from_upstream_and_build(json_dict["version"],
                                                        json_dict["build"])
+        if json_dict["python_tag"] is not None:
+            python = PythonImplementation.from_string(json_dict["python_tag"])
+        else:
+            python = None
         return cls(key, json_dict["name"], version, json_dict["packages"],
-                   json_dict["python"])
+                   python)
 
     @classmethod
-    def _from_pretty_string(cls, s, python_version=PY_VER):
+    def _from_pretty_string(cls, s, python=RUNNING_PYTHON):
         """ Create an instance from a pretty string.
 
         A pretty string looks as follows::
@@ -63,7 +71,7 @@ class PackageMetadata(object):
         from enstaller.new_solver.package_parser import \
             PrettyPackageStringParser
         parser = PrettyPackageStringParser(EnpkgVersion.from_string)
-        return parser.parse_to_package(s, python_version)
+        return parser.parse_to_package(s, python)
 
     def __init__(self, key, name, version, packages, python):
         self._key = key
@@ -72,7 +80,13 @@ class PackageMetadata(object):
         self._version = version
 
         self._dependencies = frozenset(packages)
-        self._python = python
+        if python is None:
+            self._python_tag = self._python = None
+        else:
+            self._python_tag = python.pep425_tag
+            self._python = "{0}.{1}".format(python.major, python.minor)
+
+        self._python_implementation = python
 
     # ------------------------
     # Protocols implementation
@@ -126,6 +140,10 @@ class PackageMetadata(object):
         return self._python
 
     @property
+    def python_tag(self):
+        return self._python_tag
+
+    @property
     def version(self):
         return self._version
 
@@ -138,7 +156,7 @@ class PackageMetadata(object):
 
     @property
     def _comp_key(self):
-        return (self.name, self.version, self._dependencies, self.python)
+        return (self.name, self.version, self._dependencies, self.python_tag)
 
 
 class RepositoryPackageMetadata(PackageMetadata):
@@ -146,10 +164,11 @@ class RepositoryPackageMetadata(PackageMetadata):
     @classmethod
     def from_package(cls, package, repository_info):
         return cls(package.key, package.name, package.version,
-                   package.packages, package.python, repository_info)
+                   package.packages, package._python_implementation,
+                   repository_info)
 
     @classmethod
-    def _from_pretty_string(cls, s, repository_info, python_version=PY_VER):
+    def _from_pretty_string(cls, s, repository_info, python=RUNNING_PYTHON):
         """ Create an instance from a pretty string.
 
         A pretty string looks as follows::
@@ -160,7 +179,7 @@ class RepositoryPackageMetadata(PackageMetadata):
         ----
         Don't use this in production code, only meant to be used for testing.
         """
-        package = PackageMetadata._from_pretty_string(s, python_version)
+        package = PackageMetadata._from_pretty_string(s, python)
         return cls.from_package(package, repository_info)
 
     def __init__(self, key, name, version, packages, python, repository_info):
@@ -191,7 +210,7 @@ class RemotePackageMetadata(PackageMetadata):
     instance through the source_url attribute.
     """
     @classmethod
-    def from_egg(cls, path, repository_info=None, python_version=PY_VER):
+    def from_egg(cls, path, repository_info=None, python=RUNNING_PYTHON):
         """
         Create an instance from an egg filename.
         """
@@ -206,6 +225,7 @@ class RemotePackageMetadata(PackageMetadata):
         metadata["size"] = st.st_size
         metadata["md5"] = compute_md5(path)
         metadata["mtime"] = st.st_mtime
+        metadata = _set_default_python_tag(metadata)
         return cls.from_json_dict(os.path.basename(path), metadata,
                                   repository_info)
 
@@ -228,8 +248,13 @@ class RemotePackageMetadata(PackageMetadata):
 
     @classmethod
     def _from_json_dict_impl(cls, key, json_dict, version, repository_info):
+        json_dict = _set_default_python_tag(json_dict)
+        if json_dict["python_tag"] is not None:
+            python = PythonImplementation.from_string(json_dict["python_tag"])
+        else:
+            python = None
         return cls(key, json_dict["name"], version, json_dict["packages"],
-                   json_dict["python"], json_dict["size"], json_dict["md5"],
+                   python, json_dict["size"], json_dict["md5"],
                    json_dict.get("mtime", 0.0), json_dict.get("product", None),
                    json_dict.get("available", True),
                    repository_info)
@@ -339,7 +364,12 @@ class InstalledPackageMetadata(PackageMetadata):
         build = json_dict.get("build", 1)
         version = EnpkgVersion.from_upstream_and_build(upstream_version, build)
         packages = json_dict.get("packages", [])
-        python = json_dict.get("python", PY_VER)
+        python_s = json_dict.get("python")
+        if python_s is None:
+            python = RUNNING_PYTHON
+        else:
+            major, minor = python_string_to_major_minor(python_s)
+            python = PythonImplementation("cpython", major, minor)
         ctime = json_dict.get("ctime", time.ctime(0.0))
         return cls(key, name, version, packages, python, ctime, prefix)
 
@@ -388,3 +418,14 @@ def egg_name_to_name_version(egg_name):
         raise ValueError("Invalid egg name: {0!r}".format(egg_name))
     else:
         return parts[0].lower(), parts[1]
+
+
+def _set_default_python_tag(metadata):
+    if "python_tag" not in metadata:
+        if metadata["python"] is None:
+            metadata["python_tag"] = None
+        else:
+            major, minor = python_string_to_major_minor(metadata["python"])
+            python = PythonImplementation("cpython", major, minor)
+            metadata["python_tag"] = python.pep425_tag
+    return metadata

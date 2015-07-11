@@ -10,7 +10,7 @@ from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository import Repository
 from enstaller.repository_info import BroodRepositoryInfo
 from enstaller.solver import Request
-from enstaller.utils import PY_VER
+from enstaller.utils import RUNNING_PYTHON
 from enstaller.versions import EnpkgVersion
 
 from .package_parser import PrettyPackageStringParser
@@ -30,7 +30,7 @@ def parse_package_list(packages):
     parser = PrettyPackageStringParser(EnpkgVersion.from_string)
 
     for package_str in packages:
-        package = parser.parse_to_package(package_str, PY_VER)
+        package = parser.parse_to_package(package_str, RUNNING_PYTHON)
         full_name = "{0} {1}".format(package.name, package.full_version)
         yield full_name, package
 
