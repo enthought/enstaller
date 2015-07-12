@@ -28,6 +28,7 @@ Internals:
   * use vendorized okonomiyaki library for repack tool and internals.
   * commands implementations are now decoupled from argparse namespace, for
     easier reuse.
+  * remove obsolete enstaller.indexed_repo
 
 2014-12-09   4.8.0:
 -------------------
