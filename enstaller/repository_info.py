@@ -131,6 +131,11 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
         self._path = ("/api/v0/json/indices/{0._name}/{0._platform}/"
                       "{0._python_tag}/eggs".format(self))
 
+    def update(self, platform=None, python_tag=None):
+        return BroodRepositoryInfo(
+            self._store_url, self._name, platform, python_tag
+        )
+
     @property
     def index_url(self):
         return urllib.parse.urljoin(self._store_url, self._path)

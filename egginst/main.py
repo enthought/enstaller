@@ -34,10 +34,11 @@ from . import scripts
 
 from .links import create_link
 from .progress import console_progress_manager_factory
-from .utils import (on_win, bin_dir_name, rel_site_packages, ensure_dir,
-                    rm_empty_dir, rm_rf, get_executable, is_zipinfo_dir,
+from .runtime import RuntimeInfo
+from .utils import (on_win, ensure_dir, rm_empty_dir, rm_rf, is_zipinfo_dir,
                     zip_has_arcname)
 
+from .vendor.okonomiyaki.platforms import EPDPlatform
 from .vendor.six import StringIO
 from .vendor.six.moves import configparser
 from .vendor.zipfile2 import ZipFile
@@ -182,22 +183,35 @@ def _install_app_impl(meta_dir, prefix, remove=False):
         logger.warn("Warning ({0}):\n{1!r}".format(warning, e))
 
 
-def _run_script(meta_dir, fn, prefix):
+def _run_script(meta_dir, fn, runtime_info):
     path = join(meta_dir, fn)
     if not isfile(path):
         return
-    subprocess.call([get_executable(prefix), '-E', path, '--prefix', prefix],
-                    cwd=dirname(path))
+    subprocess.call([
+        runtime_info.executable, '-E', path, '--prefix', runtime_info.prefix],
+        cwd=dirname(path)
+    )
+
+
+def _default_runtime_info(prefix=sys.prefix):
+    import enstaller.plat
+    epd_platform = EPDPlatform.from_epd_string(enstaller.plat.custom_plat)
+
+    return RuntimeInfo.from_prefix_and_platform(
+        prefix, epd_platform.platform, sys.version_info
+    )
 
 
 class _EggInstRemove(object):
 
-    def __init__(self, path, prefix=sys.prefix, noapp=False):
+    def __init__(self, path, runtime_info=None, noapp=False):
+        self._runtime_info = runtime_info or _default_runtime_info()
+
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
         self.cname = name.lower()
-        self.prefix = abspath(prefix)
+        self.prefix = abspath(runtime_info.prefix)
         self.noapp = noapp
 
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
@@ -285,17 +299,17 @@ class _EggInstRemove(object):
 
 
 class EggInst(object):
-    def __init__(self, path, prefix=sys.prefix, noapp=False):
+    def __init__(self, path, prefix=sys.prefix, noapp=False, runtime_info=None):
+        self._runtime_info = runtime_info or _default_runtime_info(prefix)
+
         self.path = path
         self.fn = basename(path)
         name, version = name_version_fn(self.fn)
         self.cname = name.lower()
-        self.prefix = abspath(prefix)
+        self.prefix = abspath(self._runtime_info.prefix)
         self.noapp = noapp
 
-        self.bin_dir = join(self.prefix, bin_dir_name)
-
-        self.site_packages = join(self.prefix, rel_site_packages)
+        self.site_packages = self._runtime_info.site_packages
         self.pyloc = self.site_packages
         self.egginfo_dir = join(self.prefix, 'EGG-INFO')
         self.meta_dir = join(self.egginfo_dir, self.cname)
@@ -303,7 +317,7 @@ class EggInst(object):
         self.meta_json = join(self.meta_dir, 'egginst.json')
         self.files = []
 
-        self._egginst_remover = _EggInstRemove(path, prefix, noapp)
+        self._egginst_remover = _EggInstRemove(path, self._runtime_info, noapp)
         self._installed_size = None
         self._files_to_install = None
 
@@ -317,6 +331,10 @@ class EggInst(object):
                 self._installed_size = sum(zp.getinfo(name).file_size for name
                                            in zp.namelist())
         return self._installed_size
+
+    @property
+    def scriptsdir(self):
+        return self._runtime_info.scriptsdir
 
     def iter_files_to_install(self):
         return self._lines_from_arcname('EGG-INFO/inst/files_to_install.txt')
@@ -362,7 +380,7 @@ class EggInst(object):
 
         self._write_meta()
 
-        _run_script(self.meta_dir, 'post_egginst.py', self.prefix)
+        _run_script(self.meta_dir, 'post_egginst.py', self._runtime_info)
 
     def install(self, extra_info=None):
         for currently_extracted_size in self.install_iterator():
@@ -395,7 +413,7 @@ class EggInst(object):
         if ('console_scripts' in conf.sections() or
                 'gui_scripts' in conf.sections()):
             logger.debug('creating scripts')
-            scripts.create_entry_points(self, conf, get_executable(self.prefix))
+            scripts.create_entry_points(self, conf, self._runtime_info.executable)
 
     def _rel_prefix(self, path):
         return abspath(path).replace(self.prefix, '.').replace('\\', '/')
@@ -523,14 +541,14 @@ class EggInst(object):
         if on_win:
             scheme = [
                 ("EGG-INFO/prefix/", self.prefix),
-                ("EGG-INFO/scripts/", self.bin_dir),
+                ("EGG-INFO/scripts/", self.scriptsdir),
                 ("EGG-INFO/", self.meta_dir),
             ]
         else:
             scheme = [
                 ("EGG-INFO/prefix/", self.prefix),
                 ("EGG-INFO/usr/", self.prefix),
-                ("EGG-INFO/scripts/", self.bin_dir),
+                ("EGG-INFO/scripts/", self.scriptsdir),
                 ("EGG-INFO/", self.meta_dir),
             ]
 
@@ -597,11 +615,11 @@ def print_installed(prefix=sys.prefix):
         print(fmt % name_version_fn(fn))
 
 
-def install_egg_cli(path, prefix, noapp=False, extra_info=None):
+def install_egg_cli(path, runtime_info, noapp=False, extra_info=None):
     """
     Simple wrapper to install an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, noapp)
+    installer = EggInst(path, noapp=noapp, runtime_info=runtime_info)
 
     progress = console_progress_manager_factory("installing egg", installer.fn,
                                                 size=installer.installed_size)
@@ -610,11 +628,11 @@ def install_egg_cli(path, prefix, noapp=False, extra_info=None):
             progress.update(currently_extracted_size)
 
 
-def remove_egg_cli(path, prefix, noapp=False):
+def remove_egg_cli(path, runtime_info, noapp=False):
     """
     Simple wrapper to remove an egg using default egginst progress bar.
     """
-    installer = EggInst(path, prefix, noapp=noapp)
+    installer = EggInst(path, noapp=noapp, runtime_info=runtime_info)
     remover = installer._egginst_remover
     if not remover.is_installed:
         logger.error("Error: can't find meta data for: %r", remover.cname)
@@ -685,11 +703,13 @@ def main(argv=None):
     else:
         logging.basicConfig(level=logging.WARN, format="%(message)s")
 
+    runtime_info = _default_runtime_info(prefix)
+
     for path in ns.requirements:
         if ns.remove:
-            remove_egg_cli(path, prefix, ns.noapp)
+            remove_egg_cli(path, runtime_info, ns.noapp)
         else:
-            install_egg_cli(path, prefix, ns.noapp)
+            install_egg_cli(path, runtime_info, ns.noapp)
 
 
 if __name__ == '__main__':  # pragma: no cover

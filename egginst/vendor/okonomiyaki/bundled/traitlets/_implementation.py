@@ -64,7 +64,7 @@ try:
 except:
     ClassTypes = (type,)
 
-import six
+from egginst.vendor import six
 
 def import_item(name):
     """Import and return ``bar`` given the string ``foo.bar``.

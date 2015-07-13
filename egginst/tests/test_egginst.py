@@ -168,10 +168,8 @@ class TestEggInstMain(unittest.TestCase):
             egginst = EggInst(DUMMY_EGG, d)
             egginst.install()
 
-            with mock.patch(
-                    "egginst.main.get_executable", return_value=sys.executable):
-                egginst = EggInst(DUMMY_EGG_WITH_ENTRY_POINTS, d)
-                egginst.install()
+            egginst = EggInst(DUMMY_EGG_WITH_ENTRY_POINTS, d)
+            egginst.install()
 
             installed_eggs = list(get_installed(d))
             self.assertEqual(installed_eggs, r_installed_eggs)
@@ -244,17 +242,15 @@ class TestEggInstInstall(unittest.TestCase):
         else:
             wrapper_script = os.path.join(self.bindir, "dummy")
 
-        with mock.patch(
-                "egginst.main.get_executable", return_value=sys.executable):
-            egginst = EggInst(DUMMY_EGG_WITH_ENTRY_POINTS, self.base_dir)
-            egginst.install()
+        egginst = EggInst(DUMMY_EGG_WITH_ENTRY_POINTS, self.base_dir)
+        egginst.install()
 
-            self.assertTrue(os.path.exists(py_script))
-            self.assertTrue(os.path.exists(wrapper_script))
+        self.assertTrue(os.path.exists(py_script))
+        self.assertTrue(os.path.exists(wrapper_script))
 
-            egginst.remove()
-            self.assertFalse(os.path.exists(py_script))
-            self.assertFalse(os.path.exists(wrapper_script))
+        egginst.remove()
+        self.assertFalse(os.path.exists(py_script))
+        self.assertFalse(os.path.exists(wrapper_script))
 
     def test_appinst(self):
         """
@@ -424,10 +420,8 @@ class TestEggInfoInstall(unittest.TestCase):
                                      format("1.3.0-1"))
         egg = NOSE_1_3_0
 
-        with mock.patch(
-                "egginst.main.get_executable", return_value=sys.executable):
-            egginst = EggInst(egg, self.base_dir)
-            egginst.install()
+        egginst = EggInst(egg, self.base_dir)
+        egginst.install()
 
         # Check for files installed in $prefix/EGG-INFO
         for f in DUMMY_EGG_METADATA_FILES:
@@ -451,11 +445,9 @@ class TestEggInfoInstall(unittest.TestCase):
         egg = NOSE_1_3_0
 
         with assert_same_fs(self, self.base_dir):
-            with mock.patch(
-                    "egginst.main.get_executable", return_value=sys.executable):
-                egginst = EggInst(egg, self.base_dir)
-                egginst.install()
-                egginst.remove()
+            egginst = EggInst(egg, self.base_dir)
+            egginst.install()
+            egginst.remove()
 
     def test_custom_egg_legacy_egg_info(self):
         custom_egg_info_base = os.path.join(self.base_dir, "EGG-INFO", "flake8")
@@ -468,10 +460,8 @@ class TestEggInfoInstall(unittest.TestCase):
 
         egg = LEGACY_EGG_INFO_EGG
 
-        with mock.patch(
-                "egginst.main.get_executable", return_value=sys.executable):
-            egginst = EggInst(egg, self.base_dir)
-            egginst.install()
+        egginst = EggInst(egg, self.base_dir)
+        egginst.install()
 
         # Check for files installed in $prefix/EGG-INFO
         for f in custom_metadata:
@@ -491,11 +481,9 @@ class TestEggInfoInstall(unittest.TestCase):
         egg = LEGACY_EGG_INFO_EGG
 
         with assert_same_fs(self, self.base_dir):
-            with mock.patch(
-                    "egginst.main.get_executable", return_value=sys.executable):
-                egginst = EggInst(egg, self.base_dir)
-                egginst.install()
-                egginst.remove()
+            egginst = EggInst(egg, self.base_dir)
+            egginst.install()
+            egginst.remove()
 
 
 class TestMisc(unittest.TestCase):

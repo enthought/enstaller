@@ -1,8 +1,5 @@
 import os
 import shutil
-import sys
-
-import mock
 
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst, setuptools_egg_info_dir
@@ -27,10 +24,8 @@ class TestEggInfoDirFixer(unittest.TestCase):
         installer.install()
 
     def _install_egg_empty_egg_info_dir(self, egg_path):
-        with mock.patch(
-                "egginst.main.get_executable", return_value=sys.executable):
-            installer = EggInst(egg_path, prefix=self.prefix)
-            installer.install()
+        installer = EggInst(egg_path, prefix=self.prefix)
+        installer.install()
 
         egg_info_dir = os.path.join(installer.site_packages,
                                     setuptools_egg_info_dir(egg_path))

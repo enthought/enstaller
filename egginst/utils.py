@@ -9,22 +9,19 @@ import sys
 import os
 import shutil
 import stat
-import subprocess
 import tempfile
 
 from os.path import basename, isdir, isfile, islink, join
 
 from egginst.errors import EnstallerException, InvalidChecksum, InvalidFormat
-from egginst.vendor.six import PY2, string_types
+from egginst.vendor.six import string_types
 
 on_win = bool(sys.platform == 'win32')
-
 if on_win:
     bin_dir_name = 'Scripts'
-    rel_site_packages = r'Lib\site-packages'
 else:
     bin_dir_name = 'bin'
-    rel_site_packages = 'lib/python%i.%i/site-packages' % sys.version_info[:2]
+
 
 logger = logging.getLogger(__name__)
 
@@ -73,32 +70,6 @@ def rm_rf(path):
                 os.rename(path, join(tempfile.mkdtemp(), basename(path)))
         else:
             shutil.rmtree(path)
-
-
-def get_executable(prefix):
-    if on_win:
-        prefixes = [prefix, join(prefix, bin_dir_name)]
-        for prefix in prefixes:
-            executables = (join(prefix, 'python3.exe'), join(prefix, 'python.exe'))
-            for executable in executables:
-                if isfile(executable):
-                    return executable
-    else:
-        executables = (
-            join(prefix, bin_dir_name, 'python3'),
-            join(prefix, bin_dir_name, 'python')
-        )
-        for executable in executables:
-            if isfile(executable):
-                cmd = [executable, '-c', 'import sys;print(sys.executable)']
-                p = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-                executable = p.communicate()[0].strip()
-                if not PY2:
-                    return executable.decode()
-                else:
-                    return executable
-
-    raise EnstallerException("Could not find python executable")
 
 
 def human_bytes(n):
