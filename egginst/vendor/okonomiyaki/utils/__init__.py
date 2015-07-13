@@ -1,13 +1,11 @@
 from __future__ import absolute_import
 
-__all__ = ["ZipFile", "compute_md5", "parse_assignments"]
+__all__ = ["compute_md5", "parse_assignments"]
 
 import hashlib
 
-import six
-
 from .misc import parse_assignments
-from ._compat import ZipFile
+from .py3compat import string_types
 
 
 def compute_md5(path):
@@ -32,7 +30,7 @@ def compute_md5(path):
                 break
         return m.hexdigest()
 
-    if isinstance(path, six.string_types):
+    if isinstance(path, string_types):
         with open(path, "rb") as fp:
             return _compute_checksum(fp)
     else:
