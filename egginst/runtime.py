@@ -2,6 +2,7 @@ import os.path
 import ntpath
 import posixpath
 import site
+import subprocess
 import sys
 
 from egginst.vendor.okonomiyaki.platforms import Platform
@@ -122,3 +123,26 @@ class RuntimeInfo(object):
     @property
     def micro(self):
         return self.version_info[2]
+
+    def py_call(self, cmd, *a, **kw):
+        """ Call the given command with this runtime python (i.e. the actually
+        executed command will be prefixed by this runtime's python executable).
+        """
+        assert issubclass(type(cmd), list)
+        cmd = [self._actual_executable] + cmd
+        return subprocess.call(cmd, *a, **kw)
+
+    @property
+    def _actual_executable(self):
+        if self.platform.os == WINDOWS:
+            # Hack to take into account virtualenvs
+            paths = (
+                self.executable,
+                ntpath.join(self.scriptsdir, ntpath.basename(self.executable))
+            )
+            for path in paths:
+                if ntpath.isfile(path):
+                    return path
+            return self.executable
+        else:
+            return self.executable

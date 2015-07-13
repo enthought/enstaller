@@ -17,7 +17,6 @@ import os
 import posixpath
 import re
 import shutil
-import subprocess
 import sys
 import warnings
 
@@ -187,8 +186,8 @@ def _run_script(meta_dir, fn, runtime_info):
     path = join(meta_dir, fn)
     if not isfile(path):
         return
-    subprocess.call([
-        runtime_info.executable, '-E', path, '--prefix', runtime_info.prefix],
+    runtime_info.py_call(
+        ['-E', path, '--prefix', runtime_info.prefix],
         cwd=dirname(path)
     )
 
