@@ -3,6 +3,7 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import SolverException
 from enstaller.package import PackageMetadata
+from enstaller.utils import RUNNING_PYTHON
 from enstaller.versions import EnpkgVersion
 
 from ..constraint_types import Equal
@@ -129,8 +130,9 @@ class TestPackagePrettyString(unittest.TestCase):
     def test_simple(self):
         # Given
         key = "numpy-1.8.1-1.egg"
+        python = RUNNING_PYTHON
         package = PackageMetadata(key, "numpy", V("1.8.1-1"), ("MKL 10.3-1",),
-                                  "2.7")
+                                  python)
 
         r_pretty_string = "numpy 1.8.1-1; depends (MKL == 10.3-1)"
 
@@ -142,7 +144,8 @@ class TestPackagePrettyString(unittest.TestCase):
 
         # Given
         key = "numpy-1.8.1-1.egg"
-        package = PackageMetadata(key, "numpy", V("1.8.1-1"), ("nose",), "2.7")
+        package = PackageMetadata(key, "numpy", V("1.8.1-1"), ("nose",),
+                                  RUNNING_PYTHON)
 
         r_pretty_string = "numpy 1.8.1-1; depends (nose)"
 

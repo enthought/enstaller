@@ -22,8 +22,8 @@ from enstaller.tests.common import (DummyAuthenticator,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
                                     mocked_session_factory,
-                                    mock_index, mock_print, mock_raw_input,
-                                    PY_VER)
+                                    mock_index, mock_print, mock_raw_input)
+from enstaller.utils import PY_VER
 from enstaller.vendor import requests, responses
 from enstaller.versions import EnpkgVersion
 

@@ -13,6 +13,7 @@ import zlib
 from os.path import abspath, expanduser, getmtime, getsize
 
 from egginst.utils import compute_md5
+from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.errors import InvalidFormat
 from enstaller.vendor import requests
@@ -22,7 +23,19 @@ from enstaller import plat
 
 _GZIP_MAGIC = "1f8b"
 
-PY_VER = '%i.%i' % sys.version_info[:2]
+PY_MAJOR_MINOR = sys.version_info[:2]
+PY_VER = '%i.%i' % PY_MAJOR_MINOR
+
+RUNNING_PYTHON = PythonImplementation(
+    "cp", sys.version_info[0], sys.version_info[1]
+)
+
+
+def python_string_to_major_minor(s):
+    """ Convert Major.Minor to (Major, Minor) (as (int, int)). """
+    parts = s.split(".")
+    assert len(parts) == 2, s
+    return int(parts[0]), int(parts[1])
 
 
 def abs_expanduser(path):

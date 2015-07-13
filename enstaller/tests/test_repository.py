@@ -12,6 +12,7 @@ from enstaller.compat import path_to_uri
 from enstaller.config import Configuration, STORE_KIND_BROOD
 from enstaller.errors import NoSuchPackage
 from enstaller.session import Session
+from enstaller.utils import RUNNING_PYTHON
 from enstaller.versions import EnpkgVersion
 
 from enstaller.package import PackageMetadata, RemotePackageMetadata
@@ -170,13 +171,14 @@ class TestRepository(unittest.TestCase):
 
     def test_has_package(self):
         # Given
+        python = RUNNING_PYTHON
         version = EnpkgVersion.from_string("1.3.0-1")
         available_package = PackageMetadata("nose-1.3.0-1.egg", "nose",
-                                            version, [], "2.7")
+                                            version, [], python)
 
         version = EnpkgVersion.from_string("1.4.0-1")
         unavailable_package = PackageMetadata("nose-1.4.0-1.egg", "nose",
-                                              version, [], "2.7")
+                                              version, [], python)
 
         # When/Then
         self.assertTrue(self.repository.has_package(available_package))

@@ -17,7 +17,7 @@ from enstaller.repository import (InstalledPackageMetadata, Repository,
                                   RemotePackageMetadata)
 from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
-from enstaller.utils import PY_VER
+from enstaller.utils import RUNNING_PYTHON
 from enstaller.vendor import responses
 from enstaller.versions import EnpkgVersion
 
@@ -97,18 +97,20 @@ class DummyAuthenticator(object):
 
 
 def dummy_installed_package_factory(name, version, build, key=None,
-                                    py_ver=PY_VER, prefix=None):
+                                    python=RUNNING_PYTHON, prefix=None):
     prefix = prefix or sys.prefix
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
     version = EnpkgVersion.from_upstream_and_build(version, build)
-    return InstalledPackageMetadata(key, name.lower(), version, [], py_ver,
+    return InstalledPackageMetadata(key, name.lower(), version, [], python,
                                     "", prefix)
 
 
 def dummy_repository_package_factory(name, version, build, key=None,
-                                     py_ver=PY_VER, repository_info=None,
+                                     python=RUNNING_PYTHON,
+                                     repository_info=None,
                                      dependencies=None, mtime=0.0,
-                                     available=True, product="commercial"):
+                                     available=True,
+                                     product="commercial"):
     dependencies = dependencies or []
     key = key if key else "{0}-{1}-{2}.egg".format(name, version, build)
     fake_size = FAKE_SIZE
@@ -118,7 +120,7 @@ def dummy_repository_package_factory(name, version, build, key=None,
     repository_info = repository_info or \
         CanopyRepositoryInfo("https://acme.com")
     return RemotePackageMetadata(key, name.lower(), version, dependencies,
-                                 py_ver, fake_size, fake_md5, fake_mtime,
+                                 python, fake_size, fake_md5, fake_mtime,
                                  product, available, repository_info)
 
 

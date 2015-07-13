@@ -14,12 +14,13 @@ from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.solver import ForceMode, SolverMode
-from enstaller.tests.common import (FAKE_MD5, FAKE_SIZE, PY_VER,
+from enstaller.tests.common import (FAKE_MD5, FAKE_SIZE,
                                     create_prefix_with_eggs,
                                     create_repositories,
                                     dummy_installed_package_factory,
                                     dummy_repository_package_factory,
                                     mock_print)
+from enstaller.utils import PY_VER
 
 from ..commands import (info_option, install_from_requirements, update_all,
                         whats_new)
