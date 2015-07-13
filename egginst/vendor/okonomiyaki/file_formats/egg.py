@@ -4,7 +4,7 @@ import shutil
 import tempfile
 import zipfile
 
-from egginst.vendor import zipfile2
+import zipfile2
 
 from ._egg_info import (
     _SPEC_DEPEND_LOCATION, _SPEC_SUMMARY_LOCATION
