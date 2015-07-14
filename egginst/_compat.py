@@ -1,7 +1,9 @@
 """
 Simple py2/py3 shim
 """
+import io
 import logging
+import sys
 
 
 # For compatibility with 2.6
@@ -9,18 +11,38 @@ class NullHandler(logging.Handler):  # pragma: no cover
     def emit(self, record):
         pass
 
-import egginst.vendor.six
-
-egginst.vendor.six.add_move(egginst.vendor.six.MovedModule("unittest",
-                                                           "unittest2",
-                                                           "unittest"))
-
-PY2 = egginst.vendor.six.PY2
+PY2 = sys.version_info[0] == 2
 
 if PY2:
     buffer = buffer
+    string_types = basestring,
+    binary_type = str
+
+    import StringIO
+    StringIO = BytesIO = StringIO.StringIO
+
+    import ConfigParser as configparser
+    from urllib import pathname2url, splituser, unquote, url2pathname
+    from urlparse import urljoin, urlparse, urlsplit, urlunparse, urlunsplit
+    import cPickle
+    import httplib as http_client
 else:
     buffer = memoryview
+    string_types = str,
+    binary_type = bytes
+
+    StringIO = io.StringIO
+    BytesIO = io.BytesIO
+
+    import configparser  # noqa
+    from urllib.parse import (  # noqa
+        splituser, urljoin, urlparse, urlsplit, urlunparse, urlunsplit
+    )
+    from urllib.request import (  # noqa
+        pathname2url, unquote, url2pathname
+    )
+    import pickle as cPickle  # noqa
+    import http.client as http_client  # noqa
 
 
 def assertCountEqual(self, first, second, msg=None):

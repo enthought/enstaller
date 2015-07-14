@@ -1,9 +1,14 @@
 import sys
 
-from egginst.vendor.six.moves import unittest
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
 
 from egginst.runtime import CPYTHON, RuntimeInfo
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestRuntimeInfo(unittest.TestCase):

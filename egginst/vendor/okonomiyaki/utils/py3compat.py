@@ -64,6 +64,7 @@ else:
     import io
     StringIO = io.StringIO
 
+    import configparser
 
 def with_metaclass(meta, *bases):
     """Create a base class with a metaclass."""

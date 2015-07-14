@@ -1,5 +1,6 @@
 import os.path
 import shutil
+import sys
 import tempfile
 
 import mock
@@ -8,7 +9,6 @@ from egginst.main import _default_runtime_info
 from egginst.progress import console_progress_manager_factory, ProgressBar
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
-from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
@@ -25,6 +25,11 @@ from .common import (dummy_repository_package_factory,
                      mocked_session_factory,
                      mock_history_get_state_context, repository_factory,
                      unconnected_enpkg_factory, DummyAuthenticator)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestEnpkgActions(unittest.TestCase):

@@ -5,8 +5,7 @@ import shutil
 import sys
 import tempfile
 
-from egginst.vendor.six import PY2
-from egginst.vendor.six.moves import unittest
+from egginst._compat import PY2
 
 from enstaller.auth import UserPasswordAuth
 from enstaller.errors import EnstallerException
@@ -16,6 +15,11 @@ from enstaller.machine_cli.commands import (install, install_parse_json_string,
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
 from enstaller.tests.common import mock_brood_repository_indices
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 @contextlib.contextmanager

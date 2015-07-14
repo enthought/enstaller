@@ -1,10 +1,10 @@
 import os
 import os.path
 import shutil
+import sys
 import tempfile
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
-from egginst.vendor.six.moves import unittest
 
 from enstaller.vendor import requests, responses
 
@@ -15,6 +15,11 @@ from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.utils import compute_md5
 
 from enstaller.tests.common import mocked_session_factory
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class Test_DownloadManager(unittest.TestCase):

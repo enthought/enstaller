@@ -1,13 +1,18 @@
 import os.path
 import shutil
+import sys
 import tempfile
 
 import mock
 
-from egginst.vendor.six.moves import unittest
 from egginst.tests.common import NOSE_1_2_1, NOSE_1_3_0
 
 from ..unpack import main
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestMain(unittest.TestCase):

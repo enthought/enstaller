@@ -1,10 +1,15 @@
 import os
 import shutil
+import sys
 import tempfile
 
 from egginst._compat import assertCountEqual
 from egginst.testing_utils import ControlledEnv, assert_same_fs
-from egginst.vendor.six.moves import unittest
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestControlledEnv(unittest.TestCase):

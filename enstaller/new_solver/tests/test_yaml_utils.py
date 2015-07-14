@@ -1,9 +1,9 @@
 import os.path
+import sys
 import textwrap
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
-from egginst.vendor.six import StringIO
-from egginst.vendor.six.moves import unittest
 
 from enstaller.package import RepositoryPackageMetadata
 from enstaller.repository_info import BroodRepositoryInfo
@@ -12,6 +12,11 @@ from enstaller.solver.request import _Job
 
 from ..requirement import Requirement
 from ..yaml_utils import Scenario, parse_package_list, repository_factory
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 P = RepositoryPackageMetadata._from_pretty_string

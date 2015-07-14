@@ -11,7 +11,6 @@ import mock
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, mkdtemp
-from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
@@ -31,6 +30,12 @@ from ..utils import (exit_if_root_on_non_owned, install_req,
                      install_time_string, name_egg, print_installed,
                      repository_factory, updates_check)
 from ..utils import _print_warning
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 if sys.version_info < (2, 7):

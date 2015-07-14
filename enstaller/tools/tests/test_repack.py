@@ -1,6 +1,7 @@
 import contextlib
 import os.path
 import shutil
+import sys
 import tempfile
 import textwrap
 
@@ -15,11 +16,15 @@ from egginst.tests.common import (
 from egginst.vendor.okonomiyaki.errors import OkonomiyakiError
 from egginst.vendor.okonomiyaki.file_formats import EggMetadata
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
-from egginst.vendor.six.moves import unittest
 from egginst.vendor.zipfile2 import ZipFile
 
 from enstaller.errors import EnstallerException
 from enstaller.tools.repack import InvalidVersion, main, repack
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 @contextlib.contextmanager

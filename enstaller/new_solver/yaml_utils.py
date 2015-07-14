@@ -1,5 +1,4 @@
-from egginst._compat import PY2
-from egginst.vendor import six
+from egginst._compat import PY2, string_types
 if PY2:
     from enstaller.vendor import yaml
 else:
@@ -59,7 +58,7 @@ def installed_repository(yaml_data, packages):
 class Scenario(object):
     @classmethod
     def from_yaml(cls, file_or_filename):
-        if isinstance(file_or_filename, six.string_types):
+        if isinstance(file_or_filename, string_types):
             with open(file_or_filename) as fp:
                 data = yaml.load(fp)
         else:

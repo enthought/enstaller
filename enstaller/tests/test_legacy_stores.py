@@ -1,10 +1,10 @@
 import json
 import os.path
 import shutil
+import sys
 import tempfile
 
 from egginst._compat import assertCountEqual
-from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration
@@ -15,6 +15,11 @@ from enstaller.tests.common import (SIMPLE_INDEX,
                                     dummy_repository_package_factory,
                                     mock_index,
                                     mocked_session_factory)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 def _index_provider(repository_info):

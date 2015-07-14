@@ -10,12 +10,16 @@ import mock
 from egginst.main import name_version_fn
 from egginst.tests.common import DUMMY_EGG_SIZE, DUMMY_EGG, \
     DUMMY_EGG_MTIME, DUMMY_EGG_MD5
-from egginst.vendor.six.moves import unittest
 
 from enstaller.utils import canonical, comparable_version, input_auth, \
     path_to_uri, uri_to_path, info_file, cleanup_url, \
     prompt_yes_no, under_venv, real_prefix
 from .common import INPUT_IMPORT_STRING, mock_input, mock_print, mock_raw_input
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestUtils(unittest.TestCase):

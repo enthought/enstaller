@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 import datetime
 import os
 import shutil
+import sys
 import tempfile
 import textwrap
 
@@ -10,7 +11,6 @@ import mock
 
 from egginst._compat import assertCountEqual
 from egginst.tests.common import mkdtemp
-from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.solver import ForceMode, SolverMode
@@ -24,6 +24,11 @@ from enstaller.utils import PY_VER
 
 from ..commands import (info_option, install_from_requirements, update_all,
                         whats_new)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestInfoStrings(unittest.TestCase):

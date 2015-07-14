@@ -1,9 +1,9 @@
 import os.path
+import sys
 import time
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
-from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
 from enstaller.package import (InstalledPackageMetadata, PackageMetadata,
@@ -13,6 +13,11 @@ from enstaller.package import (InstalledPackageMetadata, PackageMetadata,
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.utils import PY_VER
 from enstaller.versions import EnpkgVersion
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestEggNameToNameVersion(unittest.TestCase):

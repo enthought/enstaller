@@ -8,8 +8,7 @@ import sqlite3
 
 from io import FileIO
 
-from egginst.vendor.six.moves import urllib
-from egginst._compat import buffer
+from egginst._compat import buffer, urlparse, urlunparse
 
 from enstaller.utils import uri_to_path
 from enstaller.vendor import requests, sqlite_cache
@@ -189,5 +188,5 @@ class QueryPathOnlyCacheController(CacheController):
     """
     def cache_url(self, uri):
         url = super(QueryPathOnlyCacheController, self).cache_url(uri)
-        p = urllib.parse.urlparse(url)
-        return urllib.parse.urlunparse((p.scheme, p.hostname, p.path, "", "", ""))
+        p = urlparse(url)
+        return urlunparse((p.scheme, p.hostname, p.path, "", "", ""))

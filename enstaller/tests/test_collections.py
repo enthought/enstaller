@@ -2,10 +2,14 @@ from __future__ import absolute_import
 
 import copy
 import sys
-import unittest
 
-from egginst.vendor.six.moves import cPickle
+from egginst._compat import cPickle
 from ..collections import DefaultOrderedDict
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestDefaultOrderedDict(unittest.TestCase):

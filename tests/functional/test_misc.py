@@ -8,8 +8,6 @@ import textwrap
 
 import mock
 
-from egginst.vendor.six.moves import unittest
-
 from enstaller import __version__
 
 from enstaller.config import _keyring_backend_name, Configuration
@@ -21,6 +19,11 @@ from enstaller.utils import PY_VER
 from enstaller.tests.common import mock_index, mock_print, R_JSON_AUTH_RESP
 
 from .common import authenticated_config
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestMisc(unittest.TestCase):

@@ -1,4 +1,4 @@
-from egginst.vendor.six.moves import unittest
+import sys
 
 from enstaller.errors import EnstallerException, SolverException
 from enstaller.versions import EnpkgVersion
@@ -6,6 +6,11 @@ from enstaller.versions import EnpkgVersion
 from ..constraint import MultiConstraints
 from ..constraint_types import Any, EnpkgUpstreamMatch, Equal
 from ..requirement import Requirement, parse_package_full_name
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 V = EnpkgVersion.from_string

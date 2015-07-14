@@ -1,9 +1,13 @@
 import mock
-
-from egginst.vendor.six.moves import unittest
+import sys
 
 from enstaller.machine_cli.__main__ import main
 from enstaller.tests.common import exception_code
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestMain(unittest.TestCase):
