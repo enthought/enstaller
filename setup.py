@@ -199,8 +199,8 @@ packages = [
     'enstaller.vendor.requests.packages.urllib3.util',
     'enstaller.vendor.sqlite_cache',
     'enstaller.vendor.win32ctypes',
-    'enstaller.vendor.yaml',
-    'enstaller.vendor.yaml_py3',
+    'enstaller.vendor.ruamel',
+    'enstaller.vendor.ruamel.yaml',
     'enstaller.versions',
 ]
 
