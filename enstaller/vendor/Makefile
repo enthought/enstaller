@@ -16,8 +16,6 @@ vendor:
 	rm -f six.py
 	rm -f mock.py
 
-	rm -rf keyring/tests
-	rm -rf win32ctypes/tests
 	rm -rf pyyaml/tests
 	rm -f _yaml*
 	rm -rf sqlite_cache/tests

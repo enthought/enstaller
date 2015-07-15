@@ -10,15 +10,13 @@ import mock
 
 from enstaller import __version__
 
-from enstaller.config import _keyring_backend_name, Configuration
+from enstaller.config import Configuration
 from enstaller.history import History
 from enstaller.main import main_noexc
 from enstaller.vendor import responses
 from enstaller.utils import PY_VER
 
-from enstaller.tests.common import mock_index, mock_print, R_JSON_AUTH_RESP
-
-from .common import authenticated_config
+from enstaller.tests.common import authenticated_config, mock_index, mock_print, R_JSON_AUTH_RESP
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest
@@ -43,7 +41,6 @@ sys.prefix: {sys_prefix}
 platform: {platform}
 architecture: {arch}
 use_webservice: True
-keyring backend: {keyring_backend}
 settings:
     prefix = {prefix}
     repository_cache = {repository_cache}
@@ -57,7 +54,6 @@ Subscription level: Canopy / EPD Basic or above
                                    version=__version__,
                                    platform=platform.platform(),
                                    arch=platform.architecture()[0],
-                                   keyring_backend=_keyring_backend_name(),
                                    prefix=os.path.normpath(config.prefix),
                                    repository_cache=config.repository_cache)
 
@@ -140,7 +136,9 @@ Subscription level: Canopy / EPD Basic or above
         with self.assertRaises(SystemExit) as e:
             with mock.patch("enstaller.main._ensure_config_or_die",
                             return_value=config):
-                with mock.patch("enstaller.main.convert_auth_if_required"):
+                with mock.patch(
+                        "enstaller.main.ensure_authenticated_config"
+                        ):
                     main_noexc(["-s", "fubar"])
 
         # Then
@@ -150,7 +148,9 @@ Subscription level: Canopy / EPD Basic or above
         with self.assertRaises(SystemExit) as e:
             with mock.patch("enstaller.main._ensure_config_or_die",
                             return_value=config):
-                with mock.patch("enstaller.main.convert_auth_if_required"):
+                with mock.patch(
+                        "enstaller.main.ensure_authenticated_config"
+                        ):
                     main_noexc(["-ks", "fubar"])
 
         # Then
@@ -194,7 +194,6 @@ sys.prefix: {sys_prefix}
 platform: {platform}
 architecture: {arch}
 use_webservice: True
-keyring backend: {keyring_backend}
 settings:
     prefix = {prefix}
     repository_cache = {repository_cache}
@@ -208,7 +207,6 @@ Subscription level: Canopy / EPD Basic or above
                                    version=__version__,
                                    platform=platform.platform(),
                                    arch=platform.architecture()[0],
-                                   keyring_backend=_keyring_backend_name(),
                                    prefix=os.path.normpath(self.prefix),
                                    repository_cache=os.path.join(self.prefix,
                                                                  "LOCAL-REPO"))

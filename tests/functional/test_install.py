@@ -20,11 +20,11 @@ else:
 import mock
 
 from enstaller.main import main
-from enstaller.tests.common import mock_print
+from enstaller.tests.common import authenticated_config, mock_print
 
 from .common import (fake_empty_resolve, fake_configuration_and_auth,
-                     enstaller_version, authenticated_config,
-                     raw_input_always_yes, remote_enstaller_available)
+                     enstaller_version, raw_input_always_yes,
+                     remote_enstaller_available)
 
 class TestEnstallerMainActions(unittest.TestCase):
     def setUp(self):

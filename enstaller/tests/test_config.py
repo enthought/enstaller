@@ -16,10 +16,8 @@ from enstaller import __version__
 
 from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.config import (prepend_url, print_config,
-                              _is_using_epd_username, convert_auth_if_required,
-                              _keyring_backend_name, write_default_config)
-from enstaller.config import (KEYRING_SERVICE_NAME,
-                              Configuration, add_url)
+                              _is_using_epd_username, write_default_config)
+from enstaller.config import Configuration, add_url
 from enstaller.pep425 import PythonImplementation
 from enstaller.repository_info import (CanopyRepositoryInfo,
                                        BroodRepositoryInfo,
@@ -31,11 +29,8 @@ from enstaller.errors import (EnstallerException,
                               InvalidConfiguration)
 from enstaller.utils import PY_VER
 
-from .common import (
-    WarningTestMixin, make_keyring_available_context,
-    make_keyring_unavailable, mock_print, fake_keyring_context,
-    fake_keyring, DummyAuthenticator
-)
+from .common import DummyAuthenticator, WarningTestMixin, mock_print
+
 
 FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
@@ -57,7 +52,6 @@ class TestWriteConfig(WarningTestMixin, unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.d)
 
-    @make_keyring_unavailable
     def test_simple(self):
         config = Configuration()
         config.update(auth=(FAKE_USER, FAKE_PASSWORD))
@@ -75,7 +69,6 @@ class TestWriteConfig(WarningTestMixin, unittest.TestCase):
         self.assertEqual(config.api_url,
                          "https://api.enthought.com/accounts/user/info/")
 
-    @make_keyring_unavailable
     def test_simple_with_proxy(self):
         proxystr = "http://acme.com:3128"
 
@@ -104,7 +97,6 @@ class TestWriteConfig(WarningTestMixin, unittest.TestCase):
             data = fp.read()
             self.assertRegex(data, "http://acme.com")
 
-    @make_keyring_unavailable
     def test_change_store_url(self):
         config = Configuration()
         config.update(auth=(FAKE_USER, FAKE_PASSWORD))
@@ -144,57 +136,6 @@ class TestConfigKeyringConversion(unittest.TestCase):
         """).format(FAKE_CREDS, FAKE_USER)
         self.assertTrue(_is_using_epd_username(StringIO(data)))
 
-    @fake_keyring
-    def test_conversion(self):
-        """
-        Ensure we don't convert EPD_auth to using keyring.
-        """
-        path = os.path.join(self.prefix, "some_config_file")
-        old_config = "EPD_auth = '{0}'".format(FAKE_CREDS)
-
-        with open(path, "w") as fp:
-            fp.write(old_config)
-
-        self.assertFalse(convert_auth_if_required(path))
-
-    @fake_keyring
-    def test_username_to_auth_conversion(self):
-        """
-        Ensure we don't convert EPD_auth to using keyring.
-        """
-        # Given
-        r_content = "EPD_auth = '{0}'".format(FAKE_CREDS)
-        path = os.path.join(self.prefix, ".enstaller4rc")
-
-        old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with open(path, "w") as fp:
-            fp.write(old_config)
-
-        with fake_keyring_context() as mocked_keyring:
-            mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER,
-                                        FAKE_PASSWORD)
-
-            # When
-            converted = convert_auth_if_required(path)
-
-            # Then
-            self.assertTrue(converted)
-            with open(path) as fp:
-                self.assertMultiLineEqual(fp.read(), r_content)
-
-    @fake_keyring
-    def test_auth_conversion_without_password_in_keyring(self):
-        # Given
-        path = os.path.join(self.prefix, ".enstaller4rc")
-        old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with open(path, "w") as fp:
-            fp.write(old_config)
-
-        with fake_keyring_context():
-            # When/Then
-            with self.assertRaises(EnstallerException):
-                convert_auth_if_required(path)
-
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
@@ -204,23 +145,12 @@ class TestGetAuth(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.d)
 
-    def test_with_keyring(self):
-        with make_keyring_available_context() as mocked_keyring:
-            config = Configuration()
-            config.update(auth=(FAKE_USER, FAKE_PASSWORD))
-
-            self.assertEqual(config.auth,
-                             UserPasswordAuth(FAKE_USER, FAKE_PASSWORD))
-            self.assertFalse(mocked_keyring.set_password.called)
-
-    @make_keyring_unavailable
     def test_with_auth(self):
         config = Configuration()
         config.update(auth=(FAKE_USER, FAKE_PASSWORD))
 
         self.assertEqual(config.auth, FAKE_AUTH)
 
-    @make_keyring_unavailable
     def test_without_auth_or_keyring(self):
         config = Configuration()
         self.assertIsNone(config.auth)
@@ -248,7 +178,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         # When/Then
         self.assertIsNotNone(config.auth)
 
-    @make_keyring_unavailable
     def test_change_existing_config_file(self):
         r_new_password = "ouioui_dans_sa_petite_voiture"
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
@@ -264,7 +193,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         self.assertEqual(new_config.auth,
                          UserPasswordAuth(FAKE_USER, r_new_password))
 
-    @make_keyring_unavailable
     def test_change_existing_config_file_empty_username(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("EPD_auth = '{0}'".format(FAKE_CREDS))
@@ -296,7 +224,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         config = Configuration.from_file(fp.name)
         self.assertEqual(config.auth, UserPasswordAuth("user", "dummy"))
 
-    @make_keyring_unavailable
     def test_change_empty_config_file_empty_username(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
@@ -308,7 +235,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         self.assertEqual(config.auth,
                          UserPasswordAuth(FAKE_USER, FAKE_PASSWORD))
 
-    @make_keyring_unavailable
     def test_no_config_file(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
@@ -322,7 +248,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
         new_config = Configuration.from_file(fp.name)
         self.assertEqual(new_config.auth, FAKE_AUTH)
 
-    @make_keyring_unavailable
     def test_change_auth_wo_existing_auth(self):
         r_output = "EPD_auth = '{0}'\n".format(FAKE_CREDS)
 
@@ -339,7 +264,6 @@ class TestWriteAndChangeAuth(unittest.TestCase):
     # FIXME: do we really want to revert the behaviour of change_auth() with
     # auth == (None, None) to do nothing ?
     @unittest.expectedFailure
-    @make_keyring_unavailable
     def test_change_config_file_empty_auth(self):
         config_data = "EPD_auth = '{0}'".format(FAKE_CREDS)
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
@@ -354,40 +278,20 @@ class TestWriteAndChangeAuth(unittest.TestCase):
 
 
 class TestAuthenticationConfiguration(unittest.TestCase):
-    @make_keyring_unavailable
-    def test_without_configuration_no_keyring(self):
+    def test_without_configuration(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             fp.write("")
 
         config = Configuration.from_file(fp.name)
         self.assertIsNone(config.auth)
 
-    def test_without_configuration_with_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
-            fp.write("")
-
-        with mock.patch("enstaller.config.keyring"):
-            config = Configuration.from_file(fp.name)
-            self.assertIsNone(config.auth)
-
-    @make_keyring_unavailable
-    def test_with_configuration_no_keyring(self):
+    def test_with_configuration(self):
         with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
             auth_line = "EPD_auth = '{0}'".format(FAKE_CREDS)
             fp.write(auth_line)
 
         config = Configuration.from_file(fp.name)
         self.assertIsNotNone(config.auth)
-
-    def test_with_configuration_with_keyring(self):
-        with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
-            auth_line = "EPD_username = '{0}'".format(FAKE_USER)
-            fp.write(auth_line)
-
-        mocked_keyring = mock.Mock(["get_password"])
-        with mock.patch("enstaller.config.keyring", mocked_keyring):
-            config = Configuration.from_file(fp.name)
-            self.assertIsNotNone(config.auth)
 
 
 class TestConfigurationParsing(unittest.TestCase):
@@ -399,33 +303,11 @@ class TestConfigurationParsing(unittest.TestCase):
             Configuration.from_file(StringIO("nono = 'le petit robot'"))
             m.assert_called_with('Unsupported configuration setting nono, ignored')
 
-    @make_keyring_unavailable
     def test_epd_auth_wo_keyring(self):
         s = StringIO("EPD_auth = '{0}'".format(FAKE_CREDS))
 
         config = Configuration.from_file(s)
         self.assertEqual(config.auth, FAKE_AUTH)
-
-    @make_keyring_unavailable
-    def test_epd_username_wo_keyring(self):
-        """
-        Ensure config auth correctly reports itself as non configured when
-        using EPD_username but keyring is not available to get password.
-        """
-        s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
-
-        config = Configuration.from_file(s)
-        self.assertIsNone(config.auth)
-
-    def test_epd_username(self):
-        with fake_keyring_context() as mocked_keyring:
-            mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER, FAKE_PASSWORD)
-
-            s = StringIO("EPD_username = '{0}'".format(FAKE_USER))
-            config = Configuration.from_file(s)
-
-            self.assertEqual(config.auth, FAKE_AUTH)
-            self.assertEqual(config.auth._encoded_auth, FAKE_CREDS)
 
     def test_epd_auth(self):
         """
@@ -530,7 +412,6 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: True
-            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 repository_cache = {{repository_cache}}
@@ -540,8 +421,7 @@ class TestConfigurationPrint(unittest.TestCase):
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
                     version=__version__, platform=platform.platform(),
-                    arch=platform.architecture()[0],
-                    keyring_backend=_keyring_backend_name())
+                    arch=platform.architecture()[0])
 
         config = Configuration()
         prefix = config.prefix
@@ -562,7 +442,6 @@ class TestConfigurationPrint(unittest.TestCase):
             architecture: {arch}
             use_webservice: True
             config file: {{config_file}}
-            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 repository_cache = {{repository_cache}}
@@ -572,8 +451,7 @@ class TestConfigurationPrint(unittest.TestCase):
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
                     version=__version__, platform=platform.platform(),
-                    arch=platform.architecture()[0],
-                    keyring_backend=_keyring_backend_name())
+                    arch=platform.architecture()[0])
 
         try:
             with tempfile.NamedTemporaryFile(delete=False, mode="wt") as fp:
@@ -600,7 +478,6 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: False
-            keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
                 repository_cache = {{repository_cache}}
@@ -612,8 +489,7 @@ class TestConfigurationPrint(unittest.TestCase):
             You are not logged in.  To log in, type 'enpkg --userpass'.
         """).format(pyver=PY_VER, sys_prefix=os.path.normpath(sys.prefix),
                     version=__version__, platform=platform.platform(),
-                    arch=platform.architecture()[0],
-                    keyring_backend=_keyring_backend_name())
+                    arch=platform.architecture()[0])
 
         prefix = os.path.normpath(sys.prefix)
         repository_cache = os.path.join(prefix, "LOCAL-REPO")
@@ -766,15 +642,6 @@ class TestConfiguration(unittest.TestCase):
                         return_value=[self.prefix]):
             with self.assertRaises(InvalidConfiguration):
                 Configuration._from_legacy_locations()
-
-    def test_reset_auth_with_keyring(self):
-        with make_keyring_available_context():
-            config = Configuration()
-            config.update(auth=(FAKE_USER, FAKE_PASSWORD))
-
-            config.reset_auth()
-
-            self.assertIsNone(config.auth)
 
     def test_set_prefix(self):
         homedir = os.path.normpath(os.path.expanduser("~"))

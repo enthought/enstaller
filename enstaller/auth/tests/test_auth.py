@@ -15,7 +15,7 @@ from enstaller.auth.auth_managers import (BroodAuthenticator,
 from enstaller.config import Configuration, write_default_config
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError, InvalidConfiguration
-from enstaller.tests.common import (DummyAuthenticator, fake_keyring,
+from enstaller.tests.common import (DummyAuthenticator,
                                     R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
 from enstaller.vendor import requests, responses
 
@@ -44,7 +44,6 @@ FAKE_PASSWORD = "fake_password"
 FAKE_CREDS = compute_creds(FAKE_USER, FAKE_PASSWORD)
 
 
-@fake_keyring
 class CheckedChangeAuthTestCase(unittest.TestCase):
     def setUp(self):
         self.d = tempfile.mkdtemp()
@@ -343,7 +342,6 @@ class TestAuthenticate(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.prefix)
 
-    @fake_keyring
     @responses.activate
     def test_use_webservice_invalid_user(self):
         # Given
