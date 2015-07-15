@@ -131,31 +131,6 @@ class TestConfigKeyringConversion(unittest.TestCase):
         """).format(FAKE_CREDS, FAKE_USER)
         self.assertTrue(_is_using_epd_username(StringIO(data)))
 
-    @unittest.expectedFailure
-    def test_username_to_auth_conversion(self):
-        """
-        Ensure we don't convert EPD_auth to using keyring.
-        """
-        # Given
-        r_content = "EPD_auth = '{0}'".format(FAKE_CREDS)
-        path = os.path.join(self.prefix, ".enstaller4rc")
-
-        old_config = "EPD_username = '{0}'".format(FAKE_USER)
-        with open(path, "w") as fp:
-            fp.write(old_config)
-
-        with fake_keyring_context() as mocked_keyring:
-            mocked_keyring.set_password(KEYRING_SERVICE_NAME, FAKE_USER,
-                                        FAKE_PASSWORD)
-
-            # When
-            converted = convert_auth_if_required(path)
-
-            # Then
-            self.assertTrue(converted)
-            with open(path) as fp:
-                self.assertMultiLineEqual(fp.read(), r_content)
-
 
 class TestGetAuth(unittest.TestCase):
     def setUp(self):
