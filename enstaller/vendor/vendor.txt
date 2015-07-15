@@ -1,7 +1,7 @@
 cachecontrol==v0.10.6
 keyring==3.6
 pywin32-ctypes==0.0.1
-ruamel.yaml==-0.10.2
+ruamel.yaml==0.10.2
 sqlite_cache==0.0.3
 requests==2.5.1
 -e git+https://github.com/dropbox/responses@eb8a964b6e34c4fde52f7c4f2b81cea038802513#egg=responses
