@@ -4,6 +4,7 @@ import sys
 
 import mock
 
+from egginst._compat import PY2, StringIO, configparser
 from egginst import exe_data
 
 from egginst.main import EggInst
@@ -13,13 +14,15 @@ from egginst.scripts import (
 )
 from egginst.utils import compute_md5
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
-from egginst.vendor.six import PY2, StringIO
-from egginst.vendor.six.moves import configparser
 from egginst.vendor.zipfile2 import ZipFile
 
-from egginst.vendor.six.moves import unittest
-
 from .common import mkdtemp
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
+
 
 DUMMY_EGG_WITH_PROXY = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy-1.3.40-3.egg")
 DUMMY_EGG_WITH_PROXY_SCRIPTS = os.path.join(os.path.dirname(__file__), "data", "dummy_with_proxy_scripts-1.0.0-1.egg")

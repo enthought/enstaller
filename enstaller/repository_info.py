@@ -4,7 +4,7 @@ import posixpath
 import enstaller.plat
 
 from egginst._compat import with_metaclass
-from egginst.vendor.six.moves import urllib
+from egginst._compat import urljoin, urlsplit, urlunsplit
 
 from enstaller.auth import _INDEX_NAME
 from enstaller.pep425 import PythonImplementation
@@ -68,7 +68,7 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
 
     @property
     def index_url(self):
-        url = urllib.parse.urljoin(self._store_url, self._path + "/" + _INDEX_NAME)
+        url = urljoin(self._store_url, self._path + "/" + _INDEX_NAME)
         if self._use_pypi:
             url += "?pypi=true"
         else:
@@ -77,16 +77,15 @@ class CanopyRepositoryInfo(ILegacyRepositoryInfo):
 
     @property
     def name(self):
-        parts = urllib.parse.urlsplit(self._store_url)
-        return urllib.parse.urlunsplit(("canopy+https", parts[1], "", "", ""))
+        parts = urlsplit(self._store_url)
+        return urlunsplit(("canopy+https", parts[1], "", "", ""))
 
     @property
     def _base_url(self):
-        return urllib.parse.urljoin(self._store_url, self._path + "/")
+        return urljoin(self._store_url, self._path + "/")
 
     def _package_url(self, package):
-        return urllib.parse.urljoin(self._store_url,
-                                    self._path + "/" + package.key)
+        return urljoin(self._store_url, self._path + "/" + package.key)
 
 
 class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
@@ -95,12 +94,12 @@ class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
 
     @property
     def index_url(self):
-        return urllib.parse.urljoin(self._store_url, _INDEX_NAME)
+        return urljoin(self._store_url, _INDEX_NAME)
 
     @property
     def name(self):
-        parts = urllib.parse.urlsplit(self._store_url)
-        return urllib.parse.urlunsplit(("", "", parts[2], parts[3], parts[4]))
+        parts = urlsplit(self._store_url)
+        return urlunsplit(("", "", parts[2], parts[3], parts[4]))
 
     @property
     def _base_url(self):
@@ -111,7 +110,7 @@ class OldstyleRepositoryInfo(ILegacyRepositoryInfo):
         return (self._store_url, )
 
     def _package_url(self, package):
-        return urllib.parse.urljoin(self._store_url, package.key)
+        return urljoin(self._store_url, package.key)
 
 
 class IBroodRepositoryInfo(IRepositoryInfo):
@@ -138,7 +137,7 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
 
     @property
     def index_url(self):
-        return urllib.parse.urljoin(self._store_url, self._path)
+        return urljoin(self._store_url, self._path)
 
     @property
     def name(self):
@@ -163,7 +162,7 @@ class BroodRepositoryInfo(IBroodRepositoryInfo):
             python_tag = "cp" + parts[0] + parts[1]
         path = ("/api/v0/json/data/{0._name}/{0._platform}/{1}"
                 "/eggs/{2.name}/{2.version}".format(self, python_tag, package))
-        return urllib.parse.urljoin(self._store_url, path)
+        return urljoin(self._store_url, path)
 
     def __repr__(self):
         return "BroodRepository(<{0._store_url}>, <{0.name}>)".format(self)

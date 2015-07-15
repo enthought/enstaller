@@ -1,5 +1,6 @@
+import sys
+
 from egginst._compat import assertCountEqual
-from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import SolverException
 from enstaller.package import PackageMetadata
@@ -10,6 +11,11 @@ from ..constraint_types import Equal
 from ..package_parser import (PrettyPackageStringParser,
                               legacy_dependencies_to_pretty_string,
                               package_to_pretty_string)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 V = EnpkgVersion.from_string

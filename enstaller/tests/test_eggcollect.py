@@ -1,9 +1,14 @@
 import os.path
+import sys
 import tempfile
 import textwrap
 
-from egginst.vendor.six.moves import unittest
 from enstaller.eggcollect import info_from_metadir
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestInfoFromMetaDir(unittest.TestCase):

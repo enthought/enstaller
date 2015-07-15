@@ -13,10 +13,9 @@ import textwrap
 
 import mock
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp, DUMMY_EGG
 from egginst.utils import ensure_dir
-from egginst.vendor.six import StringIO
-from egginst.vendor.six.moves import unittest
 
 
 from enstaller.auth import UserInfo
@@ -47,6 +46,12 @@ from .common import (authenticated_config, create_prefix_with_eggs,
                      mocked_session_factory,
                      R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestEnstallerUpdate(unittest.TestCase):

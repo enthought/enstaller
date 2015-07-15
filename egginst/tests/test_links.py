@@ -2,9 +2,14 @@ import os
 import sys
 
 from egginst.main import EggInst
-from egginst.vendor.six.moves import unittest
 
 from .common import mkdtemp, SUPPORT_SYMLINK
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
+
 
 DUMMY_EGG_WITH_PROXY_SOFTLINK = os.path.join(os.path.dirname(__file__), "data",
                                              "dummy_with_proxy_softlink-1.0.0-1.egg")

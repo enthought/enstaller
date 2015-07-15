@@ -1,5 +1,6 @@
+import sys
+
 from egginst._compat import assertCountEqual
-from egginst.vendor.six.moves import unittest
 
 from enstaller import Repository
 
@@ -13,6 +14,11 @@ from .._composer_utils import (
     _fix_php_version, _normalize_php_version, _requirement_to_php_string,
     repository_to_composer_json_dict, request_to_php_parts
 )
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 P = RepositoryPackageMetadata._from_pretty_string

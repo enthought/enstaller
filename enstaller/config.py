@@ -12,9 +12,8 @@ import warnings
 
 from os.path import isfile, join
 
+from egginst._compat import string_types, urlparse
 from egginst.utils import parse_assignments
-from egginst.vendor.six import string_types
-from egginst.vendor.six.moves import urllib
 
 from enstaller.vendor import keyring
 from enstaller.vendor.keyring.backends.file import PlaintextKeyring
@@ -548,7 +547,7 @@ class Configuration(object):
         """
         repositories = []
         for name in names:
-            p = urllib.parse.urlparse(name)
+            p = urlparse(name)
             if p.scheme == "":
                 repositories.append(BroodRepositoryInfo(self.store_url, name,
                                                         self._platform))
@@ -682,7 +681,7 @@ class Configuration(object):
         self._proxy = ProxyInfo.from_string(proxy_string)
 
     def _set_store_url(self, url):
-        p = urllib.parse.urlparse(url)
+        p = urlparse(url)
         if p.scheme.startswith(_BROOD_PREFIX):
             url = url[len(_BROOD_PREFIX):]
             self._store_kind = STORE_KIND_BROOD

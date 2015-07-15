@@ -1,9 +1,13 @@
 import sys
 
-from egginst.vendor.six.moves import unittest
-
 from enstaller.errors import InvalidConfiguration
 from enstaller.proxy_info import ProxyInfo
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestProxyInfoFromString(unittest.TestCase):

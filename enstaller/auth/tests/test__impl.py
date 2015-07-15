@@ -1,15 +1,19 @@
 import os
 import shutil
+import sys
 import tempfile
 import textwrap
-
-from egginst.vendor.six.moves import unittest
 
 from enstaller.errors import InvalidConfiguration
 from enstaller.vendor import requests
 
 from ..auth_managers import BroodBearerTokenAuth
 from .._impl import APITokenAuth, UserPasswordAuth, _encode_string_base64
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 FAKE_USER = "john.doe"

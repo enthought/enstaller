@@ -1,15 +1,20 @@
 import hashlib
 import os.path
 import shutil
+import sys
 import tempfile
 import textwrap
 
+from egginst._compat import StringIO
 from egginst.utils import (Checksummer, atomic_file, checked_content,
                            compute_md5, parse_assignments,
                            samefile)
-from egginst.vendor.six import StringIO
-from egginst.vendor.six.moves import unittest
 from enstaller.errors import InvalidChecksum, InvalidFormat
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestParseAssignments(unittest.TestCase):

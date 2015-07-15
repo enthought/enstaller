@@ -1,6 +1,6 @@
 from __future__ import absolute_import
 
-from egginst.vendor.six.moves import urllib
+from egginst._compat import pathname2url, urljoin
 
 
 def close_file_or_response(fp):
@@ -13,7 +13,7 @@ def close_file_or_response(fp):
 
 def path_to_uri(path):
     """Convert the given path to a file:// uri."""
-    return urllib.parse.urljoin("file:", urllib.request.pathname2url(path))
+    return urljoin("file:", pathname2url(path))
 
 
 try:

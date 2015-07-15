@@ -1,10 +1,15 @@
-from egginst.vendor.six.moves import unittest
+import sys
 
 from enstaller.versions import EnpkgVersion
 
 from ..constraint import are_compatible, MultiConstraints
 from ..constraint_types import (Any, EnpkgUpstreamMatch, Equal, GEQ, GT,
                                 LEQ, LT, Not, _VersionConstraint)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 V = EnpkgVersion.from_string

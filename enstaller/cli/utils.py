@@ -7,7 +7,7 @@ import os.path
 import sys
 import textwrap
 
-from egginst.vendor.six.moves import urllib
+from egginst._compat import urlparse
 
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
@@ -314,7 +314,7 @@ def humanize_ssl_error_and_die(ssl_exception, store_url):
         url = ssl_exception.request.url
     else:
         url = store_url
-    p = urllib.parse.urlparse(url)
+    p = urlparse(url)
     print("SSL error: {0}".format(str(ssl_exception)))
     print("To connect to {0!r} insecurely, add the `-k` flag to enpkg "
           "command".format(p.hostname))

@@ -1,6 +1,6 @@
 import re
 
-from egginst.vendor.six.moves import urllib
+from egginst._compat import urlparse, urlunparse, splituser
 
 from enstaller.errors import InvalidConfiguration
 
@@ -13,7 +13,7 @@ _PASSWD_PROG_R = re.compile('^([^:]*):(.*)$', re.S)
 class ProxyInfo(object):
     @classmethod
     def from_string(cls, s):
-        parts = urllib.parse.urlparse(s)
+        parts = urlparse(s)
         if len(parts.scheme) > 0:
             scheme = parts.scheme
         else:
@@ -29,7 +29,7 @@ class ProxyInfo(object):
         else:
             netloc = parts.netloc
 
-        userpass, hostport = urllib.parse.splituser(netloc)
+        userpass, hostport = splituser(netloc)
         if userpass is None:
             user, password = "", ""
         else:
@@ -65,7 +65,7 @@ class ProxyInfo(object):
         if self.user:
             netloc = "{0}:{1}@{2}".format(self.user, self.password, netloc)
 
-        return urllib.parse.urlunparse((self.scheme, netloc, "", "", "", ""))
+        return urlunparse((self.scheme, netloc, "", "", "", ""))
 
     @property
     def host(self):

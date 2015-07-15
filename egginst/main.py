@@ -31,6 +31,7 @@ from . import eggmeta
 from . import object_code
 from . import scripts
 
+from ._compat import configparser, StringIO
 from .links import create_link
 from .progress import console_progress_manager_factory
 from .runtime import RuntimeInfo
@@ -38,8 +39,6 @@ from .utils import (on_win, ensure_dir, rm_empty_dir, rm_rf, is_zipinfo_dir,
                     zip_has_arcname)
 
 from .vendor.okonomiyaki.platforms import EPDPlatform
-from .vendor.six import StringIO
-from .vendor.six.moves import configparser
 from .vendor.zipfile2 import ZipFile
 
 EGG_INFO = "EGG-INFO"

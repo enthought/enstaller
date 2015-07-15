@@ -1,7 +1,8 @@
 from __future__ import print_function
 
-from egginst._compat import PY2, input
-from egginst.vendor.six.moves import urllib
+from egginst._compat import (
+    PY2, input, pathname2url, urljoin, urlparse, urlunparse, unquote, url2pathname
+)
 
 import getpass
 import json
@@ -75,7 +76,7 @@ def cleanup_url(url):
     Ensure a given repo string, i.e. a string specifying a repository,
     is valid and return a cleaned up version of the string.
     """
-    p = urllib.parse.urlparse(url)
+    p = urlparse(url)
     scheme, netloc, path, params, query, fragment = p[:6]
 
     if scheme == "":
@@ -91,7 +92,7 @@ def cleanup_url(url):
     else:
         raise InvalidFormat("Unsupported scheme: {0!r}".format(url))
 
-    return urllib.parse.urlunparse((scheme, netloc, path, params, query, fragment))
+    return urlunparse((scheme, netloc, path, params, query, fragment))
 
 
 def fill_url(url):
@@ -107,7 +108,7 @@ def path_to_uri(path):
     It produces URI that are recognized by the windows
     shell API on windows, e.g. 'C:\\foo.txt' will be
     'file:///C:/foo.txt'"""
-    return urllib.parse.urljoin("file:", urllib.request.pathname2url(path))
+    return urljoin("file:", pathname2url(path))
 
 
 def uri_to_path(uri):
@@ -118,13 +119,13 @@ def uri_to_path(uri):
     the native path functions, but is not guaranteed to use
     the native path separator (e.g. it could be C:/foo.txt
     on windows instead of C:\\foo.txt)."""
-    urlpart = urllib.parse.urlparse(uri)
+    urlpart = urlparse(uri)
     if urlpart.scheme == "file":
-        unquoted = urllib.parse.unquote(uri)
+        unquoted = unquote(uri)
         path = unquoted[len("file://"):]
         if sys.platform == "win32" and path.startswith("/"):
             path = path[1:]
-        return urllib.request.url2pathname(path)
+        return url2pathname(path)
     else:
         raise ValueError("Invalid file uri: {0}".format(uri))
 

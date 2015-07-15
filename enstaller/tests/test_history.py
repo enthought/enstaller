@@ -1,9 +1,14 @@
+import sys
+
 from os.path import dirname, join, isfile
 from os import unlink
 
-from egginst.vendor.six.moves import unittest
-
 from enstaller.history import History
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 PATH = join(dirname(__file__), 'history')

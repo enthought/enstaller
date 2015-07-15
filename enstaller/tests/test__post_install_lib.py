@@ -1,9 +1,13 @@
 import os
+import sys
 import tempfile
 
-from egginst.vendor.six.moves import unittest
-
 from egginst._post_install_lib import safe_write, update_pkg_config_prefix
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestSafeWrite(unittest.TestCase):

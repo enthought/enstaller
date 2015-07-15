@@ -6,12 +6,16 @@ import mock
 
 from enstaller import Configuration
 
-from egginst.vendor.six import binary_type
-from egginst.vendor.six.moves import unittest
+from egginst._compat import binary_type
 from enstaller.auth import UserPasswordAuth
 from enstaller.errors import ProcessCommunicationError
 
 from ..api import SubprocessEnpkgExecutor
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 def mock__run_command(f):

@@ -34,7 +34,7 @@ class PythonImplementation(object):
     def from_string(cls, s):
         m = _TAG_RE.match(s)
         if m is None:
-            msg = "Invalid python tag string: {!r}".format(s)
+            msg = "Invalid python tag string: {0!r}".format(s)
             raise InvalidMetadata(msg)
         else:
             d = m.groupdict()

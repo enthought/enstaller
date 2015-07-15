@@ -1,12 +1,12 @@
 import operator
 import os.path
+import sys
 
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst
 from egginst.utils import compute_md5
 from egginst.testing_utils import slow
 from egginst.tests.common import _EGGINST_COMMON_DATA, DUMMY_EGG, create_venv, mkdtemp
-from egginst.vendor.six.moves import unittest
 
 from enstaller.compat import path_to_uri
 from enstaller.config import Configuration, STORE_KIND_BROOD
@@ -22,6 +22,11 @@ from enstaller.solver import Requirement
 from enstaller.tests.common import (SIMPLE_INDEX, WarningTestMixin,
                                     dummy_installed_package_factory,
                                     mock_brood_repository_indices)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestRepository(unittest.TestCase):

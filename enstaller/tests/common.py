@@ -8,7 +8,7 @@ import warnings
 
 import mock
 
-from egginst.vendor.six import PY2, StringIO
+from egginst._compat import PY2, StringIO
 
 from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg
