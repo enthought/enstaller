@@ -1,9 +1,14 @@
-from egginst.vendor.six.moves import unittest
+import sys
 
 from enstaller.package import PackageVersionInfo
 from enstaller.versions import EnpkgVersion
 
 from ..requirement import Requirement
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 V = EnpkgVersion.from_string

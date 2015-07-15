@@ -1,8 +1,13 @@
 import mock
-import unittest
+import sys
 
 from enstaller.errors import InvalidMetadata
 from enstaller.pep425 import PythonImplementation
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestPythonImplementation(unittest.TestCase):

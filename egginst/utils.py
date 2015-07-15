@@ -13,8 +13,8 @@ import tempfile
 
 from os.path import basename, isdir, isfile, islink, join
 
+from egginst._compat import string_types
 from egginst.errors import EnstallerException, InvalidChecksum, InvalidFormat
-from egginst.vendor.six import string_types
 
 on_win = bool(sys.platform == 'win32')
 if on_win:

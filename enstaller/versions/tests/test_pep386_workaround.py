@@ -1,6 +1,11 @@
-from egginst.vendor.six.moves import unittest
+import sys
 
 from .. import PEP386WorkaroundVersion
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestPEP386Workaround(unittest.TestCase):

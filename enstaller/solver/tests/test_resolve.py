@@ -1,10 +1,15 @@
-from egginst.vendor.six.moves import unittest
+import sys
 
 from enstaller.repository import Repository
 from enstaller.tests.common import dummy_repository_package_factory
 
 from ..requirement import Requirement
 from ..resolve import Resolve
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestResolve(unittest.TestCase):

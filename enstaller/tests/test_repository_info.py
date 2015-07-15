@@ -1,10 +1,10 @@
 import os.path
 import posixpath
+import sys
 
 import enstaller.plat
 
 from egginst.tests.common import DUMMY_EGG, MKL_10_3
-from egginst.vendor.six.moves import unittest
 
 from enstaller.egg_meta import split_eggname
 from enstaller.pep425 import PythonImplementation
@@ -14,6 +14,11 @@ from enstaller.repository_info import (BroodRepositoryInfo,
                                        OldstyleRepositoryInfo)
 from enstaller.repository import RemotePackageMetadata
 from enstaller.utils import path_to_uri
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestLegacyRepositoryInfo(unittest.TestCase):

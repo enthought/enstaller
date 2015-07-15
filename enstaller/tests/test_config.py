@@ -7,9 +7,8 @@ import textwrap
 
 import mock
 
+from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
-from egginst.vendor.six import StringIO
-from egginst.vendor.six.moves import unittest
 
 from enstaller.plat import custom_plat, subdir
 
@@ -37,6 +36,12 @@ FAKE_USER = "john.doe"
 FAKE_PASSWORD = "fake_password"
 FAKE_AUTH = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)
 FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestWriteConfig(WarningTestMixin, unittest.TestCase):

@@ -1,7 +1,8 @@
+import sys
+
 import os.path
 
 from egginst._compat import assertCountEqual
-from egginst.vendor.six.moves import unittest
 
 from enstaller.versions import EnpkgVersion
 
@@ -9,6 +10,11 @@ from ..pool import Pool
 from ..requirement import Requirement
 
 from .common import DATA_DIR, repository_from_index
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 V = EnpkgVersion.from_string

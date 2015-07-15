@@ -2,17 +2,23 @@ import os.path
 import json
 import sqlite3
 import tempfile
+import sys
 
 import mock
 
+from egginst._compat import cPickle
 from egginst.utils import rm_rf
-from egginst.vendor.six.moves import cPickle, unittest
 
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.requests_utils import DBCache, FileResponse, LocalFileAdapter
 from enstaller.requests_utils import _NullCache
 from enstaller.utils import compute_md5
 from enstaller.vendor import requests
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestFileResponse(unittest.TestCase):

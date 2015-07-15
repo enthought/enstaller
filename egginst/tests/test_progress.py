@@ -1,9 +1,15 @@
+import sys
 import mock
 
 import egginst.progress
 from egginst.progress import console_progress_manager_factory
 from egginst.console.simple import AFTER_BAR, BEFORE_BAR
-from egginst.vendor.six.moves import unittest
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 DEFAULT_TERMINAL_SIZE = 80

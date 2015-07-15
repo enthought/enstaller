@@ -1,12 +1,17 @@
 import json
 import os.path
 import shutil
+import sys
 import tempfile
 
-from egginst.vendor.six.moves import unittest
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.egg_meta import info_from_egg, update_index
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestInfoFromEgg(unittest.TestCase):

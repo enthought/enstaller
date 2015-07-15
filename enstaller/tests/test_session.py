@@ -2,11 +2,10 @@ import json
 import mock
 import os
 import shutil
+import sys
 import tempfile
 
 import enstaller
-
-from egginst.vendor.six.moves import unittest
 
 from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           LegacyCanopyAuthManager,
@@ -18,6 +17,11 @@ from enstaller.tests.common import R_JSON_AUTH_RESP, mocked_session_factory
 from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 from enstaller.vendor.requests.adapters import HTTPAdapter
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class Test_PatchedRawSession(unittest.TestCase):

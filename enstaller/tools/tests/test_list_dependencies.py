@@ -1,9 +1,8 @@
 import json
+import sys
 import textwrap
 
 import mock
-
-from egginst.vendor.six.moves import unittest
 
 from enstaller.config import Configuration
 from enstaller.plat import custom_plat
@@ -14,6 +13,11 @@ from enstaller.tests.common import (mock_print,
 from enstaller.vendor import responses
 
 from enstaller.tools.list_dependencies import query_platform, main
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 def _mock_index(entries, platform=None):

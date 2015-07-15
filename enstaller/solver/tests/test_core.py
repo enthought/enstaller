@@ -3,11 +3,11 @@ from __future__ import absolute_import
 import os.path
 import shutil
 import tempfile
+import sys
 
 from egginst.main import EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
-from egginst.vendor.six.moves import unittest
 
 
 from enstaller.egg_meta import split_eggname
@@ -21,6 +21,11 @@ from ..requirement import Requirement
 from enstaller.tests.common import (dummy_installed_package_factory,
                                     dummy_repository_package_factory,
                                     repository_factory)
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestSolverNoDependencies(unittest.TestCase):

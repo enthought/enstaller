@@ -1,5 +1,6 @@
 import os
 import shutil
+import sys
 
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst, setuptools_egg_info_dir
@@ -9,7 +10,12 @@ from egginst.tests.common import (DUMMY_EGG, DUMMY_EGG_WITH_ENTRY_POINTS,
                                   DUMMY_EGG_WITH_APPINST)
 from egginst.tests.common import tempfile
 from egginst.utils import compute_md5
-from egginst.vendor.six.moves import unittest
+
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 class TestEggInfoDirFixer(unittest.TestCase):

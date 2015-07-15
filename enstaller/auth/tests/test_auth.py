@@ -2,11 +2,10 @@ import base64
 import json
 import os.path
 import shutil
+import sys
 import tempfile
 
 from mock import patch
-
-from egginst.vendor.six.moves import unittest
 
 from enstaller.auth import DUMMY_USER, UserInfo
 from enstaller.auth.auth_managers import (BroodAuthenticator,
@@ -21,6 +20,11 @@ from enstaller.tests.common import (DummyAuthenticator,
 from enstaller.vendor import requests, responses
 
 from .._impl import UserPasswordAuth
+
+if sys.version_info[0] == 2:
+    import unittest2 as unittest
+else:
+    import unittest
 
 
 basic_user = UserInfo(True, first_name="Jane", last_name="Doe", has_subscription=True)
