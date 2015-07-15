@@ -8,16 +8,12 @@ import os
 import types
 
 try:
-    from ruamel.ordereddict import ordereddict
+    from collections import OrderedDict
 except:
-    try:
-        from collections import OrderedDict
-    except ImportError:
-        from orderddict import OrderedDict
-    # to get the right name import ... as ordereddict doesn't do that
+    from enstaller.compat import OrderedDict
 
-    class ordereddict(OrderedDict):
-        pass
+class ordereddict(OrderedDict):
+    pass
 
 PY2 = sys.version_info[0] == 2
 PY3 = sys.version_info[0] == 3

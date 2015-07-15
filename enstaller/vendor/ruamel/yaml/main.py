@@ -3,15 +3,15 @@
 from __future__ import absolute_import
 
 
-from ruamel.yaml.error import *
+from .error import *
 
-from ruamel.yaml.tokens import *
-from ruamel.yaml.events import *
-from ruamel.yaml.nodes import *
+from .tokens import *
+from .events import *
+from .nodes import *
 
-from ruamel.yaml.loader import *
-from ruamel.yaml.dumper import *
-from ruamel.yaml.compat import StringIO, BytesIO, with_metaclass, PY3
+from .loader import *
+from .dumper import *
+from .compat import StringIO, BytesIO, with_metaclass, PY3
 
 import io
 
