@@ -43,7 +43,7 @@ import enstaller.tests.common
 from .common import (authenticated_config, create_prefix_with_eggs,
                      dummy_installed_package_factory,
                      dummy_repository_package_factory, exception_code,
-                     mock_print, mock_index, mock_raw_input, fake_keyring,
+                     mock_print, mock_index, mock_raw_input,
                      mocked_session_factory,
                      R_JSON_AUTH_FREE_RESP, R_JSON_NOAUTH_RESP,
                      DummyAuthenticator)
@@ -485,7 +485,6 @@ class TestSearch(unittest.TestCase):
                 self.assertMultiLineEqual(m.value, r_output)
 
 
-@fake_keyring
 class TestInstallRequirement(unittest.TestCase):
     def setUp(self):
         self.prefix = tempfile.mkdtemp()

@@ -20,11 +20,9 @@ from enstaller.vendor import responses
 
 from enstaller.auth import UserPasswordAuth
 from enstaller.main import main, main_noexc
-from enstaller.config import (_set_keyring_password,
-                              Configuration, write_default_config)
+from enstaller.config import Configuration, write_default_config
 
-from enstaller.tests.common import (fake_keyring, mock_print, mock_input_auth,
-                                    mock_raw_input)
+from enstaller.tests.common import mock_print, mock_input_auth
 from enstaller.vendor import requests
 from enstaller.auth.tests.test_auth import R_JSON_AUTH_RESP
 
@@ -35,6 +33,7 @@ from .common import (
 FAKE_USER = "nono"
 FAKE_PASSWORD = "le petit robot"
 FAKE_CREDS = UserPasswordAuth(FAKE_USER, FAKE_PASSWORD)._encoded_auth
+
 
 class TestAuth(unittest.TestCase):
     @contextlib.contextmanager
@@ -79,7 +78,6 @@ class TestAuth(unittest.TestCase):
         Ensure we don't crash when empty information is input in --userpass
         prompt (no .enstaller4rc found).
         """
-        from enstaller.main import main
         with use_given_config_context(self.config):
             with mock_input_auth("", "") as m:
                 with self.assertRaises(SystemExit):
@@ -170,7 +168,6 @@ class TestAuth(unittest.TestCase):
 
     @empty_index
     @mock_install_req
-    @fake_keyring
     @responses.activate
     def test_no_keyring_to_no_keyring_conversion(self):
         """
@@ -193,14 +190,12 @@ class TestAuth(unittest.TestCase):
 
     @empty_index
     @mock_install_req
-    @fake_keyring
     @responses.activate
     def test_keyring_to_no_keyring_conversion(self):
         """
         Ensure the config file is automatically converted to use keyring.
         """
         # Given
-        _set_keyring_password(FAKE_USER, FAKE_PASSWORD)
         with open(self.config, "w") as fp:
             fp.write("EPD_username = '{0}'".format(FAKE_USER))
         config = Configuration.from_file(self.config)
@@ -208,15 +203,14 @@ class TestAuth(unittest.TestCase):
                       body=json.dumps(R_JSON_AUTH_RESP))
 
         # When
-        self._run_main_with_dummy_req()
+        with mock_input_auth(FAKE_USER, FAKE_PASSWORD):
+            self._run_main_with_dummy_req()
 
         # Then
         with open(self.config) as fp:
             self.assertMultiLineEqual(fp.read(), "EPD_auth = '{0}'".format(FAKE_CREDS))
 
-
     @mock_install_req
-    @fake_keyring
     @responses.activate
     def test_401_index_handling(self):
         self.maxDiff = None
@@ -250,7 +244,6 @@ class TestAuth(unittest.TestCase):
         self.assertMultiLineEqual(m.value, error_message)
 
     @mock_install_req
-    @fake_keyring
     @responses.activate
     def test_invalid_certificate_use_webservice(self):
         self.maxDiff = None
@@ -283,7 +276,6 @@ class TestAuth(unittest.TestCase):
         self.assertMultiLineEqual(m.value, error_message)
 
     @mock_install_req
-    @fake_keyring
     @responses.activate
     def test_invalid_certificate_dont_webservice(self):
         self.maxDiff = None
@@ -316,7 +308,6 @@ class TestAuth(unittest.TestCase):
         # Then
         self.assertMultiLineEqual(m.value, error_message)
 
-    @fake_keyring
     @responses.activate
     def test_invalid_certificate_config(self):
         self.maxDiff = None

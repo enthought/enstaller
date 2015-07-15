@@ -35,8 +35,8 @@ from enstaller.errors import (EnstallerException,
 from enstaller.config import (ENSTALLER4RC_FILENAME, HOME_ENSTALLER4RC,
                               Configuration, add_url,
                               configuration_read_search_order,
-                              convert_auth_if_required,
-                              print_config, write_default_config)
+                              print_config, write_default_config,
+                              _is_using_epd_username)
 from enstaller.session import Session
 from enstaller.errors import AuthFailedError, NoSuchPackage
 from enstaller.enpkg import Enpkg, ProgressBarContext
@@ -212,8 +212,8 @@ def ensure_authenticated_config(config, config_filename, session,
               "'enpkg --userpass'.")
         sys.exit(-1)
     else:
-        if not use_new_format:
-            convert_auth_if_required(config_filename)
+        if not use_new_format and _is_using_epd_username(config_filename):
+            configure_authentication_or_exit(config, config_filename, session)
 
 
 def configure_authentication_or_exit(config, config_filename,

@@ -16,9 +16,6 @@ from egginst.utils import parse_assignments
 from egginst.vendor.six import string_types
 from egginst.vendor.six.moves import urllib
 
-from enstaller.vendor import keyring
-from enstaller.vendor.keyring.backends.file import PlaintextKeyring
-
 from enstaller import __version__
 from enstaller.auth import (DUMMY_USER,
                             subscription_message, APITokenAuth, UserInfo,
@@ -40,8 +37,6 @@ from ._yaml_config import load_configuration_from_yaml
 
 logger = logging.getLogger(__name__)
 
-KEYRING_SERVICE_NAME = 'Enthought.com'
-
 ENSTALLER4RC_FILENAME = ".enstaller4rc"
 SYS_PREFIX_ENSTALLER4RC = os.path.join(sys.prefix, ENSTALLER4RC_FILENAME)
 HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
@@ -49,33 +44,6 @@ HOME_ENSTALLER4RC = os.path.join(abs_expanduser("~"), ENSTALLER4RC_FILENAME)
 STORE_KIND_LEGACY = "legacy"
 STORE_KIND_BROOD = "brood"
 _BROOD_PREFIX = "brood+"
-
-
-def _setup_keyring():
-    backend = PlaintextKeyring()
-
-    try:
-        if sys.platform == "win32":
-            from enstaller.vendor.keyring.backends.Windows import \
-                WinVaultKeyring
-            tentative_backend = WinVaultKeyring()
-        elif sys.platform == "darwin":
-            from enstaller.vendor.keyring.backends.OS_X import Keyring
-            tentative_backend = Keyring()
-        else:
-            tentative_backend = backend
-        if tentative_backend.priority >= 0:
-            backend = tentative_backend
-    except ImportError:
-        pass
-
-    keyring.set_keyring(backend)
-
-_setup_keyring()
-
-
-def _keyring_backend_name():
-    return str(type(keyring.get_keyring()))
 
 
 def legacy_configuration_read_search_order():
@@ -168,39 +136,6 @@ def _is_using_epd_username(filename_or_fp):
     return "EPD_username" in data and "EPD_auth" not in data
 
 
-def convert_auth_if_required(filename):
-    """
-    This function will convert configuration using EPD_username + keyring to
-    using EPD_auth.
-
-    Returns True if the file has been modified, False otherwise.
-    """
-    did_convert = False
-    if _is_using_epd_username(filename):
-        msg = "Cannot convert password: no password found in keyring"
-        config = Configuration.from_file(filename)
-        if config.auth is None:
-            raise EnstallerException(msg)
-        username = config.auth.username
-        password = _get_keyring_password(username)
-        if password is None:
-            raise EnstallerException(msg)
-        else:
-            config.update(auth=(username, password))
-            config._change_auth(filename)
-            did_convert = True
-
-    return did_convert
-
-
-def _get_keyring_password(username):
-    return keyring.get_password(KEYRING_SERVICE_NAME, username)
-
-
-def _set_keyring_password(username, password):
-    return keyring.set_password(KEYRING_SERVICE_NAME, username, password)
-
-
 def _create_error_message(fp, exc):
     pos = fp.tell()
     try:
@@ -262,12 +197,6 @@ class Configuration(object):
             def epd_auth_to_auth(epd_auth):
                 ret.update(auth=UserPasswordAuth.from_encoded_auth(epd_auth))
 
-            def epd_username_to_auth(username):
-                if keyring is not None:
-                    password = _get_keyring_password(username)
-                    if password is not None:
-                        ret.update(auth=(username, password))
-
             try:
                 parsed = parse_assignments(fp)
             except (InvalidFormat, SyntaxError) as e:
@@ -279,7 +208,6 @@ class Configuration(object):
             translator = ret._name_to_setter.copy()
             translator.update({
                 "EPD_auth": epd_auth_to_auth,
-                "EPD_username": epd_username_to_auth,
                 "IndexedRepos": translator["indexed_repositories"],
                 "api_token": api_token_to_auth,
             })
@@ -716,7 +644,6 @@ def print_config(config, session):
     print("use_webservice:", config.use_webservice)
     if config.filename is not None:
         print("config file:", config.filename)
-    print("keyring backend: %s" % (_keyring_backend_name(), ))
     print("settings:")
     print("    prefix = %s" % config.prefix)
     print("    %s = %s" % ("repository_cache", config.repository_cache))

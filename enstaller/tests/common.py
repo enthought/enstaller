@@ -164,26 +164,6 @@ def mock_input(input_string):
         yield f
 
 
-# Decorators to force a certain configuration
-def make_keyring_unavailable(f):
-    return mock.patch("enstaller.config.keyring", None)(f)
-
-
-# Context managers to force certain configuration
-@contextlib.contextmanager
-def make_keyring_unavailable_context():
-    with mock.patch("enstaller.config.keyring", None) as context:
-        yield context
-
-
-# Context managers to force certain configuration
-@contextlib.contextmanager
-def make_keyring_available_context():
-    m = mock.Mock(["get_password", "set_password"])
-    with mock.patch("enstaller.config.keyring", m) as context:
-        yield context
-
-
 @contextlib.contextmanager
 def make_default_configuration_path(path):
     with mock.patch("enstaller.main.get_config_filename",
@@ -210,25 +190,6 @@ class _FakeKeyring(object):
 
     def set_password(self, service, username, password):
         self._state[service][username] = password
-
-
-@contextlib.contextmanager
-def fake_keyring_context():
-    keyring = _FakeKeyring()
-    with mock.patch("enstaller.config.keyring.get_password",
-                    keyring.get_password):
-        with mock.patch("enstaller.config.keyring.set_password",
-                        keyring.set_password):
-            yield keyring
-
-
-def fake_keyring(f):
-    keyring = _FakeKeyring()
-    dec1 = mock.patch("enstaller.config.keyring.get_password",
-                      keyring.get_password)
-    dec2 = mock.patch("enstaller.config.keyring.set_password",
-                      keyring.set_password)
-    return dec1(dec2(f))
 
 
 @contextlib.contextmanager
@@ -337,7 +298,6 @@ def mock_brood_repository_indices(index_data, names,
     return decorator
 
 
-@fake_keyring
 def authenticated_config(f):
     config = Configuration()
     config.update(auth=("dummy", "dummy"))
