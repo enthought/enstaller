@@ -1,8 +1,9 @@
 *~
 *.pyc
+*.pyo
+
 build
 dist
-ilan.sh
 
 *.egg-info
 
