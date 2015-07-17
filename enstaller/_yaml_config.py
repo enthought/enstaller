@@ -5,8 +5,6 @@ from egginst._compat import string_types
 from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
-from enstaller.vendor import jsonschema
-from enstaller.vendor.ruamel import yaml
 
 
 _API_TOKEN = "api_token"
@@ -106,6 +104,11 @@ _SCHEMA = {
 def load_configuration_from_yaml(cls, filename_or_fp):
     # FIXME: local import to workaround circular import
     from enstaller.config import STORE_KIND_BROOD
+
+    # Local import to workaround some freezing issues for jaguar and speed up
+    # imports a bit when yaml is not used.
+    from enstaller.vendor import jsonschema
+    from enstaller.vendor.ruamel import yaml
     if isinstance(filename_or_fp, string_types):
         with open(filename_or_fp, "rt") as fp:
             data = yaml.load(fp)
