@@ -1,3 +1,4 @@
+import os.path
 import sys
 
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
@@ -11,14 +12,18 @@ else:
     import unittest
 
 
+NORM_EXEC_PREFIX = os.path.normpath(sys.exec_prefix)
+NORM_EXECUTABLE = os.path.normpath(sys.executable)
+
+
 class TestRuntimeInfo(unittest.TestCase):
     def test_simple_from_running_python(self):
         # When
         runtime_info = RuntimeInfo.from_running_python()
 
         # Then
-        self.assertEqual(runtime_info.prefix, sys.exec_prefix)
-        self.assertEqual(runtime_info.executable, sys.executable)
+        self.assertEqual(runtime_info.prefix, NORM_EXEC_PREFIX)
+        self.assertEqual(runtime_info.executable, NORM_EXECUTABLE)
         self.assertEqual(runtime_info.major, sys.version_info[0])
         self.assertEqual(runtime_info.minor, sys.version_info[1])
         self.assertEqual(runtime_info.implementation, CPYTHON)
@@ -76,3 +81,22 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(
             runtime_info.site_packages, prefix + "\\Lib\\site-packages")
         self.assertEqual(runtime_info.major, 3)
+
+    def test_normalization(self):
+        # Given
+        prefix = "/usr/local/bin/.."
+        norm_prefix = "/usr/local"
+        platform = EPDPlatform.from_epd_string("osx-64").platform
+        version_info = (2, 7, 9, "final", 0)
+
+        # When
+        runtime_info = RuntimeInfo.from_prefix_and_platform(
+            prefix, platform, version_info)
+
+        # Then
+        self.assertEqual(runtime_info.prefix, norm_prefix)
+        self.assertEqual(runtime_info.bindir, norm_prefix + "/bin")
+        self.assertEqual(runtime_info.scriptsdir, norm_prefix + "/bin")
+        self.assertEqual(
+            runtime_info.site_packages, norm_prefix + "/lib/python2.7/site-packages")
+        self.assertEqual(runtime_info.major, 2)
