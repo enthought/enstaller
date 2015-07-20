@@ -101,11 +101,17 @@ class RuntimeInfo(object):
 
     def __init__(self, prefix, bindir, scriptsdir, site_packages, executable,
                  version_info, platform, implementation):
-        self.prefix = prefix
-        self.bindir = bindir
-        self.scriptsdir = scriptsdir
-        self.site_packages = site_packages
-        self.executable = executable
+        def normpath(p):
+            if platform.os == WINDOWS:
+                return ntpath.normpath(p)
+            else:
+                return posixpath.normpath(p)
+
+        self.prefix = normpath(prefix)
+        self.bindir = normpath(bindir)
+        self.scriptsdir = normpath(scriptsdir)
+        self.site_packages = normpath(site_packages)
+        self.executable = normpath(executable)
 
         self.version_info = version_info
 

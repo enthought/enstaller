@@ -237,7 +237,12 @@ dummy-gui = dummy:main_gui
 
 class TestProxy(unittest.TestCase):
     def _runtime_info_factory(self, prefix):
-        platform = EPDPlatform.from_epd_string("win-32").platform
+        if sys.platform == "win32":
+            epd_string = "win-32"
+        else:
+            epd_string = "rh5-32"
+        # XXX: hack to force proper path separations, even on Unix.
+        platform = EPDPlatform.from_epd_string(epd_string).platform
         runtime_info = RuntimeInfo.from_prefix_and_platform(
             prefix, platform, sys.version_info
         )
@@ -247,7 +252,6 @@ class TestProxy(unittest.TestCase):
 
         return runtime_info
 
-    @mock.patch("sys.platform", "win32")
     @mock.patch("egginst.utils.on_win", True)
     def test_proxy(self):
         """
@@ -298,7 +302,6 @@ sys.exit(subprocess.call([src] + sys.argv[1:]))
                     self.assertMultiLineEqual(python_proxy_data,
                                               r_python_proxy_data)
 
-    @mock.patch("sys.platform", "win32")
     @mock.patch("egginst.utils.on_win", True)
     def test_proxy_directory(self):
         """
