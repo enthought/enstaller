@@ -39,10 +39,12 @@ class RuntimeInfo(object):
             An okonomiyaki Platform class (the vendorized one).
         """
         if platform.os == WINDOWS:
-            bindir = prefix
+            bindir = ntpath.normpath(prefix)
             scriptsdir = ntpath.join(prefix, "Scripts")
         else:
-            bindir = scriptsdir = posixpath.join(prefix, "bin")
+            bindir = scriptsdir = posixpath.normpath(
+                posixpath.join(prefix, "bin")
+            )
 
         if version_info[0] == 3:
             executable = "python3"
