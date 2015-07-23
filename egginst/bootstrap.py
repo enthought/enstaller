@@ -353,7 +353,10 @@ def cli_main(argv=None):
 # Kept for backward compatibility with the custom_tools/boot-enst.py script in
 # enicab. Don't remove this unless you know what you are doing.
 def main(prefix=sys.prefix, hook=False, pkgs_dirs=None, verbose=False):
-    egg_path = sys.argv[0]
+    # egginst.bootstrap.main is called in enicab as follows::
+    #   <python> boot-enst.py <enstaller egg>
+    # hence the actual egg is sys.argv[1]
+    egg_path = sys.argv[1]
 
     print("Bootstrapping: {0}".format(egg_path))
     bootstrap_enstaller(egg_path)

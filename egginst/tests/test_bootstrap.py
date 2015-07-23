@@ -27,7 +27,7 @@ class TestEgginstBootstrap(unittest.TestCase):
         r_output = 'Bootstrapping: {0}'.format(r_egg)
 
         # When
-        with mock.patch("sys.argv", [r_egg]):
+        with mock.patch("sys.argv", ["boot-enst.py", r_egg]):
             with testfixtures.OutputCapture() as output:
                 main(prefix=self.prefix, verbose=False)
 
