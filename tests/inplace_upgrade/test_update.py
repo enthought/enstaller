@@ -366,7 +366,7 @@ EPD_auth = 'YXNkOmFzZA=='
 
 
 def _bootstrap_old_enstaller(pyenv, upgrade_from):
-    bootstrap = os.path.join("scripts", "bootstrap.py")
+    bootstrap = os.path.join("egginst", "bootstrap.py")
     pyenv.runpy("{0} --version {1}".format(bootstrap, upgrade_from))
     m = pyenv.runenpkg("--list", capture=True)
     out = m.stdout

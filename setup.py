@@ -21,7 +21,7 @@ IS_RELEASED = False
 
 VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
-BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "scripts", "bootstrap.py")
+BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap.py")
 
 
 # Return the git revision as a string
