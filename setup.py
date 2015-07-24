@@ -1,3 +1,4 @@
+import ast
 import os
 import os.path
 import subprocess
@@ -9,8 +10,6 @@ from setuptools import setup
 from distutils.util import convert_path
 
 from setuptools.command.bdist_egg import bdist_egg as old_bdist_egg
-
-from egginst.main import BOOTSTRAP_ARCNAME
 
 
 MAJOR = 4
@@ -58,13 +57,10 @@ def git_version():
 def write_version_py(filename='enstaller/_version.py'):
     template = """\
 # THIS FILE IS GENERATED FROM ENSTALLER SETUP.PY
-version = '{version}'
+version = '{final_version}'
 full_version = '{full_version}'
 git_revision = '{git_revision}'
 is_released = {is_released}
-
-if not is_released:
-    version = full_version
 """
     force_mode = os.environ.get("FORCE_ENSTALLER_VERSION", None)
     if force_mode is not None:
@@ -81,23 +77,48 @@ if not is_released:
 
     if os.path.exists('.git'):
         git_rev, git_count = git_version()
-    elif os.path.exists('enstaller/_version.py'):
-        # must be a source distribution, use existing version file
-        try:
-            from enstaller._version import git_revision as git_rev
-        except ImportError:
-            raise ImportError("Unable to import git_revision. Try removing "
-                              "enstaller/_version.py and the build directory "
-                              "before building.")
+    elif os.path.exists(filename):
+        return
 
     if not is_released:
         full_version += '.dev' + git_count
+        final_version = full_version
+    else:
+        final_version = version
 
     with open(filename, "wt") as fp:
-        fp.write(template.format(version=version,
+        fp.write(template.format(final_version=final_version,
                                  full_version=full_version,
                                  git_revision=git_rev,
                                  is_released=is_released))
+
+
+class _AssignmentParser(ast.NodeVisitor):
+    def __init__(self):
+        self._data = {}
+
+    def parse(self, s):
+        self._data.clear()
+
+        root = ast.parse(s)
+        self.visit(root)
+        return self._data
+
+    def generic_visit(self, node):
+        if type(node) != ast.Module:
+            raise InvalidFormat("Unexpected expression @ line {0}".
+                                format(node.lineno), node.lineno)
+        super(_AssignmentParser, self).generic_visit(node)
+
+    def visit_Assign(self, node):
+        value = ast.literal_eval(node.value)
+        for target in node.targets:
+            self._data[target.id] = value
+
+
+def parse_version(path):
+    with open(path) as fp:
+        return _AssignmentParser().parse(fp.read())["version"]
 
 
 class bdist_enegg(old_bdist_egg):
@@ -108,6 +129,7 @@ class bdist_enegg(old_bdist_egg):
         self.egg_output = os.path.join(self.dist_dir, basename)
 
     def _write_bootstrap_code(self, bootstrap_code):
+        from egginst.main import BOOTSTRAP_ARCNAME
         zp = zipfile.ZipFile(self.egg_output, "a",
                              compression=zipfile.ZIP_DEFLATED)
         try:
@@ -145,15 +167,11 @@ class bdist_enegg(old_bdist_egg):
 
 
 write_version_py()
+_version_file = os.path.join("enstaller", "_version.py")
 
 kwds = {}  # Additional keyword arguments for setup
 
-d = {}
-exec(compile(open(convert_path('enstaller/__init__.py')).read(),
-             convert_path('enstaller/__init__.py'),
-             'exec'),
-     d)
-kwds['version'] = __version__ = d['__version__']
+kwds['version'] = __version__ = parse_version(_version_file)
 
 f = open('README.rst')
 kwds['long_description'] = f.read()
