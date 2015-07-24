@@ -199,26 +199,19 @@ packages = [
     'enstaller.solver',
     'enstaller.tools',
     'enstaller.vendor',
-    'enstaller.vendor.cachecontrol',
-    'enstaller.vendor.cachecontrol.caches',
     'enstaller.vendor.futures',
     'enstaller.vendor.jsonschema',
-    'enstaller.vendor.requests',
-    'enstaller.vendor.requests.packages',
-    'enstaller.vendor.requests.packages.chardet',
-    'enstaller.vendor.requests.packages.urllib3',
-    'enstaller.vendor.requests.packages.urllib3.contrib',
-    'enstaller.vendor.requests.packages.urllib3.packages',
-    'enstaller.vendor.requests.packages.urllib3.packages.ssl_match_hostname',
-    'enstaller.vendor.requests.packages.urllib3.util',
     'enstaller.vendor.sqlite_cache',
     'enstaller.vendor.ruamel',
     'enstaller.vendor.ruamel.yaml',
     'enstaller.versions',
 ]
 
-package_data = {"enstaller.vendor.requests": ["cacert.pem"],
-                "enstaller.vendor.jsonschema": ["schemas/draft3.json", "schemas/draft4.json"]}
+package_data = {
+    "enstaller.vendor.jsonschema": [
+        "schemas/draft3.json", "schemas/draft4.json"
+    ]
+}
 
 if include_testing:
     packages += [
@@ -272,6 +265,10 @@ setup(
         "Programming Language :: Python :: 2.7",
         "Topic :: System :: Software Distribution",
         "Topic :: System :: Systems Administration",
+    ],
+    install_requires=[
+        "cachecontrol>=0.11.5",
+        "requests>=2.7.0",
     ],
     test_suite="nose.collector",
     cmdclass={"bdist_enegg": bdist_enegg},

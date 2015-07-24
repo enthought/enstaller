@@ -5,6 +5,7 @@ flake8
 machotools>=0.0.2
 mock<1.1
 haas
+responses==0.4.0
 six
 testfixtures
 tox
