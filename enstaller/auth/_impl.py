@@ -5,9 +5,10 @@ import base64
 import re
 import textwrap
 
+import requests
+
 from egginst._compat import with_metaclass
 from enstaller.errors import InvalidConfiguration
-from enstaller.vendor import requests
 
 from .auth_managers import BroodBearerTokenAuth
 

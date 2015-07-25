@@ -11,13 +11,14 @@ import sys
 import textwrap
 import zlib
 
+import requests
+
 from os.path import abspath, expanduser, getmtime, getsize
 
 from egginst.utils import compute_md5
 from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.errors import InvalidFormat
-from enstaller.vendor import requests
 from enstaller.versions import PEP386WorkaroundVersion
 from enstaller import plat
 

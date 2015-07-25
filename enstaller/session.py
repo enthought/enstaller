@@ -5,6 +5,10 @@ import contextlib
 import os.path
 import threading
 
+import requests
+
+from cachecontrol.adapter import CacheControlAdapter
+
 from egginst._compat import urlparse
 from egginst.utils import atomic_file, ensure_dir
 
@@ -14,8 +18,6 @@ from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           OldRepoAuthManager)
 from enstaller.config import STORE_KIND_BROOD
 from enstaller.errors import EnstallerException
-from enstaller.vendor import requests
-from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
 
 from enstaller.requests_utils import (DBCache, LocalFileAdapter,
                                       QueryPathOnlyCacheController)

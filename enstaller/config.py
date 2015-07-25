@@ -12,6 +12,8 @@ import warnings
 
 from os.path import isfile, join
 
+import requests
+
 from egginst._compat import string_types, urlparse
 from egginst.utils import parse_assignments
 
@@ -28,7 +30,6 @@ from enstaller.repository_info import (BroodRepositoryInfo,
                                        FSRepositoryInfo,
                                        OldstyleRepositoryInfo)
 from enstaller.utils import real_prefix, under_venv
-from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
 from enstaller import plat
 from .utils import PY_VER, abs_expanduser, fill_url

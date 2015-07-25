@@ -2,8 +2,9 @@ from __future__ import absolute_import
 
 import json
 
+import requests
+
 from enstaller.errors import AuthFailedError
-from enstaller.vendor import requests
 
 
 class UserInfo(object):

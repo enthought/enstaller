@@ -8,12 +8,15 @@ import sqlite3
 
 from io import FileIO
 
-from egginst._compat import buffer, urlparse, urlunparse
+import requests
 
+from cachecontrol.cache import BaseCache
+from cachecontrol.controller import CacheController
+
+from egginst._compat import buffer, urlparse, urlunparse
+ 
 from enstaller.utils import uri_to_path
-from enstaller.vendor import requests, sqlite_cache
-from enstaller.vendor.cachecontrol.cache import BaseCache
-from enstaller.vendor.cachecontrol.controller import CacheController
+from enstaller.vendor import sqlite_cache
 
 
 logger = logging.getLogger(__name__)

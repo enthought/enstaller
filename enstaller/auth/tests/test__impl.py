@@ -4,8 +4,9 @@ import sys
 import tempfile
 import textwrap
 
+import requests
+
 from enstaller.errors import InvalidConfiguration
-from enstaller.vendor import requests
 
 from ..auth_managers import BroodBearerTokenAuth
 from .._impl import APITokenAuth, UserPasswordAuth, _encode_string_base64

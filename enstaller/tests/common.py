@@ -8,6 +8,11 @@ import sys
 import warnings
 
 import mock
+import responses
+
+from responses import (
+    urlparse, _ensure_url_default_path, _is_string
+)
 
 from egginst._compat import PY2, StringIO
 
@@ -19,10 +24,6 @@ from enstaller.repository import (InstalledPackageMetadata, Repository,
 from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import RUNNING_PYTHON
-from enstaller.vendor import responses
-from enstaller.vendor.responses import (
-    urlparse, _ensure_url_default_path, _is_string
-)
 from enstaller.versions import EnpkgVersion
 
 
@@ -361,7 +362,7 @@ def activate(f):
                 "enstaller.requests_utils.LocalFileAdapter.send",
                 unbound_on_send):
             with mock.patch(
-                    "enstaller.vendor.responses._ensure_url_default_path",
+                    "responses._ensure_url_default_path",
                     _patched_ensure_url_default_path):
                 return f(*a, **kw)
 

@@ -7,6 +7,8 @@ import tempfile
 import textwrap
 
 import mock
+import requests
+import responses
 
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst
@@ -23,7 +25,6 @@ from enstaller.tests.common import (DummyAuthenticator,
                                     mocked_session_factory,
                                     mock_index, mock_print, mock_raw_input)
 from enstaller.utils import PY_VER
-from enstaller.vendor import requests, responses
 from enstaller.versions import EnpkgVersion
 
 from ..utils import (exit_if_root_on_non_owned, install_req,
