@@ -1,4 +1,4 @@
-cachecontrol==v0.10.6
+cachecontrol==v0.11.5
 ruamel.yaml==0.10.2
 sqlite_cache==0.0.3
 requests==2.5.1
