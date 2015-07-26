@@ -173,9 +173,8 @@ kwds = {}  # Additional keyword arguments for setup
 
 kwds['version'] = __version__ = parse_version(_version_file)
 
-f = open('README.rst')
-kwds['long_description'] = f.read()
-f.close()
+with open('README.rst') as fp:
+    kwds['long_description'] = fp.read()
 
 include_testing = True
 
