@@ -1,4 +1,5 @@
 appinst>=2.1.4
+cookies==2.2.1
 coverage
 flake8
 machotools>=0.0.2
