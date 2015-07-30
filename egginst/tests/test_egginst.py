@@ -17,12 +17,14 @@ from egginst.vendor.zipfile2 import ZipFile
 
 from egginst import eggmeta
 
-from .common import (DUMMY_EGG, DUMMY_EGG_WITH_APPINST,
-                     DUMMY_EGG_WITH_ENTRY_POINTS, DUMMY_EGG_METADATA_FILES,
-                     DUMMY_EGG_WITH_POST_INSTALL, LEGACY_EGG_INFO_EGG,
-                     LEGACY_EGG_INFO_EGG_METADATA_FILES, NOSE_1_3_0,
-                     PYTHON_VERSION, STANDARD_EGG, STANDARD_EGG_METADATA_FILES,
-                     SUPPORT_SYMLINK, VTK_EGG_DEFERRED_SOFTLINK, create_venv, mkdtemp)
+from .common import (
+    DUMMY_EGG, DUMMY_EGG_WITH_APPINST, DUMMY_EGG_WITH_ENTRY_POINTS,
+    DUMMY_EGG_METADATA_FILES, DUMMY_EGG_WITH_POST_INSTALL,
+    DUMMY_EGG_WITH_PRE_REMOVE, LEGACY_EGG_INFO_EGG,
+    LEGACY_EGG_INFO_EGG_METADATA_FILES, NOSE_1_3_0, PYTHON_VERSION,
+    STANDARD_EGG, STANDARD_EGG_METADATA_FILES, SUPPORT_SYMLINK,
+    VTK_EGG_DEFERRED_SOFTLINK, create_venv, mkdtemp
+)
 
 if sys.version_info < (2, 7):
     import unittest2 as unittest
@@ -194,6 +196,22 @@ class Test_EggInstRemove(unittest.TestCase):
         logger.check(
             ('egginst.main', 'ERROR',
              "Error: Can't find meta data for: 'dummy'")
+        )
+
+    def test_pre_egguninst(self):
+        # Given
+        create_venv(self.prefix)
+
+        remover = EggInst(DUMMY_EGG_WITH_PRE_REMOVE, self.prefix)
+        remover.install()
+
+        # When
+        remover.remove()
+
+        # Then
+        # Ensure text file created by pre-remove script exists
+        self.assertTrue(
+            os.path.exists(os.path.join(self.prefix, "touch.txt"))
         )
 
 
