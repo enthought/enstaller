@@ -275,7 +275,7 @@ class _EggInstRemove(object):
 
         if not self.noapp:
             remove_app(self.meta_dir, self.prefix)
-        _run_script(self.meta_dir, 'pre_egguninst.py', self.prefix)
+        _run_script(self.meta_dir, 'pre_egguninst.py', self._runtime_info)
 
         for n, p in enumerate(self.files):
             n += 1

@@ -37,6 +37,9 @@ DUMMY_EGG_WITH_APPINST = os.path.join(_EGGINST_COMMON_DATA, "dummy_with_appinst-
 DUMMY_EGG_WITH_POST_INSTALL = os.path.join(
     _EGGINST_COMMON_DATA, "dummy_with_post_install-1.0.1-1.egg"
 )
+DUMMY_EGG_WITH_PRE_REMOVE = os.path.join(
+    _EGGINST_COMMON_DATA, "dummy_with_pre_remove-1.0.1-1.egg"
+)
 
 DUMMY_EGG = os.path.join(_EGGINST_COMMON_DATA, "dummy-1.0.1-1.egg")
 DUMMY_EGG_METADATA_FILES = ("PKG-INFO", "spec/depend", "spec/summary")
