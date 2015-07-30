@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import collections
 import contextlib
+import functools
 import json
 import sys
 import warnings
@@ -19,6 +20,9 @@ from enstaller.repository_info import CanopyRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import RUNNING_PYTHON
 from enstaller.vendor import responses
+from enstaller.vendor.responses import (
+    urlparse, _ensure_url_default_path, _is_string
+)
 from enstaller.versions import EnpkgVersion
 
 
@@ -265,7 +269,7 @@ def create_prefix_with_eggs(config, prefix, installed_entries=None,
 def mock_index(index_data, store_url="https://api.enthought.com"):
     """ Mock index for the webservice case."""
     def decorator(f):
-        @responses.activate
+        @activate
         def wrapped(*a, **kw):
             responses.add(responses.GET,
                           "{0}/accounts/user/info/".format(store_url),
@@ -283,7 +287,7 @@ def mock_brood_repository_indices(index_data, names,
                                   store_url="https://api.enthought.com"):
     """ Mock index for brood repositories."""
     def decorator(f):
-        @responses.activate
+        @activate
         def wrapped(*a, **kw):
             responses.add(responses.POST,
                           "{0}/api/v0/json/auth/tokens/auth".format(store_url),
@@ -333,3 +337,32 @@ class WarningTestMixin(object):
                 except AttributeError:
                     exc_name = str(expected_warning)
                 raise self.failureException("{0} not raised".format(exc_name))
+
+
+def _patched_ensure_url_default_path(url, querystring):
+    if _is_string(url):
+        p = urlparse(url)
+        if p.scheme not in ("http", "https"):
+            return url
+    return _ensure_url_default_path(url, querystring)
+
+
+def activate(f):
+    """ An activate decorator similar to responses.activate, but knows how
+    to handle file:// urls and our file:// requests adapter.
+    """
+    @functools.wraps(f)
+    @responses.activate
+    def wrapped(*a, **kw):
+        def unbound_on_send(*a, **kw):
+            return responses.mock._on_request(*a, **kw)
+
+        with mock.patch(
+                "enstaller.requests_utils.LocalFileAdapter.send",
+                unbound_on_send):
+            with mock.patch(
+                    "enstaller.vendor.responses._ensure_url_default_path",
+                    _patched_ensure_url_default_path):
+                return f(*a, **kw)
+
+    return wrapped
