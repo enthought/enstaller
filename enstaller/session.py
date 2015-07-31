@@ -134,12 +134,6 @@ class Session(object):
     def close(self):
         self._raw.close()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a, **kw):
-        self.close()
-
     @contextlib.contextmanager
     def etag(self):
         with self._etag_context_lock:
@@ -149,30 +143,6 @@ class Session(object):
         finally:
             with self._etag_context_lock:
                 self._etag_tear()
-
-    def _etag_setup(self):
-        if self._in_etag_context == 0:
-            uri = os.path.join(self.cache_directory, "index_cache", "index.db")
-            ensure_dir(uri)
-            cache = DBCache(uri)
-
-            for prefix in ("http://", "https://"):
-                adapter = CacheControlAdapter(
-                    cache, controller_class=QueryPathOnlyCacheController,
-                    max_retries=self.max_retries)
-                self._raw.mount(prefix, adapter)
-
-        self._in_etag_context += 1
-
-    def _etag_tear(self):
-        if self._in_etag_context == 1:
-            for prefix in ("https://", "http://"):
-                # XXX: This close is ugly, but I am not sure how one can link a cache
-                # controller to a http adapter in cachecontrol. See issue #42 on
-                # ionrock/cachecontrol @ github.
-                adapter = self._raw.umount(prefix)
-                adapter.cache.close()
-        self._in_etag_context -= 1
 
     def authenticate(self, auth):
         if isinstance(auth, tuple) and len(auth) == 2:
@@ -218,3 +188,35 @@ class Session(object):
 
     def delete(self, url, *a, **kw):
         return self._raw.delete(url, *a, **kw)
+
+    # Protocol implementations
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a, **kw):
+        self.close()
+
+    # Private methods
+    def _etag_setup(self):
+        if self._in_etag_context == 0:
+            uri = os.path.join(self.cache_directory, "index_cache", "index.db")
+            ensure_dir(uri)
+            cache = DBCache(uri)
+
+            for prefix in ("http://", "https://"):
+                adapter = CacheControlAdapter(
+                    cache, controller_class=QueryPathOnlyCacheController,
+                    max_retries=self.max_retries)
+                self._raw.mount(prefix, adapter)
+
+        self._in_etag_context += 1
+
+    def _etag_tear(self):
+        if self._in_etag_context == 1:
+            for prefix in ("https://", "http://"):
+                # XXX: This close is ugly, but I am not sure how one can link a cache
+                # controller to a http adapter in cachecontrol. See issue #42 on
+                # ionrock/cachecontrol @ github.
+                adapter = self._raw.umount(prefix)
+                adapter.cache.close()
+        self._in_etag_context -= 1
