@@ -2,7 +2,7 @@ appinst>=2.1.4
 coverage
 flake8
 machotools>=0.0.2
-mock
+mock<1.1
 okonomiyaki>=0.9.0
 haas
 six
