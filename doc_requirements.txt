@@ -1,4 +1,4 @@
 -rdev_requirements.txt
 refactordoc
 sphinx
-sphinx-rtd-theme
+git+https://github.com/enthought/enthought-sphinx-theme#Egg=enthought-sphinx-theme

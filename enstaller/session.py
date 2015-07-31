@@ -136,14 +136,13 @@ class Session(object):
     def close(self):
         self._raw.close()
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *a, **kw):
-        self.close()
-
     @contextlib.contextmanager
     def etag(self):
+        """ Etag context manager.
+
+        While inside this context, GET responses with an ETAG header are
+        automatically cached according to the http ETAG protocol.
+        """
         with self._etag_context_lock:
             self._etag_setup()
         try:
@@ -152,6 +151,99 @@ class Session(object):
             with self._etag_context_lock:
                 self._etag_tear()
 
+    def authenticate(self, auth):
+        """ Try to authenticate to the configured store with the given
+        authentication.
+
+        Existing auth, if it exists, will be discarted
+
+        Parameters
+        ----------
+        auth: IAuthManager
+            An authentication object following the IAuthManager interface.
+        """
+        if isinstance(auth, tuple) and len(auth) == 2:
+            auth = UserPasswordAuth(auth[0], auth[1])
+
+        self._authenticator.authenticate(self, auth.request_adapter)
+        self._raw.auth = self._authenticator._auth
+
+    def download(self, url, target=None):
+        """ Safely download the content at the give url.
+
+        Safely here is understood as not leaving stalled content if the
+        download fails or is canceled. It uses streaming as so not to use too
+        much memory.
+        """
+        resp = self.fetch(url)
+
+        if target is None:
+            target = os.path.basename(urlparse(url).path)
+
+        with atomic_file(target) as fp:
+            for chunk in resp.iter_content(1024):
+                fp.write(chunk)
+
+        return target
+
+    def fetch(self, url):
+        """ Small helper to fetch data from URLS.
+
+        Equivalent to a get, but it automatically raises for errors, and the
+        response is streamed.
+
+        Parameters
+        ----------
+        url: str
+            A url.
+        """
+        resp = self._raw.get(url, stream=True)
+        resp.raise_for_status()
+        return resp
+
+    def delete(self, url, *a, **kw):
+        """ Do a DELETE on the given url.
+
+        The API is the same as `requests.Session.delete`.
+        """
+        return self._raw.delete(url, *a, **kw)
+
+    def get(self, url, *a, **kw):
+        """ Do a GET on the given url.
+
+        The API is the same as `requests.Session.get`.
+        """
+        return self._raw.get(url, *a, **kw)
+
+    def head(self, url, *a, **kw):
+        """ Do a HEAD on the given url.
+
+        The API is the same as `requests.Session.head`.
+        """
+        return self._raw.head(url, *a, **kw)
+
+    def post(self, url, *a, **kw):
+        """ Do a POST on the given url.
+
+        The API is the same as `requests.Session.post`.
+        """
+        return self._raw.post(url, *a, **kw)
+
+    def put(self, url, *a, **kw):
+        """ Do a PUT on the given url.
+
+        The API is the same as `requests.Session.put`.
+        """
+        return self._raw.put(url, *a, **kw)
+
+    # Protocol implementations
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *a, **kw):
+        self.close()
+
+    # Private methods
     def _etag_setup(self):
         if self._in_etag_context == 0:
             uri = os.path.join(self.cache_directory, "index_cache", "index.db")
@@ -175,49 +267,3 @@ class Session(object):
                 adapter = self._raw.umount(prefix)
                 adapter.cache.close()
         self._in_etag_context -= 1
-
-    def authenticate(self, auth):
-        if isinstance(auth, tuple) and len(auth) == 2:
-            auth = UserPasswordAuth(auth[0], auth[1])
-
-        self._authenticator.authenticate(self, auth.request_adapter)
-        self._raw.auth = self._authenticator._auth
-
-    def download(self, url, target=None):
-        """ Safely download the content at the give url.
-
-        Safely here is understood as not leaving stalled content if the
-        download fails or is canceled. It uses streaming as so not to use too
-        much memory.
-        """
-        resp = self._raw.get(url, stream=True)
-        resp.raise_for_status()
-
-        if target is None:
-            target = os.path.basename(urlparse(url).path)
-
-        with atomic_file(target) as fp:
-            for chunk in resp.iter_content(1024):
-                fp.write(chunk)
-
-        return target
-
-    def fetch(self, url):
-        resp = self._raw.get(url, stream=True)
-        resp.raise_for_status()
-        return resp
-
-    def get(self, url, stream=False):
-        return self._raw.get(url, stream=stream)
-
-    def head(self, url):
-        return self._raw.head(url)
-
-    def _raw_get(self, url, auth=None):
-        return self._raw.get(url, auth=auth)
-
-    def _raw_head(self, url, auth=None):
-        return self._raw.head(url, auth=auth)
-
-    def _raw_post(self, url, auth=None):
-        return self._raw.post(url, auth=auth)

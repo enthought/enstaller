@@ -43,7 +43,7 @@ class LegacyCanopyAuthManager(object):
 
     def authenticate(self, session, auth):
         try:
-            resp = session._raw_get(self.url, auth=auth)
+            resp = session.get(self.url, auth=auth)
         except requests.exceptions.SSLError as e:
             raise
         except requests.exceptions.ConnectionError as e:
@@ -84,7 +84,7 @@ class OldRepoAuthManager(object):
             parse = urlparse(index_url)
             if parse.scheme in ("http", "https"):
                 try:
-                    resp = session._raw_head(index_url, auth=auth)
+                    resp = session.head(index_url, auth=auth)
                 except requests.exceptions.SSLError as e:
                     raise
                 except requests.exceptions.ConnectionError as e:
@@ -132,7 +132,7 @@ class BroodAuthenticator(object):
     def authenticate(self, session, auth):
         url = self.url + "/api/v0/json/auth/tokens/auth"
         try:
-            resp = session._raw_post(url, auth=auth)
+            resp = session.post(url, auth=auth)
         except requests.exceptions.ConnectionError as e:
             raise AuthFailedError(e)
 

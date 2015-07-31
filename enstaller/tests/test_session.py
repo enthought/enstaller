@@ -233,7 +233,7 @@ class TestSession(unittest.TestCase):
 
         # When
         with Session.authenticated_from_configuration(config) as session:
-            resp = session._raw_get(url)
+            resp = session.get(url)
 
         # Then
         self.assertTrue(resp.status_code, 200)
@@ -264,7 +264,7 @@ class TestSession(unittest.TestCase):
 
         # When/Then
         with Session.from_configuration(config) as session:
-            resp = session._raw_get(url)
+            resp = session.get(url)
             self.assertTrue(resp.request.headers["user-agent"].
                             startswith(r_user_agent))
 
