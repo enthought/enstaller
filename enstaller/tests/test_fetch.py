@@ -4,7 +4,8 @@ import shutil
 import sys
 import tempfile
 
-import requests, responses
+import requests
+import responses
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 

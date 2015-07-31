@@ -14,7 +14,7 @@ from cachecontrol.cache import BaseCache
 from cachecontrol.controller import CacheController
 
 from egginst._compat import buffer, urlparse, urlunparse
- 
+
 from enstaller.utils import uri_to_path
 from enstaller.vendor import sqlite_cache
 
