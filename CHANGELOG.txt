@@ -5,6 +5,7 @@ Bug fixes:
 
   * fix terminal width handling when LINES/COLUMNS are specified in the process
     environment (#547).
+  * Unlink target files before opening them for writing (#540).
 
 Improvements:
 
