@@ -136,6 +136,11 @@ class Session(object):
 
     @contextlib.contextmanager
     def etag(self):
+        """ Etag context manager.
+
+        While inside this context, GET responses with an ETAG header are
+        automatically cached according to the http ETAG protocol.
+        """
         with self._etag_context_lock:
             self._etag_setup()
         try:
@@ -145,6 +150,16 @@ class Session(object):
                 self._etag_tear()
 
     def authenticate(self, auth):
+        """ Try to authenticate to the configured store with the given
+        authentication.
+
+        Existing auth, if it exists, will be discarted
+
+        Parameters
+        ----------
+        auth: IAuthManager
+            An authentication object following the IAuthManager interface.
+        """
         if isinstance(auth, tuple) and len(auth) == 2:
             auth = UserPasswordAuth(auth[0], auth[1])
 
@@ -170,24 +185,54 @@ class Session(object):
         return target
 
     def fetch(self, url):
+        """ Small helper to fetch data from URLS.
+
+        Equivalent to a get, but it automatically raises for errors, and the
+        response is streamed.
+
+        Parameters
+        ----------
+        url: str
+            A url.
+        """
         resp = self._raw.get(url, stream=True)
         resp.raise_for_status()
         return resp
 
+    def delete(self, url, *a, **kw):
+        """ Do a DELETE on the given url.
+
+        The API is the same as `requests.Session.delete`.
+        """
+        return self._raw.delete(url, *a, **kw)
+
     def get(self, url, *a, **kw):
+        """ Do a GET on the given url.
+
+        The API is the same as `requests.Session.get`.
+        """
         return self._raw.get(url, *a, **kw)
 
     def head(self, url, *a, **kw):
+        """ Do a HEAD on the given url.
+
+        The API is the same as `requests.Session.head`.
+        """
         return self._raw.head(url, *a, **kw)
 
     def post(self, url, *a, **kw):
+        """ Do a POST on the given url.
+
+        The API is the same as `requests.Session.post`.
+        """
         return self._raw.post(url, *a, **kw)
 
     def put(self, url, *a, **kw):
-        return self._raw.put(url, *a, **kw)
+        """ Do a PUT on the given url.
 
-    def delete(self, url, *a, **kw):
-        return self._raw.delete(url, *a, **kw)
+        The API is the same as `requests.Session.put`.
+        """
+        return self._raw.put(url, *a, **kw)
 
     # Protocol implementations
     def __enter__(self):
