@@ -188,8 +188,7 @@ class Session(object):
         download fails or is canceled. It uses streaming as so not to use too
         much memory.
         """
-        resp = self._raw.get(url, stream=True)
-        resp.raise_for_status()
+        resp = self.fetch(url)
 
         if target is None:
             target = os.path.basename(urlparse(url).path)
@@ -205,17 +204,17 @@ class Session(object):
         resp.raise_for_status()
         return resp
 
-    def get(self, url, stream=False):
-        return self._raw.get(url, stream=stream)
+    def get(self, url, *a, **kw):
+        return self._raw.get(url, *a, **kw)
 
-    def head(self, url):
-        return self._raw.head(url)
+    def head(self, url, *a, **kw):
+        return self._raw.head(url, *a, **kw)
 
-    def _raw_get(self, url, auth=None):
-        return self._raw.get(url, auth=auth)
+    def post(self, url, *a, **kw):
+        return self._raw.post(url, *a, **kw)
 
-    def _raw_head(self, url, auth=None):
-        return self._raw.head(url, auth=auth)
+    def put(self, url, *a, **kw):
+        return self._raw.put(url, *a, **kw)
 
-    def _raw_post(self, url, auth=None):
-        return self._raw.post(url, auth=auth)
+    def delete(self, url, *a, **kw):
+        return self._raw.delete(url, *a, **kw)
