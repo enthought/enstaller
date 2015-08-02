@@ -49,18 +49,23 @@ class RuntimeInfo(object):
         else:
             executable = "python"
 
+        major_minor = "{0}.{1}".format(*version_info[:2])
+
         if platform.os == WINDOWS:
             executable += ".exe"
             executable = ntpath.join(bindir, executable)
+            python_libdir = ntpath.join(prefix, "Lib")
         else:
             executable = posixpath.join(bindir, executable)
+            python_libdir = posixpath.join(
+                prefix, "lib", "python" + major_minor
+            )
 
-        major_minor = "{0}.{1}".format(*version_info[:2])
         site_packages = _compute_site_packages(prefix, platform, major_minor)
 
         return cls(
-            prefix, bindir, scriptsdir, site_packages, executable,
-            version_info, platform, CPYTHON,
+            prefix, bindir, scriptsdir, python_libdir, site_packages,
+            executable, version_info, platform, CPYTHON,
         )
 
     @classmethod
@@ -79,28 +84,28 @@ class RuntimeInfo(object):
 
         platform = platform or Platform.from_running_python()
 
+        major_minor = "{0}.{1}".format(*sys.version_info[:2])
+
         if platform.os == WINDOWS:
             bindir = prefix
             scriptsdir = os.path.join(prefix, "Scripts")
+            python_libdir = ntpath.join(prefix, "Lib")
         else:
             bindir = scriptsdir = os.path.join(prefix, "bin")
-
-        getsitepackages = getattr(site, "getsitepackages", None)
-        if getsitepackages is not None:
-            site_packages = getsitepackages()
-        else:
-            major_minor = "{0}.{1}".format(*sys.version_info[:2])
-            site_packages = _compute_site_packages(
-                prefix, platform, major_minor
+            python_libdir = posixpath.join(
+                prefix, "lib", "python" + major_minor
             )
 
+        site_packages = _compute_site_packages(prefix, platform, major_minor)
+
         return cls(
-            prefix, bindir, scriptsdir, site_packages, sys.executable,
-            sys.version_info, platform, CPYTHON,
+            prefix, bindir, scriptsdir, python_libdir, site_packages,
+            sys.executable, sys.version_info, platform, CPYTHON,
         )
 
-    def __init__(self, prefix, bindir, scriptsdir, site_packages, executable,
-                 version_info, platform, implementation):
+    def __init__(self, prefix, bindir, scriptsdir, python_libdir,
+                 site_packages, executable, version_info, platform,
+                 implementation):
         def normpath(p):
             if platform.os == WINDOWS:
                 return ntpath.normpath(p)
@@ -109,6 +114,7 @@ class RuntimeInfo(object):
 
         self.prefix = normpath(prefix)
         self.bindir = normpath(bindir)
+        self.python_libdir = normpath(python_libdir)
         self.scriptsdir = normpath(scriptsdir)
         self.site_packages = normpath(site_packages)
         self.executable = normpath(executable)

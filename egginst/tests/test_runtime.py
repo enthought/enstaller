@@ -44,7 +44,10 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, prefix + "/lib/python3.4/site-packages")
+            runtime_info.python_libdir, prefix + "/lib/python3.4")
+        self.assertEqual(
+            runtime_info.site_packages,
+            prefix + "/lib/python3.4/site-packages")
         self.assertEqual(runtime_info.major, 3)
         self.assertEqual(runtime_info.micro, 3)
 
@@ -62,7 +65,10 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, prefix + "/lib/python2.7/site-packages")
+            runtime_info.python_libdir, prefix + "/lib/python2.7")
+        self.assertEqual(
+            runtime_info.site_packages,
+            prefix + "/lib/python2.7/site-packages")
         self.assertEqual(runtime_info.major, 2)
 
         # Given
@@ -78,6 +84,7 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.prefix, prefix)
         self.assertEqual(runtime_info.bindir, prefix)
         self.assertEqual(runtime_info.scriptsdir, prefix + "\\Scripts")
+        self.assertEqual(runtime_info.python_libdir, prefix + "\\Lib")
         self.assertEqual(
             runtime_info.site_packages, prefix + "\\Lib\\site-packages")
         self.assertEqual(runtime_info.major, 3)
@@ -98,5 +105,6 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, norm_prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, norm_prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, norm_prefix + "/lib/python2.7/site-packages")
+            runtime_info.site_packages,
+            norm_prefix + "/lib/python2.7/site-packages")
         self.assertEqual(runtime_info.major, 2)
