@@ -14,15 +14,19 @@ PYPY = "pypy"
 
 
 def _compute_site_packages(prefix, platform, major_minor):
-    # Adapted from distutils.sysconfig.get_python_lib for 2.7.9
-    prefix = prefix or sys.exec_prefix
-
-    if platform.os == WINDOWS:
-        return ntpath.join(prefix, "Lib", "site-packages")
+    getsitepackages = getattr(site, "getsitepackages", None)
+    if getsitepackages is not None:
+        return getsitepackages()[0]
     else:
-        return posixpath.join(
-            prefix, "lib", "python" + major_minor, "site-packages"
-        )
+        # Adapted from distutils.sysconfig.get_python_lib for 2.7.9
+        prefix = prefix or sys.exec_prefix
+
+        if platform.os == WINDOWS:
+            return ntpath.join(prefix, "Lib", "site-packages")
+        else:
+            return posixpath.join(
+                prefix, "lib", "python" + major_minor, "site-packages"
+            )
 
 
 class RuntimeInfo(object):
@@ -113,13 +117,25 @@ class RuntimeInfo(object):
                 return posixpath.normpath(p)
 
         self.prefix = normpath(prefix)
+        "The runtime prefix."
+
         self.bindir = normpath(bindir)
+        "The directory where the python binary is installed."
+
         self.python_libdir = normpath(python_libdir)
+        "The directory where the python stdlib is installed."
+
         self.scriptsdir = normpath(scriptsdir)
+        "The directory where the scripts are installed."
+
         self.site_packages = normpath(site_packages)
+        "The site packages directory."
+
         self.executable = normpath(executable)
+        "The full path to the python binary."
 
         self.version_info = version_info
+        "The version info tuple."
 
         self.platform = platform
         self.implementation = implementation
