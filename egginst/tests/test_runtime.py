@@ -1,6 +1,8 @@
 import os.path
 import sys
 
+import mock
+
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
 
 from egginst.runtime import CPYTHON, RuntimeInfo
@@ -28,6 +30,21 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.minor, sys.version_info[1])
         self.assertEqual(runtime_info.implementation, CPYTHON)
 
+    def test_with_getsitepackages(self):
+        # Given
+        prefix = "/usr/local"
+        platform = EPDPlatform.from_epd_string("rh5-64").platform
+        version_info = (3, 4, 3, "final", 0)
+
+        # When
+        with mock.patch("site.getsitepackages",
+                return_value=["/usr/s1", "/usr/s2"], create=True):
+            runtime_info = RuntimeInfo.from_prefix_and_platform(
+                prefix, platform, version_info)
+
+        # Then
+        self.assertEqual(runtime_info.site_packages, "/usr/s1")
+
     def test_from_prefix_and_platform(self):
         # Given
         prefix = "/usr/local"
@@ -44,7 +61,10 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, prefix + "/lib/python3.4/site-packages")
+            runtime_info.python_libdir, prefix + "/lib/python3.4")
+        self.assertEqual(
+            runtime_info.site_packages,
+            prefix + "/lib/python3.4/site-packages")
         self.assertEqual(runtime_info.major, 3)
         self.assertEqual(runtime_info.micro, 3)
 
@@ -62,7 +82,10 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, prefix + "/lib/python2.7/site-packages")
+            runtime_info.python_libdir, prefix + "/lib/python2.7")
+        self.assertEqual(
+            runtime_info.site_packages,
+            prefix + "/lib/python2.7/site-packages")
         self.assertEqual(runtime_info.major, 2)
 
         # Given
@@ -78,6 +101,7 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.prefix, prefix)
         self.assertEqual(runtime_info.bindir, prefix)
         self.assertEqual(runtime_info.scriptsdir, prefix + "\\Scripts")
+        self.assertEqual(runtime_info.python_libdir, prefix + "\\Lib")
         self.assertEqual(
             runtime_info.site_packages, prefix + "\\Lib\\site-packages")
         self.assertEqual(runtime_info.major, 3)
@@ -98,5 +122,6 @@ class TestRuntimeInfo(unittest.TestCase):
         self.assertEqual(runtime_info.bindir, norm_prefix + "/bin")
         self.assertEqual(runtime_info.scriptsdir, norm_prefix + "/bin")
         self.assertEqual(
-            runtime_info.site_packages, norm_prefix + "/lib/python2.7/site-packages")
+            runtime_info.site_packages,
+            norm_prefix + "/lib/python2.7/site-packages")
         self.assertEqual(runtime_info.major, 2)
