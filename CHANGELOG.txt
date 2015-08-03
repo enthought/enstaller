@@ -1,3 +1,10 @@
+2015-08-03   4.8.7:
+-------------------
+
+Bug fixes:
+
+  * Unlink target files before opening them for writing (#540).
+
 2015-07-07   4.8.6:
 -------------------
 
