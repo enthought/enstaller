@@ -14,19 +14,15 @@ PYPY = "pypy"
 
 
 def _compute_site_packages(prefix, platform, major_minor):
-    getsitepackages = getattr(site, "getsitepackages", None)
-    if getsitepackages is not None:
-        return getsitepackages()[0]
-    else:
-        # Adapted from distutils.sysconfig.get_python_lib for 2.7.9
-        prefix = prefix or sys.exec_prefix
+    # Adapted from distutils.sysconfig.get_python_lib for 2.7.9
+    prefix = prefix or sys.exec_prefix
 
-        if platform.os == WINDOWS:
-            return ntpath.join(prefix, "Lib", "site-packages")
-        else:
-            return posixpath.join(
-                prefix, "lib", "python" + major_minor, "site-packages"
-            )
+    if platform.os == WINDOWS:
+        return ntpath.join(prefix, "Lib", "site-packages")
+    else:
+        return posixpath.join(
+            prefix, "lib", "python" + major_minor, "site-packages"
+        )
 
 
 class RuntimeInfo(object):
