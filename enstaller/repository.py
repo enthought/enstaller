@@ -297,7 +297,7 @@ class Repository(object):
             yield packages[-1]
 
     def update(self, repository):
-        """ Add the given repository's package to this repository.
+        """ Add the given repository's packages to this repository.
         """
         for package in repository:
             self.add_package(package)
