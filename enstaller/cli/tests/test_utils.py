@@ -307,14 +307,22 @@ class TestInstallReq(unittest.TestCase):
                       mocked_session_factory(config.repository_cache),
                       [self.prefix])
         enpkg.execute = mock.Mock()
+        r_message = textwrap.dedent("""
+            Cannot install 'nose', as this package (or some of its requirements) are not
+            available at your subscription level 'Canopy / EPD Free' (You are logged in as
+            'nono').
+        """)
 
         # When/Then
-        with mock.patch("enstaller.config.subscription_message") as \
-                subscription_message:
+        with mock_print() as mocked_print:
             with self.assertRaises(SystemExit) as e:
                 install_req(enpkg, config, "nose")
-            subscription_message.assert_called()
             self.assertEqual(e.exception.code, 1)
+
+            self.assertMultiLineEqual(
+                mocked_print.value,
+                r_message
+            )
 
     def test_simple_install(self):
         remote_entries = [

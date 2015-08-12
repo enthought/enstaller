@@ -56,23 +56,33 @@ class Repository(object):
         return repository
 
     @classmethod
-    def from_repository_info(cls, session, repository_info):
+    def from_repository_infos(cls, session, repository_infos):
         """ Create a repository from a remote index.
 
         Parameters
         ----------
         session : Session
             A session instance (must be authenticated)
-        repository_info : IRepositoryInfo
-            The metadata for the repository to fetch.
+        repository_infos : iterable
+            Iterable of IRepositoryInfo instances, containing the metadata for
+            the repository to fetch.
+
+        Note
+        ----
+        This is a convenience ctor, which is useful in scripting. It is
+        inefficient as it fetch repository info's indices serially. Use the
+        parse_index function with your favorite concurrency framework (threads,
+        futures, etc...) if you want better IO performances.
         """
         repository = cls()
 
-        resp = session.fetch(repository_info.index_url)
-        json_data = resp.json()
+        for repository_info in repository_infos:
+            resp = session.fetch(repository_info.index_url)
+            json_data = resp.json()
 
-        for package in parse_index(json_data, repository_info):
-            repository.add_package(package)
+            for package in parse_index(json_data, repository_info):
+                repository.add_package(package)
+
         return repository
 
     def __init__(self, packages=None):
@@ -285,6 +295,12 @@ class Repository(object):
         """
         for name, packages in self._name_to_packages.items():
             yield packages[-1]
+
+    def update(self, repository):
+        """ Add the given repository's packages to this repository.
+        """
+        for package in repository:
+            self.add_package(package)
 
 
 def parse_index(json_dict, repository_info, python_version=PY_VER):

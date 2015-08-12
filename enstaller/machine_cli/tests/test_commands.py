@@ -180,7 +180,7 @@ class TestInstall(unittest.TestCase):
             install()
 
         # Then
-        install_req.assert_called()
+        self.assertTrue(install_req.called)
         install_req.call_args[0][2] == Requirement.from_anything("numpy")
 
 
