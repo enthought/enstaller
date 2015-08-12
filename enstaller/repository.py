@@ -66,6 +66,13 @@ class Repository(object):
         repository_infos : iterable
             Iterable of IRepositoryInfo instances, containing the metadata for
             the repository to fetch.
+
+        Note
+        ----
+        This is a convenience ctor, which is useful in scripting. It is
+        inefficient as it fetch repository info's indices serially. Use the
+        parse_index function with your favorite concurrency framework (threads,
+        futures, etc...) if you want better IO performances.
         """
         repository = cls()
 
