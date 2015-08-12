@@ -1,7 +1,6 @@
 import os.path
 import ntpath
 import posixpath
-import site
 import subprocess
 import sys
 
