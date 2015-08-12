@@ -146,8 +146,8 @@ class TestUri(unittest.TestCase):
 
         try:
             if attr_name is not None:
-                with mock._patch_object(sys, attr_name, prefix_value,
-                                        create=True):
+                with mock.patch.object(sys, attr_name, prefix_value,
+                                       create=True):
                     yield
             else:
                 yield
@@ -224,13 +224,12 @@ class TestPromptYesNo(unittest.TestCase):
 
         # When
         with mock_print() as m:
-            with mock_raw_input("yes") as mocked_input:
+            with mock_raw_input("yes"):
                 res = prompt_yes_no(message, True)
 
         # Then
         self.assertEqual(m.value.rstrip(), message)
         self.assertTrue(res)
-        mocked_input.assert_called()
 
     def test_defaults(self):
         # Given

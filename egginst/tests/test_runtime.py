@@ -1,8 +1,6 @@
 import os.path
 import sys
 
-import mock
-
 from egginst.vendor.okonomiyaki.platforms import EPDPlatform
 
 from egginst.runtime import CPYTHON, RuntimeInfo
