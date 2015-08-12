@@ -3,11 +3,10 @@ import errno
 import hashlib
 import json
 import os
-import shutil
+import re
 import stat
 import subprocess
 import sys
-import zipfile
 
 import os.path as op
 
@@ -374,13 +373,9 @@ def _bootstrap_old_enstaller(pyenv, upgrade_from):
 
 
 @task
-def run_enstaller_upgrade(upgrade_from="4.6.5-1"):
-    upgrade_to = "4.8.0"
-    # XXX: version lower than 4.6.5 do not seem to handle use_webservice=False
-    # correctly when used with --sys-config due to the brain deadness of the
-    # old config-as-module-singleton, so we need to start from 4.6.5. The hope
-    # is that older versions are similar enough to 4.6.5 as far as inplace
-    # upgradeability goes.
+def run_enstaller_upgrade(upgrade_from="4.8.6-1"):
+    upgrade_to = "4.8.7"
+
     pyenv = PythonEnvironment(ROOT, None)
     pyenv.destroy()
 
@@ -390,7 +385,23 @@ def run_enstaller_upgrade(upgrade_from="4.6.5-1"):
 
     build_enstaller_egg(upgrade_to)
     with lcd(ROOT):
-        local("echo y| {} -m enstaller.main --sys-config -s enstaller".format(pyenv.python))
+        output = local(
+            "{0} -m enstaller.main -y --sys-config -s enstaller".format(pyenv.python),
+            capture=True
+        )
+
+        m = re.search(
+            "enstaller-{0}.*\[removing egg\]".format(upgrade_from),
+            output
+        )
+        assert m, "Could not find correct version {0!r} to be removed".format(upgrade_from)
+
+        m = re.search(
+            "enstaller-{0}.*\[installing egg\]".format(upgrade_to),
+            output
+        )
+        assert m, "Could not find correct version {0!r} to be installed".format(upgrade_to)
+
         # We use --list instead of --version because we overrode the metadata
         # version, not the actualy version in enstaller package
         m = pyenv.runenpkg("--list", capture=True)
