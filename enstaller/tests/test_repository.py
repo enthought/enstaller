@@ -1,3 +1,4 @@
+import itertools
 import operator
 import os.path
 import sys
@@ -380,6 +381,50 @@ class TestRepository(unittest.TestCase):
                           for m in repository._name_to_packages["nose"]],
                          [EnpkgVersion.from_string("1.2.1-1"),
                           EnpkgVersion.from_string("1.3.0-1")])
+
+    def test_update(self):
+        # Given
+        def repository_factory_from_egg(filenames):
+            repository = Repository()
+            for filename in filenames:
+                path = os.path.join(_EGGINST_COMMON_DATA, filename)
+                package = RemotePackageMetadata.from_egg(path)
+                repository.add_package(package)
+            return repository
+
+        egg_set1 = (
+            "dummy-1.0.1-1.egg",
+            "dummy_with_appinst-1.0.0-1.egg",
+            "dummy_with_entry_points-1.0.0-1.egg",
+            "dummy_with_proxy-1.3.40-3.egg",
+        )
+
+        egg_set2 = (
+            "dummy_with_proxy_scripts-1.0.0-1.egg",
+            "dummy_with_proxy_softlink-1.0.0-1.egg",
+            "nose-1.2.1-1.egg",
+            "nose-1.3.0-1.egg",
+            "nose-1.3.0-2.egg",
+        )
+
+        repository = Repository()
+        repository1 = repository_factory_from_egg(egg_set1)
+        repository2 = repository_factory_from_egg(egg_set2)
+
+        # When
+        repository.update(repository1)
+
+        # Then
+        assertCountEqual(self, iter(repository), iter(repository1))
+
+        # When
+        repository.update(repository2)
+
+        # Then
+        assertCountEqual(
+            self, iter(repository),
+            itertools.chain(iter(repository1), iter(repository2))
+        )
 
 
 class TestRepositoryMisc(WarningTestMixin, unittest.TestCase):

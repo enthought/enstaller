@@ -289,6 +289,12 @@ class Repository(object):
         for name, packages in self._name_to_packages.items():
             yield packages[-1]
 
+    def update(self, repository):
+        """ Add the given repository's package to this repository.
+        """
+        for package in repository:
+            self.add_package(package)
+
 
 def parse_index(json_dict, repository_info, python_version=PY_VER):
     """
