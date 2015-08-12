@@ -56,23 +56,26 @@ class Repository(object):
         return repository
 
     @classmethod
-    def from_repository_info(cls, session, repository_info):
+    def from_repository_infos(cls, session, repository_infos):
         """ Create a repository from a remote index.
 
         Parameters
         ----------
         session : Session
             A session instance (must be authenticated)
-        repository_info : IRepositoryInfo
-            The metadata for the repository to fetch.
+        repository_infos : iterable
+            Iterable of IRepositoryInfo instances, containing the metadata for
+            the repository to fetch.
         """
         repository = cls()
 
-        resp = session.fetch(repository_info.index_url)
-        json_data = resp.json()
+        for repository_info in repository_infos:
+            resp = session.fetch(repository_info.index_url)
+            json_data = resp.json()
 
-        for package in parse_index(json_data, repository_info):
-            repository.add_package(package)
+            for package in parse_index(json_data, repository_info):
+                repository.add_package(package)
+
         return repository
 
     def __init__(self, packages=None):

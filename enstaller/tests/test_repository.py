@@ -49,7 +49,7 @@ class TestRepository(unittest.TestCase):
             self.repository.add_package(package)
 
     @mock_brood_repository_indices({}, ["enthought/free"])
-    def test_from_repository_info_empty(self):
+    def test_from_repository_infos_empty(self):
         # Given
         repository_info = BroodRepositoryInfo("https://api.enthought.com",
                                               "enthought/free")
@@ -60,16 +60,24 @@ class TestRepository(unittest.TestCase):
         session = Session.authenticated_from_configuration(config)
 
         # When
-        repository = Repository.from_repository_info(session, repository_info)
+        repository = Repository.from_repository_infos(
+            session, (repository_info,)
+        )
 
         # Then
         self.assertEqual(len(repository), 0)
 
-    @mock_brood_repository_indices(SIMPLE_INDEX, ["enthought/free"])
-    def test_from_repository_info_nonempty(self):
+    @mock_brood_repository_indices(
+        SIMPLE_INDEX, ["enthought/free", "enthought/commercial"]
+    )
+    def test_from_repository_infos_nonempty(self):
         # Given
-        repository_info = BroodRepositoryInfo("https://api.enthought.com",
-                                              "enthought/free")
+        repository_infos = (
+            BroodRepositoryInfo("https://api.enthought.com", "enthought/free"),
+            BroodRepositoryInfo(
+                "https://api.enthought.com", "enthought/commercial"
+            ),
+        )
         config = Configuration(use_webservice=False,
                                auth=("nono", "password"))
         config._store_kind = STORE_KIND_BROOD
@@ -77,11 +85,11 @@ class TestRepository(unittest.TestCase):
         session = Session.authenticated_from_configuration(config)
 
         # When
-        repository = Repository.from_repository_info(session, repository_info)
+        repository = Repository.from_repository_infos(session, repository_infos)
 
         # Then
-        self.assertEqual(len(repository), 1)
-        self.assertEqual(len(repository.find_packages("nose")), 1)
+        self.assertEqual(len(repository), 2)
+        self.assertEqual(len(repository.find_packages("nose")), 2)
 
     def test_ctor(self):
         # When
