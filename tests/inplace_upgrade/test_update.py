@@ -139,12 +139,10 @@ class PythonEnvironment(object):
         enpkg = os.path.join(self.scriptsdir, "enpkg")
         return local("{0} {1}".format(enpkg, command), capture=capture)
 
-
     def runpip(self, command):
         """ Run the given pip command inside this env
         """
         return local("{0} {1}".format(self.pip, command))
-
 
     def bootstrap_setuptools(self):
         """ Install setuptools in this env
@@ -246,6 +244,7 @@ def remove_tree(path):
         else:
             local("rm -rf {}".format(path))
 
+
 def listdir(path):
     """ Get the list of files in the path respecting fabric's local directory.
 
@@ -300,21 +299,22 @@ def _generate_egg_index(index_filename, target_egg, forced_version,
 
     index_data = {
         os.path.basename(target_egg): {
-                "available": True,
-                "build": forced_build,
-                "md5": md5,
-                "mtime": 0.0,
-                "name": "enstaller",
-                "product": "free",
-                "python": None,
-                "size": os.stat(target_egg)[stat.ST_SIZE],
-                "type": "egg",
-                "version": forced_version,
+            "available": True,
+            "build": forced_build,
+            "md5": md5,
+            "mtime": 0.0,
+            "name": "enstaller",
+            "product": "free",
+            "python": None,
+            "size": os.stat(target_egg)[stat.ST_SIZE],
+            "type": "egg",
+            "version": forced_version,
         }
     }
 
     with open(index_filename, "w") as fp:
         json.dump(index_data, fp, indent=4)
+
 
 def build_enstaller_egg(forced_version, forced_build=1):
     """ Build an Enthought egg from the current checkout.
