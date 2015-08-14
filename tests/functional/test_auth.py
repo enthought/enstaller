@@ -95,10 +95,8 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-        Could not authenticate as 'nono'
-        Please check your credentials/configuration and try again
-        (original error is: '401 Client Error: None').
-
+        Could not authenticate as 'nono' (server answered: 'Invalid credentials.')
+        Ensure your username and password are correct.
 
         No modification was written.
         """)
@@ -148,10 +146,8 @@ class TestAuth(unittest.TestCase):
                       status=401,
                       content_type='application/json')
         r_output = textwrap.dedent("""\
-            Could not authenticate as 'nono'
-            Please check your credentials/configuration and try again
-            (original error is: '401 Client Error: None').
-
+            Could not authenticate as 'nono' (server answered: 'Invalid credentials.')
+            Ensure your username and password are correct.
 
             You can change your authentication details with 'enpkg --userpass'.
         """)
@@ -226,10 +222,8 @@ class TestAuth(unittest.TestCase):
         responses.add(responses.HEAD, url, status=401)
 
         error_message = textwrap.dedent("""\
-            Could not authenticate as 'nono'
-            Please check your credentials/configuration and try again
-            (original error is: '401 Client Error: None').
-
+            Could not authenticate as 'nono' (server answered: 'Invalid credentials')
+            Ensure your username and password are correct.
 
             You can change your authentication details with 'enpkg --userpass'.
         """)

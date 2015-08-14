@@ -65,7 +65,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
         def callback(request):
             if auth != ("valid_user", "valid_password"):
-                return (403, {}, "")
+                return (401, {}, "Invalid username or password.")
             return (200, {}, json.dumps(R_JSON_AUTH_RESP))
 
         responses.add_callback(responses.GET, auth_url, callback)
@@ -157,7 +157,7 @@ class TestOldReposAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "head",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
@@ -225,7 +225,7 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "get",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
@@ -236,7 +236,7 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
                       content_type='application/json')
 
         # When/Then
-        with self.assertRaises(AuthFailedError):
+        with self.assertRaises(requests.exceptions.HTTPError):
             self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
@@ -321,13 +321,13 @@ class TestBroodAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "post",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
     def test_http_failure(self):
         # Given
-        responses.add(responses.POST, self.token_url, body="", status=403,
+        responses.add(responses.POST, self.token_url, body="", status=401,
                       content_type='application/json')
 
         # When/Then
