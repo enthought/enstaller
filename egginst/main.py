@@ -575,6 +575,20 @@ def read_meta(meta_dir):
     return None
 
 
+def _read_version_string(meta_dir):
+    """ Return the version string for the given meta_dir.
+
+    Is None if the version could not be figured out (old or incompatible
+    metadata).
+    """
+    metadata = read_meta(meta_dir)
+    if metadata:
+        egg_name = metadata.get("egg_name")
+        if egg_name is not None:
+            return name_version_fn(egg_name)[1]
+    return None
+
+
 def get_installed(prefix=sys.prefix):
     """
     Generator returns a sorted list of all installed packages.
@@ -624,7 +638,12 @@ def remove_egg_cli(path, prefix, noapp=False):
     if not remover.is_installed:
         logger.error("Error: can't find meta data for: %r", remover.cname)
         return
-    progress = console_progress_manager_factory("removing egg", installer.fn,
+    version = _read_version_string(remover.meta_dir)
+    if version is not None:
+        name = "{0}-{1}.egg".format(remover.cname, version)
+    else:
+        name = installer.fn
+    progress = console_progress_manager_factory("removing egg", name,
                                                 remover.installed_size,
                                                 len(remover.files))
     with progress:
