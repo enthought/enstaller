@@ -16,6 +16,11 @@ except (AttributeError, ImportError):
 else:
     from ctypes import byref, Structure, POINTER
 
+    def valid_handle(value):
+        if value == 0:
+            raise ctypes.WinError()
+        return value
+
     class CONSOLE_SCREEN_BUFFER_INFO(Structure):
         """struct in wincon.h."""
         _fields_ = [
@@ -47,7 +52,7 @@ else:
         wintypes.HANDLE,
         POINTER(CONSOLE_SCREEN_BUFFER_INFO),
     ]
-    _GetConsoleScreenBufferInfo.restype = wintypes.BOOL
+    _GetConsoleScreenBufferInfo.restype = valid_handle
 
     handles = {
         STDOUT: _GetStdHandle(STDOUT),
@@ -57,7 +62,7 @@ else:
     def GetConsoleScreenBufferInfo(stream_id=STDOUT):
         handle = handles[stream_id]
         csbi = CONSOLE_SCREEN_BUFFER_INFO()
-        _GetConsoleScreenBufferInfo(handle, byref(csbi))
+        ret = _GetConsoleScreenBufferInfo(handle, byref(csbi))
         return csbi
 
 

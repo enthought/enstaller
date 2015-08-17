@@ -34,6 +34,14 @@ def _posix_get_terminal_size():
     return int(cr[1]), int(cr[0])
 
 
+def _win32_get_terminal_size():
+    from ._termui_win32 import get_terminal_size
+    try:
+        return get_terminal_size()
+    except WindowsError:
+        return (_DEFAULT_COLUMNS, _DEFAULT_LINES)
+
+
 def get_terminal_size():
     """Returns the current size of the terminal as tuple in the form
     ``(width, height)`` in columns and rows.
@@ -59,8 +67,7 @@ def get_terminal_size():
 
     if columns <= 0 or lines <= 0:
         if os.name == "nt":
-            from ._termui_win32 import get_terminal_size
-            return get_terminal_size()
+            return _win32_get_terminal_size()
         else:
             return _posix_get_terminal_size()
 
