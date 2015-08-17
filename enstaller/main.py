@@ -192,10 +192,9 @@ def _invalid_authentication_message(auth, exc):
 
     header = auth.cant_login_message
     msg = textwrap.dedent("""\
-        {0}
-        Please check your credentials/configuration and try again
-        (original error is: {1!r}).
-        """.format(header, str(original_error)))
+        {0} (server answered: {1!r})
+        Ensure your username and password are correct.""")
+    msg = msg.format(header, original_error)
     return msg
 
 
