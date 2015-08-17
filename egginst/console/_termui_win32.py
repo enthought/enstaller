@@ -62,7 +62,7 @@ else:
     def GetConsoleScreenBufferInfo(stream_id=STDOUT):
         handle = handles[stream_id]
         csbi = CONSOLE_SCREEN_BUFFER_INFO()
-        ret = _GetConsoleScreenBufferInfo(handle, byref(csbi))
+        _GetConsoleScreenBufferInfo(handle, byref(csbi))
         return csbi
 
 
