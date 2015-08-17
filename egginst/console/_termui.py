@@ -39,6 +39,9 @@ def _win32_get_terminal_size():
     try:
         return get_terminal_size()
     except WindowsError:
+        # FIXME: this typically happens when the stdout handle is not attached
+        # to the console output. I don't know how to get the actual size in
+        # this case
         return (_DEFAULT_COLUMNS, _DEFAULT_LINES)
 
 
