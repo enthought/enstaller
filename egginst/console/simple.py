@@ -170,7 +170,7 @@ class ProgressBar(object):
         rendered_bar = self.bar_template % data
         bar = BEFORE_BAR + rendered_bar
         self._stream.write(bar)
-        self._stream.write(" " * (get_terminal_size()[0] - len(bar)))
+        self._stream.write(" " * (get_terminal_size()[0] - len(rendered_bar)))
         self._stream.flush()
 
     def __enter__(self):
