@@ -89,7 +89,7 @@ class FetchAction(_BaseAction):
         progress = self._progress_bar_factory(package_metadata.key,
                                               package_metadata.size)
 
-        with progress:
+        with progress as progress:
             self._progress = progress
             for chunk_size in context.iter_content():
                 yield len(chunk_size)
@@ -136,10 +136,11 @@ class InstallAction(_BaseAction):
 
         installer = EggInst(self._egg_path, runtime_info=self._runtime_info)
 
-        self._progress = self._progress_factory(installer.fn,
-                                                installer.installed_size)
+        progress = self._progress_factory(installer.fn,
+                                          installer.installed_size)
 
-        with self._progress:
+        with progress as progress:
+            self._progress = progress
             for step in installer.install_iterator(extra_info):
                 yield step
 
@@ -184,11 +185,12 @@ class RemoveAction(_BaseAction):
         name, version = egg_name_to_name_version(self._egg)
         package = self._top_installed_repository.find_package(name, version)
 
-        self._progress = self._progress_factory(installer.fn,
-                                                remover.installed_size,
-                                                len(remover.files))
+        progress = self._progress_factory(installer.fn,
+                                          remover.installed_size,
+                                          len(remover.files))
 
-        with self._progress:
+        with progress as progress:
+            self._progress = progress
             for filename in remover.remove_iterator():
                 yield 1
 

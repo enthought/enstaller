@@ -6,7 +6,7 @@ import tempfile
 import mock
 
 from egginst.main import _default_runtime_info
-from egginst.progress import console_progress_manager_factory, ProgressBar
+from egginst.progress import console_progress_manager_factory
 from egginst.tests.common import mkdtemp, DUMMY_EGG, _EGGINST_COMMON_DATA
 from egginst.utils import compute_md5, makedirs
 
@@ -90,16 +90,18 @@ class TestEnpkgActions(unittest.TestCase):
 
         action = RemoveAction("yoyo-1.1-1.egg", self.prefix, top_repository,
                               remote_repository, factory)
+        progress = mock.Mock()
+        progress.__enter__ = mock.Mock(return_value=progress)
+        progress.__exit__ = mock.Mock()
 
         # When
-        with mock.patch("egginst.progress.ProgressBar",
-                        auto_spec=ProgressBar) as MockedProgressBar:
-                for step in action.iter_execute():
-                    action.progress_update(step)
+        with mock.patch("egginst.progress.ProgressBar", return_value=progress):
+            for step in action.iter_execute():
+                action.progress_update(step)
 
         # Then
         accumulated = sum(args[0] for args, kw in
-                          MockedProgressBar.return_value.update.call_args_list)
+                          progress.update.call_args_list)
         self.assertEqual(accumulated, nfiles)
 
 
