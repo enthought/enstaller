@@ -698,13 +698,11 @@ class TestConfigurationSetup(unittest.TestCase):
     def test_ensure_authenticated_config(self):
         # Given
         r_message = textwrap.dedent("""\
-            Could not authenticate as 'nono'
-            Please check your credentials/configuration and try again
-            (original error is: 'Authentication error: Invalid user login.').
-
+            Could not authenticate as 'nono' (server answered: 'Invalid user login.')
+            Ensure your username and password are correct.
 
             You can change your authentication details with 'enpkg --userpass'.
-        """)
+            """)
 
         store_url = "https://acme.com"
         responses.add(responses.GET, store_url + "/accounts/user/info/",
@@ -754,7 +752,8 @@ class TestMainYamlConfig(unittest.TestCase):
     @mock_index({})
     def test_non_existing_config_path(self, install_req):
         # Given
-        args = ["--config-path=config.yaml", "foo"]
+        dummy_path = os.path.abspath(os.path.join("yola", "config.yaml"))
+        args = ["--config-path={0}".format(dummy_path), "foo"]
 
         # When/Then
         with self.assertRaises(SystemExit) as exc:

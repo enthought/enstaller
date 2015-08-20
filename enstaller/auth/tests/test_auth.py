@@ -67,7 +67,7 @@ class CheckedChangeAuthTestCase(unittest.TestCase):
 
         def callback(request):
             if auth != ("valid_user", "valid_password"):
-                return (403, {}, "")
+                return (401, {}, "Invalid username or password.")
             return (200, {}, json.dumps(R_JSON_AUTH_RESP))
 
         responses.add_callback(responses.GET, auth_url, callback)
@@ -159,7 +159,7 @@ class TestOldReposAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "head",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
@@ -188,14 +188,22 @@ class TestOldReposAuthManager(AuthManagerBase):
     @responses.activate
     def test_auth_failure_401(self):
         # Given
-        auth = ("nono", "le petit robot")
         responses.add(responses.HEAD, self.config.repositories[0].index_url,
-                      body="", status=401,
-                      content_type='application/json')
+                      body="", status=401, content_type='application/json')
 
-        # When/Given
+        # When/Then
         with self.assertRaises(AuthFailedError):
-            self.session.authenticate(auth)
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+    @responses.activate
+    def test_auth_failure_403(self):
+        # Given
+        responses.add(responses.HEAD, self.config.repositories[0].index_url,
+                      body="", status=403, content_type='application/json')
+
+        # When/Then
+        with self.assertRaises(AuthFailedError):
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
 
 class TestLegacyCanopyAuthManager(AuthManagerBase):
@@ -227,15 +235,37 @@ class TestLegacyCanopyAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "get",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
-    def test_http_failure(self):
+    def test_404_failure(self):
         # Given
         config = Configuration()
-        responses.add(responses.GET, config.api_url, body="", status=404,
-                      content_type='application/json')
+        responses.add(responses.GET, config.api_url, body="",
+                      status=404, content_type='application/json')
+
+        # When/Then
+        with self.assertRaises(requests.exceptions.HTTPError):
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+    @responses.activate
+    def test_auth_failure_403(self):
+        # Given
+        config = Configuration()
+        responses.add(responses.GET, config.api_url, body="",
+                      status=403, content_type='application/json')
+
+        # When/Then
+        with self.assertRaises(requests.exceptions.HTTPError):
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+    @responses.activate
+    def test_auth_failure_401(self):
+        # Given
+        config = Configuration()
+        responses.add(responses.GET, config.api_url, body="",
+                      status=401, content_type='application/json')
 
         # When/Then
         with self.assertRaises(AuthFailedError):
@@ -323,13 +353,23 @@ class TestBroodAuthManager(AuthManagerBase):
     def test_connection_failure(self):
         with patch.object(self.session._raw, "post",
                           side_effect=requests.exceptions.ConnectionError):
-            with self.assertRaises(AuthFailedError):
+            with self.assertRaises(requests.exceptions.ConnectionError):
                 self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
 
     @responses.activate
-    def test_http_failure(self):
+    def test_auth_failure_403(self):
         # Given
         responses.add(responses.POST, self.token_url, body="", status=403,
+                      content_type='application/json')
+
+        # When/Then
+        with self.assertRaises(requests.exceptions.HTTPError):
+            self.session.authenticate((FAKE_USER, FAKE_PASSWORD))
+
+    @responses.activate
+    def test_auth_failure_401(self):
+        # Given
+        responses.add(responses.POST, self.token_url, body="", status=401,
                       content_type='application/json')
 
         # When/Then
