@@ -14,6 +14,8 @@ It only assumes python >= 2.6 or python >= 3.3, nothing else, not even
 setuptools. In particular, it can be used to install eggs directly in our
 masters.
 """
+# !!! THIS SCRIPT SHOULD NOT IMPORT ANYTHING FROM EGGINST OR ENSTALLER !!!
+
 import contextlib
 import hashlib
 import logging
@@ -27,7 +29,6 @@ import sys
 from distutils import log
 
 
-DEFAULT_VERSION = "4.7.6-1"
 DEFAULT_URL = "https://s3.amazonaws.com/enstaller-assets/enstaller/"
 PYTHON_VERSION = ".".join(str(i) for i in sys.version_info[:2])
 
@@ -41,6 +42,22 @@ VERSION_RE = re.compile(r'''
 # OrderedDict to stay compatible with 2.6)
 # We put dev versions at the end.
 VERSION_TO_SHA256 = [
+    ("4.8.7-1",
+        "fb43035d456b7106e671069d35ced3db74b96b2b66ca7331420e1893fc2fb393"),
+    ("4.8.6-1",
+        "dd13c551cfa8a053aac692fb8c22cd3876737ea18d8e421a1376be06a0cab304"),
+    ("4.8.5-1",
+        "a2257be5d52416f2c516e00549f4053f9b017807bda0b87941fb966ef27b9558"),
+    ("4.8.4-1",
+        "f2007fb0a89e9538762ae432ed75a42667a4df53f79a728d6c045fc00a9949ee"),
+    ("4.8.3-1",
+        "505aed7957cd99d0d6169f446b179fb4d01fe4e9b87a8d83fa49c3c7bd79303b"),
+    ("4.8.2-1",
+        "21425a87b08fd166fa05e28cbd9f2c537e002df3e75c262fc68300f91b18df58"),
+    ("4.8.1-1",
+        "328faaf29e17cd23ffc496d35cc35234e8636faa08ebba31a8aa3cb6647ec2cc"),
+    ("4.8.0-1",
+        "034ab05208d93f490c35358eb03d826c06ed64c47617281875f7a8850e094132"),
     ("4.7.6-1",
         "f438269a02880e270425f573a22e205c6732e03b8450d316f9f3747bd5859faa"),
     ("4.6.5-1",
@@ -51,19 +68,22 @@ VERSION_TO_SHA256 = [
         "91d3dafa905587ce08d4a3e61870b121f370d19ff56c5f341f0c8c5cd84c6e2c"),
     ("4.5.3-1",
         "f72153411e273cfbbde039a0afdd41c773a443cd2f810231d7861869f8a9cf85"),
+    ("4.8.0b1-1",
+        "68b19ba3f70533435fcc0b00628629aff184711f826845f4090e8f793be79d68"),
     ("4.8.0.dev2961-1",
         "04ae47e79862c0198823440e3de71cdb857cc7135d5ec60286bd9308c92f0698"),
     ("4.8.0.dev2949-1",
         "bc86ac6a276a477d79d3afe379f57e05c70d32162af2f9030cb050352d7d3cc5"),
     ("4.8.0.dev3030-1",
         "be9d54a00f761891e55bf9d31ddbfb78296a77d1ac4159d2016ff1e1fbc7e3e2"),
-    ("4.8.0b1-1",
-        "68b19ba3f70533435fcc0b00628629aff184711f826845f4090e8f793be79d68"),
+    ("4.8.7.dev3189-1",
+        "28156f4916bccf6f19d1b696fa3d349c58397ff6969de8c4811d56d839e9229b"),
 ]
 VERSION_TO_SHA256_KEYS = [_[0] for _ in VERSION_TO_SHA256]
 
 
-DEV_VERSION = "4.8.0b1-1"
+DEFAULT_VERSION = VERSION_TO_SHA256[0][0]
+DEV_VERSION = "4.9.0.dev3250-1"
 
 
 ###################################
@@ -287,7 +307,7 @@ def bootstrap_enstaller(egg, version=DEFAULT_VERSION):
     egginst.main.main()
 
 
-def main(argv=None):
+def cli_main(argv=None):
     argv = argv or sys.argv[1:]
 
     p = optparse.OptionParser(description="Simple script to bootstrap "
@@ -328,5 +348,17 @@ def main(argv=None):
     bootstrap_enstaller(egg)
 
 
+# Kept for backward compatibility with the custom_tools/boot-enst.py script in
+# enicab. Don't remove this unless you know what you are doing.
+def main(prefix=sys.prefix, hook=False, pkgs_dirs=None, verbose=False):
+    # egginst.bootstrap.main is called in enicab as follows::
+    #   <python> boot-enst.py <enstaller egg>
+    # hence the actual egg is sys.argv[1]
+    egg_path = sys.argv[1]
+
+    print("Bootstrapping: {0}".format(egg_path))
+    bootstrap_enstaller(egg_path)
+
+
 if __name__ == "__main__":
-    main()
+    cli_main()
