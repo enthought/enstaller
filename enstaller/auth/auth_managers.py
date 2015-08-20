@@ -42,25 +42,18 @@ class LegacyCanopyAuthManager(object):
         self._auth = None
 
     def authenticate(self, session, auth):
-        try:
-            resp = session.get(self.url, auth=auth)
-        except requests.exceptions.SSLError as e:
-            raise
-        except requests.exceptions.ConnectionError as e:
-            raise AuthFailedError(str(e), e)
+        resp = session.get(self.url, auth=auth)
+        if resp.status_code == 401:
+            raise AuthFailedError("Invalid credentials.")
+        elif resp.status_code == 200:
+            user = UserInfo.from_json_string(resp.content.decode("utf8"))
+            if not user.is_authenticated:
+                msg = 'Invalid user login.'
+                raise AuthFailedError(msg)
 
-        try:
+            self._auth = auth
+        else:
             resp.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            raise AuthFailedError("Authentication error: %r" % str(e), e)
-
-        # See if web API refused to authenticate
-        user = UserInfo.from_json_string(resp.content.decode("utf8"))
-        if not user.is_authenticated:
-            msg = 'Authentication error: Invalid user login.'
-            raise AuthFailedError(msg)
-
-        self._auth = auth
 
 
 class OldRepoAuthManager(object):
@@ -83,20 +76,15 @@ class OldRepoAuthManager(object):
         for index_url in self.index_urls:
             parse = urlparse(index_url)
             if parse.scheme in ("http", "https"):
-                try:
-                    resp = session.head(index_url, auth=auth)
-                except requests.exceptions.SSLError as e:
-                    raise
-                except requests.exceptions.ConnectionError as e:
-                    raise AuthFailedError(str(e), e)
+                resp = session.head(index_url, auth=auth)
 
                 try:
                     resp.raise_for_status()
                 except requests.exceptions.HTTPError as e:
                     http_code = resp.status_code
                     if http_code in (401, 403):
-                        msg = "Authentication error: {0!r}".format(str(e))
-                        raise AuthFailedError(msg, e)
+                        msg = "Invalid credentials"
+                        raise AuthFailedError(msg)
                     elif http_code == 404:
                         msg = "Could not access repo {0!r} (error: {1!r})". \
                               format(index_url, str(e))
@@ -131,18 +119,15 @@ class BroodAuthenticator(object):
 
     def authenticate(self, session, auth):
         url = self.url + "/api/v0/json/auth/tokens/auth"
-        try:
-            resp = session.post(url, auth=auth)
-        except requests.exceptions.ConnectionError as e:
-            raise AuthFailedError(e)
+        resp = session.post(url, auth=auth)
 
-        try:
+        if resp.status_code == 401:
+            raise AuthFailedError("Invalid credentials.")
+        elif resp.status_code == 200:
+            token = resp.json()["token"]
+            self._auth = BroodBearerTokenAuth(token)
+        else:
             resp.raise_for_status()
-        except requests.exceptions.HTTPError as e:
-            raise AuthFailedError("Authentication error: %r" % str(e))
-
-        token = resp.json()["token"]
-        self._auth = BroodBearerTokenAuth(token)
 
 
 IAuthManager.register(LegacyCanopyAuthManager)

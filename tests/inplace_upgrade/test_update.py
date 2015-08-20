@@ -3,11 +3,10 @@ import errno
 import hashlib
 import json
 import os
-import shutil
+import re
 import stat
 import subprocess
 import sys
-import zipfile
 
 import os.path as op
 
@@ -140,12 +139,10 @@ class PythonEnvironment(object):
         enpkg = os.path.join(self.scriptsdir, "enpkg")
         return local("{0} {1}".format(enpkg, command), capture=capture)
 
-
     def runpip(self, command):
         """ Run the given pip command inside this env
         """
         return local("{0} {1}".format(self.pip, command))
-
 
     def bootstrap_setuptools(self):
         """ Install setuptools in this env
@@ -247,6 +244,7 @@ def remove_tree(path):
         else:
             local("rm -rf {}".format(path))
 
+
 def listdir(path):
     """ Get the list of files in the path respecting fabric's local directory.
 
@@ -301,21 +299,22 @@ def _generate_egg_index(index_filename, target_egg, forced_version,
 
     index_data = {
         os.path.basename(target_egg): {
-                "available": True,
-                "build": forced_build,
-                "md5": md5,
-                "mtime": 0.0,
-                "name": "enstaller",
-                "product": "free",
-                "python": None,
-                "size": os.stat(target_egg)[stat.ST_SIZE],
-                "type": "egg",
-                "version": forced_version,
+            "available": True,
+            "build": forced_build,
+            "md5": md5,
+            "mtime": 0.0,
+            "name": "enstaller",
+            "product": "free",
+            "python": None,
+            "size": os.stat(target_egg)[stat.ST_SIZE],
+            "type": "egg",
+            "version": forced_version,
         }
     }
 
     with open(index_filename, "w") as fp:
         json.dump(index_data, fp, indent=4)
+
 
 def build_enstaller_egg(forced_version, forced_build=1):
     """ Build an Enthought egg from the current checkout.
@@ -374,13 +373,9 @@ def _bootstrap_old_enstaller(pyenv, upgrade_from):
 
 
 @task
-def run_enstaller_upgrade(upgrade_from="4.6.5-1"):
-    upgrade_to = "4.8.0"
-    # XXX: version lower than 4.6.5 do not seem to handle use_webservice=False
-    # correctly when used with --sys-config due to the brain deadness of the
-    # old config-as-module-singleton, so we need to start from 4.6.5. The hope
-    # is that older versions are similar enough to 4.6.5 as far as inplace
-    # upgradeability goes.
+def run_enstaller_upgrade(upgrade_from="4.8.6-1"):
+    upgrade_to = "4.8.7"
+
     pyenv = PythonEnvironment(ROOT, None)
     pyenv.destroy()
 
@@ -390,7 +385,23 @@ def run_enstaller_upgrade(upgrade_from="4.6.5-1"):
 
     build_enstaller_egg(upgrade_to)
     with lcd(ROOT):
-        local("echo y| {} -m enstaller.main --sys-config -s enstaller".format(pyenv.python))
+        output = local(
+            "{0} -m enstaller.main -y --sys-config -s enstaller".format(pyenv.python),
+            capture=True
+        )
+
+        m = re.search(
+            "enstaller-{0}.*\[removing egg\]".format(upgrade_from),
+            output
+        )
+        assert m, "Could not find correct version {0!r} to be removed".format(upgrade_from)
+
+        m = re.search(
+            "enstaller-{0}.*\[installing egg\]".format(upgrade_to),
+            output
+        )
+        assert m, "Could not find correct version {0!r} to be installed".format(upgrade_to)
+
         # We use --list instead of --version because we overrode the metadata
         # version, not the actualy version in enstaller package
         m = pyenv.runenpkg("--list", capture=True)
