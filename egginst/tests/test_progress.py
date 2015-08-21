@@ -1,3 +1,4 @@
+import os
 import sys
 import mock
 
@@ -41,7 +42,10 @@ class TestProgressBar(unittest.TestCase):
         # Then
         for i, (args, kw) in enumerate(mocked_stdout.write.call_args_list):
             line = args[0].rstrip(AFTER_BAR).lstrip(BEFORE_BAR)
-            self.assertTrue(len(line) < DEFAULT_TERMINAL_SIZE)
+            if os.name == 'nt':
+                self.assertTrue(len(line) < DEFAULT_TERMINAL_SIZE)
+            else:
+                self.assertTrue(len(line) <= DEFAULT_TERMINAL_SIZE)
 
     def test_get_terminal_size_with_env(self):
         terminal_size = DEFAULT_TERMINAL_SIZE, 25
