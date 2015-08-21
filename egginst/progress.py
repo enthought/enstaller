@@ -1,3 +1,4 @@
+import os
 import sys
 
 from egginst.console import ProgressBar, get_terminal_size
@@ -11,10 +12,16 @@ def dummy_progress_bar_factory(*a, **kw):
 
 def _compute_optimal_first_line(message, filename):
     term_width = get_terminal_size()[0]
+    # On windows, if one writes the last column of a line, '\r' will not go
+    # back to the beginning but wrap around, so we remove 1 to the width.
+    if os.name == 'nt':
+        term_width -= 1
+
     # -------------------------------------------- term width
     # first_line_left first_line_right speed_label
     # The '1' are for spaces
     first_line_length = term_width - 1 - _MAX_SPEED_LABEL_DISPLAY
+
     first_line_right = 20
     first_line_left = first_line_length - first_line_right - 1
 
@@ -42,7 +49,9 @@ def console_progress_manager_factory(message, filename, size, steps=None,
     # 2 for '[' and ']'
     width = len(first_line) - left_align - 2 - 1
     bar_template = "{0:>10}".format(human_bytes(size))
-    bar_template += "%(label)s [%(bar)s] %(info)s"
+    bar_template += (
+        "%%(label)s [%%(bar)s] %%(info) %ds" % (_MAX_SPEED_LABEL_DISPLAY,)
+    )
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
                        fill_char=".", show_speed=show_speed)
