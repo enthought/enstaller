@@ -315,6 +315,7 @@ class RemotePackageMetadata(PackageMetadata):
         ret["build"] = self.version.build
         ret["packages"] = list(self.packages)
         ret["type"] = "egg"
+        ret["python_tag"] = self._python_implementation.pep425_tag
         return ret
 
     @property

@@ -234,6 +234,7 @@ class TestRemotePackageMetadata(unittest.TestCase):
             "packages": [],
             "product": "free",
             "python": "2.7",
+            "python_tag": python.pep425_tag,
             "size": 1,
             "type": "egg",
             "version": "1.3.0",
@@ -272,6 +273,22 @@ class TestRemotePackageMetadata(unittest.TestCase):
 
         # Then
         self.assertEqual(repr(metadata), r_repr)
+
+    def test_round_tripping(self):
+        # Given
+        r_metadata = RemotePackageMetadata(
+            "nose-1.3.0-1.egg", "nose", EnpkgVersion.from_string("1.3.0-1"),
+            [], PythonImplementation.from_running_python(), 0, "a" * 32, 0,
+            "free", True, self.repository_info
+        )
+
+        # When
+        metadata = RemotePackageMetadata.from_json_dict(
+            r_metadata.key, r_metadata.s3index_data, self.repository_info
+        )
+
+        # Then
+        self.assertEqual(metadata, r_metadata)
 
 
 class TestInstalledPackage(unittest.TestCase):
