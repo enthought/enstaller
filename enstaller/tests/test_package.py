@@ -278,6 +278,21 @@ class TestRemotePackageMetadata(unittest.TestCase):
         # Given
         r_metadata = RemotePackageMetadata(
             "nose-1.3.0-1.egg", "nose", EnpkgVersion.from_string("1.3.0-1"),
+            [], None, 0, "a" * 32, 0,
+            "free", True, self.repository_info
+        )
+
+        # When
+        metadata = RemotePackageMetadata.from_json_dict(
+            r_metadata.key, r_metadata.s3index_data, self.repository_info
+        )
+
+        # Then
+        self.assertEqual(metadata, r_metadata)
+
+        # Given
+        r_metadata = RemotePackageMetadata(
+            "MKL-10.3-1.egg", "mkl", EnpkgVersion.from_string("10.3-1"),
             [], PythonImplementation.from_running_python(), 0, "a" * 32, 0,
             "free", True, self.repository_info
         )
