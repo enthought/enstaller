@@ -5,9 +5,9 @@ import enstaller.plat
 
 from egginst._compat import with_metaclass
 from egginst._compat import urljoin, urlsplit, urlunsplit
+from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.auth import _INDEX_NAME
-from enstaller.pep425 import PythonImplementation
 
 
 class IRepositoryInfo(with_metaclass(abc.ABCMeta)):

@@ -9,6 +9,7 @@ import mock
 
 from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
+from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.plat import custom_plat, subdir
 
@@ -18,7 +19,6 @@ from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.config import (prepend_url, print_config,
                               _is_using_epd_username, write_default_config)
 from enstaller.config import Configuration, add_url
-from enstaller.pep425 import PythonImplementation
 from enstaller.repository_info import (CanopyRepositoryInfo,
                                        BroodRepositoryInfo,
                                        FSRepositoryInfo,
