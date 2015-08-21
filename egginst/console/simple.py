@@ -69,10 +69,17 @@ def _human_speed(speed):
 _MAX_SPEED_LABEL_DISPLAY = len(_human_speed((_KIB - 1) * _KIB))
 
 
+def isatty(stream):
+    try:
+        return stream.isatty()
+    except AttributeError:
+        return False
+
+
 class ProgressBar(object):
     def __init__(self, length=None, bar_template='%(bar)s', width=30,
                  fill_char='#', show_speed=False):
-        if sys.stdout.isatty():
+        if isatty(sys.stdout):
             self._stream = sys.stdout
         else:
             self._stream = _DummyStream()
