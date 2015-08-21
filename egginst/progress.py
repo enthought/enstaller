@@ -42,7 +42,9 @@ def console_progress_manager_factory(message, filename, size, steps=None,
     # 2 for '[' and ']'
     width = len(first_line) - left_align - 2 - 1
     bar_template = "{0:>10}".format(human_bytes(size))
-    bar_template += "%(label)s [%(bar)s] %(info)s"
+    bar_template += (
+        "%%(label)s [%%(bar)s] %%(info) %ds" % (_MAX_SPEED_LABEL_DISPLAY,)
+    )
 
     return ProgressBar(length=steps, bar_template=bar_template, width=width,
                        fill_char=".", show_speed=show_speed)
