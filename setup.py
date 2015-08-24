@@ -15,7 +15,7 @@ from egginst.main import BOOTSTRAP_ARCNAME
 
 MAJOR = 4
 MINOR = 8
-MICRO = 9
+MICRO = 10
 
 IS_RELEASED = False
 
