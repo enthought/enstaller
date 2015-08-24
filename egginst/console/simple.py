@@ -168,9 +168,15 @@ class ProgressBar(object):
             "label": "",
         }
         rendered_bar = self.bar_template % data
+        to_fill = get_terminal_size()[0] - len(rendered_bar)
+        # On windows, if one writes the last column of a line, '\r' will not go
+        # back to the beginning but wrap around, so we remove 1 to the width.
+        if os.name == 'nt':
+            to_fill -= 1
+
         bar = BEFORE_BAR + rendered_bar
         self._stream.write(bar)
-        self._stream.write(" " * (get_terminal_size()[0] - len(rendered_bar)))
+        self._stream.write(" " * to_fill)
         self._stream.flush()
 
     def __enter__(self):
