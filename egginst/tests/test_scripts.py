@@ -8,7 +8,7 @@ from egginst._compat import PY2, StringIO, configparser
 from egginst import exe_data
 
 from egginst.main import EggInst
-from egginst.runtime import RuntimeInfo
+from egginst.runtime import RuntimeInfo, _version_info_to_version
 from egginst.scripts import (
     create_entry_points, create_proxies, fix_script, _get_executable
 )
@@ -244,7 +244,7 @@ class TestProxy(unittest.TestCase):
         # XXX: hack to force proper path separations, even on Unix.
         platform = EPDPlatform.from_epd_string(epd_string).platform
         runtime_info = RuntimeInfo.from_prefix_and_platform(
-            prefix, platform, sys.version_info
+            prefix, platform, _version_info_to_version()
         )
         # Hack so that scriptsdir is a valid UNIX path (instead of
         # '/some/prefix\Scripts')

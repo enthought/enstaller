@@ -7,8 +7,6 @@ import zipfile
 
 from setuptools import setup
 
-from distutils.util import convert_path
-
 from setuptools.command.bdist_egg import bdist_egg as old_bdist_egg
 
 
@@ -106,8 +104,8 @@ class _AssignmentParser(ast.NodeVisitor):
 
     def generic_visit(self, node):
         if type(node) != ast.Module:
-            raise InvalidFormat("Unexpected expression @ line {0}".
-                                format(node.lineno), node.lineno)
+            raise ValueError("Unexpected expression @ line {0}".
+                             format(node.lineno), node.lineno)
         super(_AssignmentParser, self).generic_visit(node)
 
     def visit_Assign(self, node):
@@ -187,6 +185,7 @@ packages = [
     'egginst.vendor.okonomiyaki.bundled',
     'egginst.vendor.okonomiyaki.bundled.traitlets',
     'egginst.vendor.okonomiyaki.file_formats',
+    'egginst.vendor.okonomiyaki.file_formats._blacklist',
     'egginst.vendor.okonomiyaki.platforms',
     'egginst.vendor.okonomiyaki.repositories',
     'egginst.vendor.okonomiyaki.utils',
