@@ -1,7 +1,0 @@
-cachecontrol==v0.11.5
-ruamel.yaml==0.10.2
-sqlite_cache==0.0.3
-requests==2.5.1
--e git+https://github.com/dropbox/responses@eb8a964b6e34c4fde52f7c4f2b81cea038802513#egg=responses
-jsonschema==2.4.0
-enum34==1.0.4

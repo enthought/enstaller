@@ -9,6 +9,7 @@ import sqlite3
 from io import FileIO
 
 import requests
+import sqlite_cache
 
 from cachecontrol.cache import BaseCache
 from cachecontrol.controller import CacheController
@@ -16,7 +17,6 @@ from cachecontrol.controller import CacheController
 from egginst._compat import buffer, urlparse, urlunparse
 
 from enstaller.utils import uri_to_path
-from enstaller.vendor import sqlite_cache
 
 
 logger = logging.getLogger(__name__)

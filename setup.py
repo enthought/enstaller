@@ -28,6 +28,7 @@ INSTALL_REQUIRES = [
     "okonomiyaki >= 0.10.0",
     "requests>=2.7.0",
     "ruamel.yaml>=0.10.7",
+    "sqlite_cache>=0.0.3",
     "zipfile2 >= 0.0.10",
 ]
 
@@ -196,8 +197,6 @@ packages = [
     'enstaller.new_solver',
     'enstaller.solver',
     'enstaller.tools',
-    'enstaller.vendor',
-    'enstaller.vendor.sqlite_cache',
     'enstaller.versions',
 ]
 
