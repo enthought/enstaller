@@ -31,8 +31,8 @@ INSTALL_REQUIRES = [
     "zipfile2 >= 0.0.10",
 ]
 
-EXTRA_REQUIRES = {
-    ':python_version<3.0': ['futures',]
+EXTRAS_REQUIRE = {
+    ':python_version<="3.0"': ['futures',]
 }
 
 # Return the git revision as a string
@@ -260,7 +260,7 @@ setup(
     ],
     test_suite="nose.collector",
     cmdclass={"bdist_enegg": bdist_enegg},
-    extra_requires=EXTRA_REQUIRES,
+    extras_require=EXTRAS_REQUIRE,
     install_requires=INSTALL_REQUIRES,
     **kwds
 )
