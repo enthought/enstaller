@@ -12,6 +12,7 @@ import tempfile
 import textwrap
 
 import mock
+import responses
 
 from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp, DUMMY_EGG
@@ -35,7 +36,6 @@ from enstaller.repository import Repository, InstalledPackageMetadata
 from enstaller.session import Session
 from enstaller.solver import Requirement
 from enstaller.utils import PY_VER
-from enstaller.vendor import responses
 from enstaller.versions import EnpkgVersion
 
 import enstaller.tests.common

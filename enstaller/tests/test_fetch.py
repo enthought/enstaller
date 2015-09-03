@@ -4,9 +4,10 @@ import shutil
 import sys
 import tempfile
 
-from egginst.tests.common import _EGGINST_COMMON_DATA
+import requests
+import responses
 
-from enstaller.vendor import requests, responses
+from egginst.tests.common import _EGGINST_COMMON_DATA
 
 from enstaller.errors import InvalidChecksum
 from enstaller.fetch import _DownloadManager

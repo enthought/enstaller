@@ -1,11 +1,12 @@
 import json
 import sys
 
+import responses
+
 from enstaller.config import Configuration
 from enstaller.session import Session
 from enstaller.tests.common import R_JSON_AUTH_RESP
 from enstaller.auth.user_info import UserInfo
-from enstaller.vendor import responses
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest

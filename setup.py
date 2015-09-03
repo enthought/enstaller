@@ -21,7 +21,9 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap.py")
 
 INSTALL_REQUIRES = [
+    "cachecontrol>=0.11.5",
     "okonomiyaki >= 0.10.0",
+    "requests>=2.7.0",
     "zipfile2 >= 0.0.10",
 ]
 
@@ -191,26 +193,19 @@ packages = [
     'enstaller.solver',
     'enstaller.tools',
     'enstaller.vendor',
-    'enstaller.vendor.cachecontrol',
-    'enstaller.vendor.cachecontrol.caches',
     'enstaller.vendor.futures',
     'enstaller.vendor.jsonschema',
-    'enstaller.vendor.requests',
-    'enstaller.vendor.requests.packages',
-    'enstaller.vendor.requests.packages.chardet',
-    'enstaller.vendor.requests.packages.urllib3',
-    'enstaller.vendor.requests.packages.urllib3.contrib',
-    'enstaller.vendor.requests.packages.urllib3.packages',
-    'enstaller.vendor.requests.packages.urllib3.packages.ssl_match_hostname',
-    'enstaller.vendor.requests.packages.urllib3.util',
     'enstaller.vendor.sqlite_cache',
     'enstaller.vendor.ruamel',
     'enstaller.vendor.ruamel.yaml',
     'enstaller.versions',
 ]
 
-package_data = {"enstaller.vendor.requests": ["cacert.pem"],
-                "enstaller.vendor.jsonschema": ["schemas/draft3.json", "schemas/draft4.json"]}
+package_data = {
+    "enstaller.vendor.jsonschema": [
+        "schemas/draft3.json", "schemas/draft4.json"
+    ]
+}
 
 if include_testing:
     packages += [

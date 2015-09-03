@@ -6,6 +6,7 @@ machotools>=0.0.2
 mock
 -e git+https://github.com/enthought/okonomiyaki@f7c6cde93fd1846fe51fd0603e8a2f73bd15e4ae#egg=okonomiyaki
 haas
+responses==0.4.0
 six
 testfixtures
 tox
