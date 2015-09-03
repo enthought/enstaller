@@ -22,8 +22,10 @@ BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap
 
 INSTALL_REQUIRES = [
     "cachecontrol>=0.11.5",
+    "jsonschema",
     "okonomiyaki >= 0.10.0",
     "requests>=2.7.0",
+    "ruamel.yaml>=0.10.7",
     "zipfile2 >= 0.0.10",
 ]
 
@@ -194,18 +196,11 @@ packages = [
     'enstaller.tools',
     'enstaller.vendor',
     'enstaller.vendor.futures',
-    'enstaller.vendor.jsonschema',
     'enstaller.vendor.sqlite_cache',
-    'enstaller.vendor.ruamel',
-    'enstaller.vendor.ruamel.yaml',
     'enstaller.versions',
 ]
 
-package_data = {
-    "enstaller.vendor.jsonschema": [
-        "schemas/draft3.json", "schemas/draft4.json"
-    ]
-}
+package_data = {}
 
 if include_testing:
     packages += [

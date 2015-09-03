@@ -1,6 +1,8 @@
 import json
 import sys
 
+import jsonschema
+
 from egginst.progress import console_progress_manager_factory
 
 from enstaller import Configuration, Session
@@ -9,7 +11,6 @@ from enstaller.config import STORE_KIND_BROOD
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.errors import EnpkgError, EnstallerException
 from enstaller.solver import Request, Requirement
-from enstaller.vendor import jsonschema
 
 from .json_schemas import INSTALL_SCHEMA, UPDATE_ALL_SCHEMA
 

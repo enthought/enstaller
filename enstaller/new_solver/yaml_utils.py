@@ -1,6 +1,6 @@
 from egginst._compat import string_types
 
-from enstaller.vendor.ruamel import yaml
+from ruamel import yaml
 
 from enstaller.compat import OrderedDict
 from enstaller.package import RepositoryPackageMetadata

@@ -107,8 +107,9 @@ def load_configuration_from_yaml(cls, filename_or_fp):
 
     # Local import to workaround some freezing issues for jaguar and speed up
     # imports a bit when yaml is not used.
-    from enstaller.vendor import jsonschema
-    from enstaller.vendor.ruamel import yaml
+    import jsonschema
+    from ruamel import yaml
+
     if isinstance(filename_or_fp, string_types):
         with open(filename_or_fp, "rt") as fp:
             data = yaml.load(fp)
