@@ -1,7 +1,6 @@
 import os.path
 import ntpath
 import posixpath
-import subprocess
 import sys
 
 from egginst.vendor.okonomiyaki.platforms import Platform
@@ -157,14 +156,6 @@ class RuntimeInfo(object):
         if self._executable is None:
             self._executable = self._compute_executable()
         return self._executable
-
-    def py_call(self, cmd, *a, **kw):
-        """ Call the given command with this runtime python (i.e. the actually
-        executed command will be prefixed by this runtime's python executable).
-        """
-        assert issubclass(type(cmd), list)
-        cmd = [self.executable] + cmd
-        return subprocess.call(cmd, *a, **kw)
 
     def _compute_executable(self):
         if self.platform.os == WINDOWS:
