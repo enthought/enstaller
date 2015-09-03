@@ -187,6 +187,7 @@ packages = [
     'egginst.vendor.okonomiyaki.bundled',
     'egginst.vendor.okonomiyaki.bundled.traitlets',
     'egginst.vendor.okonomiyaki.file_formats',
+    'egginst.vendor.okonomiyaki.file_formats._blacklist',
     'egginst.vendor.okonomiyaki.platforms',
     'egginst.vendor.okonomiyaki.repositories',
     'egginst.vendor.okonomiyaki.utils',
