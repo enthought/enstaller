@@ -34,7 +34,7 @@ from . import scripts
 from ._compat import configparser, StringIO
 from .links import create_link
 from .progress import console_progress_manager_factory
-from .runtime import RuntimeInfo
+from .runtime import RuntimeInfo, _version_info_to_version
 from .utils import (on_win, ensure_dir, rm_empty_dir, rm_rf, is_zipinfo_dir,
                     zip_has_arcname)
 
@@ -196,7 +196,7 @@ def _default_runtime_info(prefix=sys.prefix):
     epd_platform = EPDPlatform.from_epd_string(enstaller.plat.custom_plat)
 
     return RuntimeInfo.from_prefix_and_platform(
-        prefix, epd_platform.platform, sys.version_info
+        prefix, epd_platform.platform, _version_info_to_version()
     )
 
 
