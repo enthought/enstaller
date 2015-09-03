@@ -1,16 +1,17 @@
 import logging
 from collections import defaultdict
 
+from enum import Enum
+
 from enstaller.errors import MissingDependency, NoPackageFound
 from enstaller.package import egg_name_to_name_version
-from enstaller.vendor import enum
 
 from .requirement import Requirement
 
 logger = logging.getLogger(__name__)
 
 
-class SolverMode(enum.Enum):
+class SolverMode(Enum):
     ROOT = 0
     FLAT = 1
     RECUR = 2

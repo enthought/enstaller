@@ -1,4 +1,4 @@
-from enstaller.vendor.enum import Enum
+from enum import Enum
 
 
 class JobType(Enum):

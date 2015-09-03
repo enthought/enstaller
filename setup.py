@@ -22,6 +22,7 @@ BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap
 
 INSTALL_REQUIRES = [
     "cachecontrol>=0.11.5",
+    "enum34",
     "futures",
     "jsonschema",
     "okonomiyaki >= 0.10.0",
