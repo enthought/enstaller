@@ -23,7 +23,6 @@ BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap
 INSTALL_REQUIRES = [
     "cachecontrol>=0.11.5",
     "enum34",
-    "futures",
     "jsonschema",
     "okonomiyaki >= 0.10.0",
     "requests>=2.7.0",
@@ -31,6 +30,10 @@ INSTALL_REQUIRES = [
     "sqlite_cache>=0.0.3",
     "zipfile2 >= 0.0.10",
 ]
+
+EXTRA_REQUIRES = {
+    ':python_version<3.0': ['futures',]
+}
 
 # Return the git revision as a string
 def git_version():
@@ -257,6 +260,7 @@ setup(
     ],
     test_suite="nose.collector",
     cmdclass={"bdist_enegg": bdist_enegg},
+    extra_requires=EXTRA_REQUIRES,
     install_requires=INSTALL_REQUIRES,
     **kwds
 )
