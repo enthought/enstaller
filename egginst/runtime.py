@@ -53,7 +53,7 @@ class RuntimeInfo(object):
         platform: Platform
             An okonomiyaki Platform class (the vendorized one).
         version: SemanticVersion
-            The version for this python
+            The runtime's version
         """
         if platform.os == WINDOWS:
             scriptsdir = ntpath.join(prefix, "Scripts")
