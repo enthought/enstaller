@@ -7,9 +7,10 @@ import textwrap
 
 import mock
 
+from okonomiyaki.file_formats import PythonImplementation
+
 from egginst._compat import StringIO
 from egginst.tests.common import mkdtemp
-from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.plat import custom_plat, subdir
 

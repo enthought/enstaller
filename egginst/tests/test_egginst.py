@@ -7,13 +7,13 @@ import tempfile
 import mock
 import testfixtures
 
+from zipfile2 import ZipFile
+
 from egginst.main import (
     EggInst, get_installed, is_in_legacy_egg_info, main,
     should_copy_in_egg_info)
 from egginst.testing_utils import assert_same_fs
 from egginst.utils import makedirs
-
-from egginst.vendor.zipfile2 import ZipFile
 
 from egginst import eggmeta
 

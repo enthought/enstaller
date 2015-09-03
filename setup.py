@@ -20,6 +20,10 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap.py")
 
+INSTALL_REQUIRES = [
+    "okonomiyaki >= 0.10.0",
+    "zipfile2 >= 0.0.10",
+]
 
 # Return the git revision as a string
 def git_version():
@@ -179,17 +183,6 @@ include_testing = True
 packages = [
     'egginst',
     'egginst.console',
-    'egginst.vendor',
-    'egginst.vendor.zipfile2',
-    'egginst.vendor.okonomiyaki',
-    'egginst.vendor.okonomiyaki.bundled',
-    'egginst.vendor.okonomiyaki.bundled.traitlets',
-    'egginst.vendor.okonomiyaki.file_formats',
-    'egginst.vendor.okonomiyaki.file_formats._blacklist',
-    'egginst.vendor.okonomiyaki.platforms',
-    'egginst.vendor.okonomiyaki.repositories',
-    'egginst.vendor.okonomiyaki.utils',
-    'egginst.vendor.okonomiyaki.versions',
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',
@@ -274,5 +267,6 @@ setup(
     ],
     test_suite="nose.collector",
     cmdclass={"bdist_enegg": bdist_enegg},
+    install_requires=INSTALL_REQUIRES,
     **kwds
 )

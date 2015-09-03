@@ -4,8 +4,9 @@ import sys
 
 import enstaller.plat
 
+from okonomiyaki.file_formats import PythonImplementation
+
 from egginst.tests.common import DUMMY_EGG, MKL_10_3
-from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.egg_meta import split_eggname
 from enstaller.repository_info import (BroodRepositoryInfo,

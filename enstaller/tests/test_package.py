@@ -2,8 +2,9 @@ import os.path
 import sys
 import time
 
+from okonomiyaki.file_formats import PythonImplementation
+
 from egginst.tests.common import _EGGINST_COMMON_DATA
-from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.compat import path_to_uri
 from enstaller.package import (InstalledPackageMetadata, PackageMetadata,

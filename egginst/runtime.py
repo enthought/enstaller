@@ -3,9 +3,9 @@ import ntpath
 import posixpath
 import sys
 
-from egginst.vendor.okonomiyaki.platforms import Platform
-from egginst.vendor.okonomiyaki.platforms.platform import WINDOWS
-from egginst.vendor.okonomiyaki.versions import SemanticVersion
+from okonomiyaki.platforms import Platform
+from okonomiyaki.platforms.platform import WINDOWS
+from okonomiyaki.versions import SemanticVersion
 
 
 CPYTHON = "cpython"

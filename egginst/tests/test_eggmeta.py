@@ -1,8 +1,9 @@
 import sys
 
+from zipfile2 import ZipFile
+
 from egginst._compat import BytesIO
 from egginst.eggmeta import info_from_z, parse_rawspec
-from egginst.vendor.zipfile2 import ZipFile
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest

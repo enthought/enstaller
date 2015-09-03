@@ -9,11 +9,11 @@ else:
     import unittest
 
 from machotools import rewriter_factory
+from zipfile2 import ZipFile
 
 from egginst.main import EggInst
 from egginst.object_code import (_compute_targets, _find_lib, _fix_object_code,
                                  get_object_type)
-from egginst.vendor.zipfile2 import ZipFile
 
 from .common import (DUMMY_EGG_WITH_INST_TARGETS, FILE_TO_RPATHS,
                      LEGACY_PLACEHOLD_FILE_RPATH, NOLEGACY_RPATH_FILE,
