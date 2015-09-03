@@ -22,6 +22,7 @@ BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap
 
 INSTALL_REQUIRES = [
     "cachecontrol>=0.11.5",
+    "futures",
     "jsonschema",
     "okonomiyaki >= 0.10.0",
     "requests>=2.7.0",
@@ -195,7 +196,6 @@ packages = [
     'enstaller.solver',
     'enstaller.tools',
     'enstaller.vendor',
-    'enstaller.vendor.futures',
     'enstaller.vendor.sqlite_cache',
     'enstaller.versions',
 ]
