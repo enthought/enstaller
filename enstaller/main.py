@@ -21,6 +21,8 @@ import warnings
 from argparse import ArgumentParser
 from os.path import isfile
 
+import requests
+
 from egginst._compat import http_client
 from egginst.main import EGG_INFO
 from egginst.progress import console_progress_manager_factory
@@ -43,7 +45,6 @@ from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.repository import InstalledPackageMetadata, Repository
 from enstaller.solver import ForceMode, Requirement, SolverMode
 from enstaller.utils import abs_expanduser, input_auth, prompt_yes_no
-from enstaller.vendor import requests
 from enstaller.versions import EnpkgVersion
 
 from enstaller.cli.commands import (env_option, freeze, imports_option,

@@ -4,6 +4,9 @@ import sys
 
 import mock
 
+from okonomiyaki.platforms import EPDPlatform
+from zipfile2 import ZipFile
+
 from egginst._compat import PY2, StringIO, configparser
 from egginst import exe_data
 
@@ -13,8 +16,6 @@ from egginst.scripts import (
     create_entry_points, create_proxies, fix_script, _get_executable
 )
 from egginst.utils import compute_md5
-from egginst.vendor.okonomiyaki.platforms import EPDPlatform
-from egginst.vendor.zipfile2 import ZipFile
 
 from .common import mkdtemp
 

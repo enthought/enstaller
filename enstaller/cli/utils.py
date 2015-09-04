@@ -7,6 +7,8 @@ import os.path
 import sys
 import textwrap
 
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
 from egginst._compat import urlparse
 
 from enstaller.auth import UserInfo
@@ -19,7 +21,6 @@ from enstaller.solver import (
     ForceMode, JobType, Request, Requirement, SolverMode
 )
 from enstaller.utils import decode_json_from_buffer, prompt_yes_no
-from enstaller.vendor.futures import ThreadPoolExecutor, as_completed
 
 
 FMT = '%-20s %-20s %s'

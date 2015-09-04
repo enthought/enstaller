@@ -15,15 +15,14 @@ else:
     import unittest
 
 import mock
-
-from enstaller.vendor import responses
+import requests
+import responses
 
 from enstaller.auth import UserPasswordAuth
 from enstaller.main import main, main_noexc
 from enstaller.config import Configuration, write_default_config
 
 from enstaller.tests.common import mock_print, mock_input_auth
-from enstaller.vendor import requests
 from enstaller.auth.tests.test_auth import R_JSON_AUTH_RESP
 
 from .common import (

@@ -7,13 +7,13 @@ import tempfile
 import textwrap
 
 import mock
+import responses
 
 from enstaller import __version__
 
 from enstaller.config import Configuration
 from enstaller.history import History
 from enstaller.main import main_noexc
-from enstaller.vendor import responses
 from enstaller.utils import PY_VER
 
 from enstaller.tests.common import authenticated_config, mock_index, mock_print, R_JSON_AUTH_RESP

@@ -1,7 +1,8 @@
+from enum import Enum
+
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
 from enstaller.package import egg_name_to_name_version
-from enstaller.vendor.enum import Enum
 
 from .request import JobType
 from .resolve import SolverMode, Resolve

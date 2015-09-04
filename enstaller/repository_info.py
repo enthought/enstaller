@@ -1,11 +1,12 @@
 import abc
 import posixpath
 
+from okonomiyaki.file_formats import PythonImplementation
+
 import enstaller.plat
 
 from egginst._compat import with_metaclass
 from egginst._compat import urljoin, urlsplit, urlunsplit
-from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
 
 from enstaller.auth import _INDEX_NAME
 

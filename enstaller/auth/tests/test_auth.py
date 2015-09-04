@@ -7,6 +7,9 @@ import tempfile
 
 from mock import patch
 
+import requests
+import responses
+
 from enstaller.auth import DUMMY_USER, UserInfo
 from enstaller.auth.auth_managers import (BroodAuthenticator,
                                           BroodBearerTokenAuth,
@@ -17,7 +20,6 @@ from enstaller.session import Session
 from enstaller.errors import AuthFailedError, InvalidConfiguration
 from enstaller.tests.common import (DummyAuthenticator,
                                     R_JSON_NOAUTH_RESP, R_JSON_AUTH_RESP)
-from enstaller.vendor import requests, responses
 
 from .._impl import UserPasswordAuth
 

@@ -5,6 +5,11 @@ import shutil
 import sys
 import tempfile
 
+import responses
+
+from cachecontrol.adapter import CacheControlAdapter
+from requests.adapters import HTTPAdapter
+
 import enstaller
 
 from enstaller.auth.auth_managers import (BroodAuthenticator,
@@ -14,9 +19,6 @@ from enstaller.config import Configuration
 from enstaller.errors import EnstallerException
 from enstaller.session import _PatchedRawSession, Session
 from enstaller.tests.common import R_JSON_AUTH_RESP, mocked_session_factory
-from enstaller.vendor import responses
-from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
-from enstaller.vendor.requests.adapters import HTTPAdapter
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest

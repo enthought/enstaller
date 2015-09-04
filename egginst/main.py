@@ -23,6 +23,9 @@ import warnings
 
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
 
+from okonomiyaki.platforms import EPDPlatform
+from zipfile2 import ZipFile
+
 try:
     import appinst
 except ImportError:  # pragma: no cover
@@ -38,9 +41,6 @@ from .progress import console_progress_manager_factory
 from .runtime import RuntimeInfo, _version_info_to_version
 from .utils import (on_win, ensure_dir, rm_empty_dir, rm_rf, is_zipinfo_dir,
                     zip_has_arcname)
-
-from .vendor.okonomiyaki.platforms import EPDPlatform
-from .vendor.zipfile2 import ZipFile
 
 EGG_INFO = "EGG-INFO"
 BOOTSTRAP_ARCNAME = EGG_INFO + "/spec/__bootstrap__.py"

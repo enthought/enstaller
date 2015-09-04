@@ -4,6 +4,7 @@ import sys
 import tempfile
 
 import mock
+import responses
 
 from egginst.main import _default_runtime_info
 from egginst.progress import console_progress_manager_factory
@@ -19,7 +20,6 @@ from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
 from enstaller.utils import path_to_uri
-from enstaller.vendor import responses
 
 from .common import (dummy_repository_package_factory,
                      mocked_session_factory,

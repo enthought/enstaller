@@ -20,6 +20,21 @@ VERSION = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
 BOOTSTRAP_SCRIPT = os.path.join(os.path.dirname(__file__), "egginst", "bootstrap.py")
 
+INSTALL_REQUIRES = [
+    "cachecontrol>=0.11.5",
+    "enum34",
+    "jsonschema",
+    "okonomiyaki >= 0.10.0",
+    "requests>=2.7.0",
+    "ruamel.yaml>=0.10.7",
+    "sqlite_cache>=0.0.3",
+    "zipfile2 >= 0.0.10",
+]
+
+EXTRAS_REQUIRE = {
+    ':python_version<"3.0"': ['futures']
+}
+
 
 # Return the git revision as a string
 def git_version():
@@ -179,17 +194,6 @@ include_testing = True
 packages = [
     'egginst',
     'egginst.console',
-    'egginst.vendor',
-    'egginst.vendor.zipfile2',
-    'egginst.vendor.okonomiyaki',
-    'egginst.vendor.okonomiyaki.bundled',
-    'egginst.vendor.okonomiyaki.bundled.traitlets',
-    'egginst.vendor.okonomiyaki.file_formats',
-    'egginst.vendor.okonomiyaki.file_formats._blacklist',
-    'egginst.vendor.okonomiyaki.platforms',
-    'egginst.vendor.okonomiyaki.repositories',
-    'egginst.vendor.okonomiyaki.utils',
-    'egginst.vendor.okonomiyaki.versions',
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',
@@ -197,27 +201,10 @@ packages = [
     'enstaller.new_solver',
     'enstaller.solver',
     'enstaller.tools',
-    'enstaller.vendor',
-    'enstaller.vendor.cachecontrol',
-    'enstaller.vendor.cachecontrol.caches',
-    'enstaller.vendor.futures',
-    'enstaller.vendor.jsonschema',
-    'enstaller.vendor.requests',
-    'enstaller.vendor.requests.packages',
-    'enstaller.vendor.requests.packages.chardet',
-    'enstaller.vendor.requests.packages.urllib3',
-    'enstaller.vendor.requests.packages.urllib3.contrib',
-    'enstaller.vendor.requests.packages.urllib3.packages',
-    'enstaller.vendor.requests.packages.urllib3.packages.ssl_match_hostname',
-    'enstaller.vendor.requests.packages.urllib3.util',
-    'enstaller.vendor.sqlite_cache',
-    'enstaller.vendor.ruamel',
-    'enstaller.vendor.ruamel.yaml',
     'enstaller.versions',
 ]
 
-package_data = {"enstaller.vendor.requests": ["cacert.pem"],
-                "enstaller.vendor.jsonschema": ["schemas/draft3.json", "schemas/draft4.json"]}
+package_data = {}
 
 if include_testing:
     packages += [
@@ -232,7 +219,7 @@ if include_testing:
     ]
     macho_binaries = """dummy_with_target_dat-1.0.0-1.egg  foo_amd64
     foo_legacy_placehold.dylib  foo_rpath.dylib  foo.so  foo_x86
-    libfoo.dylib""".split()
+    libfoo.dylib foo_legacy_placehold_lc_rpath.dylib""".split()
 
     package_data["egginst.tests"] = ["data/*egg", "data/zip_with_softlink.zip"]
     package_data["egginst.tests"] += [os.path.join("data", "macho", p)
@@ -243,6 +230,10 @@ if include_testing:
         "epd/*.txt", "gpl/*.txt",
         "open/*.txt",
         "runner/*.txt",
+    ]
+
+    package_data["enstaller.new_solver.tests"] = [
+        "data/*.json",
     ]
 
 setup(
@@ -274,5 +265,7 @@ setup(
     ],
     test_suite="nose.collector",
     cmdclass={"bdist_enegg": bdist_enegg},
+    extras_require=EXTRAS_REQUIRE,
+    install_requires=INSTALL_REQUIRES,
     **kwds
 )

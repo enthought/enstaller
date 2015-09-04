@@ -9,8 +9,9 @@ import os.path
 import posixpath
 import sys
 
+from zipfile2 import ZipFile
+
 from egginst.main import EGG_INFO
-from egginst.vendor.zipfile2 import ZipFile
 
 
 def extract_egg(path, to):

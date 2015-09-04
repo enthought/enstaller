@@ -1,11 +1,26 @@
+[run]
+branch = True
+source = enstaller
+	 egginst
+
 [report]
-omit = egginst/vendor/*
-       enstaller/argparse*
-       enstaller/compat/ordered_dict*
-       enstaller/indexed_repo*
-       enstaller/vendor*
-       enstaller/versions/pep386.py
-       egginst/bootstrap.py
-       egginst/console/*
-       egginst/macho/*
+omit = */egginst/vendor/*
+       */enstaller/argparse*
+       */enstaller/compat/ordered_dict*
+       */enstaller/indexed_repo*
+       */enstaller/vendor*
+       */enstaller/versions/pep386.py
+       */egginst/bootstrap.py
+       */egginst/console/*
+       */egginst/macho/*
        */tests/*
+
+# Regexes for lines to exclude from consideration
+exclude_lines =
+    # Have to re-enable the standard pragma
+    pragma: no cover
+
+    def __repr__
+
+    # Don't complain if non-runnable code isn't run:
+    if __name__ == .__main__.:

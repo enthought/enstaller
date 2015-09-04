@@ -1,8 +1,8 @@
 import os.path
 import sys
 
-from egginst.vendor.okonomiyaki.platforms import EPDPlatform
-from egginst.vendor.okonomiyaki.versions import SemanticVersion
+from okonomiyaki.platforms import EPDPlatform
+from okonomiyaki.versions import SemanticVersion
 
 from egginst.runtime import CPYTHON, RuntimeInfo
 

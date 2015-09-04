@@ -2,9 +2,10 @@ import os.path
 import sys
 import time
 
+from okonomiyaki.file_formats import PythonImplementation
+from zipfile2 import ZipFile
+
 from egginst.eggmeta import info_from_z
-from egginst.vendor.okonomiyaki.file_formats import PythonImplementation
-from egginst.vendor.zipfile2 import ZipFile
 
 from enstaller.egg_meta import split_eggname
 from enstaller.eggcollect import info_from_metadir
