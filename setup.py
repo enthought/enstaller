@@ -218,7 +218,7 @@ if include_testing:
     ]
     macho_binaries = """dummy_with_target_dat-1.0.0-1.egg  foo_amd64
     foo_legacy_placehold.dylib  foo_rpath.dylib  foo.so  foo_x86
-    libfoo.dylib""".split()
+    libfoo.dylib foo_legacy_placehold_lc_rpath.dylib""".split()
 
     package_data["egginst.tests"] = ["data/*egg", "data/zip_with_softlink.zip"]
     package_data["egginst.tests"] += [os.path.join("data", "macho", p)
@@ -229,6 +229,10 @@ if include_testing:
         "epd/*.txt", "gpl/*.txt",
         "open/*.txt",
         "runner/*.txt",
+    ]
+
+    package_data["enstaller.new_solver.tests"] = [
+        "data/*.json",
     ]
 
 setup(
