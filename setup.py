@@ -32,8 +32,9 @@ INSTALL_REQUIRES = [
 ]
 
 EXTRAS_REQUIRE = {
-    ':python_version<="3.0"': ['futures',]
+    ':python_version<"3.0"': ['futures']
 }
+
 
 # Return the git revision as a string
 def git_version():
