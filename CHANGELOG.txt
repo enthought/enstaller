@@ -23,13 +23,10 @@ Internals:
 
   * new internal tool enstaller.tools.unpack, used for some low-level build
     tasks at Enthought.
-  * update vendorized cachecontrol to 0.11.5.
-  * update vendorized requests to 2.7.0.
-  * use vendorized zipfile2 library for zipfile handling.
-  * use vendorized okonomiyaki library for repack tool and internals.
   * commands implementations are now decoupled from argparse namespace, for
     easier reuse.
   * remove obsolete enstaller.indexed_repo
+  * unbundle every dependency
 
 2014-12-09   4.8.0:
 -------------------
