@@ -4,14 +4,15 @@ import sys
 
 import mock
 
-from okonomiyaki.platforms import EPDPlatform
 from zipfile2 import ZipFile
+
+from okonomiyaki.platforms import EPDPlatform
+from okonomiyaki.runtimes.runtime import PythonRuntime
 
 from egginst._compat import PY2, StringIO, configparser
 from egginst import exe_data
 
 from egginst.main import EggInst
-from egginst.runtime import RuntimeInfo, _version_info_to_version
 from egginst.scripts import (
     create_entry_points, create_proxies, fix_script, _get_executable
 )
@@ -238,20 +239,28 @@ dummy-gui = dummy:main_gui
 
 class TestProxy(unittest.TestCase):
     def _runtime_info_factory(self, prefix):
+        def _change_scriptsdir(runtime_info):
+            # XXX: hack to force proper path separations, even on Unix.
+            kw = dict(
+                (k.name, getattr(runtime_info, k.name))
+                for k in runtime_info.__attrs_attrs__
+            )
+            # Hack so that scriptsdir is a valid UNIX path (instead of
+            # '/some/prefix\Scripts')
+            kw["scriptsdir"] = os.path.join(prefix, u"Scripts")
+            return type(runtime_info)(**kw)
+
         if sys.platform == "win32":
             epd_string = "win-32"
         else:
             epd_string = "rh5-32"
-        # XXX: hack to force proper path separations, even on Unix.
-        platform = EPDPlatform.from_epd_string(epd_string).platform
-        runtime_info = RuntimeInfo.from_prefix_and_platform(
-            prefix, platform, _version_info_to_version()
-        )
-        # Hack so that scriptsdir is a valid UNIX path (instead of
-        # '/some/prefix\Scripts')
-        runtime_info.scriptsdir = os.path.join(prefix, "Scripts")
 
-        return runtime_info
+        platform = EPDPlatform.from_epd_string(epd_string).platform
+
+        runtime = PythonRuntime.from_prefix_and_platform(prefix, platform)
+        runtime_info = _change_scriptsdir(runtime._runtime_info)
+
+        return PythonRuntime(runtime_info, u"")
 
     @mock.patch("egginst.utils.on_win", True)
     def test_proxy(self):
