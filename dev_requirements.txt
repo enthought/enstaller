@@ -4,7 +4,6 @@ coverage
 flake8
 machotools>=0.0.2
 mock
-git+https://github.com/enthought/okonomiyaki@f7c6cde93fd1846fe51fd0603e8a2f73bd15e4ae#egg=okonomiyaki
 haas
 pip>=7.1.2 # Older pip like 7.0.2 don't handle extras_require correctly
 responses==0.4.0
