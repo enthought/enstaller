@@ -23,8 +23,10 @@ import warnings
 
 from os.path import abspath, basename, dirname, join, isdir, isfile, normpath, sep
 
-from okonomiyaki.platforms import EPDPlatform
 from zipfile2 import ZipFile
+
+from okonomiyaki.platforms import EPDPlatform
+from okonomiyaki.runtimes.runtime import PythonRuntime
 
 try:
     import appinst
@@ -38,7 +40,6 @@ from . import scripts
 from ._compat import configparser, StringIO
 from .links import create_link
 from .progress import console_progress_manager_factory
-from .runtime import RuntimeInfo, _version_info_to_version
 from .utils import (on_win, ensure_dir, rm_empty_dir, rm_rf, is_zipinfo_dir,
                     zip_has_arcname)
 
@@ -195,10 +196,9 @@ def _run_script(meta_dir, fn, runtime_info):
 def _default_runtime_info(prefix=sys.prefix):
     import enstaller.plat
     epd_platform = EPDPlatform.from_epd_string(enstaller.plat.custom_plat)
+    platform = epd_platform.platform
 
-    return RuntimeInfo.from_prefix_and_platform(
-        prefix, epd_platform.platform, _version_info_to_version()
-    )
+    return PythonRuntime.from_prefix_and_platform(prefix, platform)
 
 
 class _EggInstRemove(object):
