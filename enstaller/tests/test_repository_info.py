@@ -4,7 +4,7 @@ import sys
 
 import enstaller.plat
 
-from okonomiyaki.file_formats import PythonImplementation
+from okonomiyaki.platforms import PythonImplementation
 
 from egginst.tests.common import DUMMY_EGG, MKL_10_3
 

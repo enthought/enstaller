@@ -1,7 +1,7 @@
 import abc
 import posixpath
 
-from okonomiyaki.file_formats import PythonImplementation
+from okonomiyaki.platforms import PythonImplementation
 
 import enstaller.plat
 

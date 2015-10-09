@@ -13,7 +13,7 @@ import zlib
 
 import requests
 
-from okonomiyaki.file_formats import PythonImplementation
+from okonomiyaki.platforms import PythonImplementation
 
 from os.path import abspath, expanduser, getmtime, getsize
 

@@ -2,7 +2,7 @@ import os.path
 import sys
 import time
 
-from okonomiyaki.file_formats import PythonImplementation
+from okonomiyaki.platforms import PythonImplementation
 from zipfile2 import ZipFile
 
 from egginst.eggmeta import info_from_z
