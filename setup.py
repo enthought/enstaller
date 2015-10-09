@@ -24,7 +24,7 @@ INSTALL_REQUIRES = [
     "cachecontrol>=0.11.5",
     "enum34",
     "jsonschema",
-    "okonomiyaki >= 0.11.0",
+    "okonomiyaki >= 0.13.0",
     "requests>=2.7.0",
     "ruamel.yaml>=0.10.7",
     "sqlite_cache>=0.0.3",

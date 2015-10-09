@@ -2,7 +2,7 @@ import os.path
 import sys
 import time
 
-from okonomiyaki.file_formats import PythonImplementation
+from okonomiyaki.platforms import PythonImplementation
 
 from egginst.tests.common import _EGGINST_COMMON_DATA
 
