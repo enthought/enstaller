@@ -325,16 +325,14 @@ class TestInstallReq(unittest.TestCase):
             )
 
     def test_simple_install(self):
-        remote_entries = [
-            dummy_repository_package_factory("nose", "1.3.0", 1)
-        ]
+        nose = dummy_repository_package_factory("nose", "1.3.0", 1)
+        remote_entries = [nose]
 
         with mock.patch("enstaller.main.Enpkg.execute") as m:
             enpkg = create_prefix_with_eggs(Configuration(), self.prefix, [],
                                             remote_entries)
             install_req(enpkg, Configuration(), "nose")
-            m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
-                                  ('install', 'nose-1.3.0-1.egg')])
+            m.assert_called_with([('fetch', nose), ('install', nose)])
 
     def test_simple_non_existing_requirement(self):
         config = Configuration()

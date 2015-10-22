@@ -1,10 +1,10 @@
 import logging
+import operator
 from collections import defaultdict
 
 from enum import Enum
 
 from enstaller.errors import MissingDependency, NoPackageFound
-from enstaller.package import egg_name_to_name_version
 
 from .requirement import Requirement
 
@@ -36,86 +36,72 @@ class Resolve(object):
         """
         self.repository = repository
 
-    def _latest_egg(self, requirement):
+    def _latest_package(self, requirement):
         """
-        return the egg with the largest version and build number
+        return the package with the largest version and build number
         """
         assert requirement.strictness >= 1
         d = dict((package.key, package) for package in
                  self.repository.find_packages(requirement.name))
-        matches = [key for key, package in d.items()
-                   if requirement.matches(package)]
+        matches = [
+            package for package in d.values() if requirement.matches(package)
+        ]
         if len(matches) == 0:
             return None
         else:
-            return max(matches, key=lambda k: d[k].version)
+            return max(matches, key=operator.attrgetter("version"))
 
-    def _dependencies_from_egg(self, egg):
+    def are_complete(self, packages):
         """
-        return the set of requirement objects listed by the given egg
+        return True if the 'packages' are complete, i.e. the for each egg all
+        dependencies (by name only) are also included in 'packages'
         """
-        name, version = egg_name_to_name_version(egg)
-        package = self.repository.find_package(name, version)
-        return set(Requirement(s) for s in package.dependencies)
-
-    def _name_from_egg(self, egg):
-        """
-        return the project name for a given egg (from it's meta data)
-        """
-        name, version = egg_name_to_name_version(egg)
-        return self.repository.find_package(name, version).name
-
-    def are_complete(self, eggs):
-        """
-        return True if the 'eggs' are complete, i.e. the for each egg all
-        dependencies (by name only) are also included in 'eggs'
-        """
-        names = set(self._name_from_egg(d) for d in eggs)
-        for egg in eggs:
-            for r in self._dependencies_from_egg(egg):
+        names = set(p.name for p in packages)
+        for package in packages:
+            for r in self._dependencies_from_package(package):
                 if r.name not in names:
                     return False
         return True
 
-    def _determine_install_order(self, eggs):
+    def _determine_install_order(self, packages):
         """
-        given the 'eggs' (which are already complete, i.e. the for each
-        egg all dependencies are also included in 'eggs'), return a list
-        of the same eggs in the correct install order
+        given the 'packages' (which are already complete, i.e. the for each
+        package all dependencies are also included in 'packages'), return a list
+        of the same packages in the correct install order
         """
-        eggs = list(eggs)
-        assert self.are_complete(eggs)
+        packages = list(packages)
+        assert self.are_complete(packages)
 
         # make sure each project name is listed only once
-        assert len(eggs) == len(set(self._name_from_egg(d) for d in eggs))
+        assert len(packages) == len(set(p.name for p in packages))
 
-        # the eggs corresponding to the requirements must be sorted
+        # the packages corresponding to the requirements must be sorted
         # because the output of this function is otherwise not deterministic
-        eggs.sort(key=self._name_from_egg)
+        packages.sort(key=operator.attrgetter("name"))
 
-        # maps egg -> set of required (project) names
+        # maps package -> set of required (project) names
         rns = {}
-        for egg in eggs:
-            rns[egg] = set(r.name for r in self._dependencies_from_egg(egg))
+        for package in packages:
+            rns[package] = set(r.name for r in self._dependencies_from_package(package))
 
         # as long as we have things missing, simply look for things which
         # can be added, i.e. all the requirements have been added already
         result = []
         names_inst = set()
-        while len(result) < len(eggs):
+        while len(result) < len(packages):
             n = len(result)
-            for egg in eggs:
-                if egg in result:
+            for package in packages:
+                if package in result:
                     continue
                 # see if all required packages were added already
-                if all(bool(name in names_inst) for name in rns[egg]):
-                    result.append(egg)
-                    names_inst.add(self._name_from_egg(egg))
+                if all(bool(name in names_inst) for name in rns[package]):
+                    result.append(package)
+                    names_inst.add(package.name)
                     assert len(names_inst) == len(result)
 
             if len(result) == n:
                 # nothing was added
-                raise Exception("Loop in dependency graph\n%r" % eggs)
+                raise Exception("Loop in dependency graph\n%r" % packages)
         return result
 
     def _sequence_flat(self, root):
@@ -135,37 +121,43 @@ class Resolve(object):
             eggs = self._determine_install_order(eggs)
         return eggs
 
+    def _dependencies_from_package(self, package):
+        """
+        return the set of requirement objects listed by the given package
+        """
+        return set(Requirement(s) for s in package.dependencies)
+
     def _sequence_recur(self, root):
         reqs_shallow = {}
-        for r in self._dependencies_from_egg(root):
+        for r in self._dependencies_from_package(root):
             reqs_shallow[r.name] = r
         reqs_deep = defaultdict(set)
 
-        def add_dependents(egg, visited=None):
+        def add_dependents(package, visited=None):
             if visited is None:
                 visited = set()
-            visited.add(egg)
-            for r in self._dependencies_from_egg(egg):
+            visited.add(package)
+            for r in self._dependencies_from_package(package):
                 reqs_deep[r.name].add(r)
                 if (r.name in reqs_shallow and
                         r.strictness < reqs_shallow[r.name].strictness):
                     continue
-                d = self._latest_egg(r)
+                d = self._latest_package(r)
                 if d is None:
                     msg = "Could not resolve \"%s\" " \
-                          "required by \"%s\"" % (str(r), egg)
-                    raise MissingDependency(msg, egg, r)
-                eggs.add(d)
+                          "required by \"%s\"" % (str(r), package)
+                    raise MissingDependency(msg, package, r)
+                packages.add(d)
                 if d not in visited:
                     add_dependents(d, visited)
 
-        eggs = set([root])
+        packages = set([root])
         add_dependents(root)
 
-        names = set(self._name_from_egg(d) for d in eggs)
-        if len(eggs) != len(names):
+        names = set(p.name for p in packages)
+        if len(packages) != len(names):
             for name in names:
-                ds = [d for d in eggs if self._name_from_egg(d) == name]
+                ds = [d for d in packages if self._name_from_package(d) == name]
                 assert len(ds) != 0
                 if len(ds) == 1:
                     continue
@@ -174,12 +166,12 @@ class Resolve(object):
                     logger.info('    %s', d)
                 r = max(reqs_deep[name], key=lambda r: r.strictness)
                 assert r.name == name
-                # remove the eggs with name
-                eggs = [d for d in eggs if self._name_from_egg(d) != name]
+                # remove the packages with name
+                packages = [d for d in packages if self._name_from_package(d) != name]
                 # add the one
-                eggs.append(self._latest_egg(r))
+                packages.append(self._latest_package(r))
 
-        return self._determine_install_order(eggs)
+        return self._determine_install_order(packages)
 
     def install_sequence(self, req, mode=SolverMode.RECUR):
         """
@@ -197,7 +189,7 @@ class Resolve(object):
         'SolverMode.RECUR': dependencies are handled recursively (default)
         """
         logger.info("Determining install sequence for %r", req)
-        root = self._latest_egg(req)
+        root = self._latest_package(req)
         if root is None:
             msg = "No egg found for requirement {0!r}.".format(str(req))
             raise NoPackageFound(msg, req)

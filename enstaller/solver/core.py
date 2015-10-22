@@ -1,8 +1,6 @@
 from enum import Enum
 
-from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError
-from enstaller.package import egg_name_to_name_version
 
 from .request import JobType
 from .resolve import SolverMode, Resolve
@@ -54,41 +52,41 @@ class Solver(object):
             raise EnpkgError("package %s not installed" % (requirement, ))
         return [packages[0].key]
 
-    def _install_actions(self, eggs, mode, force):
+    def _install_actions(self, packages, mode, force):
         if force == ForceMode.NONE:
-            # remove already installed eggs from egg list
-            eggs = self._filter_installed_eggs(eggs)
+            # remove already installed packages from package list
+            packages = self._filter_installed_packages(packages)
         elif force == ForceMode.MAIN_ONLY:
-            eggs = self._filter_installed_eggs(eggs[:-1]) + [eggs[-1]]
+            packages = self._filter_installed_packages(packages[:-1]) + [packages[-1]]
 
-        # remove packages with the same name (from first egg collection
+        # remove packages with the same name (from first package collection
         # only, in reverse install order)
         res = []
-        for egg in reversed(eggs):
-            name = split_eggname(egg)[0].lower()
+        for package in reversed(packages):
+            name = package.name
             installed_packages = self._top_installed_repository.find_packages(name)
             assert len(installed_packages) < 2
             if len(installed_packages) == 1:
                 installed_package = installed_packages[0]
-                res.append(('remove', installed_package.key))
-        for egg in eggs:
-            res.append(('install', egg))
+                res.append(('remove', installed_package))
+        for package in packages:
+            res.append(('install', package))
         return res
 
-    def _filter_installed_eggs(self, eggs):
-        """ Filter out already installed eggs from the given egg list.
+    def _filter_installed_packages(self, packages):
+        """ Filter out already installed packages from the given package list.
 
         Parameters
         ----------
-        eggs: seq
-            List of egg filenames
+        packages: seq
+            List of PackageMetadata instances
         """
-        filtered_eggs = []
-        for egg in eggs:
-            name, _ = egg_name_to_name_version(egg)
+        filtered_packages = []
+        for package in packages:
+            name = package.name
             for installed in self._top_installed_repository.find_packages(name):
-                if installed.key == egg:
+                if installed.key == package.key:
                     break
             else:
-                filtered_eggs.append(egg)
-        return filtered_eggs
+                filtered_packages.append(package)
+        return filtered_packages
