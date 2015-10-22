@@ -533,9 +533,11 @@ class TestInstallRequirement(unittest.TestCase):
         self.maxDiff = None
 
         # Given
-        entry = dummy_repository_package_factory("nose", "1.3.0", 1,
-                                                 product="pypi")
-        remote_entries = [entry]
+        nose = dummy_repository_package_factory(
+            "nose", "1.3.0", 1, product="pypi"
+        )
+        remote_entries = [nose]
+
         r_message = textwrap.dedent("""\
         The following packages/requirements are coming from the PyPi repo:
 
@@ -564,8 +566,7 @@ class TestInstallRequirement(unittest.TestCase):
 
         # Then
         self.assertMultiLineEqual(mocked_print.value, r_message)
-        m.assert_called_with([('fetch', 'nose-1.3.0-1.egg'),
-                              ('install', 'nose-1.3.0-1.egg')])
+        m.assert_called_with([('fetch', nose), ('install', nose)])
 
 
 class TestCustomConfigPath(unittest.TestCase):

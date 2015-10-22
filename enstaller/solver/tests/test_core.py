@@ -5,13 +5,14 @@ import shutil
 import tempfile
 import sys
 
-from egginst.main import EggInst
+from egginst.main import EGG_INFO, EggInst
 from egginst.tests.common import DUMMY_EGG, NOSE_1_2_1, NOSE_1_3_0
 from egginst.utils import makedirs
 
 
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import EnpkgError, MissingDependency, NoPackageFound
+from enstaller.package import InstalledPackageMetadata
 from enstaller.repository import Repository
 
 from ..core import ForceMode, Solver
@@ -36,15 +37,14 @@ class TestSolverNoDependencies(unittest.TestCase):
         shutil.rmtree(self.prefix)
 
     def test_install_simple(self):
+        numpy_1_8_0 = dummy_repository_package_factory("numpy", "1.8.0", 2)
         entries = [
             dummy_repository_package_factory("numpy", "1.6.1", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2),
+            numpy_1_8_0,
             dummy_repository_package_factory("numpy", "1.7.1", 2),
         ]
 
-        r_actions = [
-            ('install', 'numpy-1.8.0-2.egg')
-        ]
+        r_actions = [('install', numpy_1_8_0)]
 
         repository = repository_factory(entries)
         installed_repository = Repository._from_prefixes([self.prefix])
@@ -136,22 +136,18 @@ class TestSolverNoDependencies(unittest.TestCase):
         l0_egg = NOSE_1_3_0
         l1_egg = NOSE_1_2_1
 
-        expected_actions = [
-            ('remove', os.path.basename(l1_egg)),
-            ('install', os.path.basename(l0_egg)),
-        ]
+        nose = dummy_repository_package_factory(
+            *split_eggname(os.path.basename(l0_egg))
+        )
 
-        entries = [
-            dummy_repository_package_factory(
-                *split_eggname(os.path.basename(l0_egg))),
-        ]
-
-        repository = repository_factory(entries)
+        repository = repository_factory([nose])
 
         l0 = os.path.join(self.prefix, 'l0')
         l1 = os.path.join(self.prefix, 'l1')
         makedirs(l0)
         makedirs(l1)
+
+        l1_egg_meta_dir = os.path.join(l1, EGG_INFO, "nose")
 
         # Install latest version in l0
         EggInst(l0_egg, l0).install()
@@ -159,7 +155,11 @@ class TestSolverNoDependencies(unittest.TestCase):
         # Install older version in l1
         EggInst(l1_egg, l1).install()
 
-        repository = repository_factory(entries)
+        installed_nose = InstalledPackageMetadata.from_meta_dir(
+            l1_egg_meta_dir, prefix=l1
+        )
+        expected_actions = [('remove', installed_nose), ('install', nose)]
+
         installed_repository = Repository._from_prefixes([l1])
         solver = Solver(repository, installed_repository)
 
@@ -186,8 +186,7 @@ class TestSolverDependencies(unittest.TestCase):
         installed_repository = Repository()
 
         expected_actions = [
-            ('install', "MKL-10.3-1.egg"),
-            ('install', "numpy-1.8.0-2.egg"),
+            ('install', entries[0]), ('install', entries[1])
         ]
 
         request = Request()
@@ -202,10 +201,12 @@ class TestSolverDependencies(unittest.TestCase):
 
     def test_simple_installed(self):
         # Given
+        remote_numpy = dummy_repository_package_factory(
+            "numpy", "1.8.0", 2, dependencies=["MKL 10.3"]
+        )
         entries = [
+            remote_numpy,
             dummy_repository_package_factory("MKL", "10.3", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2,
-                                             dependencies=["MKL 10.3"]),
         ]
 
         repository = repository_factory(entries)
@@ -214,9 +215,7 @@ class TestSolverDependencies(unittest.TestCase):
             dummy_installed_package_factory("MKL", "10.3", 1)
         )
 
-        expected_actions = [
-            ('install', "numpy-1.8.0-2.egg"),
-        ]
+        expected_actions = [('install', remote_numpy)]
 
         # When
         request = Request()
@@ -230,18 +229,18 @@ class TestSolverDependencies(unittest.TestCase):
 
     def test_simple_all_installed(self):
         # Given
-        entries = [
-            dummy_repository_package_factory("MKL", "10.3", 1),
-            dummy_repository_package_factory("numpy", "1.8.0", 2,
-                                             dependencies=["MKL 10.3"]),
-        ]
+        remote_mkl = dummy_repository_package_factory("MKL", "10.3", 1)
+        remote_numpy = dummy_repository_package_factory(
+            "numpy", "1.8.0", 2, dependencies=["MKL 10.3"]
+        )
+        entries = [remote_mkl, remote_numpy]
 
         repository = repository_factory(entries)
 
-        installed_entries = [
-            dummy_installed_package_factory("MKL", "10.3", 1),
-            dummy_installed_package_factory("numpy", "1.8.0", 2)
-        ]
+        installed_mkl = dummy_installed_package_factory("MKL", "10.3", 1)
+        installed_numpy = dummy_installed_package_factory("numpy", "1.8.0", 2)
+        installed_entries = [installed_mkl, installed_numpy]
+
         installed_repository = Repository()
         for package in installed_entries:
             installed_repository.add_package(package)
@@ -263,17 +262,17 @@ class TestSolverDependencies(unittest.TestCase):
         actions = solver.resolve(request)
 
         # Then
-        self.assertListEqual(actions,
-                             [("remove", "numpy-1.8.0-2.egg"),
-                              ("install", "numpy-1.8.0-2.egg")])
+        self.assertListEqual(
+            actions, [("remove", installed_numpy), ("install", remote_numpy)]
+        )
 
         # When
         solver = Solver(repository, installed_repository, force=ForceMode.ALL)
         actions = solver.resolve(request)
 
         # Then
-        self.assertListEqual(actions,
-                             [("remove", "numpy-1.8.0-2.egg"),
-                              ("remove", "MKL-10.3-1.egg"),
-                              ("install", "MKL-10.3-1.egg"),
-                              ("install", "numpy-1.8.0-2.egg")])
+        self.assertListEqual(
+            actions,
+            [("remove", installed_numpy), ("remove", installed_mkl),
+             ("install", remote_mkl), ("install", remote_numpy)]
+        )

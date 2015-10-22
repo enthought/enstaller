@@ -19,7 +19,7 @@ class TestResolve(unittest.TestCase):
             repository.add_package(p)
         return repository
 
-    def test__latest_egg_simple(self):
+    def test__latest_package_simple(self):
         # Given
         packages = [
             dummy_repository_package_factory("swig", "1.3.40", 1),
@@ -30,19 +30,19 @@ class TestResolve(unittest.TestCase):
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_egg(Requirement("swig"))
+        latest = resolver._latest_package(Requirement("swig"))
 
         # Then
-        self.assertEqual(latest, "swig-2.0.1-1.egg")
+        self.assertEqual(latest.key, "swig-2.0.1-1.egg")
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_egg(Requirement("swigg"))
+        latest = resolver._latest_package(Requirement("swigg"))
 
         # Then
         self.assertIsNone(latest)
 
-    def test__latest_egg_multiple_python_versions(self):
+    def test__latest_package_multiple_python_versions(self):
         # Given
         packages = [
             dummy_repository_package_factory("swig", "1.3.40", 1),
@@ -53,7 +53,7 @@ class TestResolve(unittest.TestCase):
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_egg(Requirement("swig"))
+        latest = resolver._latest_package(Requirement("swig"))
 
         # Then
-        self.assertEqual(latest, "swig-2.0.1-1.egg")
+        self.assertEqual(latest.key, "swig-2.0.1-1.egg")

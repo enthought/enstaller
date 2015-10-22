@@ -14,7 +14,6 @@ from egginst._compat import urlparse
 from enstaller.auth import UserInfo
 from enstaller.egg_meta import split_eggname
 from enstaller.errors import MissingDependency, NoSuchPackage, NoPackageFound
-from enstaller.package import egg_name_to_name_version
 from enstaller.repository import Repository, parse_index
 from enstaller.requests_utils import _ResponseIterator
 from enstaller.solver import (
@@ -31,12 +30,10 @@ DEFAULT_TEXT_WIDTH = 79
 
 def _is_any_package_unavailable(remote_repository, actions):
     unavailables = []
-    for opcode, egg in actions:
+    for opcode, package in actions:
         if opcode == "install":
-            name, version = egg_name_to_name_version(egg)
-            package = remote_repository.find_package(name, version)
             if not package.available:
-                unavailables.append(egg)
+                unavailables.append(package)
     return len(unavailables) > 0
 
 
@@ -99,10 +96,8 @@ def install_req(enpkg, config, req, solver_mode=SolverMode.RECUR,
 
     def _get_unsupported_packages(actions):
         ret = []
-        for opcode, egg in actions:
+        for opcode, package in actions:
             if opcode == "install":
-                name, version = egg_name_to_name_version(egg)
-                package = enpkg._remote_repository.find_package(name, version)
                 if package.product == "pypi":
                     ret.append(package)
         return ret
@@ -147,7 +142,7 @@ def install_req(enpkg, config, req, solver_mode=SolverMode.RECUR,
             actions = solver.resolve(request)
         except MissingDependency as e:
             if len(pypi_requirements) > 0:
-                msg = _BROKEN_PYPI_TEMPLATE.format(requested=e.requester,
+                msg = _BROKEN_PYPI_TEMPLATE.format(requested=e.requester.key,
                                                    dependency=e.requirement)
                 print(msg)
             else:

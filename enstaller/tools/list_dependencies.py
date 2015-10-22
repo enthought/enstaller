@@ -20,20 +20,22 @@ def query_platform(session, repository_infos, requirement, platform):
 
     def print_level(parent, level=0):
         level += 4
-        for r in resolve._dependencies_from_egg(parent):
+        for r in resolve._dependencies_from_package(parent):
             print("{0}{1}".format(level * " ", r))
-            egg = resolve._latest_egg(r)
-            if egg is None:
-                msg = "Error: Could not find egg for requirement {0!r}"
+            package = resolve._latest_package(r)
+            if package is None:
+                msg = "Error: Could not find package for requirement {0!r}"
                 print(msg.format(r))
                 sys.exit(-1)
-            print_level(egg, level)
+            print_level(package, level)
 
-    root = resolve._latest_egg(requirement)
+    root = resolve._latest_package(requirement)
     if root is None:
         print("No egg found for requirement {0}".format(requirement))
     else:
-        print("Resolving dependencies for {0}: {1}".format(requirement, root))
+        print("Resolving dependencies for {0}: {1}".format(
+            requirement, root.key
+        ))
         print_level(root)
 
 
