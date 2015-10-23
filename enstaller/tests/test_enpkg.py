@@ -127,9 +127,8 @@ class TestEnpkgExecute(unittest.TestCase):
 
     def test_simple_install(self):
         config = Configuration()
-        entries = [
-            dummy_repository_package_factory("dummy", "1.0.1", 1)
-        ]
+        dummy_package = dummy_repository_package_factory("dummy", "1.0.1", 1)
+        entries = [dummy_package]
 
         repository = repository_factory(entries)
 
@@ -139,8 +138,8 @@ class TestEnpkgExecute(unittest.TestCase):
                               mocked_session_factory(config.repository_cache),
                               prefixes=self.prefixes)
                 actions = [
-                    ("fetch", "dummy-1.0.1-1.egg"),
-                    ("install", "dummy-1.0.1-1.egg"),
+                    ("fetch", dummy_package),
+                    ("install", dummy_package),
                 ]
                 enpkg.execute(actions)
 
@@ -198,8 +197,8 @@ class TestEnpkgRevert(unittest.TestCase):
         session = Session(DummyAuthenticator(), config.repository_cache)
 
         enpkg = Enpkg(repository, session, prefixes=self.prefixes)
-        actions = [("fetch", os.path.basename(egg)),
-                   ("install", os.path.basename(egg))]
+        actions = [("fetch", package),
+                   ("install", package)]
         enpkg.execute(actions)
 
         name, version = egg_name_to_name_version(egg)
@@ -282,10 +281,11 @@ class TestFetchAction(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader, repository = self._downloader_factory([path])
+        package = repository.find_package("nose", "1.3.0-1")
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader, repository)
+        action = FetchAction(package, downloader, repository)
         action.execute()
 
         # Then
@@ -300,10 +300,11 @@ class TestFetchAction(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader, repository = self._downloader_factory([path])
+        package = repository.find_package("nose", "1.3.0-1")
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader, repository)
+        action = FetchAction(package, downloader, repository)
         for step in action:
             pass
 
@@ -319,10 +320,11 @@ class TestFetchAction(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader, repository = self._downloader_factory([path])
+        package = repository.find_package("nose", "1.3.0-1")
         self._add_response_for_path(path)
 
         # When
-        action = FetchAction(path, downloader, repository)
+        action = FetchAction(package, downloader, repository)
         for step in action:
             action.cancel()
 
@@ -337,6 +339,7 @@ class TestFetchAction(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader, repository = self._downloader_factory([path])
+        package = repository.find_package("nose", "1.3.0-1")
         self._add_response_for_path(path)
 
         # When/Then
@@ -351,7 +354,7 @@ class TestFetchAction(unittest.TestCase):
                 pass
 
         progress = MyDummyProgressBar()
-        action = FetchAction(path, downloader, repository,
+        action = FetchAction(package, downloader, repository,
                              progress_bar_factory=lambda *a, **kw: progress)
         for step in action:
             pass
@@ -362,6 +365,7 @@ class TestFetchAction(unittest.TestCase):
         filename = "nose-1.3.0-1.egg"
         path = os.path.join(_EGGINST_COMMON_DATA, filename)
         downloader, repository = self._downloader_factory([path])
+        package = repository.find_package("nose", "1.3.0-1")
         self._add_response_for_path(path)
 
         class MyDummyProgressBar(object):
@@ -378,7 +382,7 @@ class TestFetchAction(unittest.TestCase):
                 pass
 
         progress = MyDummyProgressBar()
-        action = FetchAction(path, downloader, repository,
+        action = FetchAction(package, downloader, repository,
                              progress_bar_factory=lambda *a, **kw: progress)
         action.execute()
 
@@ -421,6 +425,7 @@ class TestFetchAction(unittest.TestCase):
     def test_not_enough_retry(self):
         # Given
         path, downloader, repository = self._retry_common_setup()
+        package = repository.find_package("nose", "1.3.0-1")
 
         url = list(repository.iter_packages())[0].source_url
         with open(path, "rb") as fp:
@@ -430,7 +435,7 @@ class TestFetchAction(unittest.TestCase):
         self._add_failing_checksum_response(url, payload, max_retries)
 
         # When/Then
-        action = FetchAction(path, downloader, repository,
+        action = FetchAction(package, downloader, repository,
                              max_retries=max_retries-1)
         with self.assertRaises(InvalidChecksum):
             action.execute()
@@ -439,6 +444,7 @@ class TestFetchAction(unittest.TestCase):
     def test_retry(self):
         # Given
         path, downloader, repository = self._retry_common_setup()
+        package = repository.find_package("nose", "1.3.0-1")
 
         url = "http://acme.com/{0}".format(os.path.basename(path))
         with open(path, "rb") as fp:
@@ -448,7 +454,7 @@ class TestFetchAction(unittest.TestCase):
         self._add_failing_checksum_response(url, payload, max_retries)
 
         # When/Then
-        action = FetchAction(path, downloader, repository,
+        action = FetchAction(package, downloader, repository,
                              max_retries=max_retries)
         # No exception
         action.execute()
@@ -472,7 +478,7 @@ class TestRemoveAction(unittest.TestCase):
             repository.add_package(package)
 
         for path in paths:
-            action = InstallAction(path, self.runtime_info, repository,
+            action = InstallAction(package, self.runtime_info, repository,
                                    self.top_installed_repository,
                                    self.installed_repository,
                                    os.path.dirname(path))

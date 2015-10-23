@@ -70,13 +70,13 @@ class _DownloadManager(object):
     def _path(self, fn):
         return join(self.cache_directory, fn)
 
-    def iter_fetch(self, egg, force=False):
-        """ Fetch the given egg using streaming.
+    def iter_fetch(self, package, force=False):
+        """ Fetch the given package using streaming.
 
         Parameters
         ----------
-        egg : str
-            An egg filename (e.g. 'numpy-1.8.0-1.egg')
+        package : PackageMetadata
+            The package to fetch
         force : bool
             If force is True, will download even if the file is already in the
             download cache.
@@ -96,25 +96,22 @@ class _DownloadManager(object):
         location. This is mostly useful when you want to control cancellation
         and/or follow download progress.
         """
-        name, version = egg_name_to_name_version(egg)
-        package_metadata = self._repository.find_package(name, version)
+        path = self._path(package.key)
 
-        path = self._path(package_metadata.key)
-
-        return _CancelableResponse(path, package_metadata, self._fetcher,
+        return _CancelableResponse(path, package, self._fetcher,
                                    force)
 
-    def fetch(self, egg, force=False):
-        """ Fetch the given egg.
+    def fetch(self, package, force=False):
+        """ Fetch the given package.
 
         Parameters
         ----------
-        egg : str
-            An egg filename (e.g. 'numpy-1.8.0-1.egg')
+        package : PackageMetadata
+            The package to fetch
         force : bool
             If force is True, will download even if the file is already in the
             download cache.
         """
-        context = self.iter_fetch(egg, force)
+        context = self.iter_fetch(package, force)
         for _ in context:
             pass

@@ -55,12 +55,12 @@ class _BaseAction(object):
 
 
 class FetchAction(_BaseAction):
-    def __init__(self, egg, downloader, remote_repository, force=True,
+    def __init__(self, package, downloader, remote_repository, force=True,
                  progress_bar_factory=dummy_progress_bar_factory,
                  max_retries=_DEFAULT_MAX_RETRIES):
         super(FetchAction, self).__init__()
         self._downloader = downloader
-        self._egg = egg
+        self._package = package
         self._force = force
         self._remote_repository = remote_repository
 
@@ -78,16 +78,14 @@ class FetchAction(_BaseAction):
         self._progress.update(step)
 
     def iter_execute(self):
-        context = self._downloader.iter_fetch(self._egg, self._force)
+        context = self._downloader.iter_fetch(self._package, self._force)
         if not context.needs_to_download:
             return
 
         self._current_context = context
 
-        name, version = egg_name_to_name_version(self._egg)
-        package_metadata = self._remote_repository.find_package(name, version)
-        progress = self._progress_bar_factory(package_metadata.key,
-                                              package_metadata.size)
+        progress = self._progress_bar_factory(self._package.key,
+                                              self._package.size)
 
         with progress as progress:
             self._progress = progress
@@ -107,15 +105,15 @@ class FetchAction(_BaseAction):
 
 
 class InstallAction(_BaseAction):
-    def __init__(self, egg, runtime_info, remote_repository,
+    def __init__(self, package, runtime_info, remote_repository,
                  top_installed_repository, installed_repository,
                  cache_directory,
                  progress_bar_factory=dummy_progress_bar_factory):
         super(InstallAction, self).__init__()
 
         self._runtime_info = runtime_info
-        self._egg = egg
-        self._egg_path = os.path.join(cache_directory, self._egg)
+        self._package = package
+        self._package_path = os.path.join(cache_directory, self._package.key)
         self._remote_repository = remote_repository
         self._top_installed_repository = top_installed_repository
         self._installed_repository = installed_repository
@@ -127,14 +125,12 @@ class InstallAction(_BaseAction):
         self._progress.update(step)
 
     def _extract_extra_info(self):
-        name, version = egg_name_to_name_version(self._egg)
-        package = self._remote_repository.find_package(name, version)
-        return package.s3index_data
+        return self._package.s3index_data
 
     def iter_execute(self):
         extra_info = self._extract_extra_info()
 
-        installer = EggInst(self._egg_path, runtime_info=self._runtime_info)
+        installer = EggInst(self._package_path, runtime_info=self._runtime_info)
 
         progress = self._progress_factory(installer.fn,
                                           installer.installed_size)
@@ -151,7 +147,7 @@ class InstallAction(_BaseAction):
             self.progress_update(currently_extracted_size)
 
     def _post_install(self):
-        name, _ = egg_name_to_name_version(self._egg_path)
+        name, _ = egg_name_to_name_version(self._package_path)
         meta_dir = meta_dir_from_prefix(self._runtime_info.prefix, name)
         package = InstalledPackageMetadata.from_meta_dir(meta_dir)
 
