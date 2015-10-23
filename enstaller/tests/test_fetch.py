@@ -43,10 +43,11 @@ class Test_DownloadManager(unittest.TestCase):
         # Given
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
+        package = repository.find_package("nose", "1.3.0-1")
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
-        downloader.fetch(filename)
+        downloader.fetch(package)
 
         # Then
         target = os.path.join(self.tempdir, filename)
@@ -67,19 +68,20 @@ class Test_DownloadManager(unittest.TestCase):
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
         with self.assertRaises(InvalidChecksum):
-            downloader.fetch(filename)
+            downloader.fetch(package)
 
     def test_fetch_abort(self):
         # Given
         filename = "nose-1.3.0-1.egg"
         repository = self._create_store_and_repository([filename])
+        package = repository.find_package("nose", "1.3.0-1")
 
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
         target = os.path.join(self.tempdir, filename)
 
         # When
-        context = downloader.iter_fetch(filename)
+        context = downloader.iter_fetch(package)
         for i, chunk in enumerate(context):
             if i == 1:
                 context.cancel()
@@ -91,13 +93,13 @@ class Test_DownloadManager(unittest.TestCase):
     def test_fetch_egg_refetch(self):
         # Given
         egg = "nose-1.3.0-1.egg"
-
         repository = self._create_store_and_repository([egg])
+        package = repository.find_package("nose", "1.3.0-1")
 
         # When
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
-        downloader.fetch(egg)
+        downloader.fetch(package)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -109,6 +111,7 @@ class Test_DownloadManager(unittest.TestCase):
         path = os.path.join(_EGGINST_COMMON_DATA, egg)
 
         repository = self._create_store_and_repository([egg])
+        package = repository.find_package("nose", "1.3.0-1")
 
         def _corrupt_file(target):
             with open(target, "wb") as fo:
@@ -117,7 +120,7 @@ class Test_DownloadManager(unittest.TestCase):
         # When
         downloader = _DownloadManager(mocked_session_factory(self.tempdir),
                                       repository)
-        downloader.fetch(egg)
+        downloader.fetch(package)
 
         # Then
         target = os.path.join(self.tempdir, egg)
@@ -130,7 +133,7 @@ class Test_DownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        downloader.fetch(egg, force=True)
+        downloader.fetch(package, force=True)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
@@ -138,7 +141,7 @@ class Test_DownloadManager(unittest.TestCase):
         # When/Then
         # Ensure we deal correctly with force=False when the egg is already
         # there.
-        downloader.fetch(egg, force=False)
+        downloader.fetch(package, force=False)
 
     @responses.activate
     def test_fetch_unauthorized(self):
@@ -161,4 +164,4 @@ class Test_DownloadManager(unittest.TestCase):
 
         # When/Then
         with self.assertRaises(requests.exceptions.HTTPError):
-            downloader.fetch(filename)
+            downloader.fetch(package)
