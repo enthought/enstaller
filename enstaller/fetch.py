@@ -4,8 +4,6 @@ from os.path import isfile, join
 
 from egginst.utils import checked_content, compute_md5, makedirs
 
-from enstaller.package import egg_name_to_name_version
-
 
 logger = logging.getLogger(__name__)
 
