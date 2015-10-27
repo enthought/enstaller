@@ -8,14 +8,14 @@ import enstaller.plat
 from enstaller.cli.utils import repository_factory
 from enstaller.config import Configuration
 from enstaller.session import Session
-from enstaller.solver import Requirement
+from enstaller.solver.requirement import _LegacyRequirement
 from enstaller.solver.resolve import Resolve
 
 
 def query_platform(session, repository_infos, requirement, platform):
     repository = repository_factory(session, repository_infos)
 
-    requirement = Requirement(requirement)
+    requirement = _LegacyRequirement.from_requirement_string(requirement)
     resolve = Resolve(repository)
 
     def print_level(parent, level=0):

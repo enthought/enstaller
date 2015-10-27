@@ -6,7 +6,7 @@ from enum import Enum
 
 from enstaller.errors import MissingDependency, NoPackageFound
 
-from .requirement import Requirement
+from enstaller.solver.requirement import _LegacyRequirement
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +44,8 @@ class Resolve(object):
         d = dict((package.key, package) for package in
                  self.repository.find_packages(requirement.name))
         matches = [
-            package for package in d.values() if requirement.matches(package)
+            package for package in d.values() if
+            requirement.matches(package.version)
         ]
         if len(matches) == 0:
             return None
@@ -125,7 +126,10 @@ class Resolve(object):
         """
         return the set of requirement objects listed by the given package
         """
-        return set(Requirement(s) for s in package.dependencies)
+        return set(
+            _LegacyRequirement.from_requirement_string(s)
+            for s in package.dependencies
+        )
 
     def _sequence_recur(self, root):
         reqs_shallow = {}

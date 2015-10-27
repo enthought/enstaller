@@ -181,7 +181,10 @@ class TestInstall(unittest.TestCase):
 
         # Then
         self.assertTrue(install_req.called)
-        install_req.call_args[0][2] == Requirement.from_anything("numpy")
+        self.assertEqual(
+            install_req.call_args[0][2],
+            Requirement.from_legacy_requirement_string("numpy")
+        )
 
 
 class TestRemove(unittest.TestCase):

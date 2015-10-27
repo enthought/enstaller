@@ -3,6 +3,7 @@ from enum import Enum
 from enstaller.errors import EnpkgError
 
 from .request import JobType
+from .requirement import _LegacyRequirement, Requirement
 from .resolve import SolverMode, Resolve
 
 
@@ -26,10 +27,14 @@ class Solver(object):
 
         for job in request.jobs:
             if job.kind == JobType.install:
-                operations.extend(self._install(job.requirement))
+                assert isinstance(job.requirement, Requirement)
+                legacy_requirement = _LegacyRequirement(job.requirement)
+                operations.extend(self._install(legacy_requirement))
             elif job.kind == JobType.remove:
+                assert isinstance(job.requirement, Requirement)
+                legacy_requirement = _LegacyRequirement(job.requirement)
                 operations.extend(("remove", p) for p in
-                                  self._remove(job.requirement))
+                                  self._remove(legacy_requirement))
             else:
                 raise ValueError("Unsupported job kind: {0}".format(job.kind))
 
@@ -41,13 +46,8 @@ class Solver(object):
         return self._install_actions(eggs, self.mode, self.force)
 
     def _remove(self, requirement):
-        if requirement.version and requirement.build:
-            full_version = "{0}-{1}".format(requirement.version,
-                                            requirement.build)
-        else:
-            full_version = None
         packages = self._top_installed_repository.find_packages(
-            requirement.name, full_version)
+            requirement.name)
         if len(packages) == 0:
             raise EnpkgError("package %s not installed" % (requirement, ))
         return [packages[0].key]

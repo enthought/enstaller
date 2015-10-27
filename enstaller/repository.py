@@ -12,7 +12,7 @@ from enstaller.errors import NoSuchPackage
 from enstaller.package import (InstalledPackageMetadata,
                                RemotePackageMetadata)
 from enstaller.utils import PY_VER
-from enstaller.versions import (EnpkgVersion, PEP386WorkaroundVersion)
+from enstaller.versions import EnpkgVersion
 
 
 def _valid_meta_dir_iterator(prefixes):
@@ -185,26 +185,17 @@ class Repository(object):
         package : RemotePackageMetadata
             The corresponding metadata.
         """
-        name = requirement.name
-        version = requirement.version
-        build = requirement.build
-        if version is None:
-            return self.find_latest_package(name)
-        else:
-            if build is None:
-                upstream = PEP386WorkaroundVersion.from_string(version)
-                candidates = [p for p in self.find_packages(name)
-                              if p.version.upstream == upstream]
-                candidates.sort(key=operator.attrgetter("version"))
+        candidates = [
+            candidate for candidate in self.find_packages(requirement.name)
+            if requirement.matches(candidate.version)
+        ]
 
-                if len(candidates) == 0:
-                    msg = "No package found for requirement {0!r}"
-                    raise NoSuchPackage(msg.format(requirement))
+        if len(candidates) == 0:
+            msg = "No package found for requirement {0!r}"
+            raise NoSuchPackage(msg.format(requirement))
 
-                return candidates[-1]
-            else:
-                version = EnpkgVersion.from_upstream_and_build(version, build)
-                return self.find_package(name, str(version))
+        candidates.sort(key=operator.attrgetter("version"))
+        return candidates[-1]
 
     def find_latest_package(self, name):
         """Returns the latest package with the given name.
