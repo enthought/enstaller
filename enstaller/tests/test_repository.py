@@ -309,7 +309,7 @@ class TestRepository(unittest.TestCase):
 
     def test_find_package_from_requirement_name_only(self):
         # Given
-        requirement = Requirement.from_anything("nose")
+        requirement = Requirement.from_legacy_requirement_string("nose")
 
         # When
         package = self.repository.find_package_from_requirement(requirement)
@@ -319,7 +319,7 @@ class TestRepository(unittest.TestCase):
 
     def test_find_package_from_requirement_name_and_version(self):
         # Given
-        requirement = Requirement.from_anything("nose 1.3.0")
+        requirement = Requirement.from_legacy_requirement_string("nose 1.3.0")
 
         # When
         package = self.repository.find_package_from_requirement(requirement)
@@ -328,7 +328,7 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(package.full_version, "1.3.0-2")
 
         # Given
-        requirement = Requirement.from_anything("nose 1.2.1")
+        requirement = Requirement.from_legacy_requirement_string("nose 1.2.1")
 
         # When
         package = self.repository.find_package_from_requirement(requirement)
@@ -342,13 +342,13 @@ class TestRepository(unittest.TestCase):
 
         # When
         for requirement_string in requirement_strings:
-            requirement = Requirement.from_anything(requirement_string)
+            requirement = Requirement.from_legacy_requirement_string(requirement_string)
             with self.assertRaises(NoSuchPackage):
                 self.repository.find_package_from_requirement(requirement)
 
     def test_find_package_from_requirement_all(self):
         # Given
-        requirement = Requirement.from_anything("nose 1.3.0-1")
+        requirement = Requirement.from_legacy_requirement_string("nose 1.3.0-1")
 
         # When
         package = self.repository.find_package_from_requirement(requirement)
@@ -357,7 +357,7 @@ class TestRepository(unittest.TestCase):
         self.assertEqual(package.full_version, "1.3.0-1")
 
         # Given
-        requirement = Requirement.from_anything("nose 1.2.1-1")
+        requirement = Requirement.from_legacy_requirement_string("nose 1.2.1-1")
 
         # When
         package = self.repository.find_package_from_requirement(requirement)

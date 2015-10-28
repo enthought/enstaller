@@ -253,21 +253,21 @@ class TestMisc(unittest.TestCase):
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Requirement.from_anything("numpy"),
-                Requirement.from_anything("scipy")]
+        reqs = [Requirement.from_legacy_requirement_string("numpy"),
+                Requirement.from_legacy_requirement_string("scipy")]
 
         # When/Then
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Requirement.from_anything("enstaller"),
-                Requirement.from_anything("scipy")]
+        reqs = [Requirement.from_legacy_requirement_string("enstaller"),
+                Requirement.from_legacy_requirement_string("scipy")]
 
         # When/Then
         self.assertFalse(needs_to_downgrade_enstaller(reqs))
 
         # Given
-        reqs = [Requirement.from_anything("enstaller 4.5.1")]
+        reqs = [Requirement.from_legacy_requirement_string("enstaller 4.5.1")]
 
         # When/Then
         self.assertTrue(needs_to_downgrade_enstaller(reqs))

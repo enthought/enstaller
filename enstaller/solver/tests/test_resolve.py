@@ -3,7 +3,7 @@ import sys
 from enstaller.repository import Repository
 from enstaller.tests.common import dummy_repository_package_factory
 
-from ..requirement import Requirement
+from ..requirement import _LegacyRequirement
 from ..resolve import Resolve
 
 if sys.version_info[0] == 2:
@@ -30,14 +30,18 @@ class TestResolve(unittest.TestCase):
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_package(Requirement("swig"))
+        latest = resolver._latest_package(
+            _LegacyRequirement.from_requirement_string("swig")
+        )
 
         # Then
         self.assertEqual(latest.key, "swig-2.0.1-1.egg")
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_package(Requirement("swigg"))
+        latest = resolver._latest_package(
+            _LegacyRequirement.from_requirement_string("swigg")
+        )
 
         # Then
         self.assertIsNone(latest)
@@ -53,7 +57,9 @@ class TestResolve(unittest.TestCase):
 
         # When
         resolver = Resolve(repository)
-        latest = resolver._latest_package(Requirement("swig"))
+        latest = resolver._latest_package(
+            _LegacyRequirement.from_requirement_string("swig")
+        )
 
         # Then
         self.assertEqual(latest.key, "swig-2.0.1-1.egg")

@@ -167,7 +167,10 @@ def needs_to_downgrade_enstaller(reqs):
     list of requirements.
     """
     for req in reqs:
-        if req.name == "enstaller" and req.version is not None:
+        has_version_constraint = (
+            req != Requirement.from_legacy_requirement_string("enstaller")
+        )
+        if req.name == "enstaller" and has_version_constraint:
             return True
     return False
 
@@ -493,11 +496,16 @@ def _create_parser():
 def _compute_reqs(cnames):
     reqs = []
     for arg in cnames:
-        if '-' in arg:
-            name, version = arg.split('-', 1)
-            reqs.append(Requirement(name + ' ' + version))
-        else:
-            reqs.append(Requirement(arg))
+        if len(arg) != 0:
+            if '-' in arg:
+                name, version = arg.split('-', 1)
+                reqs.append(
+                    Requirement.from_legacy_requirement_string(
+                        name + ' ' + version
+                    )
+                )
+            else:
+                reqs.append(Requirement.from_legacy_requirement_string(arg))
     return reqs
 
 

@@ -72,7 +72,7 @@ def install_parse_json_string(json_string):
     config = _config_from_json_data(json_data)
 
     requirement_string = json_data[_REQUIREMENT]
-    requirement = Requirement.from_anything(requirement_string)
+    requirement = Requirement.from_legacy_requirement_string(requirement_string)
 
     return config, requirement
 
