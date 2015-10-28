@@ -52,7 +52,7 @@ class Solver(object):
             raise NotInstalledPackage(
                 requirement, "package %s not installed" % (requirement, )
             )
-        return [packages[0].key]
+        return [packages[0]]
 
     def _install_actions(self, packages, mode, force):
         if force == ForceMode.NONE:

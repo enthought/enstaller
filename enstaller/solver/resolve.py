@@ -162,7 +162,7 @@ class Resolve(object):
         names = set(p.name for p in packages)
         if len(packages) != len(names):
             for name in names:
-                ds = [d for d in packages if self._name_from_package(d) == name]
+                ds = [d for d in packages if d.name == name]
                 assert len(ds) != 0
                 if len(ds) == 1:
                     continue
@@ -172,7 +172,7 @@ class Resolve(object):
                 r = max(reqs_deep[name], key=lambda r: r.strictness)
                 assert r.name == name
                 # remove the packages with name
-                packages = [d for d in packages if self._name_from_package(d) != name]
+                packages = [d for d in packages if d.name != name]
                 # add the one
                 packages.append(self._latest_package(r))
 

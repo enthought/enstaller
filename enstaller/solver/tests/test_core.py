@@ -102,7 +102,9 @@ class TestSolverNoDependencies(unittest.TestCase):
             egginst = EggInst(egg, self.prefix)
             egginst.install()
 
-        solver = Solver(repository, Repository._from_prefixes([self.prefix]))
+        installed_repository = Repository._from_prefixes([self.prefix])
+
+        solver = Solver(repository, installed_repository)
 
         request = Request()
         request.remove(Requirement("dummy"))
@@ -111,7 +113,10 @@ class TestSolverNoDependencies(unittest.TestCase):
         actions = solver.resolve(request)
 
         # Then
-        self.assertEqual(actions, [("remove", os.path.basename(DUMMY_EGG))])
+        self.assertEqual(
+            actions,
+            [("remove", installed_repository.find_packages("dummy")[0])]
+        )
 
     def test_remove_non_existing(self):
         # Given
