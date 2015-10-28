@@ -15,7 +15,9 @@ from enstaller.config import Configuration
 from enstaller.enpkg import Enpkg, FetchAction, InstallAction, RemoveAction
 from enstaller.errors import EnpkgError, InvalidChecksum
 from enstaller.fetch import _DownloadManager
-from enstaller.package import PackageMetadata, egg_name_to_name_version
+from enstaller.package import (
+    InstalledPackageMetadata, PackageMetadata, egg_name_to_name_version
+)
 from enstaller.repository import Repository, RemotePackageMetadata
 from enstaller.repository_info import OldstyleRepositoryInfo
 from enstaller.session import Session
@@ -80,6 +82,7 @@ class TestEnpkgActions(unittest.TestCase):
         # Given
         nfiles = 245
         remover = self._prepared_mocked_egginst(nfiles)
+        package = InstalledPackageMetadata.from_egg(DUMMY_EGG, "")
 
         EggInst.return_value._egginst_remover = remover
         top_repository = mock.Mock()
@@ -88,7 +91,7 @@ class TestEnpkgActions(unittest.TestCase):
         def factory(*a, **kw):
             return console_progress_manager_factory("fetching", *a, **kw)
 
-        action = RemoveAction("yoyo-1.1-1.egg", self.prefix, top_repository,
+        action = RemoveAction(package, self.prefix, top_repository,
                               remote_repository, factory)
         progress = mock.Mock()
         progress.__enter__ = mock.Mock(return_value=progress)
@@ -494,7 +497,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.runtime_info,
+        action = RemoveAction(metadata, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         action.execute()
@@ -516,7 +519,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.runtime_info,
+        action = RemoveAction(metadata, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         for step in action:
@@ -539,7 +542,7 @@ class TestRemoveAction(unittest.TestCase):
         self._install_eggs([path])
 
         # When
-        action = RemoveAction(path, self.runtime_info,
+        action = RemoveAction(metadata, self.runtime_info,
                               self.top_installed_repository,
                               self.installed_repository)
         for step in action:

@@ -156,11 +156,11 @@ class InstallAction(_BaseAction):
 
 
 class RemoveAction(_BaseAction):
-    def __init__(self, egg, runtime_info, top_installed_repository,
+    def __init__(self, package, runtime_info, top_installed_repository,
                  installed_repository,
                  progress_bar_factory=dummy_progress_bar_factory):
         super(RemoveAction, self).__init__()
-        self._egg = egg
+        self._package = package
         self._runtime_info = runtime_info
 
         self._top_installed_repository = top_installed_repository
@@ -173,14 +173,11 @@ class RemoveAction(_BaseAction):
         self._progress.update(step)
 
     def iter_execute(self):
-        installer = EggInst(self._egg, runtime_info=self._runtime_info)
+        installer = EggInst(self._package.key, runtime_info=self._runtime_info)
         remover = installer._egginst_remover
         if not remover.is_installed:
             logger.error("Error: can't find meta data for: %r", remover.cname)
             return
-        name, version = egg_name_to_name_version(self._egg)
-        package = self._top_installed_repository.find_package(name, version)
-
         progress = self._progress_factory(installer.fn,
                                           remover.installed_size,
                                           len(remover.files))
@@ -190,8 +187,8 @@ class RemoveAction(_BaseAction):
             for filename in remover.remove_iterator():
                 yield 1
 
-        self._top_installed_repository.delete_package(package)
-        self._installed_repository.delete_package(package)
+        self._top_installed_repository.delete_package(self._package)
+        self._installed_repository.delete_package(self._package)
 
     def execute(self):
         for n in self.iter_execute():
