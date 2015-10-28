@@ -54,8 +54,7 @@ class AuthFailedError(EnstallerException):
 
 
 class EnpkgError(EnstallerException):
-    # FIXME: why is this a class-level attribute ?
-    req = None
+    pass
 
 
 class NoSuchPackage(EnstallerException):
@@ -69,25 +68,36 @@ class SolverException(EnstallerException):
 class NoPackageFound(SolverException):
     """Exception thrown if no egg can be found for the given requirement."""
 
-    def __init__(self, msg, requirement):
-        super(NoPackageFound, self).__init__(msg)
+    def __init__(self, requirement, *a, **kw):
         self.requirement = requirement
+        super(NoPackageFound, self).__init__(*a, **kw)
 
 
-class UnavailablePackage(EnstallerException):
+class UnavailablePackage(SolverException):
     """Exception thrown when a package is not available for a given
     subscription level."""
 
-    def __init__(self, requirement):
+    def __init__(self, requirement, *a, **kw):
         self.requirement = requirement
+        super(UnavailablePackage, self).__init__(*a, **kw)
+
+
+class NotInstalledPackage(SolverException):
+    """Exception thrown when trying to remove a non installed package.
+    subscription level."""
+
+    def __init__(self, requirement, *a, **kw):
+        self.requirement = requirement
+        super(NotInstalledPackage, self).__init__(*a, **kw)
 
 
 class MissingDependency(SolverException):
     """Exception thrown when a dependency for package is not available."""
 
-    def __init__(self, msg, requester, requirement):
-        super(MissingDependency, self).__init__(msg)
-        self.requirement = requirement
+    def __init__(self, requester, requirement, *a, **kw):
         self.requester = requester
+        self.requirement = requirement
+        super(MissingDependency, self).__init__(*a, **kw)
+
 
 EXIT_ABORTED = 130

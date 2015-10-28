@@ -1,6 +1,6 @@
 from enum import Enum
 
-from enstaller.errors import EnpkgError
+from enstaller.errors import NotInstalledPackage
 
 from .request import JobType
 from .requirement import _LegacyRequirement, Requirement
@@ -49,7 +49,9 @@ class Solver(object):
         packages = self._top_installed_repository.find_packages(
             requirement.name)
         if len(packages) == 0:
-            raise EnpkgError("package %s not installed" % (requirement, ))
+            raise NotInstalledPackage(
+                requirement, "package %s not installed" % (requirement, )
+            )
         return [packages[0].key]
 
     def _install_actions(self, packages, mode, force):

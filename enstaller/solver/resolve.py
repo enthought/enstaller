@@ -4,7 +4,9 @@ from collections import defaultdict
 
 from enum import Enum
 
-from enstaller.errors import MissingDependency, NoPackageFound
+from enstaller.errors import (
+    MissingDependency, NoPackageFound, UnavailablePackage
+)
 
 from enstaller.solver.requirement import _LegacyRequirement
 
@@ -110,10 +112,9 @@ class Resolve(object):
         for r in self._dependencies_from_egg(root):
             d = self._latest_egg(r)
             if d is None:
-                from enstaller.enpkg import EnpkgError
-                err = EnpkgError('Error: could not resolve %s' % str(r))
-                err.req = r
-                raise err
+                raise UnavailablePackage(
+                    r, 'Error: could not resolve %s' % str(r)
+                )
             eggs.append(d)
 
         can_order = self.are_complete(eggs)
@@ -150,7 +151,7 @@ class Resolve(object):
                 if d is None:
                     msg = "Could not resolve \"%s\" " \
                           "required by \"%s\"" % (str(r), package)
-                    raise MissingDependency(msg, package, r)
+                    raise MissingDependency(package, r, msg)
                 packages.add(d)
                 if d not in visited:
                     add_dependents(d, visited)
@@ -196,7 +197,7 @@ class Resolve(object):
         root = self._latest_package(req)
         if root is None:
             msg = "No egg found for requirement {0!r}.".format(str(req))
-            raise NoPackageFound(msg, req)
+            raise NoPackageFound(req, msg)
         if mode == SolverMode.ROOT:
             return [root]
         elif mode == SolverMode.FLAT:

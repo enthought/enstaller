@@ -9,7 +9,7 @@ from enstaller import Configuration, Session
 from enstaller.cli.utils import install_req, repository_factory
 from enstaller.config import STORE_KIND_BROOD
 from enstaller.enpkg import Enpkg, ProgressBarContext
-from enstaller.errors import EnpkgError, EnstallerException
+from enstaller.errors import EnstallerException, NotInstalledPackage
 from enstaller.solver import Request, Requirement
 
 from .json_schemas import INSTALL_SCHEMA, UPDATE_ALL_SCHEMA
@@ -126,7 +126,7 @@ def remove():
         request = Request()
         request.remove(requirement)
         enpkg.execute(solver.resolve(request))
-    except EnpkgError as e:
+    except NotInstalledPackage as e:
         print(str(e))
 
 
