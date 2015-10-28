@@ -87,11 +87,11 @@ def install_req(enpkg, config, req, solver_mode=SolverMode.RECUR,
     """
     Try to execute the install actions.
     """
-    # Unix exit-status codes
     if isinstance(req, six.string_types):
         req = Requirement.from_legacy_requirement_string(req)
     assert isinstance(req, Requirement)
 
+    # Unix exit-status codes
     FAILURE = 1
     request = Request()
     request.install(req)
