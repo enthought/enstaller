@@ -128,6 +128,21 @@ class TestRequirement(unittest.TestCase):
         self.assertEqual(requirement._constraints,
                          MultiConstraints([Equal(V("1.8.1-1"))]))
 
+    def test_has_any_version_constraint(self):
+        # Given
+        requirements = [
+            ("numpy", False),
+            ("numpy < 1.8.1", True),
+            ("numpy == 1.8.1-1", True),
+        ]
+
+        # When/Then
+        for requirement, has_any_version_constraint in requirements:
+            self.assertEqual(
+                Requirement._from_string(requirement).has_any_version_constraint,
+                has_any_version_constraint
+            )
+
 
 class TestParsePackageFullName(unittest.TestCase):
     def test_simple(self):
