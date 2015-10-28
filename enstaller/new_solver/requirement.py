@@ -230,3 +230,12 @@ class _LegacyRequirement(object):
             if self.strictness == 3:
                 res += '-%d' % constraint.version.build
         return res
+
+    def __eq__(self, other):
+        return self._requirement == other._requirement
+
+    def __ne__(self, other):
+        return not (self == other)
+
+    def __hash__(self):
+        return hash(self._requirement)
