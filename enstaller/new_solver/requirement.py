@@ -143,6 +143,18 @@ class Requirement(object):
         else:
             return self.name + " " + ", ".join(parts)
 
+    @property
+    def has_any_version_constraint(self):
+        """ True if there is any version constraint."""
+        constraints = self._constraints._constraints
+        if len(constraints) == 0:
+            return False
+        elif len(constraints) == 1:
+            constraint = six.next(iter(constraints))
+            if isinstance(constraint, Any):
+                return False
+        return True
+
 
 class _LegacyRequirement(object):
     @classmethod
