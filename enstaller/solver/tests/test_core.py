@@ -11,7 +11,9 @@ from egginst.utils import makedirs
 
 
 from enstaller.egg_meta import split_eggname
-from enstaller.errors import EnpkgError, MissingDependency, NoPackageFound
+from enstaller.errors import (
+    MissingDependency, NotInstalledPackage, NoPackageFound
+)
 from enstaller.package import InstalledPackageMetadata
 from enstaller.repository import Repository
 
@@ -125,7 +127,7 @@ class TestSolverNoDependencies(unittest.TestCase):
         request.remove(Requirement("numpy"))
 
         # When/Then
-        with self.assertRaises(EnpkgError):
+        with self.assertRaises(NotInstalledPackage):
             solver.resolve(request)
 
     def test_chained_override_update(self):

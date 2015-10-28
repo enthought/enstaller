@@ -5,7 +5,7 @@ import sys
 import textwrap
 
 from enstaller.auth import UserInfo
-from enstaller.errors import EnpkgError
+from enstaller.errors import NotInstalledPackage
 from enstaller.freeze import get_freeze_list
 from enstaller.history import History
 from enstaller.repository import Repository
@@ -118,7 +118,7 @@ def remove_requirement(enpkg, requirement):
         request = Request()
         request.remove(requirement)
         enpkg.execute(solver.resolve(request))
-    except EnpkgError as e:
+    except NotInstalledPackage as e:
         print(str(e))
 
 
