@@ -64,7 +64,7 @@ class PrettyPackageStringParser(object):
         return (name, version_factory(version_string),
                 constraints.get("dependencies", {}))
 
-    def parse_to_package(self, package_string, python_version):
+    def parse_to_package(self, package_string, python):
         """ Parse the given pretty package string.
 
         Parameters
@@ -72,8 +72,8 @@ class PrettyPackageStringParser(object):
         package_string : str
             The pretty package string, e.g.
             "numpy 1.8.1-1; depends (MKL == 10.3, nose ~= 1.3.4)"
-        python_version : str
-            The python version string, e.g. "2.7".
+        python : PythonImplementation
+            The python implementation.
 
         Returns
         -------
@@ -82,8 +82,7 @@ class PrettyPackageStringParser(object):
         name, version, dependencies = \
             self.parse_to_legacy_constraints(package_string)
         key = "{0}-{1}.egg".format(name, version)
-        return PackageMetadata(key, name, version, dependencies,
-                               python_version)
+        return PackageMetadata(key, name, version, dependencies, python)
 
     def parse_to_legacy_constraints(self, package_string):
         """ Parse the given package string into a name, version and a set of

@@ -1,5 +1,7 @@
 import sys
 
+from okonomiyaki.platforms import PythonImplementation
+
 from egginst._compat import assertCountEqual
 
 from enstaller.errors import SolverException
@@ -160,3 +162,18 @@ class TestPackagePrettyString(unittest.TestCase):
 
         # Then
         self.assertEqual(pretty_string, r_pretty_string)
+
+
+class TestToPackage(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        s = "numpy 1.8.1; depends (MKL ~= 10.3)"
+        parser = PrettyPackageStringParser(EnpkgVersion.from_string)
+        python = PythonImplementation.from_string("cp27")
+
+        # When
+        package = parser.parse_to_package(s, python)
+
+        # Then
+        self.assertEqual(package.name, "numpy")
+        self.assertEqual(package.dependencies, frozenset(["MKL 10.3"]))
