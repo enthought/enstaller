@@ -39,7 +39,7 @@ class TestPool(unittest.TestCase):
         # Given
         index_path = os.path.join(DATA_DIR, "numpy_index.json")
         repository = repository_from_index(index_path)
-        requirement = Requirement._from_string("MKL ~= 10.2")
+        requirement = Requirement._from_string("mkl ~= 10.2")
 
         # When
         pool = Pool([repository])
@@ -47,8 +47,7 @@ class TestPool(unittest.TestCase):
         versions = [candidate.full_version for candidate in candidates]
 
         # Then
-        assertCountEqual(self, versions,
-                         ["10.2-1", "10.2-2"])
+        assertCountEqual(self, versions, ["10.2-1", "10.2-2"])
 
     def test_what_provides_simple(self):
         # Given
