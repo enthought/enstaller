@@ -6,6 +6,8 @@ import os.path
 import sys
 import warnings
 
+import six
+
 from enstaller.collections import DefaultOrderedDict
 from enstaller.eggcollect import info_from_metadir
 from enstaller.errors import NoSuchPackage
@@ -324,13 +326,62 @@ def parse_index(json_dict, repository_info, python_version=PY_VER):
             cache[(upstream, build)] = version
         return version
 
-    for key, info in json_dict.items():
+    requirement_normalizer = _RequirementNormalizer(json_dict)
+
+    for key, info in six.iteritems(json_dict):
         info.setdefault('type', 'egg')
         info.setdefault('packages', [])
         info.setdefault('python', python_version)
 
         version = _version_factory(info["version"], info["build"])
+        info = requirement_normalizer(key, info)
+
         if python_version == "*" or info["python"] in (None, python_version):
             yield RemotePackageMetadata.from_json_dict_and_version(
                 key, info, version, repository_info
             )
+
+
+class _RequirementNormalizer(object):
+    """ Normalize name/requirement names in our legacy index
+
+    For some reason, for each entry in our index, the name is always lower
+    case, but the requirement may be upper-case (e.g. MKL or Cython). To avoid
+    pushing this complexity down to the dependency solver, we normalize
+    requirement names to match names, e.g. is the package name is `mkl`, then a
+    requirement like `MKL 10.3` will be converted to `mkl 10.3`.
+    """
+    def __init__(self, json_data):
+        egg_name_to_name = {}
+        for key, value in six.iteritems(json_data):
+            egg_name = key.split("-", 1)[0]
+            egg_name_to_name[egg_name] = value["name"]
+
+        self._egg_name_to_name = egg_name_to_name
+
+    def _normalizer(self, requirement_name):
+        return self._egg_name_to_name.get(requirement_name, requirement_name)
+
+    def _normalize_value(self, key, value):
+        egg_name = key.split("-", 1)[0]
+        if "packages" in value:
+            value["packages"] = _normalize_requirement_names(
+                value["packages"], self._normalizer
+            )
+        return value
+
+    def __call__(self, key, value):
+        return self._normalize_value(key, value)
+
+
+def _normalize_requirement_names(requirements, normalizer):
+    def _normalize_requirement_name(requirement):
+        parts = requirement.split(None, 1)
+        if len(parts) > 0:
+            parts[0] = normalizer(parts[0])
+        return " ".join(parts)
+
+    return [
+        _normalize_requirement_name(requirement)
+        for requirement in requirements
+    ]

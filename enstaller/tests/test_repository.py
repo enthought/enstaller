@@ -17,7 +17,7 @@ from enstaller.utils import RUNNING_PYTHON
 from enstaller.versions import EnpkgVersion
 
 from enstaller.package import PackageMetadata, RemotePackageMetadata
-from enstaller.repository import Repository
+from enstaller.repository import _RequirementNormalizer, Repository
 from enstaller.repository_info import BroodRepositoryInfo, FSRepositoryInfo
 from enstaller.solver import Requirement
 from enstaller.tests.common import (SIMPLE_INDEX, WarningTestMixin,
@@ -494,3 +494,62 @@ class TestRepositoryMisc(WarningTestMixin, unittest.TestCase):
         with self.assertWarns(DeprecationWarning):
             deprecated_packages = repository.find_sorted_packages("numpy")
         self.assertEqual(deprecated_packages, packages)
+
+
+class Test_RequirementNormalizer(unittest.TestCase):
+    def test_simple(self):
+        # Given
+        r_normalized_numpy = {
+            "name": "numpy",
+            "packages": ["mkl 10.3-1"],
+        }
+
+        index = {
+            "MKL-10.3-1.egg": {
+                "name": "mkl",
+                "packages": [],
+            },
+            "numpy-1.9.2-1.egg": {
+                "name": "numpy",
+                "packages": ["MKL 10.3-1"],
+            },
+        }
+
+        # When
+        normalizer = _RequirementNormalizer(index)
+        normalized_numpy = normalizer(
+            "numpy-1.9.2-1.egg", index["numpy-1.9.2-1.egg"]
+        )
+
+        # Then
+        self.assertEqual(normalized_numpy, r_normalized_numpy)
+
+    def test_preserve_casing(self):
+        # AFAIK, name is always all lower-case, but we may want to support
+        # casing in names latter on (especially for interoperability w/ pypi)
+
+        # Given
+        r_normalized_dummy = {
+            "name": "dummy",
+            "packages": ["Cython 0.23.4"],
+        }
+
+        index = {
+            "Cython-0.23.4-1.egg": {
+                "name": "Cython",
+                "packages": [],
+            },
+            "dummy-1.0.0-1.egg": {
+                "name": "dummy",
+                "packages": ["Cython 0.23.4"],
+            },
+        }
+
+        # When
+        normalizer = _RequirementNormalizer(index)
+        normalized_dummy = normalizer(
+            "dummy-1.0.0-1.egg", index["dummy-1.0.0-1.egg"]
+        )
+
+        # Then
+        self.assertEqual(normalized_dummy, r_normalized_dummy)

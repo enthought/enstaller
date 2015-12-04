@@ -152,10 +152,6 @@ class PackageMetadata(object):
     # Private properties
     # ------------------
     @property
-    def _egg_name(self):
-        return split_eggname(self.key)[0]
-
-    @property
     def _comp_key(self):
         return (self.name, self.version, self._dependencies, self.python_tag)
 

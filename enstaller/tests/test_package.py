@@ -121,7 +121,7 @@ class TestPackage(unittest.TestCase):
                                    python)
         # Then
         self.assertEqual(metadata.name, "mkl")
-        self.assertEqual(metadata._egg_name, "MKL")
+        self.assertEqual(metadata.key, "MKL-10.3-1.egg")
 
 
 class TestRepositoryPackage(unittest.TestCase):
