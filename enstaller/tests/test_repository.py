@@ -3,6 +3,9 @@ import operator
 import os.path
 import sys
 
+import mock
+import six
+
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst
 from egginst.utils import compute_md5
@@ -267,6 +270,74 @@ class TestRepository(unittest.TestCase):
             packages = repository.find_packages("dummy")
             self.assertEqual(len(packages), 1)
             self.assertEqual(packages[0].name, "dummy")
+
+    def test_from_prefix_normalization(self):
+        # Given
+        r_installed_metadata = {
+            "PyYAML-3.11-1.egg": {
+                "arch": "amd64",
+                "build": 1,
+                "key": "PyYAML-3.11-1.egg",
+                "md5": "4d1df29c87bb101747b5a774b720f543",
+                "name": "pyyaml",
+                "osdist": "RedHat_5",
+                "packages": [
+                    "libYAML 0.1.4"
+                ],
+                "platform": "linux2",
+                "product": "free",
+                "python": "2.7",
+                "size": 183069,
+                "type": "egg",
+                "version": "3.11"
+            },
+            "libYAML-0.1.4-1.egg": {
+                "arch": "amd64",
+                "build": 1,
+                "key": "libYAML-0.1.4-1.egg",
+                "md5": "3679f8a4f6c852ed65a3b9809bbecd13",
+                "name": "libyaml",
+                "osdist": "RedHat_5",
+                "packages": [],
+                "platform": "linux2",
+                "python": None,
+                "version": "0.1.4"
+            }
+        }
+
+        def info_from_metadir(meta_dir):
+            if meta_dir == os.path.join("dummy_prefix", "EGG-INFO", "libyaml"):
+                return r_installed_metadata["libYAML-0.1.4-1.egg"]
+            elif meta_dir == os.path.join("dummy_prefix", "EGG-INFO", "pyyaml"):
+                return r_installed_metadata["PyYAML-3.11-1.egg"]
+            else:
+                return None
+
+        def _valid_meta_dir_iterator(prefixes):
+            for prefix in prefixes:
+                egg_info_root = os.path.join(prefix, "EGG-INFO")
+                for info in six.itervalues(r_installed_metadata):
+                    yield (
+                        prefix, egg_info_root,
+                        os.path.join(egg_info_root, info["name"])
+                    )
+
+        # When
+        with mock.patch(
+            "enstaller.repository._valid_meta_dir_iterator",
+            _valid_meta_dir_iterator
+        ):
+            with mock.patch(
+                "enstaller.repository.info_from_metadir",
+                info_from_metadir
+            ):
+                repository = Repository._from_prefixes(["dummy_prefix"])
+
+        # Then
+        packages = repository.find_packages("pyyaml")
+        self.assertEqual(len(packages), 1)
+        self.assertEqual(packages[0].name, "pyyaml")
+        self.assertEqual(packages[0].dependencies, frozenset(["libyaml 0.1.4",]))
 
     def test_from_empty_prefix(self):
         # Given

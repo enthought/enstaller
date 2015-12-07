@@ -35,13 +35,24 @@ class Repository(object):
         if prefixes is None:  # pragma: nocover
             prefixes = [sys.prefix]
 
+        prefix_info = []
+        json_dict = {}
         for prefix, egg_info_root, meta_dir in _valid_meta_dir_iterator(prefixes):
             info = info_from_metadir(meta_dir)
             if info is not None:
-                package = InstalledPackageMetadata.from_installed_meta_dict(
-                    info, prefix
-                )
-                self.add_package(package)
+                prefix_info.append((prefix, info))
+                json_dict[info["key"]] = info
+
+        requirement_normalizer = _RequirementNormalizer(json_dict)
+
+        for prefix, info in prefix_info:
+            key = info["key"]
+            info = requirement_normalizer(key, info)
+
+            package = InstalledPackageMetadata.from_installed_meta_dict(
+                info, prefix
+            )
+            self.add_package(package)
 
     @classmethod
     def _from_prefixes(cls, prefixes=None):
@@ -360,7 +371,9 @@ class _RequirementNormalizer(object):
         self._egg_name_to_name = egg_name_to_name
 
     def _normalizer(self, requirement_name):
-        return self._egg_name_to_name.get(requirement_name, requirement_name)
+        return self._egg_name_to_name.get(
+            requirement_name, requirement_name.lower()
+        )
 
     def _normalize_value(self, key, value):
         egg_name = key.split("-", 1)[0]
