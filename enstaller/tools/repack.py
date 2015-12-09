@@ -6,6 +6,8 @@ import shutil
 import sys
 import tempfile
 
+import six
+
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats import (
     Dependencies, EggBuilder, EggMetadata, PackageInfo, Requirement,
@@ -15,6 +17,7 @@ from okonomiyaki.file_formats.setuptools_egg import (
     _UNSPECIFIED, SetuptoolsEggMetadata, parse_filename
 )
 from okonomiyaki.platforms import EPDPlatform
+from okonomiyaki.versions import MetadataVersion
 from okonomiyaki.versions.pep386 import suggest_normalized_version
 
 from zipfile2 import ZipFile
@@ -24,6 +27,8 @@ from egginst.utils import samefile
 from enstaller.errors import EnstallerException
 from enstaller.versions import EnpkgVersion
 
+
+DEFAULT_METADATA_VERSION = MetadataVersion(1, 3)
 
 ENDIST_DAT = "endist.dat"
 # Whitelist of keys considered when exec`ing the endist.dat to update
@@ -126,9 +131,11 @@ def _raw_packages_to_requirements(packages):
 
 
 def _get_spec(source_egg_path, build_number, platform_string=None,
-              python=_UNSPECIFIED, abi_tag=_UNSPECIFIED):
-    data, metadata = _get_spec_data(source_egg_path, build_number,
-                                    platform_string, python, abi_tag)
+              python=_UNSPECIFIED, abi_tag=_UNSPECIFIED,
+              metadata_version=None):
+    data, metadata = _get_spec_data(
+        source_egg_path, build_number, platform_string, python, abi_tag,
+    )
 
     if platform_string is None:
         try:
@@ -151,7 +158,7 @@ def _get_spec(source_egg_path, build_number, platform_string=None,
     pkg_info = PackageInfo.from_egg(source_egg_path)
     return EggMetadata(raw_name, version, epd_platform, metadata.python_tag,
                        metadata.abi_tag, dependencies, pkg_info,
-                       metadata.summary)
+                       metadata.summary, metadata_version=metadata_version)
 
 
 def _parse_endist_for_egg_content(path):
@@ -209,9 +216,10 @@ def _add_files(z, dir_path, regex_string, archive_dir):
 
 
 def repack(source_egg_path, build_number=1, platform_string=None,
-           python=_UNSPECIFIED, abi_tag=_UNSPECIFIED):
+           python=_UNSPECIFIED, abi_tag=_UNSPECIFIED, metadata_version=None):
     metadata = _get_spec(
-        source_egg_path, build_number, platform_string, python, abi_tag
+        source_egg_path, build_number, platform_string, python, abi_tag,
+        metadata_version
     )
 
     parent_dir = os.path.dirname(os.path.abspath(source_egg_path))
@@ -258,10 +266,22 @@ def main(argv=None):
     p.add_argument("--abi", dest="abi_tag",
                    help="PEP425 abi tag. Will be guessed if not specified."
                         "Note: the tag format will not be validated.")
+    p.add_argument("-m", "--metadata-version", dest="metadata_version",
+                   default=DEFAULT_METADATA_VERSION,
+                   help="Metadata version to use when generating the egg "
+                        "(default: %(default)s)")
     ns = p.parse_args(argv)
 
+    if isinstance(ns.metadata_version, six.string_types):
+        metadata_version = MetadataVersion.from_string(ns.metadata_version)
+    else:
+        metadata_version = ns.metadata_version
+
     abi_tag = ns.abi_tag or _UNSPECIFIED
-    repack(ns.egg, ns.build_number, ns.platform_string, abi_tag=abi_tag)
+    repack(
+        ns.egg, ns.build_number, ns.platform_string, abi_tag=abi_tag,
+        metadata_version=metadata_version
+    )
 
 
 if __name__ == "__main__":  # pragma: no cover

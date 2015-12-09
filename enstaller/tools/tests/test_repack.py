@@ -10,6 +10,8 @@ import mock
 from okonomiyaki.errors import OkonomiyakiError
 from okonomiyaki.file_formats import EggMetadata
 from okonomiyaki.platforms import EPDPlatform
+from okonomiyaki.versions import MetadataVersion
+
 from zipfile2 import ZipFile
 
 from egginst._compat import assertCountEqual
@@ -20,7 +22,9 @@ from egginst.tests.common import (
 )
 
 from enstaller.errors import EnstallerException
-from enstaller.tools.repack import InvalidVersion, main, repack
+from enstaller.tools.repack import (
+    _UNSPECIFIED, DEFAULT_METADATA_VERSION, InvalidVersion, main, repack
+)
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest
@@ -77,6 +81,33 @@ class TestRepack(unittest.TestCase):
         with ZipFile(target) as zp:
             spec = info_from_z(zp)
         self.assertEqual(spec["arch"], "x86")
+
+    @mock.patch(
+        "enstaller.tools.repack.EPDPlatform.from_running_system",
+        return_value=EPDPlatform.from_epd_string("rh5-32")
+    )
+    def test_repack_metadata_version_control(self, ignored):
+        # Given
+        source = os.path.join(self.prefix, "nose-1.2.1-py2.7.egg")
+        shutil.copy(STANDARD_EGG, source)
+
+        target = os.path.join(self.prefix, "nose-1.2.1-1.egg")
+
+        # When
+        repack(source, 1)
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.metadata_version, DEFAULT_METADATA_VERSION)
+
+        # When
+        repack(source, 1, metadata_version=MetadataVersion(1, 2))
+
+        # Then
+        self.assertTrue(os.path.exists(target))
+        metadata = EggMetadata.from_egg(target)
+        self.assertEqual(metadata.metadata_version, MetadataVersion(1, 2))
 
     def test_unsupported_format(self):
         # Given
@@ -310,6 +341,23 @@ class TestRepackMain(unittest.TestCase):
             main(args)
 
         # Then
-        self.assertTrue(repack.called)
-        self.assertTrue(repack.called_with("nose-1.3.0-py2.7.egg", "-b",
-                                           "3", "-a", "win-32"))
+        self.assertEqual(repack.called, 1)
+        repack.assert_called_with(
+            "nose-1.3.0-py2.7.egg", 3, "win-32", abi_tag=_UNSPECIFIED,
+            metadata_version=MetadataVersion(1, 3)
+        )
+
+    def test_metadata_version(self):
+        # Given
+        args = ["nose-1.3.0-py2.7.egg", "-b", "3", "-a", "win-32", "-m", "1.1"]
+
+        # When
+        with mock.patch("enstaller.tools.repack.repack") as repack:
+            main(args)
+
+        # Then
+        self.assertEqual(repack.called, 1)
+        repack.assert_called_with(
+            "nose-1.3.0-py2.7.egg", 3, "win-32", abi_tag=_UNSPECIFIED,
+            metadata_version=MetadataVersion(1, 1)
+        )
