@@ -1,3 +1,12 @@
+XXXXXXXXXX   4.8.10:
+--------------------
+
+Enhancements:
+
+  * repack tool: can control metadata_version output for egg metadata w/ the -m
+    flag (PR #628)
+
+
 2015-08-24   4.8.9:
 -------------------
 
