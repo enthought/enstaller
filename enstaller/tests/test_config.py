@@ -517,6 +517,7 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: True
+            autoupdate: True
             keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}
@@ -548,6 +549,7 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: True
+            autoupdate: True
             config file: {{config_file}}
             keyring backend: {keyring_backend}
             settings:
@@ -587,6 +589,7 @@ class TestConfigurationPrint(unittest.TestCase):
             platform: {platform}
             architecture: {arch}
             use_webservice: False
+            autoupdate: True
             keyring backend: {keyring_backend}
             settings:
                 prefix = {{prefix}}

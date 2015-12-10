@@ -20,6 +20,7 @@ _AUTHENTICATION_TYPE = "kind"
 _AUTHENTICATION_TYPE_BASIC = "basic"
 _AUTHENTICATION_TYPE_SIMPLE = "simple"
 _AUTHENTICATION_TYPE_TOKEN = "token"
+_AUTOUPDATE = "autoupdate"
 _MAX_RETRIES = "max_retries"
 _SSL_VERIFY = "verify_ssl"
 _USERNAME = "username"
@@ -35,6 +36,10 @@ _SCHEMA = {
     "description": "Enstaller >= 4.8.0 configuration",
     "type": "object",
     "properties": {
+        "autoupdate": {
+            "description": "Whether to autoupdate enstaller automatically.",
+            "type": "boolean",
+        },
         "max_retries": {
             "description": "Max number of time to retry connecting to a "
                            "remote server or re-fetching data with invalid "
@@ -157,6 +162,8 @@ def load_configuration_from_yaml(cls, filename_or_fp):
         files_cache = os.path.expanduser(data[_FILES_CACHE]). \
             replace("{PLATFORM}", custom_plat)
         config._repository_cache = files_cache
+    if _AUTOUPDATE in data:
+        config.update(autoupdate=data[_AUTOUPDATE])
     if _MAX_RETRIES in data:
         config.update(max_retries=data[_MAX_RETRIES])
     if _SSL_VERIFY in data and not data[_SSL_VERIFY]:
