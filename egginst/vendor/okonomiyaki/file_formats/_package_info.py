@@ -5,7 +5,7 @@ We support only 1.0 and 1.1, as 1.2 does not seem to be used anywhere ?
 """
 import contextlib
 
-import zipfile2
+from egginst.vendor import zipfile2
 
 from ..utils import py3compat, compute_sha256
 from ..errors import OkonomiyakiError

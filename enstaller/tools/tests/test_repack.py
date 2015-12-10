@@ -6,12 +6,10 @@ import textwrap
 
 import mock
 
-from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.file_formats import EggMetadata
-from okonomiyaki.platforms import EPDPlatform
-from okonomiyaki.versions import MetadataVersion
-
-from zipfile2 import ZipFile
+from egginst.vendor.okonomiyaki.errors import OkonomiyakiError
+from egginst.vendor.okonomiyaki.file_formats import EggMetadata
+from egginst.vendor.okonomiyaki.platforms import EPDPlatform
+from egginst.vendor.okonomiyaki.versions import MetadataVersion
 
 from egginst._compat import assertCountEqual
 from egginst._zipfile import ZipFile

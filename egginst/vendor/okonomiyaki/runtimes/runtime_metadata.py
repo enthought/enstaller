@@ -4,12 +4,12 @@ import abc
 import os.path
 import json
 
-import jsonschema
-import six
-import zipfile2
+from egginst.vendor import jsonschema
+from egginst.vendor import six
+from egginst.vendor import zipfile2
 
-from attr import attr, attributes
-from attr.validators import instance_of
+from egginst.vendor.attr import attr, attributes
+from egginst.vendor.attr.validators import instance_of
 
 from ..errors import InvalidMetadata, MissingMetadata, UnsupportedMetadata
 from ..platforms import EPDPlatform, Platform
