@@ -7,39 +7,26 @@ import sys
 import tempfile
 
 
-import okonomiyaki
-
-try:
-    version_info = okonomiyaki.__version_info__
-except AttributeError:
-    raise RuntimeError("You need okonomiyaki >= 0.14.0 to use repack.")
-else:
-    if version_info < (0, 14):
-        raise RuntimeError("You need okonomiyaki >= 0.14.0 to use repack.")
-
-
-from okonomiyaki.errors import OkonomiyakiError
-from okonomiyaki.file_formats import (
+from egginst.vendor.okonomiyaki.errors import OkonomiyakiError
+from egginst.vendor.okonomiyaki.file_formats import (
     Dependencies, EggBuilder, EggMetadata, PackageInfo, Requirement,
     is_egg_name_valid,
 )
-from okonomiyaki.file_formats.setuptools_egg import (
+from egginst.vendor.okonomiyaki.file_formats.setuptools_egg import (
     _UNSPECIFIED, SetuptoolsEggMetadata, parse_filename
 )
-from okonomiyaki.platforms import EPDPlatform
-from okonomiyaki.versions import MetadataVersion
-from okonomiyaki.versions.pep386 import suggest_normalized_version
+from egginst.vendor.okonomiyaki.platforms import EPDPlatform
+from egginst.vendor.okonomiyaki.versions import MetadataVersion
+from egginst.vendor.okonomiyaki.versions.pep386 import suggest_normalized_version
 
-from zipfile2 import ZipFile
+from egginst.vendor.zipfile2 import ZipFile
 
 from egginst.eggmeta import SPEC_DEPEND_KEYS
 from egginst.utils import samefile
-from egginst._zipfile import ZipFile
 from egginst.vendor.six import string_types
 
 from enstaller.errors import EnstallerException
 from enstaller.versions.enpkg import EnpkgVersion
-from enstaller.versions.pep386 import suggest_normalized_version
 
 
 DEFAULT_METADATA_VERSION = MetadataVersion(1, 3)
