@@ -164,6 +164,9 @@ packages = [
     'egginst',
     'egginst.console',
     'egginst.vendor',
+    'egginst.vendor.attr',
+    'egginst.vendor.jsonschema',
+    'egginst.vendor.zipfile2',
     'enstaller',
     'enstaller.auth',
     'enstaller.cli',
@@ -174,7 +177,6 @@ packages = [
     'enstaller.vendor.cachecontrol',
     'enstaller.vendor.cachecontrol.caches',
     'enstaller.vendor.futures',
-    'enstaller.vendor.jsonschema',
     'enstaller.vendor.keyring',
     'enstaller.vendor.keyring.backends',
     'enstaller.vendor.keyring.util',
@@ -194,7 +196,7 @@ packages = [
 ]
 
 package_data = {"enstaller.vendor.requests": ["cacert.pem"],
-                "enstaller.vendor.jsonschema": ["schemas/draft3.json", "schemas/draft4.json"]}
+                "egginst.vendor.jsonschema": ["schemas/draft3.json", "schemas/draft4.json"]}
 
 if include_testing:
     packages += [

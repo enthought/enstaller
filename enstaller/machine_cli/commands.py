@@ -2,13 +2,13 @@ import json
 import sys
 
 from egginst.progress import console_progress_manager_factory
+from egginst.vendor import jsonschema
 
 from enstaller import Configuration, Session
 from enstaller.cli.utils import install_req, repository_factory
 from enstaller.enpkg import Enpkg, ProgressBarContext
 from enstaller.errors import EnpkgError, EnstallerException
 from enstaller.solver import Request, Requirement
-from enstaller.vendor import jsonschema
 
 from .json_schemas import INSTALL_SCHEMA, UPDATE_ALL_SCHEMA
 

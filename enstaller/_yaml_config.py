@@ -2,11 +2,11 @@ import os.path
 
 from egginst._compat import PY2
 from egginst.vendor.six import string_types
+from egginst.vendor import jsonschema
 
 from enstaller.auth import APITokenAuth, UserPasswordAuth
 from enstaller.errors import InvalidConfiguration
 from enstaller.plat import custom_plat
-from enstaller.vendor import jsonschema
 
 if PY2:
     from enstaller.vendor import yaml
