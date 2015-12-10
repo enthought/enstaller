@@ -16,7 +16,7 @@ def _guess_plat():
     try:
         return '%s-%d' % (sys_map[sys.platform], bits)
     except KeyError:
-        return None
+        raise ValueError("Unsupported platform: {0!r}".format(sys.platform))
 
 
 try:
