@@ -23,12 +23,10 @@ from egginst.vendor.zipfile2 import ZipFile
 
 from egginst.eggmeta import SPEC_DEPEND_KEYS
 from egginst.utils import samefile
-from egginst._zipfile import ZipFile
 from egginst.vendor.six import string_types
 
 from enstaller.errors import EnstallerException
 from enstaller.versions.enpkg import EnpkgVersion
-from enstaller.versions.pep386 import suggest_normalized_version
 
 
 DEFAULT_METADATA_VERSION = MetadataVersion(1, 3)
