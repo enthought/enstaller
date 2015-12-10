@@ -40,6 +40,7 @@ sys.prefix: {sys_prefix}
 platform: {platform}
 architecture: {arch}
 use_webservice: True
+autoupdate: True
 keyring backend: {keyring_backend}
 settings:
     prefix = {prefix}
@@ -191,6 +192,7 @@ sys.prefix: {sys_prefix}
 platform: {platform}
 architecture: {arch}
 use_webservice: True
+autoupdate: True
 keyring backend: {keyring_backend}
 settings:
     prefix = {prefix}
