@@ -701,6 +701,7 @@ def print_config(config, session):
     print("platform:", platform.platform())
     print("architecture:", platform.architecture()[0])
     print("use_webservice:", config.use_webservice)
+    print("autoupdate:", config.autoupdate)
     if config.filename is not None:
         print("config file:", config.filename)
     print("keyring backend: %s" % (_keyring_backend_name(), ))
