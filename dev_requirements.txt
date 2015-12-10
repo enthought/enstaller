@@ -3,7 +3,6 @@ coverage
 flake8
 machotools>=0.0.2
 mock<1.1
-okonomiyaki>=0.14.0
 haas
 six
 testfixtures
