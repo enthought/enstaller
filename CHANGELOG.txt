@@ -5,6 +5,9 @@ Enhancements:
 
   * repack tool: can control metadata_version output for egg metadata w/ the -m
     flag (PR #628)
+  * support for autoupdate flag in yaml configuration file (PR #633)
+  * okonomiyaki is now bundled in enstaller to avoid version mismatches between
+    okonomiyaki and enstaller (PR #631)
 
 
 2015-08-24   4.8.9:
