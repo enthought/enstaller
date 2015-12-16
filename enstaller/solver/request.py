@@ -35,3 +35,6 @@ class Request(object):
 
     def remove(self, requirement):
         self._add_job(requirement, JobType.remove)
+
+    def update(self, requirement):
+        self._add_job(requirement, JobType.update)
