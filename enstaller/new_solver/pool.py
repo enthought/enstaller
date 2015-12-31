@@ -13,7 +13,6 @@ class Pool(object):
         self._package_to_id = {}
         self._id_to_package = {}
         self._packages_by_name = DefaultOrderedDict(list)
-        self._repositories = []
 
         self._id = 1
 
@@ -29,7 +28,6 @@ class Pool(object):
         repository : Repository
             The repository to add
         """
-        self._repositories.append(repository)
         for package in repository.iter_packages():
             current_id = self._id
             self._id += 1
