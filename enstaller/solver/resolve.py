@@ -3,12 +3,14 @@ import operator
 from collections import defaultdict
 
 from enum import Enum
+from simplesat import JobType
 
 from enstaller.errors import (
     MissingDependency, NoPackageFound, UnavailablePackage
 )
 
-from enstaller.solver.requirement import _LegacyRequirement
+from .legacy_requirement import _LegacyRequirement
+
 
 logger = logging.getLogger(__name__)
 

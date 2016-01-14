@@ -8,7 +8,7 @@ import enstaller.plat
 from enstaller.cli.utils import repository_factory
 from enstaller.config import Configuration
 from enstaller.session import Session
-from enstaller.solver.requirement import _LegacyRequirement
+from enstaller.solver.legacy_requirement import _LegacyRequirement
 from enstaller.solver.resolve import Resolve
 
 

@@ -1,5 +1,5 @@
-from .request import JobType, Request
-from .requirement import Requirement
+from simplesat import JobType, Request, Requirement
+
 from .resolve import SolverMode
 from .core import ForceMode, Solver
 

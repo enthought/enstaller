@@ -3,6 +3,7 @@ import sys
 import time
 
 from okonomiyaki.platforms import PythonImplementation
+from simplesat.constraints import PrettyPackageStringParser
 from zipfile2 import ZipFile
 
 from egginst.eggmeta import info_from_z
@@ -68,11 +69,13 @@ class PackageMetadata(object):
         ----
         Don't use this in production code, only meant to be used for testing.
         """
-        # FIXME: local import to workaround circular imports
-        from enstaller.new_solver.package_parser import \
-            PrettyPackageStringParser
         parser = PrettyPackageStringParser(EnpkgVersion.from_string)
-        return parser.parse_to_package(s, python)
+        metadata = parser.parse_to_package(s)
+        key = "{}-{}.egg".format(metadata.name, str(metadata.version))
+        return cls(
+            key, metadata.name, metadata.version, metadata.dependencies,
+            python
+        )
 
     def __init__(self, key, name, version, packages, python):
         self._key = key
