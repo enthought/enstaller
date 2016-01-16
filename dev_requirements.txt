@@ -1,3 +1,4 @@
+-e vendor/sat-solvers
 appinst>=2.1.4
 cookies==2.2.1
 coverage
