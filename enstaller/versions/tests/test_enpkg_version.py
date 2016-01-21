@@ -1,5 +1,7 @@
 import sys
 
+from okonomiyaki.errors import InvalidEnpkgVersion
+
 from .. import EnpkgVersion, PEP386WorkaroundVersion
 
 if sys.version_info[0] == 2:
@@ -71,7 +73,7 @@ class TestEnpkgVersionParsing(unittest.TestCase):
         s = "1.3.0-a"
 
         # When/Then
-        with self.assertRaises(ValueError):
+        with self.assertRaises(InvalidEnpkgVersion):
             EnpkgVersion.from_string(s)
 
     def test_cannot_compare(self):
