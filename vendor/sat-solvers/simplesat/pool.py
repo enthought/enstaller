@@ -13,7 +13,6 @@ class Pool(object):
         self._package_to_id = {}
         self._id_to_package = {}
         self._packages_by_name = DefaultOrderedDict(list)
-        self._repositories = []
 
         self._id = 1
 
