@@ -17,9 +17,8 @@ from enstaller.errors import (
 from enstaller.package import InstalledPackageMetadata
 from enstaller.repository import Repository
 
+from .. import Request, Requirement
 from ..core import ForceMode, Solver
-from ..request import Request
-from ..requirement import Requirement
 
 from enstaller.tests.common import (dummy_installed_package_factory,
                                     dummy_repository_package_factory,

@@ -1,9 +1,10 @@
 from enum import Enum
 
+from simplesat import JobType, Requirement
+
 from enstaller.errors import NotInstalledPackage
 
-from .request import JobType
-from .requirement import _LegacyRequirement, Requirement
+from .legacy_requirement import _LegacyRequirement
 from .resolve import SolverMode, Resolve
 
 

@@ -3,8 +3,9 @@ import sys
 from enstaller.repository import Repository
 from enstaller.tests.common import dummy_repository_package_factory
 
-from ..requirement import _LegacyRequirement
+from ..legacy_requirement import _LegacyRequirement
 from ..resolve import Resolve
+
 
 if sys.version_info[0] == 2:
     import unittest2 as unittest

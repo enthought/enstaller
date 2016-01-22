@@ -101,7 +101,7 @@ class TestPackage(unittest.TestCase):
 
     def test_from_pretty_string(self):
         # Given
-        pretty_string = "numpy 1.8.1-1; depends (MKL ~= 10.3)"
+        pretty_string = "numpy 1.8.1-1; depends (MKL ^= 10.3)"
 
         # When
         metadata = PackageMetadata._from_pretty_string(pretty_string)
@@ -177,7 +177,7 @@ class TestRepositoryPackage(unittest.TestCase):
 
     def test_from_pretty_string(self):
         # Given
-        pretty_string = "numpy 1.8.1-1; depends (MKL ~= 10.3)"
+        pretty_string = "numpy 1.8.1-1; depends (MKL ^= 10.3)"
         repository_info = BroodRepositoryInfo("https://acme.com", "acme/looney")
 
         # When
