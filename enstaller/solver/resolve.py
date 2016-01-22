@@ -3,7 +3,6 @@ import operator
 from collections import defaultdict
 
 from enum import Enum
-from simplesat import JobType
 
 from enstaller.errors import (
     MissingDependency, NoPackageFound, UnavailablePackage
