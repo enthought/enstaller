@@ -775,11 +775,27 @@ class TestConfiguration(unittest.TestCase):
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
     def test_set_repository_cache(self):
+        # Given
         homedir = os.path.normpath(os.path.expanduser("~"))
 
+        # When
         config = Configuration()
         config.update(repository_cache="~/.env/LOCAL-REPO")
+
+        # Then
         self.assertEqual(config.repository_cache, os.path.join(homedir, ".env", "LOCAL-REPO"))
+
+        # Given
+        r_repository_cache = os.path.normpath(
+            os.path.expanduser(os.path.join("~", ".env", custom_plat))
+        )
+
+        # When
+        config = Configuration()
+        config.update(repository_cache="~/.env/{PLATFORM}")
+
+        # Then
+        self.assertEqual(config.repository_cache, r_repository_cache)
 
     def test_set_epd_auth(self):
         config = Configuration()

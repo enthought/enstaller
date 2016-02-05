@@ -1,3 +1,11 @@
+xxxxxxxxxx   4.8.11:
+--------------------
+
+Enhancements:
+
+  * '{SUBDIR}' or '{PLATFORM}' is now supported in the repository_cache
+    settings
+
 2015-12-14   4.8.10:
 --------------------
 

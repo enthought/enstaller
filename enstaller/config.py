@@ -27,7 +27,7 @@ from enstaller.config_templates import RC_DEFAULT_TEMPLATE, RC_TEMPLATE
 from enstaller.errors import (EnstallerException, InvalidConfiguration,
                               InvalidFormat)
 from enstaller.proxy_info import ProxyInfo
-from enstaller.utils import real_prefix, under_venv
+from enstaller.utils import fill_template_path, real_prefix, under_venv
 from enstaller.vendor import requests
 from enstaller.cli.utils import humanize_ssl_error_and_die
 from enstaller import plat
@@ -676,7 +676,9 @@ class Configuration(object):
         self._store_url = url
 
     def _set_repository_cache(self, value):
-        normalized = os.path.normpath(abs_expanduser(value))
+        normalized = fill_template_path(
+            os.path.normpath(abs_expanduser(value))
+        )
         self._repository_cache = _get_writable_local_dir(normalized)
 
     def _simple_attribute_set_factory(self, attribute_name):
