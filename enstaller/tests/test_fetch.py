@@ -123,15 +123,10 @@ class Test_DownloadManager(unittest.TestCase):
         self.assertNotEqual(compute_md5(target), compute_md5(path))
 
         # When
-        downloader.fetch(egg, force=True)
+        downloader.fetch(egg)
 
         # Then
         self.assertEqual(compute_md5(target), compute_md5(path))
-
-        # When/Then
-        # Ensure we deal correctly with force=False when the egg is already
-        # there.
-        downloader.fetch(egg, force=False)
 
     @responses.activate
     def test_fetch_unauthorized(self):

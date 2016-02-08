@@ -78,7 +78,7 @@ class FetchAction(_BaseAction):
         self._progress.update(step)
 
     def iter_execute(self):
-        context = self._downloader.iter_fetch(self._egg, self._force)
+        context = self._downloader.iter_fetch(self._egg)
         if not context.needs_to_download:
             return
 
