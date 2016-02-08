@@ -81,10 +81,15 @@ def cleanup_url(url):
     return urllib.parse.urlunparse((scheme, netloc, path, params, query, fragment))
 
 
+def fill_template_path(path):
+    path = path.replace('{ARCH}', plat.arch)
+    path = path.replace('{SUBDIR}', plat.subdir)
+    path = path.replace('{PLATFORM}', plat.custom_plat)
+    return path
+
+
 def fill_url(url):
-    url = url.replace('{ARCH}', plat.arch)
-    url = url.replace('{SUBDIR}', plat.subdir)
-    url = url.replace('{PLATFORM}', plat.custom_plat)
+    url = fill_template_path(url)
     return cleanup_url(url)
 
 
