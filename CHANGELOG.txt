@@ -5,6 +5,8 @@ Enhancements:
 
   * '{SUBDIR}' or '{PLATFORM}' is now supported in the repository_cache
     settings
+  * Always refetch eggs when an checksum mismatch is detected with the
+    locally cached version (#648)
 
 2015-12-14   4.8.10:
 --------------------

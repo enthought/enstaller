@@ -12,14 +12,13 @@ logger = logging.getLogger(__name__)
 
 
 class _CancelableResponse(object):
-    def __init__(self, path, package_metadata, fetcher, force):
+    def __init__(self, path, package_metadata, fetcher):
         self._path = path
         self._package_metadata = package_metadata
 
         self._canceled = False
 
         self._fetcher = fetcher
-        self._force = force
 
     def cancel(self):
         self._canceled = True
@@ -49,13 +48,11 @@ class _CancelableResponse(object):
         needs_to_download = True
 
         if isfile(self._path):
-            if self._force:
-                if compute_md5(self._path) == self._package_metadata.md5:
-                    logger.info("Not refetching, %r MD5 match", self._path)
-                    needs_to_download = False
-            else:
-                logger.info("Not forcing refetch, %r exists", self._path)
+            if compute_md5(self._path) == self._package_metadata.md5:
+                logger.info("Not refetching, %r MD5 match", self._path)
                 needs_to_download = False
+            else:
+                logger.info("Forcing refetch, %r exists but MD5 mismatches", self._path)
 
         return needs_to_download
 
@@ -79,8 +76,7 @@ class _DownloadManager(object):
         egg : str
             An egg filename (e.g. 'numpy-1.8.0-1.egg')
         force : bool
-            If force is True, will download even if the file is already in the
-            download cache.
+            Ignored, kept for backward compatibility.
 
         Example
         -------
@@ -102,8 +98,7 @@ class _DownloadManager(object):
 
         path = self._path(package_metadata.key)
 
-        return _CancelableResponse(path, package_metadata, self._fetcher,
-                                   force)
+        return _CancelableResponse(path, package_metadata, self._fetcher)
 
     def fetch(self, egg, force=False):
         """ Fetch the given egg.
@@ -113,9 +108,8 @@ class _DownloadManager(object):
         egg : str
             An egg filename (e.g. 'numpy-1.8.0-1.egg')
         force : bool
-            If force is True, will download even if the file is already in the
-            download cache.
+            Ignored, kept for backward compatibility.
         """
-        context = self.iter_fetch(egg, force)
+        context = self.iter_fetch(egg)
         for _ in context:
             pass
