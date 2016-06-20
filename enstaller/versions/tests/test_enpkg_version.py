@@ -53,13 +53,6 @@ class TestEnpkgVersionParsing(unittest.TestCase):
 
     def test_from_string_invalid(self):
         # Given
-        s = "1.3.0"
-
-        # When/Then
-        with self.assertRaises(ValueError):
-            EnpkgVersion.from_string(s)
-
-        # Given
         s = "1.3.0-a"
 
         # When/Then

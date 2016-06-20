@@ -278,4 +278,5 @@ class TestOldCases(unittest.TestCase):
         version = PEP386WorkaroundVersion.from_string(version_string)
 
         # Then
-        self.assertEqual(version, r_version)
+        self.assertTrue(version.is_worked_around)
+        self.assertEqual(str(version), version_string)
