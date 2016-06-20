@@ -142,7 +142,7 @@ class TestUri(unittest.TestCase):
 
         try:
             if attr_name is not None:
-                with mock._patch_object(sys, attr_name, prefix_value,
+                with mock.patch.object(sys, attr_name, prefix_value,
                                         create=True):
                     yield
             else:
@@ -226,7 +226,7 @@ class TestPromptYesNo(unittest.TestCase):
         # Then
         self.assertEqual(m.value.rstrip(), message)
         self.assertTrue(res)
-        mocked_input.assert_called()
+        mocked_input.assert_not_called()
 
 
 FAKE_USER = "john.doe"

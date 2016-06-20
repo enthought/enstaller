@@ -171,7 +171,7 @@ class TestInstall(unittest.TestCase):
             install()
 
         # Then
-        install_req.assert_called()
+        self.assertEqual(install_req.call_count, 1)
         install_req.call_args[0][2] == Requirement.from_anything("numpy")
 
 

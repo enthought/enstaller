@@ -372,6 +372,19 @@ def _bootstrap_old_enstaller(pyenv, upgrade_from):
     assert upgrade_from in out
 
 
+def _enpkg_version(pyenv):
+    # We use --list instead of --version because we overrode the metadata
+    # version, not the actualy version in enstaller package
+    m = pyenv.runenpkg("--list", capture=True)
+    out = m.stdout
+
+    r_version = re.compile("^enstaller\s+(\S+)", flags=re.MULTILINE)
+    m = r_version.search(out)
+    assert m is not None, out
+
+    return m.groups()[0]
+
+
 @task
 def run_enstaller_upgrade(upgrade_from="4.8.6-1"):
     upgrade_to = "4.8.7"
@@ -385,25 +398,13 @@ def run_enstaller_upgrade(upgrade_from="4.8.6-1"):
 
     build_enstaller_egg(upgrade_to)
     with lcd(ROOT):
+        version = _enpkg_version(pyenv)
+        assert version.startswith(upgrade_from), version
+
         output = local(
             "{0} -m enstaller.main -y --sys-config -s enstaller".format(pyenv.python),
             capture=True
         )
 
-        m = re.search(
-            "enstaller-{0}.*\[removing egg\]".format(upgrade_from),
-            output
-        )
-        assert m, "Could not find correct version {0!r} to be removed".format(upgrade_from)
-
-        m = re.search(
-            "enstaller-{0}.*\[installing egg\]".format(upgrade_to),
-            output
-        )
-        assert m, "Could not find correct version {0!r} to be installed".format(upgrade_to)
-
-        # We use --list instead of --version because we overrode the metadata
-        # version, not the actualy version in enstaller package
-        m = pyenv.runenpkg("--list", capture=True)
-        out = m.stdout
-        assert upgrade_to in out
+        version = _enpkg_version(pyenv)
+        assert version.startswith(upgrade_to), version

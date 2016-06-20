@@ -796,7 +796,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # Then
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(m.call_args[0][1], "http://acme.com:3128")
 
     @mock_index({})
@@ -834,7 +834,7 @@ class TestMain(unittest.TestCase):
         config = m.call_args[0][2]
 
         # Then
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(config.max_retries, 42)
 
     @mock_index({})
@@ -869,7 +869,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # Then
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(m.call_args[1]["level"], logging.WARN)
 
         # Given
@@ -880,7 +880,7 @@ class TestMain(unittest.TestCase):
             main(args)
 
         # Then
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(m.call_args[1]["level"], logging.INFO)
 
         # Given
@@ -895,7 +895,7 @@ class TestMain(unittest.TestCase):
         # Then
         fake_connection.assert_not_called()
 
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
 
         # Given
@@ -908,10 +908,9 @@ class TestMain(unittest.TestCase):
                 main(args)
 
         # Then
-        fake_connection.assert_called()
         self.assertEqual(fake_connection.debuglevel, 1)
 
-        m.assert_called()
+        self.assertTrue(m.call_count >= 1)
         self.assertEqual(m.call_args[1]["level"], logging.DEBUG)
 
     @authenticated_config

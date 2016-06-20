@@ -114,8 +114,7 @@ class TestEnpkgExecute(unittest.TestCase):
             enpkg.ec = mock.MagicMock()
             enpkg.execute([("fetch_{0}".format(fetch_opcode), egg)])
 
-            self.assertTrue(mocked_fetch.called)
-            mocked_fetch.assert_called()
+            self.assertIs(mocked_fetch.called, True)
 
     def test_simple_install(self):
         config = Configuration()
@@ -130,10 +129,10 @@ class TestEnpkgExecute(unittest.TestCase):
                 enpkg = Enpkg(repository,
                               mocked_session_factory(config.repository_cache),
                               prefixes=self.prefixes)
-                actions = [("install", "dummy-1.0.1-1.egg")]
+                actions = [("fetch", "dummy-1.0.1-1.egg"), ("install", "dummy-1.0.1-1.egg")]
                 enpkg.execute(actions)
 
-                mocked_fetch.assert_called()
+                self.assertTrue(mocked_fetch.call_count >= 1)
                 mocked_install.assert_called_with()
 
 
