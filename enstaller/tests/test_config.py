@@ -770,7 +770,7 @@ class TestConfiguration(unittest.TestCase):
         homedir = os.path.normpath(os.path.expanduser("~"))
 
         config = Configuration()
-        config.update(prefix=os.path.normpath("~/.env"))
+        config.update(prefix=os.path.normpath(os.path.join("~", ".env")))
 
         self.assertEqual(config.prefix, os.path.join(homedir, ".env"))
 
