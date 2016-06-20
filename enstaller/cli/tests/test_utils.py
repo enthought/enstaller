@@ -8,6 +8,7 @@ import textwrap
 import zlib
 
 import mock
+import testfixtures
 
 from egginst._compat import assertCountEqual
 from egginst.main import EggInst
@@ -298,6 +299,12 @@ class TestInstallReq(unittest.TestCase):
 
     def test_install_not_available(self):
         # Given
+        r_msg = textwrap.dedent("""\
+        Cannot install 'nose', as this package (or some of its requirements) are not
+        available at your subscription level 'Canopy / EPD Free' (You are logged in as
+        'nono').
+        """)
+
         config = Configuration()
         config.update(auth=FAKE_AUTH)
 
@@ -312,12 +319,13 @@ class TestInstallReq(unittest.TestCase):
         enpkg.execute = mock.Mock()
 
         # When/Then
-        with mock.patch("enstaller.config.subscription_message") as \
-                subscription_message:
+        with testfixtures.OutputCapture() as m:
             with self.assertRaises(SystemExit) as e:
                 install_req(enpkg, config, "nose", FakeOptions())
-            subscription_message.assert_called()
-            self.assertEqual(e.exception.code, 1)
+
+        self.assertEqual(e.exception.code, 1)
+        m.compare(r_msg)
+
 
     def test_simple_install(self):
         remote_entries = [

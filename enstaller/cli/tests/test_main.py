@@ -191,7 +191,7 @@ class TestUpdatesCheck(unittest.TestCase):
                 with mock_print() as m:
                     update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
-                    mocked_install_req.assert_called()
+                    self.assertTrue(mocked_install_req.call_count >= 1)
 
     def test_update_all_epd_updates(self):
         r_output = textwrap.dedent("""\
@@ -220,7 +220,7 @@ class TestUpdatesCheck(unittest.TestCase):
                 with mock_print() as m:
                     update_all(enpkg, config, FakeOptions())
                     self.assertMultiLineEqual(m.value, r_output)
-                    mocked_install_req.assert_called()
+                    self.assertTrue(mocked_install_req.call_count >= 1)
 
 
 class TestInstallFromRequirements(unittest.TestCase):
