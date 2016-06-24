@@ -17,6 +17,7 @@ from enstaller.session import _PatchedRawSession, Session
 from enstaller.tests.common import R_JSON_AUTH_RESP, mocked_session_factory
 from enstaller.vendor import responses
 from enstaller.vendor.cachecontrol.adapter import CacheControlAdapter
+from enstaller.vendor import requests
 from enstaller.vendor.requests.adapters import HTTPAdapter
 
 
@@ -149,11 +150,14 @@ class TestSession(unittest.TestCase):
     def test_max_retries(self):
         # Given
         config = Configuration()
+        r_max_retries = requests.Retry(total=0, connect=None, read=False, redirect=None)
 
         # When/Then
         with Session.from_configuration(config) as session:
             for prefix in ("http://", "https://"):
-                self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+                self.assertEqual(
+                    session._raw.adapters[prefix].max_retries, r_max_retries
+                )
 
         # When/Then
         config.update(max_retries=3)
@@ -164,12 +168,15 @@ class TestSession(unittest.TestCase):
     def test_max_retries_with_etag(self):
         # Given
         config = Configuration()
+        r_max_retries = requests.Retry(total=0, connect=None, read=False, redirect=None)
 
         # When/Then
         with Session.from_configuration(config) as session:
             with session.etag():
                 for prefix in ("http://", "https://"):
-                    self.assertEqual(session._raw.adapters[prefix].max_retries, 0)
+                    self.assertEqual(
+                        session._raw.adapters[prefix].max_retries, r_max_retries
+                    )
 
         # When/Then
         config.update(max_retries=3)
