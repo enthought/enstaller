@@ -3,6 +3,7 @@ import os.path
 import re
 import shutil
 import tempfile
+import time
 import zipfile
 
 from egginst.vendor import zipfile2
