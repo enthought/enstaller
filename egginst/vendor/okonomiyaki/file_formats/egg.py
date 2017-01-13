@@ -66,9 +66,20 @@ class _EggBuilderNoPkgInfo(object):
         """ Add the given file to the egg, under the given archive name."""
         self._fp.write(path, archive_name)
 
-    def add_data(self, data, archive_name):
+    def add_data(self, data, archive_name, chmod=0o644):
         """ Write the given data as the given archive name."""
-        self._fp.writestr(archive_name, data)
+        if archive_name[-1] == "/":
+            raise ValueError(
+                "Invalid member name for data: '{}'".format(archive_name)
+            )
+
+        zinfo = zipfile.ZipInfo(
+            filename=archive_name,
+            date_time=time.localtime(time.time())[:6]
+        )
+        zinfo.compress_type = self._fp.compression
+        zinfo.external_attr = chmod << 16
+        self._fp.writestr(zinfo, data)
 
     def add_tree(self, directory, archive_prefix=""):
         """
